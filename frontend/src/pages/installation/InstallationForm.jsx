@@ -233,20 +233,26 @@ export default function InstallationForm() {
 
             {/* Dynamic Vehicle Info Display - Split View */}
             {form.product_id && (
-              <div style={{ marginTop: 20, padding: 20, background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
-                  <div style={{ width: 4, height: 16, background: 'var(--accent)', borderRadius: 2 }} />
-                  <span style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle Information</span>
-                </div>
-                
+              <div style={{ marginTop: 20, padding: '20px 24px', background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
                 {!selectedProduct ? (
                   <div className="spinner" style={{ width: 20, height: 20 }} />
                 ) : (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-                    {/* LEFT SIDE: Component Details */}
+                    {/* LEFT SIDE: Components with Vehicle Identity as Header */}
                     <div>
-                      <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>
-                        Component Details
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                        <div style={{ width: 4, height: 18, background: 'var(--accent)', borderRadius: 2 }} />
+                        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
+                          <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--accent)' }}>
+                            {selectedProduct.name}
+                          </span>
+                          <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text1)' }}>
+                            S/N: {selectedProduct.serial_number}
+                          </span>
+                          <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text1)' }}>
+                            WTY: {selectedProduct.warranty_period} {selectedProduct.warranty_unit}
+                          </span>
+                        </div>
                       </div>
                       
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px', gap: 10, padding: '4px 0', borderBottom: '1px dashed var(--border)', marginBottom: 8 }}>
