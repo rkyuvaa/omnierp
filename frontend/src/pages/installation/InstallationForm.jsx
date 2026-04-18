@@ -178,7 +178,7 @@ export default function InstallationForm() {
               <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: '4px 6px', borderRadius: 10, cursor: isAdmin ? "pointer" : "default", 
+                  padding: '4px 6px', borderRadius: 18, cursor: isAdmin ? "pointer" : "default", 
                   flex: 1, height: 35, transition: 'all 0.2s',
                   border: `1.5px solid ${isCurrent ? s.color : (s.color + '30')}`,
                   background: isCurrent ? s.color : 'transparent',
@@ -187,7 +187,7 @@ export default function InstallationForm() {
                   minWidth: 0, opacity: isCurrent ? 1 : 0.7,
                   textAlign: 'center'
                 }}>
-                <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
               </div>
             );
           })}
