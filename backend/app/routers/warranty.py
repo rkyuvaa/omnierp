@@ -7,43 +7,71 @@ from ..auth import get_current_user
 router = APIRouter()
 
 def serialize_product(p: Product):
-    return {
-        "id": p.id,
-        "title": p.title,
-        "name": p.name,
-        "serial_number": p.serial_number,
-        "warranty_period": p.warranty_period,
-        "warranty_unit": p.warranty_unit,
-        "notes": p.notes,
-        "custom_data": p.custom_data or {},
-        "created_at": str(p.created_at),
-        "stage_name": p.stage.name if p.stage else None,
-        "stage_color": p.stage.color if p.stage else None,
-    }
+    try:
+        return {
+            "id": p.id,
+            "title": p.title or "",
+            "name": p.name or "",
+            "serial_number": p.serial_number or "",
+            "warranty_period": p.warranty_period or 0,
+            "warranty_unit": p.warranty_unit or "months",
+            "notes": p.notes or "",
+            "custom_data": p.custom_data or {},
+            "created_at": str(p.created_at) if p.created_at else "",
+            "stage_name": p.stage.name if p.stage else None,
+            "stage_color": p.stage.color if p.stage else None,
+        }
+    except Exception as e:
+        print(f"Serialization error for product {getattr(p, 'id', 'unknown')}: {e}")
+        return {"id": getattr(p, 'id', 0), "name": "Error loading product"}
 
 @router.get("/products")
 def get_products(db: Session = Depends(get_db)):
-    products = db.query(Product).all()
-    return [serialize_product(p) for p in products]
+    try:
+        products = db.query(Product).all()
+        return [serialize_product(p) for p in products]
+    except Exception as e:
+        print(f"Error in get_products: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/products/{id}")
 def get_product(id: int, db: Session = Depends(get_db)):
     p = db.query(Product).filter(Product.id == id).first()
     if not p: raise HTTPException(404)
-    return p
+    return serialize_product(p)
 
 @router.post("/products")
 def create_product(data: dict, db: Session = Depends(get_db)):
-    p = Product(**data)
-    db.add(p); db.commit(); db.refresh(p)
-    return p
+    try:
+        # Filter out fields that are NOT in the Product model
+        valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data"]
+        product_data = {k: v for k, v in data.items() if k in valid_fields}
+        
+        p = Product(**product_data)
+        db.add(p); db.commit(); db.refresh(p)
+        return serialize_product(p)
+    except Exception as e:
+        print(f"Error in create_product: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/products/{id}")
 def update_product(id: int, data: dict, db: Session = Depends(get_db)):
-    p = db.query(Product).filter(Product.id == id).first()
-    if not p: raise HTTPException(404)
-    for k, v in data.items(): setattr(p, k, v)
-    db.commit(); return p
+    try:
+        p = db.query(Product).filter(Product.id == id).first()
+        if not p: raise HTTPException(404)
+        
+        valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data"]
+        for k, v in data.items():
+            if k in valid_fields:
+                setattr(p, k, v)
+        
+        db.commit()
+        return serialize_product(p)
+    except Exception as e:
+        print(f"Error in update_product: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/boms")
 def get_boms(db: Session = Depends(get_db)):
