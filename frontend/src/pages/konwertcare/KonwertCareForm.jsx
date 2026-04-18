@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { Loader, Modal, Badge } from '../../components/Shared';
 import { FieldModal, TabModal } from '../../components/StudioModals';
+import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useStages, useUsers } from '../../hooks/useData';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
@@ -428,59 +429,72 @@ export default function KonwertCareForm() {
                 <label className="form-label">Internal Notes</label>
                 <textarea className="form-textarea" value={form.notes || ''} onChange={e => set('notes', e.target.value)} />
               </div>
-            </div>
-          </div>
-          {tabs.length > 0 && (
-            <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)' }}>
-              {tabs.map((t,i) => (
-                <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
-                  <button onClick={() => setActiveTab(i)} style={{
-                    padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
-                    background:'transparent', marginBottom:-2, transition:'all 0.15s',
-                    borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
-                    color:activeTab===i?'var(--accent)':'var(--text2)'
-                  }}>{t.name}</button>
-                  {editLayout && <>
-                    <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
-                    <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
-                  </>}
+              <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ display:'flex', gap:8 }}>
+                    {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
+                  </div>
                 </div>
-              ))}
-              {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
-            </div>
-          )}
-          {!tabs.length && editLayout && (
-            <div style={{ marginBottom:8 }}>
-              <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>
-            </div>
-          )}
-          {currentTab && (
-            <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
-                {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
-                  <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position:'relative' }}>
-                    {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{ color:'var(--red)' }}> *</span>}</label>}
-                    <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                {tabs.length > 0 && (
+                  <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
+                    {tabs.map((t,i) => (
+                      <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+                        <button onClick={() => setActiveTab(i)} style={{
+                          padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                          background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                          borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                          color:activeTab===i?'var(--accent)':'var(--text2)'
+                        }}>{t.name}</button>
+                        {editLayout && <>
+                          <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
+                          <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                        </>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {currentTab && (
+                <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+                    {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
+                      <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position:'relative' }}>
+                        {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{ color:'var(--red)' }}> *</span>}</label>}
+                        <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                        {editLayout && (
+                          <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
+                            <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }} onClick={() => setFieldModal({field:{...f},tabId:currentTab.id})}><Pencil size={11}/></button>
+                            <button className="btn btn-danger btn-sm" style={{ padding:'2px 6px' }} onClick={() => setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
+                          </div>
+                        )}
+                      </div>
+                    ))}
                     {editLayout && (
-                      <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
-                        <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }} onClick={() => setFieldModal({field:{...f},tabId:currentTab.id})}><Pencil size={11}/></button>
-                        <button className="btn btn-danger btn-sm" style={{ padding:'2px 6px' }} onClick={() => setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
+                      <div style={{ gridColumn:'1/-1', marginTop:8 }}>
+                        <button className="btn btn-ghost btn-sm"
+                          onClick={() => setFieldModal({field:{...emptyField,tab_id:currentTab.id,sort_order:(currentTab.fields||[]).length},tabId:currentTab.id})}>
+                          <Plus size={13}/> Add Field to "{currentTab.name}"
+                        </button>
                       </div>
                     )}
                   </div>
-                ))}
-                {editLayout && (
-                  <div style={{ gridColumn:'1/-1', marginTop:8 }}>
-                    <button className="btn btn-ghost btn-sm"
-                      onClick={() => setFieldModal({field:{...emptyField,tab_id:currentTab.id,sort_order:(currentTab.fields||[]).length},tabId:currentTab.id})}>
-                      <Plus size={13}/> Add Field to "{currentTab.name}"
-                    </button>
-                  </div>
-                )}
-                {!(currentTab.fields || []).length && !editLayout && <p className="text-muted text-sm" style={{ gridColumn:'1/-1' }}>No fields in this tab.</p>}
-              </div>
+                </div>
+              )}
+              {tabs.length===0&&(
+                <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color:'var(--text2)', fontSize:13 }}>
+                  {editLayout ? (
+                    <div>
+                      <p style={{ marginBottom: 16 }}>No tabs configured. Add a tab to start organizing your custom fields.</p>
+                      <button className="btn btn-primary" onClick={() => setTabModal({})}><Plus size={16}/> Create First Tab</button>
+                      <div style={{ marginTop: 12 }}>
+                        <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({field:{...emptyField,tab_id:null},tabId:null})}><Plus size={13}/> Add Field (No Tab)</button>
+                      </div>
+                    </div>
+                  ) : 'No additional fields configured.'}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
         <div className="card" style={{ alignSelf: 'start' }}>
           <div className="detail-section-title">Assignment</div>

@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { Loader, Badge, Modal } from '../../components/Shared';
+import { Loader, Badge, Modal, Confirm } from '../../components/Shared';
 import { FieldModal, TabModal } from '../../components/StudioModals';
+import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useStages, useUsers } from '../../hooks/useData';
 import { useAuth } from '../../hooks/useAuth';
 import api, { BASE_URL } from '../../utils/api';
@@ -107,66 +108,6 @@ function FileField({ field, value, onChange }) {
 }
 
 
-function CheckboxField({ field, value, onChange }) {
-  // value = array of selected options
-  const selected = Array.isArray(value) ? value : [];
-  const toggle = (opt) => {
-    if (selected.includes(opt)) onChange(selected.filter(o => o !== opt));
-    else onChange([...selected, opt]);
-  };
-  if (!field.options?.length) return <span className="text-muted text-sm">No options configured</span>;
-  return (
-    <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-      {field.options.map(opt => (
-        <label key={opt} style={{ display:'flex', alignItems:'center', gap:6, cursor:'pointer', fontSize:13 }}>
-          <input type="checkbox" checked={selected.includes(opt)} onChange={() => toggle(opt)}
-            style={{ accentColor:'var(--accent)', width:15, height:15 }}/>
-          {opt}
-        </label>
-      ))}
-    </div>
-  );
-}
-
-// ── Field renderer ────────────────────────────────────────────
-function FieldInput({ field, value, onChange }) {
-  const v = value ?? (field.field_type==='boolean' ? false : field.field_type==='checkbox' ? [] : '');
-  switch (field.field_type) {
-    case 'textarea': return <textarea className="form-textarea" placeholder={field.placeholder} value={v} onChange={e => onChange(e.target.value)}/>;
-    case 'number': return <input className="form-input" type="number" placeholder={field.placeholder} value={v} onChange={e => onChange(parseFloat(e.target.value)||0)}/>;
-    case 'date': return <input className="form-input" type="date" value={v} onChange={e => onChange(e.target.value)}/>;
-    case 'boolean':
-      return (
-        <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}>
-          <input type="checkbox" checked={!!v} onChange={e => onChange(e.target.checked)} style={{ width:16, height:16, accentColor:'var(--accent)' }}/>
-          <span className="text-sm">{field.field_label}</span>
-        </label>
-      );
-    case 'checkbox': return <CheckboxField field={field} value={v} onChange={onChange}/>;
-    case 'file': return <FileField field={field} value={v} onChange={onChange}/>;
-    case 'selection':
-      return (
-        <select className="form-select" value={v} onChange={e => onChange(e.target.value)}>
-          <option value="">— Select —</option>
-          {(field.options||[]).map(o => <option key={o} value={o}>{o}</option>)}
-        </select>
-      );
-    default: return <input className="form-input" type="text" placeholder={field.placeholder} value={v} onChange={e => onChange(e.target.value)}/>;
-  }
-}
-
-function isFieldVisible(field, customData) {
-  if (!field.visibility_rule) return true;
-  const { field: ruleField, operator, value: ruleValue } = field.visibility_rule;
-  const val = customData[ruleField];
-  if (operator === 'equals') {
-    // handle checkbox/array
-    if (Array.isArray(val)) return val.includes(ruleValue);
-    return String(val ?? '') === String(ruleValue ?? '');
-  }
-  // has_value (default)
-  return val !== undefined && val !== '' && val !== false && val !== null && !(Array.isArray(val) && val.length === 0);
-}
 
 // ── Activity Type Manager ─────────────────────────────────────
 function ActivityTypeModal({ onClose, onSaved }) {
@@ -534,10 +475,14 @@ export default function LeadForm() {
             </div>
           </div>
 
-          <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>{/* Tabs bar */}
-              {editLayout && <button className="btn btn-ghost btn-sm" style={{ marginLeft: 10, flexShrink: 0 }} onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
+          <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+               <div style={{ display:'flex', gap:8 }}>
+                  {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
+               </div>
+            </div>
           {tabs.length > 0 && (
-            <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20, padding: "10px 5px", overflowX: "visible", whiteSpace: "nowrap", minWidth: "100%", width: "100%", maxWidth: "100%", boxSizing: "border-box", borderBottom: "1px solid var(--border)", WebkitOverflowScrolling: "touch" }}>
+            <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20, padding: "10px 5px", borderBottom: "1px solid var(--border)" }}>
               
               {tabs.map((t, i) => {
                 const isActive = activeTab === i;
@@ -567,7 +512,7 @@ export default function LeadForm() {
           {currentTab&&(
             <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden", borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
               <div style={{ ...gridStyle, width: "100%", overflowX: "hidden" }}>
-                {(currentTab.fields||[]).filter(f => isFieldVisible(f,form.custom_data)).map(f => (
+                {(currentTab.fields||[]).filter(f => isVisible(f,form.custom_data)).map(f => (
                   <div key={f.id} style={{ gridColumn: colSpan[f.width]||'1/-1', position:'relative' }}>
                     {f.field_type!=='boolean'&&(
                       <label className="form-label">{f.field_label}{f.required&&<span style={{color:'var(--red)'}}> *</span>}</label>
@@ -603,10 +548,17 @@ export default function LeadForm() {
           </div>
           )}
           {tabs.length===0&&(
-            <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }} style={{ color:'var(--text2)', fontSize:13 }}>
-              {isAdmin?'Click "Edit Layout" to add tabs and fields.':'No additional fields configured.'}
-              
-          </div>
+            <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color:'var(--text2)', fontSize:13 }}>
+              {editLayout ? (
+                <div>
+                  <p style={{ marginBottom: 16 }}>No tabs configured. Add a tab to start organizing your custom fields.</p>
+                  <button className="btn btn-primary" onClick={() => setTabModal({})}><Plus size={16}/> Create First Tab</button>
+                  <div style={{ marginTop: 12 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({field:{...emptyField,tab_id:null},tabId:null})}><Plus size={13}/> Add Field (No Tab)</button>
+                  </div>
+                </div>
+              ) : 'No additional fields configured.'}
+            </div>
           )}
         </div>
 

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { Loader, Modal, Badge } from '../../components/Shared';
 import { FieldModal, TabModal } from '../../components/StudioModals';
+import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -271,24 +272,10 @@ export default function InstallationForm() {
             {currentTab && (
               <div className="card" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-                  {(currentTab.fields || []).map(f => (
+                  {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
                     <div key={f.id} style={{ gridColumn: f.width === 'full' ? '1/-1' : f.width === 'half' ? 'span 2' : 'span 1', position: 'relative' }}>
-                      {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
-                      {f.field_type === 'textarea'
-                        ? <textarea className="form-textarea" value={form.custom_data[f.field_name] || ''} onChange={e => setCustom(f.field_name, e.target.value)} placeholder={f.placeholder} />
-                        : f.field_type === 'selection'
-                          ? <select className="form-select" value={form.custom_data[f.field_name] || ''} onChange={e => setCustom(f.field_name, e.target.value)}>
-                              <option value="">— Select —</option>
-                              {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
-                            </select>
-                          : f.field_type === 'boolean'
-                            ? <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
-                                <input type="checkbox" checked={!!form.custom_data[f.field_name]} onChange={e => setCustom(f.field_name, e.target.checked)} style={{ accentColor: 'var(--accent)', width: 16, height: 16 }} />
-                                <span className="form-label" style={{ margin: 0 }}>{f.field_label}</span>
-                              </label>
-                            : <input className="form-input" type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
-                                value={form.custom_data[f.field_name] || ''} onChange={e => setCustom(f.field_name, e.target.value)} placeholder={f.placeholder} />
-                      }
+                      {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{color:'var(--red)'}}> *</span>}</label>}
+                      <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
                       {editLayout && (
                         <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: 4 }}>
                           <button className="btn btn-ghost btn-sm" style={{ padding: '2px 6px' }} onClick={() => setFieldModal({ field: f, tabId: currentTab.id })}><Pencil size={11} /></button>
@@ -299,8 +286,7 @@ export default function InstallationForm() {
                   ))}
                   {editLayout && (
                     <div style={{ gridColumn: '1/-1', marginTop: 8 }}>
-                      <button className="btn btn-ghost btn-sm"
-                        onClick={() => setFieldModal({ field: { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: (currentTab.fields || []).length }, tabId: currentTab.id, _new: true })}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({ field: { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: (currentTab.fields || []).length, tab_id: currentTab.id }, tabId: currentTab.id })}>
                         <Plus size={13} /> Add Field to "{currentTab.name}"
                       </button>
                     </div>
