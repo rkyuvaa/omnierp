@@ -208,13 +208,10 @@ export default function InstallationForm() {
                   className="form-select fw-600" 
                   value={form.product_id || ''} 
                   onChange={e => set('product_id', parseInt(e.target.value) || '')}
-                  disabled={!isNew && !!form.product_id}
-                  style={(!isNew && !!form.product_id) ? { background:'var(--bg3)', cursor:'not-allowed' } : {}}
                 >
                   <option value="">— Select Vehicle —</option>
                   {vehicles.filter(v => v.id === form.product_id || !usedProductIds.includes(v.id)).map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
-                {!isNew && !!form.product_id && <span style={{ fontSize:10, color:'var(--text3)', marginTop:4 }}>Link is permanent once saved.</span>}
               </div>
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Assigned Technician</label>
