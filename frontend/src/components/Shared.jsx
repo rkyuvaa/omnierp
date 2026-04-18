@@ -15,9 +15,9 @@ export function Modal({ title, onClose, children, footer, large }) {
   );
 }
 
-export function Badge({ color, children }) {
-  const bg = color + '22';
-  return <span className="badge" style={{ background: bg, color }}>{children}</span>;
+export function Badge({ color, style, children }) {
+  const bg = color ? color + '22' : 'transparent';
+  return <span className="badge" style={{ background: bg, color, ...style }}>{children}</span>;
 }
 
 export function Loader() {

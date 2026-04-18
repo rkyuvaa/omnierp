@@ -457,9 +457,10 @@ export default function AdminUsers() {
                             const mod = ALL_MODULES.find(x => x.key === mKey);
                             const label = mod ? mod.name : (isNaN(mKey) ? mKey : `MOD ${mKey}`);
                             return (
-                              <Badge key={mKey} color="var(--bg2)" style={{ 
+                              <Badge key={mKey} color="#475569" style={{ 
                                 fontSize: 8, padding: '2px 6px', fontWeight: 900, 
-                                color: 'var(--text1)', border: '1px solid var(--border)',
+                                color: '#1e293b', border: '1px solid #cbd5e1',
+                                background: '#f1f5f9',
                                 textTransform: 'uppercase', letterSpacing: '0.2px'
                               }}>
                                 {label}
