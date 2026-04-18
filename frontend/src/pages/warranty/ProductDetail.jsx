@@ -129,11 +129,26 @@ export default function ProductDetail() {
   };
 
   const saveField = async (f) => {
-    const payload = { ...f };
+    const stageRule = f._stageRule;
+    const stageRuleOp = f._stageRuleOp || 'has_value';
+    const stageRuleVal = f._stageRuleVal || '';
+    const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
+
     if (!payload.tab_id) payload.tab_id = fieldModal?.tabId||null;
+    
     if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
     else await api.post('/studio/layout/warranty/fields', payload);
-    toast.success('Field saved'); setFieldModal(null); loadTabs();
+
+    if (stageRule) {
+      await api.post('/studio/layout/warranty/stage-rules', {
+        field_name: payload.field_name,
+        stage_id: parseInt(stageRule),
+        condition_operator: stageRuleOp,
+        condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
+      });
+    }
+
+    toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
   };
 
   const deleteField = async (fid) => {
