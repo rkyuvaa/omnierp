@@ -233,11 +233,13 @@ class Installation(Base):
     vehicle_model = Column(String(100), nullable=True)
     stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
     technician_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
     notes = Column(Text, nullable=True)
     custom_data = Column(JSON, default={})
     created_at = Column(DateTime, default=datetime.utcnow)
     stage = relationship("Stage")
     technician = relationship("User")
+    product = relationship("Product")
 
 class InstallationTab(Base):
     __tablename__ = "installation_tabs"

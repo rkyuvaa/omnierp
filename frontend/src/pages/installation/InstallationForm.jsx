@@ -9,7 +9,7 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Bell, Check } from 'lucide-react';
 
-const emptyForm = { customer_name: '', vehicle_number: '', vehicle_make: '', vehicle_model: '', stage_id: '', technician_id: '', notes: '', custom_data: {} };
+const emptyForm = { product_id: '', technician_id: '', notes: '', custom_data: {} };
 const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
 function timeAgo(dateStr) {
@@ -33,6 +33,7 @@ export default function InstallationForm() {
   const [saving, setSaving] = useState(false);
   const [stages, setStages] = useState([]);
   const [users, setUsers] = useState([]);
+  const [vehicles, setVehicles] = useState([]);
   const [activities, setActivities] = useState([]);
   const [actDesc, setActDesc] = useState('');
   const [actDue, setActDue] = useState('');
@@ -51,6 +52,7 @@ export default function InstallationForm() {
   useEffect(() => {
     api.get('/studio/stages/installation').then(r => setStages(r.data)).catch(() => {});
     api.get('/users/').then(r => setUsers(r.data)).catch(() => {});
+    api.get('/warranty/products?limit=1000').then(r => setVehicles(r.data.items || [])).catch(() => {});
     loadTabs();
     loadStageRules();
   }, []);
@@ -70,23 +72,22 @@ export default function InstallationForm() {
   const setCustom = (k, v) => setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));
 
   const save = async () => {
+    if (!form.product_id) return toast.error('Please select a Vehicle Number');
     setSaving(true);
     try {
-      const payload = { ...form, stage_id: form.stage_id || null, technician_id: form.technician_id || null };
+      const payload = { ...form, stage_id: form.stage_id || null, technician_id: form.technician_id || null, product_id: parseInt(form.product_id) || null };
       if (isNew) {
         const r = await api.post('/installation/', payload);
-        toast.success('✓ Installation created successfully!', { duration: 4000 });
+        toast.success('✓ Success');
         navigate(`/installation/${r.data.id}`);
       } else {
-        const response = await api.put(`/installation/${id}`, payload);
-        console.log('Save response:', response.status);
-        toast.success('✓ Saved successfully!', { duration: 4000 });
+        await api.put(`/installation/${id}`, payload);
+        toast.success('✓ Saved');
         setRecentlySaved(true);
         setTimeout(() => setRecentlySaved(false), 3000);
       }
     } catch (e) { 
-      console.error('Save error:', e); 
-      toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); 
+      toast.error(e.response?.data?.detail || 'Failed to save'); 
     }
     finally { setSaving(false); }
   };
@@ -140,7 +141,6 @@ export default function InstallationForm() {
   };
 
   if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
-
   const currentTab = tabs[activeTab];
 
   return (
@@ -205,6 +205,20 @@ export default function InstallationForm() {
           <div className="card mb-4">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">Vehicle Number *</label>
+                <select 
+                  className="form-select fw-600" 
+                  value={form.product_id || ''} 
+                  onChange={e => set('product_id', parseInt(e.target.value) || '')}
+                  disabled={!isNew && !!form.product_id}
+                  style={(!isNew && !!form.product_id) ? { background:'var(--bg3)', cursor:'not-allowed' } : {}}
+                >
+                  <option value="">— Select Vehicle —</option>
+                  {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                </select>
+                {!isNew && !!form.product_id && <span style={{ fontSize:10, color:'var(--text3)', marginTop:4 }}>Link is permanent once saved.</span>}
+              </div>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Assigned Technician</label>
                 <select className="form-select" value={form.technician_id || ''} onChange={e => set('technician_id', parseInt(e.target.value) || null)}>
                   <option value="">— Unassigned —</option>
@@ -218,7 +232,6 @@ export default function InstallationForm() {
             </div>
           </div>
 
-          {/* Tabs section */}
           <div style={{ width: '100%' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                <div style={{ display:'flex', gap:8 }}>
@@ -266,15 +279,7 @@ export default function InstallationForm() {
                       </button>
                     </div>
                   )}
-                  {(currentTab.fields || []).length === 0 && !editLayout && (
-                    <p className="text-muted text-sm" style={{ gridColumn: '1/-1' }}>No fields in this tab yet.</p>
-                  )}
                 </div>
-              </div>
-            )}
-            {tabs.length === 0 && (
-              <div className="card" style={{ color: 'var(--text2)', fontSize: 13 }}>
-                {isAdmin ? 'Click "Edit Layout" to add tabs and custom fields.' : 'No additional fields configured.'}
               </div>
             )}
           </div>
@@ -339,4 +344,3 @@ export default function InstallationForm() {
     </Layout>
   );
 }
-

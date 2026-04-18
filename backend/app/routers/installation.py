@@ -16,6 +16,7 @@ class InstIn(BaseModel):
     vehicle_model: Optional[str] = None
     stage_id: Optional[int] = None
     technician_id: Optional[int] = None
+    product_id: Optional[int] = None
     notes: Optional[str] = None
     custom_data: dict = {}
 
@@ -25,7 +26,7 @@ def serialize(r):
             "id": r.id, 
             "reference": r.reference, 
             "customer_name": r.customer_name or "—",
-            "vehicle_number": r.vehicle_number or "—",
+            "vehicle_number": r.product.name if r.product else (r.vehicle_number or "—"),
             "vehicle_make": r.vehicle_make or "—",
             "vehicle_model": r.vehicle_model or "—",
             "stage_id": r.stage_id,
@@ -33,6 +34,7 @@ def serialize(r):
             "stage_color": r.stage.color if r.stage else None,
             "technician_id": r.technician_id,
             "technician_name": r.technician.name if r.technician else "Unassigned",
+            "product_id": r.product_id,
             "created_at": str(r.created_at) if r.created_at else None,
             "custom_data": r.custom_data or {}
         }
