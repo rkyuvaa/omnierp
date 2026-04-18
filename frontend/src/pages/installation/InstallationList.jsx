@@ -77,20 +77,20 @@ export default function InstallationList() {
     <Layout title="Installation">
       {/* Stage filter badges */}
       {stageCounts.length > 0 && (
-        <div className="hide-scrollbar" style={{ display: 'flex', gap: 10, flexWrap: 'nowrap', marginBottom: 16, overflowX: 'auto', paddingBottom: 4 }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
           {stageCounts.map(s => (
             <div key={s.id} onClick={() => handleStage(s.id)}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '10px 24px',
-                borderRadius: 16, cursor: 'pointer', whiteSpace: 'nowrap', minWidth: 120,
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 2, padding: '8px 12px', borderRadius: 12, cursor: 'pointer', flex: 1, minWidth: '90px',
+                textAlign: 'center', transition: 'all 0.2s',
                 border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
                 background: stageFilter === s.id ? s.color : (s.color + '15'),
                 color: stageFilter === s.id ? '#ffffff' : s.color,
-                transition: 'all 0.2s',
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
               }}>
-              <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.name}</span>
-              <span style={{ fontSize: 13, fontWeight: 900, opacity: 0.9 }}>
+              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1.1, whiteSpace: 'normal' }}>{s.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 900, opacity: 0.9 }}>
                 {s.count}
               </span>
             </div>
