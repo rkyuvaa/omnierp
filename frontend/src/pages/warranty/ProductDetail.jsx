@@ -188,80 +188,65 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Top Section: Side by Side */}
-      <div style={{ display:'grid', gridTemplateColumns:'420px 1fr', gap:20, marginBottom: 20 }}>
-        {/* Vehicle Info Card (Narrower) */}
+      {/* Side-by-Side: Info (Left 70%) & Tracking (Right 30%) */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:20, marginBottom: 20 }}>
+        
+        {/* Condensed Vehicle Info Card */}
         <div className="card" style={{ height: 'fit-content' }}>
-          <div className="card-header"><span className="card-title">VEHICLE INFO</span></div>
-          <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
-            <div className="form-group">
+          <div className="card-header"><span className="card-title">VEHICLE INFORMATION</span></div>
+          <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px 12px' }}>
+            <div className="form-group" style={{ gridColumn: 'span 1' }}>
               <label className="form-label">VEHICLE NUMBER *</label>
-              <input className="form-input text-lg fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="KA01AB1234" />
+              <input className="form-input fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="KA01.." />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ gridColumn: 'span 1' }}>
               <label className="form-label">CHASSIS / SERIAL</label>
               <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
             </div>
-            <div className="form-group">
+            <div className="form-group" style={{ gridColumn: 'span 1' }}>
               <label className="form-label">MODEL (BOM) *</label>
               <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
-                <option value="">-- Select BOM --</option>
+                <option value="">-- BOM --</option>
                 {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 120px', gap:10 }}>
-              <div className="form-group">
-                <label className="form-label">WARRANTY PERIOD</label>
+            <div className="form-group" style={{ gridColumn: 'span 1' }}>
+              <label className="form-label">WARRANTY (PRD/UNIT)</label>
+              <div style={{ display:'flex', gap:4 }}>
                 <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">UNIT</label>
                 <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
-                  <option value="months">months</option>
-                  <option value="years">years</option>
+                  <option value="months">Mo</option>
+                  <option value="years">Yr</option>
                 </select>
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">NOTES</label>
-              <textarea className="form-input" rows={2} value={form.notes} onChange={e=>set('notes', e.target.value)} />
+            <div className="form-group" style={{ gridColumn: '1/-1' }}>
+              <label className="form-label">WARRANTY NOTES</label>
+              <textarea className="form-input" rows={1} value={form.notes} onChange={e=>set('notes', e.target.value)} style={{ padding:'6px 10px' }} />
             </div>
           </div>
         </div>
 
-        {/* Component Tracking Card (Line-by-line) */}
-        <div className="card">
-          <div className="card-header"><span className="card-title">COMPONENT TRACKING</span></div>
-          <div className="table-wrap" style={{ border:'none' }}>
-            <table style={{ background:'transparent' }}>
-              <thead>
-                <tr style={{ borderBottom:'2px solid var(--border)' }}>
-                  <th style={{ padding:'10px 8px' }}>COMPONENT</th>
-                  <th style={{ padding:'10px 8px' }}>SERIAL NUMBER</th>
-                  <th style={{ padding:'10px 8px', width:120, textAlign:'center' }}>WARRANTY</th>
-                </tr>
-              </thead>
-              <tbody>
-                {form.component_serials.length > 0 ? (
-                  form.component_serials.map((c, idx) => (
-                    <tr key={idx} style={{ borderBottom:'1px solid var(--border)' }}>
-                      <td className="fw-600 size-13" style={{ padding:'12px 8px' }}>{c.name}</td>
-                      <td style={{ padding:'12px 8px' }}>
-                        <input className="form-input" style={{ height:32, fontSize:13 }} 
-                          value={c.serial_number} 
-                          onChange={e => updateCompSerial(idx, e.target.value)} 
-                          placeholder={`Enter ${c.name} S/N`} />
-                      </td>
-                      <td className="text-muted size-12" style={{ padding:'12px 8px', textAlign:'center' }}>
-                        {c.warranty_period} {c.warranty_unit}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr><td colSpan={3} style={{ textAlign:'center', padding:40, color:'var(--text3)' }}>Select a BOM Model to start tracking</td></tr>
-                )}
-              </tbody>
-            </table>
+        {/* Component Tracking Sidebar */}
+        <div className="card" style={{ height: 'fit-content' }}>
+          <div className="card-header"><span className="card-title">TRACKING</span></div>
+          <div style={{ padding: '0px 10px 10px' }}>
+            {form.component_serials.length > 0 ? (
+              form.component_serials.map((c, idx) => (
+                <div key={idx} style={{ padding: '8px 0', borderBottom: idx < form.component_serials.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 4 }}>
+                    <span className="fw-600 size-12" style={{ color: 'var(--text1)' }}>{c.name}</span>
+                    <span className="text-muted size-10">{c.warranty_period} {c.warranty_unit}</span>
+                  </div>
+                  <input className="form-input" style={{ height:28, fontSize:12, background:'var(--bg1)' }} 
+                    value={c.serial_number} 
+                    onChange={e => updateCompSerial(idx, e.target.value)} 
+                    placeholder="Serial #" />
+                </div>
+              ))
+            ) : (
+              <p className="size-12 text-muted text-center py-4">Select model to track parts</p>
+            )}
           </div>
         </div>
       </div>
