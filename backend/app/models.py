@@ -221,6 +221,7 @@ class ProductComponentSerial(Base):
     warranty_unit = Column(String(20), default="months")
     warranty_status = Column(String(20), default="not_started")
     product = relationship("Product", back_populates="component_serials")
+    bom_component = relationship("BOMComponent")
 
 class Installation(Base):
     __tablename__ = "installations"
