@@ -171,32 +171,29 @@ export default function InstallationForm() {
 
       {/* Stage bar */}
       {!isNew && stages.length > 0 && (
-        <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: '0 0 10px', width: '100%', marginTop: -4 }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 12, padding: '0 0 10px', width: '100%', marginTop: -4 }}>
           {stages.map(s => {
             const isCurrent = form.stage_id === s.id;
             return (
               <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
-                  padding: isCurrent ? "8px 12px" : "6px 8px", 
-                  borderRadius: 20,
-                  cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
-                  background: isCurrent ? s.color : (s.color + "15"),
-                  color: isCurrent ? "#fff" : s.color,
-                  fontSize: isCurrent ? "11px" : "9px", 
-                  fontWeight: 800,
-                  textTransform: "uppercase", letterSpacing: "0.2px",
-                  boxShadow: isCurrent ? `0 4px 12px ${s.color}40` : "none",
-                  opacity: isCurrent ? 1 : 0.7,
-                  border: `1px solid ${isCurrent ? s.color : "transparent"}`,
-                  textAlign: 'center',
-                  flex: 1,
-                  minWidth: 0,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  lineHeight: 1.1
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '6px 4px', borderRadius: 14, cursor: isAdmin ? "pointer" : "default", 
+                  flex: 1, height: 50, transition: 'all 0.2s',
+                  border: `1.5px solid ${isCurrent ? s.color : (s.color + '40')}`,
+                  background: isCurrent ? s.color : (s.color + '10'),
+                  color: isCurrent ? '#ffffff' : s.color,
+                  boxShadow: isCurrent ? `0 4px 10px ${s.color}40` : 'none',
+                  minWidth: 0, opacity: isCurrent ? 1 : 0.6
                 }}>
-                <span style={{ display: 'block' }}>{s.name}</span>
+                <span style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1.1, textAlign: 'center' }}>{s.name}</span>
+                <div style={{ 
+                  width: 16, height: 16, borderRadius: 8, 
+                  background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.1)', marginTop: 2
+                }}>
+                  {isCurrent && <div style={{ width: 6, height: 6, borderRadius: 3, background: s.color }} />}
+                </div>
               </div>
             );
           })}
