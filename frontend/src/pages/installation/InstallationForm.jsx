@@ -35,6 +35,7 @@ export default function InstallationForm() {
   const [users, setUsers] = useState([]);
   const [vehicles, setVehicles] = useState([]);
   const [activities, setActivities] = useState([]);
+  const [usedProductIds, setUsedProductIds] = useState([]);
   const [actDesc, setActDesc] = useState('');
   const [actDue, setActDue] = useState('');
   const [editLayout, setEditLayout] = useState(false);
@@ -53,6 +54,7 @@ export default function InstallationForm() {
     api.get('/studio/stages/installation').then(r => setStages(r.data)).catch(() => {});
     api.get('/users/').then(r => setUsers(r.data)).catch(() => {});
     api.get('/warranty/products').then(r => setVehicles(Array.isArray(r.data) ? r.data : (r.data.items || []))).catch(() => {});
+    api.get('/installation/').then(r => setUsedProductIds((r.data.items || []).map(i => i.product_id).filter(Boolean))).catch(() => {});
     loadTabs();
     loadStageRules();
   }, []);
@@ -210,7 +212,7 @@ export default function InstallationForm() {
                   style={(!isNew && !!form.product_id) ? { background:'var(--bg3)', cursor:'not-allowed' } : {}}
                 >
                   <option value="">— Select Vehicle —</option>
-                  {vehicles.map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
+                  {vehicles.filter(v => v.id === form.product_id || !usedProductIds.includes(v.id)).map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
                 {!isNew && !!form.product_id && <span style={{ fontSize:10, color:'var(--text3)', marginTop:4 }}>Link is permanent once saved.</span>}
               </div>
