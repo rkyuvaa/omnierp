@@ -1,9 +1,12 @@
 import axios from 'axios';
 
-// Dynamically use the current host so the app works regardless of server IP
-const BASE_URL = `${window.location.protocol}//${window.location.hostname}:8000/api`;
+// Detect if we are on localhost (dev) or on a server (production)
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+const BASE_URL = isLocal 
+  ? 'http://localhost:8000/api' 
+  : `${window.location.protocol}//${window.location.hostname}${window.location.port && window.location.port !== '80' && window.location.port !== '443' ? ':' + window.location.port : ''}/api`;
 
-const api = axios.create({ baseURL: BASE_URL });
+const api = axios.create({ baseURL: BASE_URL, timeout: 30000 });
 
 api.interceptors.request.use(cfg => {
   const token = localStorage.getItem('token');
@@ -16,6 +19,7 @@ api.interceptors.response.use(r => r, err => {
     localStorage.removeItem('token');
     window.location.href = '/login';
   }
+  console.error('API Error:', err.message, err.response?.status, err.response?.data);
   return Promise.reject(err);
 });
 

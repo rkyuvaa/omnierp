@@ -1,7 +1,8 @@
+from sqlalchemy import or_
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Any, Optional, List
 from app.database import get_db
 from app.models import User
 from app.auth import get_current_user, require_admin, hash_password, log_action
@@ -14,7 +15,8 @@ class UserCreate(BaseModel):
     password: str
     role_id: Optional[int] = None
     branch_id: Optional[int] = None
-    allowed_modules: List[str] = []
+    allowed_branches: List[int] = []
+    allowed_modules: Any = {}
     is_superadmin: bool = False
 
 class UserUpdate(BaseModel):
@@ -23,7 +25,8 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     role_id: Optional[int] = None
     branch_id: Optional[int] = None
-    allowed_modules: Optional[List[str]] = None
+    allowed_branches: List[int] = []
+    allowed_modules: Optional[Any] = {}
     is_active: Optional[bool] = None
     is_superadmin: Optional[bool] = None
 
@@ -31,7 +34,7 @@ def serialize(u: User):
     return {
         "id": u.id, "name": u.name, "email": u.email,
         "is_active": u.is_active, "is_superadmin": u.is_superadmin,
-        "role_id": u.role_id, "branch_id": u.branch_id,
+        "role_id": u.role_id, "branch_id": u.branch_id, "allowed_branches": u.allowed_branches or [],
         "allowed_modules": u.allowed_modules or [],
         "role_name": u.role.name if u.role else None,
         "branch_name": u.branch.name if u.branch else None,
@@ -39,8 +42,16 @@ def serialize(u: User):
     }
 
 @router.get("/")
-def list_users(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    users = db.query(User).all()
+def list_users(branch_id: Optional[int] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    query = db.query(User)
+    if branch_id:
+        # Filter users who have this branch_id primary OR in their allowed_branches JSON list
+        from sqlalchemy import cast, JSON
+        query = query.filter(or_(
+            User.branch_id == branch_id,
+            User.allowed_branches.contains([branch_id])
+        ))
+    users = query.all()
     return [serialize(u) for u in users]
 
 @router.post("/")
@@ -49,8 +60,8 @@ def create_user(data: UserCreate, db: Session = Depends(get_db), current_user: U
         raise HTTPException(400, "Email already exists")
     user = User(
         name=data.name, email=data.email,
-        hashed_password=hash_password(data.password),
-        role_id=data.role_id, branch_id=data.branch_id,
+        password_hash=hash_password(data.password),
+        role_id=data.role_id, branch_id=data.branch_id, allowed_branches=data.allowed_branches,
         allowed_modules=data.allowed_modules, is_superadmin=data.is_superadmin
     )
     db.add(user); db.commit(); db.refresh(user)

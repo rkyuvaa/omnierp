@@ -18,7 +18,7 @@ export default function AuditLog() {
       .finally(() => setLoading(false));
   };
 
-  useEffect(() => load(), []);
+  useEffect(() => { load(); }, []);
 
   const actionColor = a => a === 'CREATE' ? 'var(--green)' : a === 'UPDATE' ? 'var(--amber)' : 'var(--red)';
 

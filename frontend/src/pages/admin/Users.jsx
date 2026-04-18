@@ -3,9 +3,9 @@ import Layout from '../../components/Layout';
 import { Modal, Confirm, Badge, Loader, Empty } from '../../components/Shared';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, CheckSquare, Square } from 'lucide-react';
 
-const emptyForm = { name: '', email: '', password: '', role_id: '', branch_id: '', allowed_modules: [], is_superadmin: false, is_active: true };
+const emptyForm = { name: '', email: '', password: '', role_id: '', branch_id: '', allowed_branches: [], allowed_modules: [], is_superadmin: false, is_active: true };
 const ALL_MODULES = ['crm', 'installation', 'service', 'studio'];
 
 export default function AdminUsers() {
@@ -24,16 +24,16 @@ export default function AdminUsers() {
       .then(([u, r, b]) => { setUsers(u.data); setRoles(r.data); setBranches(b.data); })
       .finally(() => setLoading(false));
   };
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const openNew = () => { setForm(emptyForm); setEditing(null); setModal(true); };
   const openEdit = u => {
-    setForm({ name: u.name, email: u.email, password: '', role_id: u.role_id || '', branch_id: u.branch_id || '', allowed_modules: u.allowed_modules || [], is_superadmin: u.is_superadmin, is_active: u.is_active });
+    setForm({ name: u.name, email: u.email, password: '', role_id: u.role_id || '', branch_id: u.branch_id || '', allowed_branches: u.allowed_branches || [], allowed_modules: u.allowed_modules || [], is_superadmin: u.is_superadmin, is_active: u.is_active });
     setEditing(u.id); setModal(true);
   };
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const toggleModule = m => set('allowed_modules', form.allowed_modules.includes(m) ? form.allowed_modules.filter(x => x !== m) : [...form.allowed_modules, m]);
+  const toggleModule = m => set('allowed_modules', (Array.isArray(form.allowed_modules) ? form.allowed_modules.includes(m) : false) ? form.allowed_modules.filter(x => x !== m) : [...form.allowed_modules, m]);
 
   const save = async () => {
     setSaving(true);
@@ -55,7 +55,17 @@ export default function AdminUsers() {
 
   if (loading) return <Layout title="Users"><Loader /></Layout>;
 
-  return (
+    const setModuleRole = (mod, roleId) => {
+    setForm(f => {
+      let current = f.allowed_modules;
+      if (Array.isArray(current) || !current) current = {};
+      const updated = { ...current };
+      if (!roleId) delete updated[mod];
+      else updated[mod] = parseInt(roleId);
+      return { ...f, allowed_modules: updated };
+    });
+  };
+return (
     <Layout title="User Management">
       <div className="toolbar">
         <div className="toolbar-right">
@@ -76,7 +86,7 @@ export default function AdminUsers() {
                     <td>{u.branch_name || '—'}</td>
                     <td>
                       <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
-                        {(u.allowed_modules || []).map(m => <Badge key={m} color="var(--accent2)">{m}</Badge>)}
+                        {(Array.isArray(u.allowed_modules) ? u.allowed_modules : Object.keys(u.allowed_modules || {})).map(m => <Badge key={m} color="var(--accent2)">{m}</Badge>)}
                       </div>
                     </td>
                     <td><Badge color={u.is_active ? 'var(--green)' : 'var(--red)'}>{u.is_active ? 'Active' : 'Inactive'}</Badge></td>
@@ -110,13 +120,7 @@ export default function AdminUsers() {
               <label className="form-label">{editing ? 'New Password (leave blank to keep)' : 'Password *'}</label>
               <input className="form-input" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
             </div>
-            <div className="form-group">
-              <label className="form-label">Role</label>
-              <select className="form-select" value={form.role_id} onChange={e => set('role_id', e.target.value)}>
-                <option value="">— None —</option>
-                {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-              </select>
-            </div>
+            
             <div className="form-group">
               <label className="form-label">Branch</label>
               <select className="form-select" value={form.branch_id} onChange={e => set('branch_id', e.target.value)}>
@@ -137,12 +141,37 @@ export default function AdminUsers() {
             <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
               {ALL_MODULES.map(m => (
                 <button key={m} type="button" className="btn btn-ghost btn-sm" onClick={() => toggleModule(m)}
-                  style={form.allowed_modules.includes(m) ? { background: 'var(--accent)', color: 'white', borderColor: 'var(--accent)' } : {}}>
+                  style={(Array.isArray(form.allowed_modules) ? form.allowed_modules.includes(m) : false) ? { background: 'var(--accent)', color: 'white', borderColor: 'var(--accent)' } : {}}>
                   {m}
                 </button>
               ))}
             </div>
           </div>
+          
+          <div style={{ marginTop: 24, marginBottom: 10 }}>
+            <label className="form-label" style={{ marginBottom: 12, display: 'block', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--accent)' }}>
+              Per-Module Access & Roles
+            </label>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10 }}>
+              {(typeof ALL_MODULES !== 'undefined' ? ALL_MODULES : ['crm', 'installation', 'service', 'warranty/products', 'konwertcare']).map(m => {
+                const currentObj = (Array.isArray(form.allowed_modules) || !form.allowed_modules) ? {} : form.allowed_modules;
+                const activeRoleId = currentObj[m];
+                
+                return (
+                  <div key={m} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: activeRoleId ? 'var(--accent-dim)' : 'var(--bg3)', border: `2px solid ${activeRoleId ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 8, transition: 'all 0.15s' }}>
+                    <div style={{ fontSize: 13, fontWeight: activeRoleId ? 700 : 500, color: activeRoleId ? 'var(--accent)' : 'var(--text)', textTransform: 'capitalize' }}>
+                      {m}
+                    </div>
+                    <select className="form-select" value={activeRoleId || ''} onChange={e => setModuleRole(m, e.target.value)} style={{ width: '160px', padding: '6px 10px', fontSize: 12, cursor: 'pointer', background: 'var(--bg)', border: 'none', borderRadius: 4 }}>
+                      <option value="">— No Access —</option>
+                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+
           <div style={{ marginTop: 16 }}>
             <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
               <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />

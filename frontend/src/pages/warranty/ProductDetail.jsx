@@ -1,17 +1,24 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { Loader, Modal, Badge } from '../../components/Shared';
-import { useStages, useUsers } from '../../hooks/useData';
+import { Loader, Badge, Modal } from '../../components/Shared';
 import { useAuth } from '../../hooks/useAuth';
+import { useStages } from '../../hooks/useData';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check } from 'lucide-react';
-const empty = { customer_name: '', vehicle_number: '', vehicle_make: '', vehicle_model: '', problem_description: '', stage_id: '', staff_id: '', notes: '', custom_data: {} };
+import { ArrowLeft, Save, Plus, Pencil, Trash2, Package, Settings, Upload, Download, Eye, X, FileText, Check } from 'lucide-react';
 
+const UNITS = ['months','years'];
+const WARRANTY_STATUS = {
+  not_started: { label:'Not Started', color:'var(--text3)' },
+  active:      { label:'Active',      color:'var(--green)' },
+  expired:     { label:'Expired',     color:'var(--red)' },
+};
 const FIELD_TYPES = ['text','number','date','textarea','selection','boolean','checkbox','file'];
 const WIDTH_OPTIONS = [{value:'full',label:'Full Row'},{value:'half',label:'Half Row'},{value:'quarter',label:'Quarter Row'}];
+const emptyForm = { title:'', name:'', serial_number:'', bom_id:'', stage_id: '', warranty_period:0, warranty_unit:'months', notes:'', custom_data:{} };
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
+
 function FileField({ field, value, onChange }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef();
@@ -49,6 +56,7 @@ function FileField({ field, value, onChange }) {
     </div>
   );
 }
+
 function CheckboxField({ field, value, onChange }) {
   const selected = Array.isArray(value) ? value : [];
   const toggle = (opt) => selected.includes(opt) ? onChange(selected.filter(o=>o!==opt)) : onChange([...selected,opt]);
@@ -64,6 +72,7 @@ function CheckboxField({ field, value, onChange }) {
     </div>
   );
 }
+
 function FieldInput({ field, value, onChange }) {
   const v = value ?? (field.field_type==='boolean' ? false : field.field_type==='checkbox' ? [] : '');
   switch(field.field_type) {
@@ -77,6 +86,7 @@ function FieldInput({ field, value, onChange }) {
     default: return <input className="form-input" type="text" placeholder={field.placeholder} value={v} onChange={e=>onChange(e.target.value)}/>;
   }
 }
+
 function isVisible(field, customData) {
   if (!field.visibility_rule) return true;
   const { field:rf, operator, value:rv } = field.visibility_rule;
@@ -84,6 +94,7 @@ function isVisible(field, customData) {
   if (operator==='equals') return Array.isArray(val) ? val.includes(rv) : String(val ?? '') === String(rv ?? '');
   return val!==undefined&&val!==''&&val!==false&&val!==null&&!(Array.isArray(val)&&val.length===0);
 }
+
 function FieldEditor({ field, tabs, stages, stageRules, onSave, onClose }) {
   const [f, setF] = useState({ ...emptyField, ...field });
   const [optInput, setOptInput] = useState('');
@@ -221,6 +232,7 @@ function FieldEditor({ field, tabs, stages, stageRules, onSave, onClose }) {
     </Modal>
   );
 }
+
 function TabEditor({ tab, onSave, onClose }) {
   const [name, setName] = useState(tab?.name||'');
   return (
@@ -234,17 +246,16 @@ function TabEditor({ tab, onSave, onClose }) {
   );
 }
 
-export default function ServiceForm() {
+export default function ProductDetail() {
   const { id } = useParams();
   const isNew = id === 'new';
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.is_superadmin;
-  const [form, setForm] = useState(empty);
+  const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
-  const stages = useStages('service');
-  const users = useUsers();
+  const [boms, setBoms] = useState([]);
   const [tabs, setTabs] = useState([]);
   const [stageRules, setStageRules] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
@@ -252,18 +263,25 @@ export default function ServiceForm() {
   const [fieldModal, setFieldModal] = useState(null);
   const [tabModal, setTabModal] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const loadTabs = useCallback(() => api.get('/studio/layout/service/tabs').then(r => setTabs(r.data)), []);
-  const loadStageRules = useCallback(() => api.get('/studio/layout/service/stage-rules').then(r => setStageRules(r.data)), []);
+  const [recentlySaved, setRecentlySaved] = useState(false);
+
+  const stages = useStages('warranty');
+
+  const loadTabs = useCallback(() => api.get('/studio/layout/warranty/tabs').then(r => setTabs(r.data)), []);
+  const loadStageRules = useCallback(() => api.get('/studio/layout/warranty/stage-rules').then(r => setStageRules(r.data)), []);
+
   useEffect(() => {
+    api.get('/warranty/boms').then(r=>setBoms(r.data));
     loadTabs();
     loadStageRules();
     if (!isNew) {
-      api.get(`/service/${id}`).then(r => {
-        setForm({ ...empty, ...r.data, custom_data: r.data.custom_data || {} });
+      api.get(`/warranty/products/${id}`).then(r => {
+        setForm({ ...emptyForm, ...r.data, custom_data: r.data.custom_data || {} });
         setLoading(false);
       });
     }
   }, [id, isNew, loadTabs, loadStageRules]);
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => {
     setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));
@@ -275,16 +293,40 @@ export default function ServiceForm() {
       if (isMatch) set('stage_id', parseInt(rule.stage_id));
     }
   };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const payload = { ...form, stage_id: form.stage_id || null, bom_id: form.bom_id || null };
+      if (isNew) {
+        const r = await api.post('/warranty/products', payload);
+        toast.success('✓ Product created successfully!');
+        navigate(`/warranty/products/${r.data.id}`);
+      } else {
+        await api.put(`/warranty/products/${id}`, payload);
+        toast.success('✓ Saved successfully!');
+        setRecentlySaved(true);
+        setTimeout(() => setRecentlySaved(false), 3000);
+      }
+    } catch(e) {
+      console.error('Save error:', e);
+      toast.error(e.response?.data?.detail || 'Failed to save');
+    }
+    finally { setSaving(false); }
+  };
+
   const saveTab = async (name) => {
     if (!name.trim()) return;
     if (tabModal?.id) await api.put(`/studio/layout/tabs/${tabModal.id}`, { name, sort_order:tabModal.sort_order||0 });
-    else await api.post('/studio/layout/service/tabs', { name, sort_order:tabs.length });
+    else await api.post('/studio/layout/warranty/tabs', { name, sort_order:tabs.length });
     toast.success('Tab saved'); setTabModal(null); loadTabs();
   };
+
   const deleteTab = async (tid) => {
     await api.delete(`/studio/layout/tabs/${tid}`);
     toast.success('Deleted'); setDeleteConfirm(null); loadTabs();
   };
+
   const saveField = async (f) => {
     const stageRule = f._stageRule;
     const stageRuleOp = f._stageRuleOp || 'has_value';
@@ -293,91 +335,116 @@ export default function ServiceForm() {
     
     if (!payload.tab_id) payload.tab_id = fieldModal?.tabId||null;
     if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
-    else await api.post('/studio/layout/service/fields', payload);
+    else await api.post('/studio/layout/warranty/fields', payload);
     
     if (stageRule) {
-      await api.post('/studio/layout/service/stage-rules', { field_name: payload.field_name, stage_id: parseInt(stageRule), condition_operator: stageRuleOp, condition_value: stageRuleOp === 'equals' ? stageRuleVal : null });
+      await api.post('/studio/layout/warranty/stage-rules', {
+        field_name: payload.field_name,
+        stage_id: parseInt(stageRule),
+        condition_operator: stageRuleOp,
+        condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
+      });
     } else {
       const existing = stageRules.find(r => r.field_name === payload.field_name);
       if (existing) await api.delete(`/studio/layout/stage-rules/${existing.id}`);
     }
     toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
   };
+
   const deleteField = async (fid) => {
     await api.delete(`/studio/layout/fields/${fid}`);
     toast.success('Deleted'); setDeleteConfirm(null); loadTabs(); loadStageRules();
   };
-  const save = async () => {
-    setSaving(true);
-    try {
-      const payload = { ...form, stage_id: form.stage_id || null, staff_id: form.staff_id || null };
-      if (isNew) { const r = await api.post('/service/', payload); toast.success('✓ Created successfully!', { duration: 4000 }); navigate(`/service/${r.data.id}`); }
-      else { const response = await api.put(`/service/${id}`, payload); console.log('Save response:', response.status); toast.success('✓ Saved successfully!', { duration: 4000 }); }
-    } catch(e) { console.error('Save error:', e); toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); }
-    finally { setSaving(false); }
-  };
-  if (loading) return <Layout title="Service"><Loader /></Layout>;
+
+  if (loading) return <Layout title="Product"><Loader/></Layout>;
+
   const currentTab = tabs[activeTab];
-  const colSpan = { full: '1/-1', half: 'span 2', quarter: 'span 1' };
+  const currentBOM = boms.find(b=>b.id===form.bom_id);
+  const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
+
   return (
-    <Layout title={isNew ? 'New Service Request' : `Service — ${form.reference || ''}`}>
+    <Layout title={isNew?'New Product':form.title||form.name||'Product'}>
       <div className="toolbar">
-        <button className="btn btn-ghost" onClick={() => navigate('/service')}><ArrowLeft size={15} /> Back</button>
-        {!isNew && form.reference && <span className="ref-text" style={{ fontSize: 14 }}>{form.reference}</span>}
-        {stages.length > 0 && (
-          <div className="flex gap-2" style={{ marginLeft: 16 }}>
-            {stages.map(s => (
-              <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => set('stage_id', s.id)}
-                style={form.stage_id === s.id ? { background: s.color, borderColor: s.color, color: 'white' } : { borderColor: s.color, color: s.color }}>
-                {s.name}
-              </button>
-            ))}
+        <button className="btn btn-ghost" onClick={()=>navigate('/warranty/products')}><ArrowLeft size={15}/> Back</button>
+        
+        {!isNew && stages.length > 0 && (
+          <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 0, padding: "10px 0", overflowX: "visible", whiteSpace: "nowrap", alignItems: "center", marginLeft: 16 }}>
+            {stages.map((s) => {
+              const isCurrent = form.stage_id === s.id;
+              return (
+                <div 
+                  key={s.id}
+                  onClick={() => isAdmin && set('stage_id', s.id)}
+                  style={{
+                    display: "flex", alignItems: "center", 
+                    padding: isCurrent ? "12px 32px" : "8px 20px", 
+                    borderRadius: "100px",
+                    cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
+                    background: isCurrent ? s.color : s.color + "15",
+                    color: isCurrent ? "#fff" : s.color,
+                    fontSize: isCurrent ? "16px" : "12px", 
+                    fontFamily: "inherit", fontWeight: 800,
+                    textTransform: "uppercase", letterSpacing: "1px",
+                    boxShadow: isCurrent ? `0 8px 24px ${s.color}60` : "none",
+                    opacity: isCurrent ? 1 : 0.6,
+                    border: "1px solid " + (isCurrent ? s.color : "transparent"),
+                    whiteSpace: "nowrap",
+                    flexShrink: 0
+                  }}
+                >
+                  {s.name}
+                </div>
+              );
+            })}
           </div>
         )}
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
+
+        <div className="toolbar-right" style={{ display:'flex', gap:8 }}>
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}
               style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
               <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
           )}
-          <button className="btn btn-primary" onClick={save} disabled={saving}>
-            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <Save size={14} />} Save
+          <button className="btn" 
+            onClick={save} 
+            disabled={saving || recentlySaved}
+            style={{ 
+              background: recentlySaved ? 'var(--green)' : 'var(--accent)',
+              color: 'white',
+              borderColor: recentlySaved ? 'var(--green)' : 'var(--accent)'
+            }}
+          >
+            {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14}/> Save</>}
           </button>
         </div>
       </div>
+
       <div className="detail-layout">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card">
+            <div className="detail-section-title">Core Information</div>
             <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Customer Name *</label>
-                <input className="form-input" value={form.customer_name || ''} onChange={e => set('customer_name', e.target.value)} />
-              </div>
-              <div className="form-grid form-grid-2">
-                <div className="form-group">
-                  <label className="form-label">Vehicle Number</label>
-                  <input className="form-input" value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Vehicle Make</label>
-                  <input className="form-input" value={form.vehicle_make || ''} onChange={e => set('vehicle_make', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Vehicle Model</label>
-                  <input className="form-input" value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} />
-                </div>
-              </div>
-              <div className="form-group">
-                <label className="form-label">Problem Description</label>
-                <textarea className="form-textarea" value={form.problem_description || ''} onChange={e => set('problem_description', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Notes</label>
-                <textarea className="form-textarea" value={form.notes || ''} onChange={e => set('notes', e.target.value)} />
-              </div>
+               <div className="form-group">
+                 <label className="form-label">Product Name *</label>
+                 <input className="form-input" value={form.name || ''} onChange={e => set('name', e.target.value)} />
+               </div>
+               <div className="form-grid form-grid-2">
+                 <div className="form-group">
+                   <label className="form-label">Serial Number *</label>
+                   <input className="form-input" value={form.serial_number || ''} onChange={e => set('serial_number', e.target.value)} />
+                 </div>
+                 <div className="form-group">
+                   <label className="form-label">BOM / Model</label>
+                   <select className="form-select" value={form.bom_id || ''} onChange={e => set('bom_id', parseInt(e.target.value) || null)}>
+                     <option value="">— Select BOM —</option>
+                     {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                   </select>
+                 </div>
+               </div>
             </div>
           </div>
+
           {tabs.length > 0 && (
             <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)' }}>
               {tabs.map((t,i) => (
@@ -397,11 +464,7 @@ export default function ServiceForm() {
               {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
             </div>
           )}
-          {!tabs.length && editLayout && (
-            <div style={{ marginBottom:8 }}>
-              <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>
-            </div>
-          )}
+
           {currentTab && (
             <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
@@ -425,31 +488,31 @@ export default function ServiceForm() {
                     </button>
                   </div>
                 )}
-                {!(currentTab.fields || []).length && !editLayout && <p className="text-muted text-sm" style={{ gridColumn:'1/-1' }}>No fields in this tab.</p>}
               </div>
             </div>
           )}
         </div>
+
         <div className="card" style={{ alignSelf: 'start' }}>
-          <div className="detail-section-title">Assignment</div>
+          <div className="detail-section-title">Warranty Status</div>
           <div className="form-grid">
             <div className="form-group">
-              <label className="form-label">Stage</label>
-              <select className="form-select" value={form.stage_id || ''} onChange={e => set('stage_id', parseInt(e.target.value) || null)}>
-                <option value="">— Select —</option>
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
+              <label className="form-label">Period</label>
+              <div style={{ display:'flex', gap:8 }}>
+                <input className="form-input" type="number" style={{ width:80 }} value={form.warranty_period} onChange={e=>set('warranty_period',parseInt(e.target.value)||0)}/>
+                <select className="form-select" value={form.warranty_unit} onChange={e=>set('warranty_unit',e.target.value)}>
+                  {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
+                </select>
+              </div>
             </div>
             <div className="form-group">
-              <label className="form-label">Assigned Staff</label>
-              <select className="form-select" value={form.staff_id || ''} onChange={e => set('staff_id', parseInt(e.target.value) || null)}>
-                <option value="">— Unassigned —</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
+               <label className="form-label">Notes</label>
+               <textarea className="form-textarea" value={form.notes||''} onChange={e=>set('notes',e.target.value)} placeholder="Warranty specific notes..."/>
             </div>
           </div>
         </div>
       </div>
+      
       {tabModal !== null && <TabEditor tab={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal !== null && <FieldEditor field={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {deleteConfirm && (

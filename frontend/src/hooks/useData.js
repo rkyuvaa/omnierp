@@ -5,19 +5,32 @@ export function useList(endpoint, params = {}) {
   const [items, setItems] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [stageCounts, setStageCounts] = useState(null);
 
   const load = useCallback(async (extra = {}) => {
     setLoading(true);
     try {
-      const r = await api.get(endpoint, { params: { ...params, ...extra } });
-      if (r.data.items !== undefined) { setItems(r.data.items); setTotal(r.data.total); }
-      else { setItems(r.data); setTotal(r.data.length); }
+      const r = await api.get(endpoint, { params: { skip: (page - 1) * 50, limit: 50, ...params, ...extra } });
+      if (r.data.items !== undefined) { 
+        setItems(r.data.items); 
+        setTotal(r.data.total); 
+      } else { 
+        setItems(r.data); 
+        if (r.data.length || r.data.length === 0) setTotal(r.data.length); 
+      }
+      
+      if (r.data.stage_counts !== undefined) { 
+        setStageCounts(r.data.stage_counts); 
+      } else {
+        setStageCounts(null);
+      }
     } finally { setLoading(false); }
-  }, [endpoint]);
+  }, [endpoint, page]);
 
   useEffect(() => { load(); }, [load]);
 
-  return { items, total, loading, reload: load };
+  return { items, total, loading, reload: load, stageCounts , page, setPage};
 }
 
 export function useStages(module) {
@@ -28,7 +41,7 @@ export function useStages(module) {
 
 export function useUsers() {
   const [users, setUsers] = useState([]);
-  useEffect(() => { api.get('/users/').then(r => setUsers(r.data)).catch(() => {}); }, []);
+  useEffect(() => { api.get('/users').then(r => setUsers(r.data)).catch(() => {}); }, []);
   return users;
 }
 

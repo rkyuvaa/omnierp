@@ -1,82 +1,168 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Layout from '../../components/Layout';
-import { Modal, Confirm, Badge } from '../../components/Shared';
+import { Modal, Confirm, Badge, Loader } from '../../components/Shared';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, GripVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, RotateCw, Settings, Layers, GitMerge, ChevronRight } from 'lucide-react';
 
-const MODULES = ['crm', 'installation', 'service'];
-const FIELD_TYPES = ['text', 'number', 'date', 'selection', 'boolean'];
-const emptyField = { module: 'crm', field_name: '', field_label: '', field_type: 'text', options: [], required: false, sort_order: 0 };
+const MODULES = ['crm', 'installation', 'service', 'warranty', 'konwertcare'];
+const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'boolean', 'checkbox', 'file'];
+
+const emptyTab = { name: '', sort_order: 0 };
+const emptyField = { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', visibility_rule: null, sort_order: 0 };
 const emptyStage = { module: 'crm', name: '', color: '#6366f1', sort_order: 0, is_final_win: false, is_final_lost: false };
 const emptySeq = { module: 'crm', prefix: '', suffix: '', padding: 4 };
 
-function FieldModal({ initial, onSave, onClose }) {
-  const [form, setForm] = useState(initial);
-  const [optInput, setOptInput] = useState('');
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+// ── Modals ───────────────────────────────────────────────────
 
-  const addOpt = () => {
-    if (!optInput.trim()) return;
-    set('options', [...(form.options || []), optInput.trim()]);
-    setOptInput('');
+function TabModal({ initial, onSave, onClose }) {
+  const [name, setName] = useState(initial?.name || '');
+  return (
+    <Modal title={initial?.id ? 'Edit Tab' : 'New Tab'} onClose={onClose}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave({ ...initial, name })}>Save Tab</button></>}>
+      <div className="form-group">
+        <label className="form-label">Tab Name *</label>
+        <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Technical Specs" autoFocus />
+      </div>
+    </Modal>
+  );
+}
+
+function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose }) {
+  const [f, setF] = useState({ ...emptyField, ...initial });
+  const [optInput, setOptInput] = useState('');
+  
+  const [stageRuleOp, setStageRuleOp] = useState('has_value');
+  const [stageRuleStageId, setStageRuleStageId] = useState('');
+  const [stageRuleVal, setStageRuleVal] = useState('');
+
+  useEffect(() => {
+    if (f.field_name && stageRules) {
+      const rule = stageRules.find(r => r.field_name === f.field_name);
+      if (rule) {
+        setStageRuleStageId(rule.stage_id);
+        setStageRuleOp(rule.condition_operator);
+        setStageRuleVal(rule.condition_value || '');
+      }
+    }
+  }, [f.field_name, stageRules]);
+
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const needsOptions = ['selection', 'checkbox'].includes(f.field_type);
+  const allOtherFields = tabs.flatMap(t => t.fields || []).filter(x => x.field_name !== f.field_name);
+
+  const handleSave = () => {
+    if (!f.field_label || !f.field_name) return toast.error('Label and Name are required');
+    onSave({ 
+      ...f, 
+      _stageRule: stageRuleStageId, 
+      _stageRuleOp: stageRuleOp, 
+      _stageRuleVal: stageRuleVal 
+    });
   };
-  const removeOpt = o => set('options', form.options.filter(x => x !== o));
 
   return (
-    <Modal title={form.id ? 'Edit Field' : 'New Custom Field'} onClose={onClose}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(form)}>Save</button></>}>
+    <Modal title={f.id ? 'Edit Field' : 'New Field'} onClose={onClose} large
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handleSave}>Save Field</button></>}>
       <div className="form-grid">
-        <div className="form-grid form-grid-2">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div className="form-group">
-            <label className="form-label">Module</label>
-            <select className="form-select" value={form.module} onChange={e => set('module', e.target.value)}>
-              {MODULES.map(m => <option key={m} value={m}>{m}</option>)}
-            </select>
+            <label className="form-label">Field Label *</label>
+            <input className="form-input" value={f.field_label} onChange={e => {
+              set('field_label', e.target.value);
+              if (!f.id) set('field_name', e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''));
+            }} />
           </div>
           <div className="form-group">
-            <label className="form-label">Field Type</label>
-            <select className="form-select" value={form.field_type} onChange={e => set('field_type', e.target.value)}>
+            <label className="form-label">Field Key (Permanent)</label>
+            <input className="form-input" value={f.field_name} onChange={e => set('field_name', e.target.value)} disabled={!!f.id} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Type</label>
+            <select className="form-select" value={f.field_type} onChange={e => set('field_type', e.target.value)}>
               {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
             </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Field Name (internal key)</label>
-            <input className="form-input" value={form.field_name} onChange={e => set('field_name', e.target.value.toLowerCase().replace(/\s+/g, '_'))} placeholder="e.g. warranty_period" />
+            <label className="form-label">Width</label>
+            <select className="form-select" value={f.width} onChange={e => set('width', e.target.value)}>
+              <option value="full">Full Row</option>
+              <option value="half">Half Row</option>
+              <option value="quarter">Quarter Row</option>
+            </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Field Label (display)</label>
-            <input className="form-input" value={form.field_label} onChange={e => set('field_label', e.target.value)} placeholder="e.g. Warranty Period" />
+            <label className="form-label">Tab</label>
+            <select className="form-select" value={f.tab_id || ''} onChange={e => set('tab_id', parseInt(e.target.value) || null)}>
+              <option value="">— No Tab —</option>
+              {tabs.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
           </div>
           <div className="form-group">
-            <label className="form-label">Sort Order</label>
-            <input className="form-input" type="number" value={form.sort_order} onChange={e => set('sort_order', parseInt(e.target.value) || 0)} />
-          </div>
-          <div className="form-group" style={{ justifyContent: 'center' }}>
-            <label className="flex items-center gap-2" style={{ cursor: 'pointer', marginTop: 24 }}>
-              <input type="checkbox" checked={form.required} onChange={e => set('required', e.target.checked)} />
-              <span className="form-label" style={{ marginBottom: 0 }}>Required</span>
-            </label>
+            <label className="form-label">Placeholder</label>
+            <input className="form-input" value={f.placeholder || ''} onChange={e => set('placeholder', e.target.value)} />
           </div>
         </div>
-        {form.field_type === 'selection' && (
+
+        <div className="form-group">
+          <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+            <input type="checkbox" checked={f.required} onChange={e => set('required', e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
+            <span className="form-label" style={{ margin: 0 }}>Required field</span>
+          </label>
+        </div>
+
+        {needsOptions && (
           <div className="form-group">
             <label className="form-label">Options</label>
-            <div className="flex gap-2 mb-4">
-              <input className="form-input" value={optInput} onChange={e => setOptInput(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addOpt()} placeholder="Add option..." />
-              <button className="btn btn-ghost" onClick={addOpt}><Plus size={14} /></button>
+            <div className="flex gap-2 mb-2">
+              <input className="form-input" placeholder="Add option..." value={optInput} onChange={e => setOptInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && (set('options', [...f.options, optInput]), setOptInput(''))} />
+              <button className="btn btn-ghost" onClick={() => (set('options', [...f.options, optInput]), setOptInput(''))}>+</button>
             </div>
             <div className="flex gap-2" style={{ flexWrap: 'wrap' }}>
-              {(form.options || []).map(o => (
-                <span key={o} className="badge" style={{ background: 'var(--bg3)', color: 'var(--text)', gap: 6 }}>
-                  {o}
-                  <button onClick={() => removeOpt(o)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)', padding: 0, lineHeight: 1 }}>×</button>
-                </span>
+              {f.options.map((o, i) => (
+                <Badge key={i} color="var(--bg3)" style={{ color: 'var(--text)', gap: 6 }}>
+                  {o} <button onClick={() => set('options', f.options.filter((_, j) => i !== j))} style={{ border: 'none', background: 'none', color: 'var(--red)', cursor: 'pointer' }}>×</button>
+                </Badge>
               ))}
             </div>
           </div>
         )}
+
+        <div className="form-group">
+          <label className="form-label">Visibility Logic (Show only when...)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <select className="form-select" value={f.visibility_rule?.field || ''} onChange={e => set('visibility_rule', e.target.value ? { field: e.target.value, operator: 'has_value', value: '' } : null)}>
+              <option value="">Always visible</option>
+              {allOtherFields.map(o => <option key={o.field_name} value={o.field_name}>{o.field_label}</option>)}
+            </select>
+            {f.visibility_rule?.field && (
+              <select className="form-select" value={f.visibility_rule.operator} onChange={e => set('visibility_rule', { ...f.visibility_rule, operator: e.target.value })}>
+                <option value="has_value">has value</option>
+                <option value="equals">equals value</option>
+              </select>
+            )}
+          </div>
+          {f.visibility_rule?.operator === 'equals' && (
+            <input className="form-input mt-2" placeholder="Value to match..." value={f.visibility_rule.value} onChange={e => set('visibility_rule', { ...f.visibility_rule, value: e.target.value })} />
+          )}
+        </div>
+
+        <div className="form-group" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+          <label className="form-label" style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 6 }}><GitMerge size={14}/> Auto-Move to Stage</label>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <select className="form-select" value={stageRuleOp} onChange={e => setStageRuleOp(e.target.value)}>
+              <option value="has_value">when field is filled</option>
+              <option value="equals">when field equals</option>
+            </select>
+            <select className="form-select" value={stageRuleStageId} onChange={e => setStageRuleStageId(e.target.value)}>
+              <option value="">No auto-move</option>
+              {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+          </div>
+          {stageRuleOp === 'equals' && stageRuleStageId && (
+            <input className="form-input mt-2" placeholder="Value to trigger..." value={stageRuleVal} onChange={e => setStageRuleVal(e.target.value)} />
+          )}
+        </div>
       </div>
     </Modal>
   );
@@ -89,12 +175,6 @@ function StageModal({ initial, onSave, onClose }) {
     <Modal title={form.id ? 'Edit Stage' : 'New Stage'} onClose={onClose}
       footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(form)}>Save</button></>}>
       <div className="form-grid form-grid-2">
-        <div className="form-group">
-          <label className="form-label">Module</label>
-          <select className="form-select" value={form.module} onChange={e => set('module', e.target.value)}>
-            {MODULES.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
-        </div>
         <div className="form-group">
           <label className="form-label">Stage Name</label>
           <input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} />
@@ -111,13 +191,13 @@ function StageModal({ initial, onSave, onClose }) {
           <input className="form-input" type="number" value={form.sort_order} onChange={e => set('sort_order', parseInt(e.target.value) || 0)} />
         </div>
         <div className="form-group">
-          <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+          <label className="flex items-center gap-2" style={{ cursor: 'pointer', marginTop: 24 }}>
             <input type="checkbox" checked={form.is_final_win} onChange={e => set('is_final_win', e.target.checked)} />
             <span className="form-label" style={{ marginBottom: 0 }}>Final Win Stage</span>
           </label>
         </div>
         <div className="form-group">
-          <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+          <label className="flex items-center gap-2" style={{ cursor: 'pointer', marginTop: 24 }}>
             <input type="checkbox" checked={form.is_final_lost} onChange={e => set('is_final_lost', e.target.checked)} />
             <span className="form-label" style={{ marginBottom: 0 }}>Final Lost Stage</span>
           </label>
@@ -127,190 +207,257 @@ function StageModal({ initial, onSave, onClose }) {
   );
 }
 
+// ── Main Page ────────────────────────────────────────────────
+
 export default function Studio() {
-  const [tab, setTab] = useState('fields');
-  const [fields, setFields] = useState([]);
+  const [tab, setTab] = useState('layout'); 
+  const [module, setModule] = useState('crm');
+  const [tabs, setTabs] = useState([]);
   const [stages, setStages] = useState([]);
-  const [seqForms, setSeqForms] = useState({ crm: { ...emptySeq, module: 'crm' }, installation: { ...emptySeq, module: 'installation' }, service: { ...emptySeq, module: 'service' } });
+  const [stageRules, setStageRules] = useState([]);
+  const [sequence, setSequence] = useState(null);
+  const [loading, setLoading] = useState(true);
+  
+  const [activeTabIdx, setActiveTabIdx] = useState(0);
+  const [tabModal, setTabModal] = useState(null);
   const [fieldModal, setFieldModal] = useState(null);
   const [stageModal, setStageModal] = useState(null);
   const [deleting, setDeleting] = useState(null);
-  const [moduleFilter, setModuleFilter] = useState('crm');
 
-  const loadFields = () => Promise.all(MODULES.map(m => api.get(`/studio/fields/${m}`))).then(rs => setFields(rs.flatMap(r => r.data)));
-  const loadStages = () => Promise.all(MODULES.map(m => api.get(`/studio/stages/${m}`))).then(rs => setStages(rs.flatMap(r => r.data)));
-  const loadSeqs = () => MODULES.forEach(m => api.get(`/studio/sequence/${m}`).then(r => { if (r.data?.module) setSeqForms(s => ({ ...s, [m]: r.data })); }));
-
-  useEffect(() => { loadFields(); loadStages(); loadSeqs(); }, []);
-
-  const saveField = async (form) => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
     try {
-      if (form.id) await api.put(`/studio/fields/${form.id}`, form);
-      else await api.post('/studio/fields', form);
-      toast.success('Field saved'); setFieldModal(null); loadFields();
-    } catch { toast.error('Error'); }
+      const [tabsRes, stagesRes, rulesRes, seqRes] = await Promise.all([
+        api.get(`/studio/layout/${module}/tabs`),
+        api.get(`/studio/stages/${module}`),
+        api.get(`/studio/layout/${module}/stage-rules`),
+        api.get(`/studio/sequence/${module}`)
+      ]);
+      setTabs(tabsRes.data);
+      setStages(stagesRes.data);
+      setStageRules(rulesRes.data);
+      setSequence(seqRes.data);
+      if (activeTabIdx >= tabsRes.data.length && tabsRes.data.length > 0) setActiveTabIdx(0);
+    } catch (e) {
+      toast.error('Failed to sync Studio');
+    } finally {
+      setLoading(false);
+    }
+  }, [module, activeTabIdx]);
+
+  useEffect(() => { loadData(); }, [loadData]);
+
+  // CRUD Handlers
+  const saveTab = async (form) => {
+    try {
+      if (form.id) await api.put(`/studio/layout/tabs/${form.id}`, form);
+      else await api.post(`/studio/layout/${module}/tabs`, form);
+      toast.success('Tab updated'); setTabModal(null); loadData();
+    } catch { toast.error('Check server logs'); }
+  };
+
+  const saveField = async (f) => {
+    const sr = f._stageRule; const sro = f._stageRuleOp; const srv = f._stageRuleVal;
+    const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
+    try {
+      let savedF;
+      if (f.id) savedF = (await api.put(`/studio/layout/fields/${f.id}`, payload)).data;
+      else savedF = (await api.post(`/studio/layout/${module}/fields`, payload)).data;
+      
+      if (sr) {
+        await api.post(`/studio/layout/${module}/stage-rules`, {
+          field_name: savedF.field_name, stage_id: parseInt(sr),
+          condition_operator: sro, condition_value: sro === 'equals' ? srv : null
+        });
+      } else {
+        const existing = stageRules.find(r => r.field_name === savedF.field_name);
+        if (existing) await api.delete(`/studio/layout/stage-rules/${existing.id}`);
+      }
+      toast.success('Field saved'); setFieldModal(null); loadData();
+    } catch { toast.error('Error saving field'); }
   };
 
   const saveStage = async (form) => {
     try {
       if (form.id) await api.put(`/studio/stages/${form.id}`, form);
-      else await api.post('/studio/stages', form);
-      toast.success('Stage saved'); setStageModal(null); loadStages();
+      else await api.post('/studio/stages', { ...form, module });
+      toast.success('Stage updated'); setStageModal(null); loadData();
+    } catch { toast.error('Error'); }
+  };
+
+  const saveSequence = async () => {
+    try {
+      await api.post(`/studio/sequence/${module}`, sequence);
+      toast.success('Sequence saved');
     } catch { toast.error('Error'); }
   };
 
   const confirmDelete = async () => {
     const { type, id } = deleting;
-    if (type === 'field') await api.delete(`/studio/fields/${id}`);
-    else await api.delete(`/studio/stages/${id}`);
-    toast.success('Deleted'); setDeleting(null);
-    if (type === 'field') loadFields(); else loadStages();
-  };
-
-  const saveSeq = async (module) => {
     try {
-      await api.post('/studio/sequence', seqForms[module]);
-      toast.success('Sequence saved');
-    } catch { toast.error('Error'); }
+      if (type === 'tab') await api.delete(`/studio/layout/tabs/${id}`);
+      else if (type === 'field') await api.delete(`/studio/layout/fields/${id}`);
+      else if (type === 'stage') await api.delete(`/studio/stages/${id}`);
+      toast.success('Deleted'); setDeleting(null); loadData();
+    } catch { toast.error('Cannot delete: record in use'); setDeleting(null); }
   };
 
-  const filteredFields = fields.filter(f => f.module === moduleFilter);
-  const filteredStages = stages.filter(s => s.module === moduleFilter);
+  const currentTab = tabs[activeTabIdx];
 
   return (
-    <Layout title="Studio — Customization">
-      <div className="tabs">
-        {['fields', 'stages', 'sequences'].map(t => (
-          <div key={t} className={`tab ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}>
-            {t.charAt(0).toUpperCase() + t.slice(1)}
-          </div>
-        ))}
+    <Layout title="Studio — Layout & Workflow">
+      <div className="flex gap-2 mb-6 items-center bg-white p-2 rounded-xl shadow-sm border border-gray-100">
+        <div style={{ display:'flex', gap:4, background:'var(--bg3)', padding:4, borderRadius:10 }}>
+          {MODULES.map(m => (
+            <button key={m} className={`btn btn-sm ${module === m ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setModule(m)}>
+              {m.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="ml-auto flex gap-2">
+          {['layout', 'stages', 'sequences'].map(t => (
+            <button key={t} className={`btn btn-ghost btn-sm ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}
+              style={tab === t ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </button>
+          ))}
+          <button className="btn btn-ghost btn-sm" onClick={loadData}><RotateCw size={14}/></button>
+        </div>
       </div>
 
-      {/* Module filter */}
-      <div className="flex gap-2 mb-4">
-        {MODULES.map(m => (
-          <button key={m} className="btn btn-ghost btn-sm" onClick={() => setModuleFilter(m)}
-            style={moduleFilter === m ? { background: 'var(--accent)', color: 'white', borderColor: 'var(--accent)' } : {}}>
-            {m.charAt(0).toUpperCase() + m.slice(1)}
-          </button>
-        ))}
-      </div>
-
-      {tab === 'fields' && (
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Custom Fields — {moduleFilter}</span>
-            <button className="btn btn-primary btn-sm" onClick={() => setFieldModal({ ...emptyField, module: moduleFilter })}><Plus size={14} /> Add Field</button>
-          </div>
-          {filteredFields.length === 0 ? (
-            <p className="text-muted text-sm">No custom fields for {moduleFilter}. Add one to extend the module.</p>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Label</th><th>Internal Name</th><th>Type</th><th>Required</th><th>Sort</th><th></th></tr></thead>
-                <tbody>
-                  {filteredFields.map(f => (
-                    <tr key={f.id}>
-                      <td className="fw-600">{f.field_label}</td>
-                      <td><code style={{ fontFamily: 'var(--font-mono, monospace)', fontSize: 12, color: 'var(--accent2)' }}>{f.field_name}</code></td>
-                      <td><Badge color="var(--amber)">{f.field_type}</Badge></td>
-                      <td>{f.required ? <Badge color="var(--green)">Yes</Badge> : <span className="text-muted">No</span>}</td>
-                      <td className="text-muted">{f.sort_order}</td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal(f)}><Pencil size={13} /></button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'field', id: f.id })}><Trash2 size={13} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'stages' && (
-        <div className="card">
-          <div className="card-header">
-            <span className="card-title">Stages — {moduleFilter}</span>
-            <button className="btn btn-primary btn-sm" onClick={() => setStageModal({ ...emptyStage, module: moduleFilter })}><Plus size={14} /> Add Stage</button>
-          </div>
-          {filteredStages.length === 0 ? (
-            <p className="text-muted text-sm">No stages for {moduleFilter}.</p>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Stage Name</th><th>Color</th><th>Sort</th><th>Win</th><th>Lost</th><th></th></tr></thead>
-                <tbody>
-                  {filteredStages.map(s => (
-                    <tr key={s.id}>
-                      <td><Badge color={s.color}>{s.name}</Badge></td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <div style={{ width: 16, height: 16, borderRadius: 4, background: s.color }} />
-                          <code style={{ fontSize: 11, color: 'var(--text2)' }}>{s.color}</code>
-                        </div>
-                      </td>
-                      <td className="text-muted">{s.sort_order}</td>
-                      <td>{s.is_final_win ? <Badge color="var(--green)">Yes</Badge> : '—'}</td>
-                      <td>{s.is_final_lost ? <Badge color="var(--red)">Yes</Badge> : '—'}</td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-sm" onClick={() => setStageModal(s)}><Pencil size={13} /></button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'stage', id: s.id })}><Trash2 size={13} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
-      )}
-
-      {tab === 'sequences' && (
-        <div style={{ display: 'grid', gap: 16 }}>
-          {MODULES.map(m => {
-            const seq = seqForms[m];
-            const setSeq = (k, v) => setSeqForms(s => ({ ...s, [m]: { ...s[m], [k]: v } }));
-            return (
-              <div key={m} className="card">
-                <div className="card-header">
-                  <span className="card-title">Sequence — {m.charAt(0).toUpperCase() + m.slice(1)}</span>
-                  <button className="btn btn-primary btn-sm" onClick={() => saveSeq(m)}>Save</button>
+      {loading ? <div className="card p-12 text-center"><Loader/></div> : (
+        <>
+          {tab === 'layout' && (
+            <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24 }}>
+              {/* Tabs sidebar */}
+              <div>
+                <div className="detail-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  Tabs <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={12}/></button>
                 </div>
-                <div className="form-grid form-grid-2" style={{ maxWidth: 500 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {tabs.map((t, i) => (
+                    <div key={t.id} className={`nav-item ${activeTabIdx === i ? 'active' : ''}`} 
+                      style={{ 
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                        padding: '10px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        background: activeTabIdx === i ? 'var(--accent-dim)' : 'transparent',
+                        color: activeTabIdx === i ? 'var(--accent)' : 'var(--text2)'
+                      }} onClick={() => setActiveTabIdx(i)}>
+                      <span className="flex items-center gap-2"><Layers size={14}/> {t.name}</span>
+                      <div className="flex gap-1">
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 2 }} onClick={e => { e.stopPropagation(); setTabModal(t); }}><Pencil size={11}/></button>
+                        <button className="btn btn-danger btn-sm" style={{ padding: 2 }} onClick={e => { e.stopPropagation(); setDeleting({ type: 'tab', id: t.id, name: t.name }); }}><Trash2 size={11}/></button>
+                      </div>
+                    </div>
+                  ))}
+                  {tabs.length === 0 && <p className="text-muted text-sm italic">No tabs added</p>}
+                </div>
+              </div>
+
+              {/* Fields area */}
+              <div className="card">
+                <div className="card-header">
+                  <span className="card-title">{currentTab ? `Fields in "${currentTab.name}"` : 'Select a tab'}</span>
+                  {currentTab && <button className="btn btn-primary btn-sm" onClick={() => setFieldModal({ tab_id: currentTab.id })}><Plus size={14}/> Add Field</button>}
+                </div>
+                {!currentTab ? <div className="p-8 text-center text-muted">Create or select a tab to manage fields.</div> : (
+                  <div className="table-wrap">
+                    <table>
+                      <thead><tr><th>Label</th><th>Key</th><th>Type</th><th>Width</th><th>Rule</th><th></th></tr></thead>
+                      <tbody>
+                        {currentTab.fields.map(f => (
+                          <tr key={f.id}>
+                            <td className="fw-600">{f.field_label} {f.required && <span style={{color:'var(--red)'}}>*</span>}</td>
+                            <td><code>{f.field_name}</code></td>
+                            <td><Badge color="var(--accent-dim)" style={{color:'var(--accent)'}}>{f.field_type}</Badge></td>
+                            <td><span style={{fontSize:11}}>{f.width}</span></td>
+                            <td>{f.visibility_rule ? <Badge color="var(--amber-dim)" style={{color:'var(--amber)'}}>Visible If</Badge> : '—'}</td>
+                            <td>
+                              <div className="flex gap-2">
+                                <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal(f)}><Pencil size={12}/></button>
+                                <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'field', id: f.id, name: f.field_label })}><Trash2 size={12}/></button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                        {currentTab.fields.length === 0 && <tr><td colSpan="6" className="text-center p-8 text-muted">No fields in this tab.</td></tr>}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {tab === 'stages' && (
+            <div className="card">
+              <div className="card-header">
+                <span className="card-title">Workflow Stages — {module.toUpperCase()}</span>
+                <button className="btn btn-primary btn-sm" onClick={() => setStageModal({ module })}><Plus size={14}/> Add Stage</button>
+              </div>
+              <div className="table-wrap">
+                <table>
+                  <thead><tr><th>Order</th><th>Stage Name</th><th>Color</th><th>Final Stage</th><th></th></tr></thead>
+                  <tbody>
+                    {stages.map(s => (
+                      <tr key={s.id}>
+                        <td>{s.sort_order}</td>
+                        <td><Badge color={s.color}>{s.name}</Badge></td>
+                        <td><code>{s.color}</code></td>
+                        <td>
+                          {s.is_final_win && <Badge color="var(--green)">Won</Badge>}
+                          {s.is_final_lost && <Badge color="var(--red)">Lost</Badge>}
+                        </td>
+                        <td>
+                          <div className="flex gap-2">
+                            <button className="btn btn-ghost btn-sm" onClick={() => setStageModal(s)}><Pencil size={12}/></button>
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'stage', id: s.id, name: s.name })}><Trash2 size={12}/></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === 'sequences' && (
+            <div className="card" style={{ maxWidth: 500 }}>
+              <div className="card-header">
+                <span className="card-title">Numbering Sequence — {module.toUpperCase()}</span>
+              </div>
+              <div className="form-grid p-4">
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="form-group">
                     <label className="form-label">Prefix</label>
-                    <input className="form-input" value={seq.prefix || ''} onChange={e => setSeq('prefix', e.target.value)} placeholder="e.g. LEAD" />
+                    <input className="form-input" value={sequence?.prefix || ''} onChange={e => setSequence({ ...sequence, prefix: e.target.value })} placeholder="e.g. KIM-" />
                   </div>
                   <div className="form-group">
                     <label className="form-label">Suffix</label>
-                    <input className="form-input" value={seq.suffix || ''} onChange={e => setSeq('suffix', e.target.value)} placeholder="Optional suffix" />
+                    <input className="form-input" value={sequence?.suffix || ''} onChange={e => setSequence({ ...sequence, suffix: e.target.value })} placeholder="e.g. -2026" />
                   </div>
                   <div className="form-group">
-                    <label className="form-label">Number Padding</label>
-                    <input className="form-input" type="number" min="1" max="8" value={seq.padding || 4} onChange={e => setSeq('padding', parseInt(e.target.value) || 4)} />
-                  </div>
-                  <div className="form-group" style={{ justifyContent: 'flex-end', paddingBottom: 2 }}>
-                    <div style={{ padding: '9px 12px', background: 'var(--bg3)', borderRadius: 'var(--radius-sm)', fontFamily: 'monospace', fontSize: 12, color: 'var(--accent2)' }}>
-                      Preview: {seq.prefix}/{new Date().getFullYear()}/{String(1).padStart(seq.padding || 4, '0')}{seq.suffix}
-                    </div>
+                    <label className="form-label">Leading Zeros</label>
+                    <input className="form-input" type="number" value={sequence?.padding || 4} onChange={e => setSequence({ ...sequence, padding: parseInt(e.target.value) || 4 })} />
                   </div>
                 </div>
+                <div className="mt-4">
+                  <button className="btn btn-primary" onClick={saveSequence}>Save Sequence</button>
+                  <p className="text-muted text-sm mt-4">
+                    Preview: <span className="ref-text">{sequence?.prefix || ''}{'1'.padStart(sequence?.padding || 4, '0')}{sequence?.suffix || ''}</span>
+                  </p>
+                </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          )}
+        </>
       )}
 
-      {fieldModal && <FieldModal initial={fieldModal} onSave={saveField} onClose={() => setFieldModal(null)} />}
+      {tabModal && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {fieldModal && <FieldModal initial={fieldModal} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {stageModal && <StageModal initial={stageModal} onSave={saveStage} onClose={() => setStageModal(null)} />}
-      {deleting && <Confirm message={`Delete this ${deleting.type}?`} onConfirm={confirmDelete} onCancel={() => setDeleting(null)} />}
+      {deleting && <Confirm message={`Delete ${deleting.name}?`} onConfirm={confirmDelete} onCancel={() => setDeleting(null)} />}
     </Layout>
   );
 }

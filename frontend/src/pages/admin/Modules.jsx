@@ -10,7 +10,7 @@ export default function AdminModules() {
   const [loading, setLoading] = useState(true);
 
   const load = () => api.get('/modules/').then(r => setModules(r.data)).finally(() => setLoading(false));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const toggle = async (m) => {
     await api.put(`/modules/${m.id}/toggle`);

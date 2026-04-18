@@ -9,10 +9,11 @@ import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
 export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns }) {
   const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
   const [deleting, setDeleting] = useState(null);
   const stages = useStages(module);
-  const { items, total, loading, reload } = useList(endpoint);
+  const { items, total, loading, reload, stageCounts , page, setPage} = useList(endpoint);
   const navigate = useNavigate();
   const timer = useRef(null);
 
@@ -34,19 +35,50 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
 
   return (
     <Layout title={title}>
-      <div className="toolbar">
+      
+      {stages && stages.length > 0 && (
+        <div className="stage-ribbon" style={{ display: 'flex', gap: 10, paddingBottom: 10, width: '100%', marginBottom: 12, flexWrap: 'wrap' }}>
+          {stages.map(s => { const sc = stageCounts ? (stageCounts[s.id] || 0) : s.count; return (
+            <div key={s.id} onClick={() => handleStage(s.id)}
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, padding: '8px 16px',
+                borderRadius: 24, cursor: 'pointer', whiteSpace: 'nowrap',
+                border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
+                background: stageFilter === s.id ? s.color : (s.color + '15'),
+                color: stageFilter === s.id ? '#ffffff' : s.color,
+                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
+                minWidth: 'max-content'
+              }}>
+              <span style={{ fontSize: 12, fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.name}</span>
+              {sc !== undefined && (
+                <span style={{ fontSize: 12, fontWeight: 600, background: stageFilter === s.id ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)', padding: '1px 8px', borderRadius: 12, color: '#195402' }}>
+                  {sc}
+                </span>
+              )}
+            </div>
+          );})}
+        </div>
+      )}
+      
+      <div className="toolbar" style={{ marginBottom: 16 }}>
         <div className="search-bar">
           <Search size={15} />
           <input placeholder="Search..." value={search} onChange={handleSearch} />
         </div>
-        <div className="stage-filters">
-          {stages.map(s => (
-            <div key={s.id} className={`stage-pill ${stageFilter === s.id ? 'active' : ''}`}
-              style={stageFilter === s.id ? { background: s.color, borderColor: s.color } : { borderColor: s.color, color: s.color }}
-              onClick={() => handleStage(s.id)}>{s.name}</div>
-          ))}
-        </div>
         <div className="toolbar-right">
+          {selected.length > 0 && (
+            <button className="btn btn-danger btn-sm" style={{ fontWeight: 600, letterSpacing: '0.5px' }} onClick={async () => {
+              if(!window.confirm(`Permanently wipe ${selected.length} records off the Global Database?`)) return;
+              try {
+                const results = await Promise.all(selected.map(id => api.delete(`${endpoint}/${id}`)));
+                toast.success('Batch Deletion Process Completed.');
+                setSelected([]); reload();
+              } catch { toast.error('Partial Error: Access Restrictions Hit.'); }
+            }}>
+              DELETE {selected.length} SELECTED
+            </button>
+          )}
           <button className="btn btn-ghost btn-sm" onClick={() => window.open(`${window.location.protocol}//${window.location.hostname}:8000/api${exportPath}`, '_blank')}>
             <Download size={14} /> Export
           </button>
@@ -59,15 +91,21 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
           <span className="card-title">{title}</span>
           <span className="text-muted text-sm">{total} total</span>
         </div>
-        {loading ? <Loader /> : items.length === 0 ? <Empty /> : (
+        {loading ? <Loader /> : items.length === 0 ? <Empty /> : (<>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Reference</th>{columns.map(c => <th key={c.key}>{c.label}</th>)}<th>Stage</th><th>Created</th><th></th></tr></thead>
+              <thead><tr><th>Reference</th><th style={{ width: 40, textAlign: "center" }}>
+<input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} onChange={e => setSelected(e.target.checked ? items.map(i => i.id) : [])} checked={items.length > 0 && selected.length === items.length} />
+</th>
+{columns.map(c => <th key={c.key}>{c.label}</th>)}<th>Stage</th><th>Created</th><th></th></tr></thead>
               <tbody>
                 {items.map(row => (
                   <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
                     <td><span className="ref-text">{row.reference}</span></td>
-                    {columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
+                    <td style={{ width: 40, textAlign: "center" }}>
+<input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} checked={selected.includes(row.id)} onChange={e => { if (e.target.checked) setSelected([...selected, row.id]); else setSelected(selected.filter(id => id !== row.id)); }} />
+</td>
+{columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
                     <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>
                     <td className="text-muted text-sm">{row.created_at?.slice(0,10)}</td>
                     <td onClick={e => e.stopPropagation()}>
@@ -80,7 +118,20 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
                 ))}
               </tbody>
             </table>
-          </div>
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '12px 20px', background: 'var(--bg2)', borderRadius: 16, border: '1px solid var(--border)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
+        <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>
+          Showing up to 50 records per page <span style={{opacity:0.6, marginLeft: 8}}>(Database Total: {total})</span>
+        </span>
+        <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+          <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ padding: '4px 16px', fontWeight: 700, opacity: page === 1 ? 0.3 : 1 }}>← PREVIOUS</button>
+          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary)', border: '2px solid rgba(25,84,2,0.1)', padding: '2px 14px', borderRadius: 20 }}>Page {page} of {Math.max(1, Math.ceil(total / 50))}</span>
+          <button className="btn btn-ghost btn-sm" disabled={items.length < 50} onClick={() => setPage(p => p + 1)} style={{ padding: '4px 16px', fontWeight: 700, opacity: items.length < 50 ? 0.3 : 1 }}>NEXT →</button>
+        </div>
+      </div>
+        </>
+
         )}
       </div>
       {deleting && <Confirm message="Delete this record?" onConfirm={confirmDelete} onCancel={() => setDeleting(null)} />}

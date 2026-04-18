@@ -1,32 +1,63 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { Loader, Badge } from '../../components/Shared';
-import CustomFields from '../../components/CustomFields';
-import { useStages, useUsers, useCustomFields } from '../../hooks/useData';
+import { Loader, Modal } from '../../components/Shared';
+import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Bell, Check } from 'lucide-react';
 
-const empty = { customer_name: '', vehicle_number: '', vehicle_make: '', vehicle_model: '', stage_id: '', technician_id: '', notes: '', custom_data: {} };
+const emptyForm = { customer_name: '', vehicle_number: '', vehicle_make: '', vehicle_model: '', stage_id: '', technician_id: '', notes: '', custom_data: {} };
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
+}
 
 export default function InstallationForm() {
   const { id } = useParams();
   const isNew = id === 'new';
   const navigate = useNavigate();
-  const [form, setForm] = useState(empty);
-  const [loading, setLoading] = useState(!isNew);
+  const { user } = useAuth();
+  const isAdmin = user?.is_superadmin;
+
+  const [form, setForm] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const stages = useStages('installation');
-  const users = useUsers();
-  const customFields = useCustomFields('installation');
+  const [stages, setStages] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [actDesc, setActDesc] = useState('');
+  const [actDue, setActDue] = useState('');
+  const [editLayout, setEditLayout] = useState(false);
+  const [tabs, setTabs] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [tabModal, setTabModal] = useState(null);
+  const [fieldModal, setFieldModal] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [recentlySaved, setRecentlySaved] = useState(false);
+
+  const loadTabs = useCallback(() =>
+    api.get('/studio/layout/installation/tabs').then(r => setTabs(r.data)).catch(() => {}), []);
 
   useEffect(() => {
-    if (!isNew) {
+    api.get('/studio/stages/installation').then(r => setStages(r.data)).catch(() => {});
+    api.get('/users/').then(r => setUsers(r.data)).catch(() => {});
+    loadTabs();
+  }, []);
+
+  useEffect(() => {
+    if (isNew) { setForm({ ...emptyForm }); setLoading(false); }
+    else {
       api.get(`/installation/${id}`).then(r => {
-        setForm({ ...empty, ...r.data, custom_data: r.data.custom_data || {} });
+        setForm({ ...emptyForm, ...r.data });
+        setActivities(r.data.activities || []);
         setLoading(false);
-      });
+      }).catch(() => { toast.error('Not found'); navigate('/installation'); });
     }
   }, [id, isNew]);
 
@@ -37,85 +68,408 @@ export default function InstallationForm() {
     setSaving(true);
     try {
       const payload = { ...form, stage_id: form.stage_id || null, technician_id: form.technician_id || null };
-      if (isNew) { const r = await api.post('/installation/', payload); toast.success('Created'); navigate(`/installation/${r.data.id}`); }
-      else { await api.put(`/installation/${id}`, payload); toast.success('Saved'); }
-    } catch { toast.error('Failed to save'); }
+      if (isNew) {
+        const r = await api.post('/installation/', payload);
+        toast.success('✓ Installation created successfully!', { duration: 4000 });
+        navigate(`/installation/${r.data.id}`);
+      } else {
+        const response = await api.put(`/installation/${id}`, payload);
+        console.log('Save response:', response.status);
+        toast.success('✓ Saved successfully!', { duration: 4000 });
+        setRecentlySaved(true);
+        setTimeout(() => setRecentlySaved(false), 3000);
+      }
+    } catch (e) { 
+      console.error('Save error:', e); 
+      toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); 
+    }
     finally { setSaving(false); }
   };
 
-  if (loading) return <Layout title="Installation"><Loader /></Layout>;
+  const updateStage = async (stageId) => {
+    if (!isAdmin) return;
+    await api.put(`/installation/${id}`, { ...form, stage_id: stageId });
+    set('stage_id', stageId);
+    toast.success('Stage updated');
+  };
+
+  const addActivity = async () => {
+    if (!actDesc.trim()) { toast.error('Enter a description'); return; }
+    try {
+      const r = await api.post('/installation/activities', {
+        installation_id: parseInt(id), description: actDesc, due_date: actDue || null
+      });
+      setActivities(a => [r.data, ...a]);
+      setActDesc(''); setActDue('');
+      toast.success('Activity added');
+    } catch { toast.error('Failed to add activity'); }
+  };
+
+  const markDone = async (aid) => {
+    await api.put(`/installation/activities/${aid}/done`);
+    setActivities(a => a.map(x => x.id === aid ? { ...x, done: true } : x));
+  };
+
+  const saveTab = async (name) => {
+    if (!name.trim()) return;
+    if (tabModal?.id) await api.put(`/studio/layout/tabs/${tabModal.id}`, { name, sort_order: tabModal.sort_order || 0 });
+    else await api.post('/studio/layout/installation/tabs', { name, sort_order: tabs.length });
+    toast.success('Tab saved'); setTabModal(null); loadTabs();
+  };
+
+  const deleteTab = async (tid) => {
+    await api.delete(`/studio/layout/tabs/${tid}`);
+    toast.success('Tab deleted'); setDeleteConfirm(null); setActiveTab(0); loadTabs();
+  };
+
+  const saveField = async (f) => {
+    const payload = { ...f };
+    delete payload._new;
+    if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
+    else await api.post('/studio/layout/installation/fields', { ...payload, tab_id: fieldModal?.tabId });
+    toast.success('Field saved'); setFieldModal(null); loadTabs();
+  };
+
+  const deleteField = async (fid) => {
+    await api.delete(`/studio/layout/fields/${fid}`);
+    toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
+  };
+
+  if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
+
+  const currentTab = tabs[activeTab];
 
   return (
-    <Layout title={isNew ? 'New Installation' : `Installation — ${form.reference || ''}`}>
+    <Layout title={isNew ? 'New Installation' : (form.customer_name || 'Installation')}>
+      {/* Toolbar */}
       <div className="toolbar">
         <button className="btn btn-ghost" onClick={() => navigate('/installation')}><ArrowLeft size={15} /> Back</button>
         {!isNew && form.reference && <span className="ref-text" style={{ fontSize: 14 }}>{form.reference}</span>}
-        {!isNew && stages.length > 0 && (
-          <div className="flex gap-2">
-            {stages.map(s => (
-              <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => set('stage_id', s.id)}
-                style={form.stage_id === s.id ? { background: s.color, borderColor: s.color, color: 'white' } : { borderColor: s.color, color: s.color }}>
-                {s.name}
-              </button>
-            ))}
-          </div>
-        )}
-        <div className="toolbar-right">
-          <button className="btn btn-primary" onClick={save} disabled={saving}>
-            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <Save size={14} />} Save
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
+          {isAdmin && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e => !e)}
+              style={editLayout ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
+              <Settings size={14} /> {editLayout ? 'Exit Layout' : 'Edit Layout'}
+            </button>
+          )}
+          <button className="btn" 
+            onClick={save} 
+            disabled={saving || recentlySaved}
+            style={{ 
+              background: recentlySaved ? 'var(--green)' : 'var(--accent)',
+              color: 'white',
+              borderColor: recentlySaved ? 'var(--green)' : 'var(--accent)'
+            }}
+          >
+            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14} /> Save</>}
           </button>
         </div>
       </div>
 
-      <div className="detail-layout">
-        <div className="card">
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Customer Name *</label>
-              <input className="form-input" value={form.customer_name || ''} onChange={e => set('customer_name', e.target.value)} />
-            </div>
-            <div className="form-grid form-grid-2">
-              <div className="form-group">
+      {/* Stage bar */}
+      {!isNew && stages.length > 0 && (
+        <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20, padding: '10px 0' }}>
+          {stages.map(s => {
+            const isCurrent = form.stage_id === s.id;
+            return (
+              <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
+                style={{
+                  padding: isCurrent ? "12px 32px" : "8px 20px", 
+                  borderRadius: 100,
+                  cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
+                  background: isCurrent ? s.color : (s.color + "15"),
+                  color: isCurrent ? "#fff" : s.color,
+                  fontSize: isCurrent ? "16px" : "12px", 
+                  fontWeight: 800,
+                  textTransform: "uppercase", letterSpacing: "1px",
+                  boxShadow: isCurrent ? `0 8px 24px ${s.color}60` : "none",
+                  opacity: isCurrent ? 1 : 0.65,
+                  border: `1px solid ${isCurrent ? s.color : "transparent"}`,
+                  flexShrink: 0,
+                }}>
+                {s.name}
+              </div>
+            );
+          })}
+          {!isAdmin && <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 10, opacity: 0.7, alignSelf: 'center' }}>[View Only]</span>}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+        {/* LEFT */}
+        <div>
+          {/* Core fields */}
+          <div className="card mb-4">
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">Customer Name</label>
+                <input className="form-input" value={form.customer_name || ''} onChange={e => set('customer_name', e.target.value)} placeholder="Customer name" />
+              </div>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Vehicle Number</label>
-                <input className="form-input" value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} placeholder="TN01AB1234" />
+                <input className="form-input" value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} placeholder="e.g. TN01AB1234" style={{ textTransform: 'uppercase' }} />
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Vehicle Make</label>
-                <input className="form-input" value={form.vehicle_make || ''} onChange={e => set('vehicle_make', e.target.value)} placeholder="Toyota" />
+                <input className="form-input" value={form.vehicle_make || ''} onChange={e => set('vehicle_make', e.target.value)} placeholder="e.g. Toyota, Maruti" />
               </div>
-              <div className="form-group">
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Vehicle Model</label>
-                <input className="form-input" value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} placeholder="Innova" />
+                <input className="form-input" value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} placeholder="e.g. Innova, Swift" />
+              </div>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">Assigned Technician</label>
+                <select className="form-select" value={form.technician_id || ''} onChange={e => set('technician_id', parseInt(e.target.value) || null)}>
+                  <option value="">— Unassigned —</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                <label className="form-label">Notes</label>
+                <textarea className="form-textarea" value={form.notes || ''} onChange={e => set('notes', e.target.value)} placeholder="Any additional notes..." rows={3} />
               </div>
             </div>
-            <div className="form-group">
-              <label className="form-label">Notes</label>
-              <textarea className="form-textarea" value={form.notes || ''} onChange={e => set('notes', e.target.value)} />
-            </div>
-            {customFields.length > 0 && <CustomFields fields={customFields} values={form.custom_data} onChange={setCustom} />}
+          </div>
+
+          {/* Tabs section */}
+          <div style={{ width: '100%' }}>
+            {editLayout && (
+              <button className="btn btn-ghost btn-sm" style={{ marginBottom: 8 }} onClick={() => setTabModal({})}>
+                <Plus size={13} /> Add Tab
+              </button>
+            )}
+            {tabs.length > 0 && (
+              <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 0, padding: '8px 5px', borderBottom: '1px solid var(--border)' }}>
+                {tabs.map((t, i) => {
+                  const isActive = activeTab === i;
+                  return (
+                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <button onClick={() => setActiveTab(i)} style={{
+                        padding: '6px 16px', cursor: 'pointer', transition: 'all 0.2s',
+                        background: isActive ? 'var(--accent)' : 'transparent',
+                        color: isActive ? '#fff' : 'var(--text2)',
+                        fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px',
+                        border: `1px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
+                        borderRadius: isActive ? '8px 8px 0 0' : '8px',
+                        boxShadow: isActive ? '0 4px 12px var(--accent)40' : 'none',
+                        fontFamily: 'inherit',
+                      }}>{t.name}</button>
+                      {editLayout && (
+                        <div style={{ display: 'flex', gap: 2 }}>
+                          <button className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={() => setTabModal(t)}><Pencil size={11} /></button>
+                          <button className="btn btn-danger btn-sm" style={{ padding: 4 }} onClick={() => setDeleteConfirm({ type: 'tab', id: t.id, name: t.name })}><Trash2 size={11} /></button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {currentTab && (
+              <div className="card" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+                  {(currentTab.fields || []).map(f => (
+                    <div key={f.id} style={{ gridColumn: f.width === 'full' ? '1/-1' : f.width === 'half' ? 'span 2' : 'span 1', position: 'relative' }}>
+                      {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
+                      {f.field_type === 'textarea'
+                        ? <textarea className="form-textarea" value={form.custom_data[f.field_name] || ''} onChange={e => setCustom(f.field_name, e.target.value)} placeholder={f.placeholder} />
+                        : f.field_type === 'selection'
+                          ? <select className="form-select" value={form.custom_data[f.field_name] || ''} onChange={e => setCustom(f.field_name, e.target.value)}>
+                              <option value="">— Select —</option>
+                              {(f.options || []).map(o => <option key={o} value={o}>{o}</option>)}
+                            </select>
+                          : f.field_type === 'boolean'
+                            ? <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                                <input type="checkbox" checked={!!form.custom_data[f.field_name]} onChange={e => setCustom(f.field_name, e.target.checked)} style={{ accentColor: 'var(--accent)', width: 16, height: 16 }} />
+                                <span className="form-label" style={{ margin: 0 }}>{f.field_label}</span>
+                              </label>
+                            : <input className="form-input" type={f.field_type === 'number' ? 'number' : f.field_type === 'date' ? 'date' : 'text'}
+                                value={form.custom_data[f.field_name] || ''} onChange={e => setCustom(f.field_name, e.target.value)} placeholder={f.placeholder} />
+                      }
+                      {editLayout && (
+                        <div style={{ position: 'absolute', top: 0, right: 0, display: 'flex', gap: 4 }}>
+                          <button className="btn btn-ghost btn-sm" style={{ padding: '2px 6px' }} onClick={() => setFieldModal({ field: f, tabId: currentTab.id })}><Pencil size={11} /></button>
+                          <button className="btn btn-danger btn-sm" style={{ padding: '2px 6px' }} onClick={() => setDeleteConfirm({ type: 'field', id: f.id, name: f.field_label })}><Trash2 size={11} /></button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {editLayout && (
+                    <div style={{ gridColumn: '1/-1', marginTop: 8 }}>
+                      <button className="btn btn-ghost btn-sm"
+                        onClick={() => setFieldModal({ field: { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: (currentTab.fields || []).length }, tabId: currentTab.id, _new: true })}>
+                        <Plus size={13} /> Add Field to "{currentTab.name}"
+                      </button>
+                    </div>
+                  )}
+                  {(currentTab.fields || []).length === 0 && !editLayout && (
+                    <p className="text-muted text-sm" style={{ gridColumn: '1/-1' }}>No fields in this tab yet.</p>
+                  )}
+                </div>
+              </div>
+            )}
+            {tabs.length === 0 && (
+              <div className="card" style={{ color: 'var(--text2)', fontSize: 13 }}>
+                {isAdmin ? 'Click "Edit Layout" to add tabs and custom fields.' : 'No additional fields configured.'}
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="card" style={{ alignSelf: 'start' }}>
-          <div className="detail-section-title">Assignment</div>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Stage</label>
-              <select className="form-select" value={form.stage_id || ''} onChange={e => set('stage_id', parseInt(e.target.value) || null)}>
-                <option value="">— Select —</option>
+        {/* RIGHT */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {/* Stage (admin) */}
+          {isAdmin && (
+            <div className="card">
+              <div className="detail-section-title">Stage (Admin)</div>
+              <select className="form-select" value={form.stage_id || ''} onChange={e => isNew ? set('stage_id', parseInt(e.target.value) || null) : updateStage(parseInt(e.target.value) || null)}>
+                <option value="">— Select Stage —</option>
                 {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
             </div>
-            <div className="form-group">
-              <label className="form-label">Technician</label>
-              <select className="form-select" value={form.technician_id || ''} onChange={e => set('technician_id', parseInt(e.target.value) || null)}>
-                <option value="">— Unassigned —</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
+          )}
+
+          {/* Activity */}
+          {!isNew && (
+            <div className="card">
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
+                <Bell size={14} />
+                <span className="card-title">Activity</span>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <input className="form-input" placeholder="Add a note or task..." value={actDesc} onChange={e => setActDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && addActivity()} />
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <label className="form-label" style={{ margin: 0, fontSize: 12, whiteSpace: 'nowrap' }}>Due</label>
+                  <input className="form-input" type="datetime-local" value={actDue} onChange={e => setActDue(e.target.value)} style={{ flex: 1 }} />
+                  <button className="btn btn-primary btn-sm" onClick={addActivity} style={{ flexShrink: 0 }}><Plus size={13} /> Add</button>
+                </div>
+              </div>
+              {activities.length > 0 && (
+                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  {activities.map(a => (
+                    <div key={a.id} style={{ display: 'flex', gap: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 8, opacity: a.done ? 0.45 : 1, alignItems: 'flex-start' }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 12 }}>{a.description}</div>
+                        {a.due_date && !a.done && <div style={{ fontSize: 10, color: 'var(--amber)', marginTop: 2 }}>due {new Date(a.due_date).toLocaleDateString()}</div>}
+                        <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>{timeAgo(a.created_at)}</div>
+                      </div>
+                      {!a.done && <button className="btn btn-ghost btn-sm" onClick={() => markDone(a.id)} title="Mark done"><Check size={12} /></button>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Tab modal */}
+      {tabModal !== null && (
+        <TabEditorModal tab={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />
+      )}
+
+      {/* Field modal */}
+      {fieldModal !== null && (
+        <FieldEditorModal field={fieldModal.field} onSave={saveField} onClose={() => setFieldModal(null)} />
+      )}
+
+      {/* Delete confirm */}
+      {deleteConfirm && (
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth: 380 }}>
+            <div className="modal-body" style={{ textAlign: 'center', padding: '32px 24px' }}>
+              <p style={{ marginBottom: 20 }}>Delete <b>{deleteConfirm.name}</b>?</p>
+              <div className="flex gap-2" style={{ justifyContent: 'center' }}>
+                <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
+                <button className="btn btn-danger" onClick={() => {
+                  if (deleteConfirm.type === 'tab') deleteTab(deleteConfirm.id);
+                  else deleteField(deleteConfirm.id);
+                }}>Delete</button>
+              </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </Layout>
+  );
+}
+
+function TabEditorModal({ tab, onSave, onClose }) {
+  const [name, setName] = useState(tab?.name || '');
+  return (
+    <Modal title={tab?.id ? 'Edit Tab' : 'New Tab'} onClose={onClose}
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(name)}>Save Tab</button></>}>
+      <div className="form-group">
+        <label className="form-label">Tab Name *</label>
+        <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Installation Details" autoFocus />
+      </div>
+    </Modal>
+  );
+}
+
+function FieldEditorModal({ field, onSave, onClose }) {
+  const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'boolean'];
+  const [f, setF] = useState({ field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: 0, ...field });
+  const [optInput, setOptInput] = useState('');
+  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
+  const needsOptions = ['selection'].includes(f.field_type);
+  return (
+    <Modal title={field.id ? 'Edit Field' : 'New Field'} onClose={onClose} large
+      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(f)}>Save Field</button></>}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div className="form-group">
+          <label className="form-label">Field Label *</label>
+          <input className="form-input" value={f.field_label} onChange={e => { set('field_label', e.target.value); if (!field.id) set('field_name', e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')); }} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Field Key</label>
+          <input className="form-input" value={f.field_name} onChange={e => set('field_name', e.target.value)} />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Type</label>
+          <select className="form-select" value={f.field_type} onChange={e => set('field_type', e.target.value)}>
+            {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
+        </div>
+        <div className="form-group">
+          <label className="form-label">Width</label>
+          <select className="form-select" value={f.width} onChange={e => set('width', e.target.value)}>
+            <option value="full">Full Row</option>
+            <option value="half">Half Row</option>
+            <option value="quarter">Quarter Row</option>
+          </select>
+        </div>
+        {!['boolean'].includes(f.field_type) && (
+          <div className="form-group">
+            <label className="form-label">Placeholder</label>
+            <input className="form-input" value={f.placeholder || ''} onChange={e => set('placeholder', e.target.value)} />
+          </div>
+        )}
+        <div className="form-group">
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} className="form-label">
+            <input type="checkbox" checked={f.required} onChange={e => set('required', e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
+            Required field
+          </label>
+        </div>
+      </div>
+      {needsOptions && (
+        <div className="form-group" style={{ marginTop: 12 }}>
+          <label className="form-label">Options</label>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+            <input className="form-input" placeholder="Add option..." value={optInput} onChange={e => setOptInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && optInput.trim()) { set('options', [...(f.options || []), optInput.trim()]); setOptInput(''); } }} />
+            <button className="btn btn-ghost" onClick={() => { if (optInput.trim()) { set('options', [...(f.options || []), optInput.trim()]); setOptInput(''); } }}><Plus size={14} /></button>
+          </div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {(f.options || []).map((o, i) => (
+              <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: 'var(--bg3)', borderRadius: 20, fontSize: 13 }}>
+                {o}<button onClick={() => set('options', f.options.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)' }}>×</button>
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+    </Modal>
   );
 }

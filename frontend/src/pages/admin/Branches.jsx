@@ -16,7 +16,7 @@ export default function AdminBranches() {
   const [deleting, setDeleting] = useState(null);
 
   const load = () => api.get('/branches/').then(r => setItems(r.data)).finally(() => setLoading(false));
-  useEffect(load, []);
+  useEffect(() => { load(); }, []);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const openNew = () => { setForm(emptyForm); setEditing(null); setModal(true); };

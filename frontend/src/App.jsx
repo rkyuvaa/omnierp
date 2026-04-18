@@ -1,71 +1,62 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { useAuth, AuthProvider } from './hooks/useAuth';
 import { Toaster } from 'react-hot-toast';
-import { AuthProvider, useAuth } from './hooks/useAuth';
 
+// Pages
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
-
-import CRMLeads from './pages/crm/Leads';
+import Leads from './pages/crm/Leads';
 import LeadForm from './pages/crm/LeadForm';
-
-import InstallationList from './pages/installation/InstallationList';
-import InstallationForm from './pages/installation/InstallationForm';
-
 import ServiceList from './pages/service/ServiceList';
 import ServiceForm from './pages/service/ServiceForm';
-
+import KonwertCareList from './pages/konwertcare/KonwertCareList';
+import KonwertCareForm from './pages/konwertcare/KonwertCareForm';
+import InstallationList from './pages/installation/InstallationList';
+import InstallationForm from './pages/installation/InstallationForm';
+import ProductList from './pages/warranty/ProductList';
+import ProductDetail from './pages/warranty/ProductDetail';
+import BOMList from './pages/warranty/BOMList';
 import Studio from './pages/studio/Studio';
-
-import AdminUsers from './pages/admin/Users';
-import AdminBranches from './pages/admin/Branches';
-import AdminRoles from './pages/admin/Roles';
-import AdminModules from './pages/admin/Modules';
+import Users from './pages/admin/Users';
+import Roles from './pages/admin/Roles';
+import Branches from './pages/admin/Branches';
+import Modules from './pages/admin/Modules';
 import AuditLog from './pages/admin/AuditLog';
 
-function PrivateRoute({ children }) {
+// Integrated PrivateRoute
+const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }}><div className="spinner" /></div>;
-  return user ? children : <Navigate to="/login" />;
-}
-
-function AdminRoute({ children }) {
-  const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Navigate to="/login" />;
-  if (!user.is_superadmin) return <Navigate to="/" />;
-  return children;
-}
+  if (loading) return <div style={{padding:20}}>Loading...</div>;
+  return user ? children : <Navigate to="/login" replace />;
+};
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <Toaster position="top-right" toastOptions={{ style: { background: 'var(--bg3)', color: 'var(--text)', border: '1px solid var(--border)', fontSize: 13 } }} />
+    <BrowserRouter>
+      <AuthProvider>
+        <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         <Routes>
           <Route path="/login" element={<Login />} />
-
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-
-          <Route path="/crm" element={<PrivateRoute><CRMLeads /></PrivateRoute>} />
+          <Route path="/crm" element={<PrivateRoute><Leads /></PrivateRoute>} />
           <Route path="/crm/:id" element={<PrivateRoute><LeadForm /></PrivateRoute>} />
-
-          <Route path="/installation" element={<PrivateRoute><InstallationList /></PrivateRoute>} />
-          <Route path="/installation/:id" element={<PrivateRoute><InstallationForm /></PrivateRoute>} />
-
           <Route path="/service" element={<PrivateRoute><ServiceList /></PrivateRoute>} />
           <Route path="/service/:id" element={<PrivateRoute><ServiceForm /></PrivateRoute>} />
-
-          <Route path="/studio" element={<AdminRoute><Studio /></AdminRoute>} />
-
-          <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
-          <Route path="/admin/branches" element={<AdminRoute><AdminBranches /></AdminRoute>} />
-          <Route path="/admin/roles" element={<AdminRoute><AdminRoles /></AdminRoute>} />
-          <Route path="/admin/modules" element={<AdminRoute><AdminModules /></AdminRoute>} />
-          <Route path="/audit" element={<AdminRoute><AuditLog /></AdminRoute>} />
-
-          <Route path="*" element={<Navigate to="/" />} />
+          <Route path="/konwertcare" element={<PrivateRoute><KonwertCareList /></PrivateRoute>} />
+          <Route path="/konwertcare/:id" element={<PrivateRoute><KonwertCareForm /></PrivateRoute>} />
+          <Route path="/installation" element={<PrivateRoute><InstallationList /></PrivateRoute>} />
+          <Route path="/installation/:id" element={<PrivateRoute><InstallationForm /></PrivateRoute>} />
+          <Route path="/warranty/products" element={<PrivateRoute><ProductList /></PrivateRoute>} />
+          <Route path="/warranty/products/:id" element={<PrivateRoute><ProductDetail /></PrivateRoute>} />
+          <Route path="/warranty/bom" element={<PrivateRoute><BOMList /></PrivateRoute>} />
+          <Route path="/admin/users" element={<PrivateRoute><Users /></PrivateRoute>} />
+          <Route path="/admin/branches" element={<PrivateRoute><Branches /></PrivateRoute>} />
+          <Route path="/admin/roles" element={<PrivateRoute><Roles /></PrivateRoute>} />
+          <Route path="/admin/modules" element={<PrivateRoute><Modules /></PrivateRoute>} />
+          <Route path="/audit" element={<PrivateRoute><AuditLog /></PrivateRoute>} />
+          <Route path="/studio" element={<PrivateRoute><Studio /></PrivateRoute>} />
         </Routes>
-      </BrowserRouter>
-    </AuthProvider>
+      </AuthProvider>
+    </BrowserRouter>
   );
 }
