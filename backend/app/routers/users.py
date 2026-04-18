@@ -15,6 +15,7 @@ class UserCreate(BaseModel):
     password: str
     role_id: Optional[int] = None
     branch_id: Optional[int] = None
+    department_id: Optional[int] = None
     allowed_branches: List[int] = []
     allowed_modules: Any = {}
     is_superadmin: bool = False
@@ -25,6 +26,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     role_id: Optional[int] = None
     branch_id: Optional[int] = None
+    department_id: Optional[int] = None
     allowed_branches: List[int] = []
     allowed_modules: Optional[Any] = {}
     is_active: Optional[bool] = None
@@ -34,10 +36,12 @@ def serialize(u: User):
     return {
         "id": u.id, "name": u.name, "email": u.email,
         "is_active": u.is_active, "is_superadmin": u.is_superadmin,
-        "role_id": u.role_id, "branch_id": u.branch_id, "allowed_branches": u.allowed_branches or [],
+        "role_id": u.role_id, "branch_id": u.branch_id, "department_id": u.department_id,
+        "allowed_branches": u.allowed_branches or [],
         "allowed_modules": u.allowed_modules or [],
         "role_name": u.role.name if u.role else None,
         "branch_name": u.branch.name if u.branch else None,
+        "department_name": u.department.name if u.department else None,
         "created_at": str(u.created_at),
     }
 
@@ -61,7 +65,8 @@ def create_user(data: UserCreate, db: Session = Depends(get_db), current_user: U
     user = User(
         name=data.name, email=data.email,
         password_hash=hash_password(data.password),
-        role_id=data.role_id, branch_id=data.branch_id, allowed_branches=data.allowed_branches,
+        role_id=data.role_id, branch_id=data.branch_id, department_id=data.department_id,
+        allowed_branches=data.allowed_branches,
         allowed_modules=data.allowed_modules, is_superadmin=data.is_superadmin
     )
     db.add(user); db.commit(); db.refresh(user)

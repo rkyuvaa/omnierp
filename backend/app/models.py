@@ -12,6 +12,7 @@ class User(Base):
     password_hash = Column(String(200))
     role_id = Column(Integer, ForeignKey("roles.id"), nullable=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     allowed_branches = Column(JSON, default=[])
     allowed_modules = Column(JSON, default={})
     is_active = Column(Boolean, default=True)
@@ -19,6 +20,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     role = relationship("Role", back_populates="users")
     branch = relationship("Branch", back_populates="users")
+    department = relationship("Department", back_populates="users")
 
 class Role(Base):
     __tablename__ = "roles"
@@ -35,6 +37,13 @@ class Branch(Base):
     address = Column(String(200))
     is_active = Column(Boolean, default=True)
     users = relationship("User", back_populates="branch")
+
+class Department(Base):
+    __tablename__ = "departments"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True)
+    is_active = Column(Boolean, default=True)
+    users = relationship("User", back_populates="department")
 
 class Module(Base):
     __tablename__ = "modules"

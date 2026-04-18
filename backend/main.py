@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
-from app.routers import auth, users, branches, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout
+from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout
 
 app = FastAPI(title="OmniERP API", version="1.0.0")
 
@@ -18,6 +18,7 @@ Base.metadata.create_all(bind=engine)
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(branches.router, prefix="/api/branches", tags=["branches"])
+app.include_router(departments.router, prefix="/api/departments", tags=["departments"])
 app.include_router(roles.router, prefix="/api/roles", tags=["roles"])
 app.include_router(modules.router, prefix="/api/modules", tags=["modules"])
 app.include_router(crm.router, prefix="/api/crm", tags=["crm"])
