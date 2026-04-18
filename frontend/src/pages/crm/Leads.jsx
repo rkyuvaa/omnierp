@@ -328,25 +328,29 @@ export default function CRMLeads() {
 
       {/* ── Stage cards with lead count ── */}
       {dashboard && (
-        <div style={{ display: 'flex', gap: 8, marginBottom: 12, width: '100%' }}>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 12, width: '100%' }}>
           {dashboard.stage_counts.map(s => (
             <div key={s.id} onClick={() => handleStage(s.id)}
               style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 10px',
-                borderRadius: 24, cursor: 'pointer', flex: 1, textAlign: 'center',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 12px', borderRadius: 24, cursor: 'pointer', flex: 1, minWidth: '95px',
+                height: 72, textAlign: 'center', transition: 'all 0.2s',
                 border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
                 background: stageFilter === s.id ? s.color : (s.color + '15'),
                 color: stageFilter === s.id ? '#ffffff' : s.color,
-                transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
-                minWidth: 0
               }}>
-              <span style={{ fontSize: 12, fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.name}</span>
-              {s.count !== undefined && (
-                <span style={{ fontSize: 12, fontWeight: 600, background: stageFilter === s.id ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.6)', padding: '1px 8px', borderRadius: 12, color: '#195402' }}>
-                  {s.count}
-                </span>
-              )}
+              <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
+              <span style={{ 
+                fontSize: 14, fontWeight: 900,
+                background: '#ffffff', color: s.color,
+                minWidth: 26, height: 26, borderRadius: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0 4px',
+                marginTop: 'auto'
+              }}>
+                {s.count}
+              </span>
             </div>
           ))}
         </div>
