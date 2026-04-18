@@ -131,6 +131,15 @@ class Activity(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     lead = relationship("Lead", back_populates="activities")
 
+class CRMActivityType(Base):
+    __tablename__ = "crm_activity_types"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True)
+    color = Column(String(20), default="#6366f1")
+    icon = Column(String(20), default="📝")
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+
 class CustomField(Base):
     __tablename__ = "custom_fields"
     id = Column(Integer, primary_key=True, index=True)
