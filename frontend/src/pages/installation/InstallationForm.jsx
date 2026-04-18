@@ -144,11 +144,10 @@ export default function InstallationForm() {
   const currentTab = tabs[activeTab];
 
   return (
-    <Layout title={isNew ? 'New Installation' : (form.customer_name || 'Installation')}>
+    <Layout title={isNew ? 'New Entry' : (form.reference || 'Installation')}>
       {/* Toolbar */}
       <div className="toolbar">
         <button className="btn btn-ghost" onClick={() => navigate('/installation')}><ArrowLeft size={15} /> Back</button>
-        {!isNew && form.reference && <span className="ref-text" style={{ fontSize: 14 }}>{form.reference}</span>}
         <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e => !e)}
@@ -205,22 +204,6 @@ export default function InstallationForm() {
           {/* Core fields */}
           <div className="card mb-4">
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Customer Name</label>
-                <input className="form-input" value={form.customer_name || ''} onChange={e => set('customer_name', e.target.value)} placeholder="Customer name" />
-              </div>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Vehicle Number</label>
-                <input className="form-input" value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} placeholder="e.g. TN01AB1234" style={{ textTransform: 'uppercase' }} />
-              </div>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Vehicle Make</label>
-                <input className="form-input" value={form.vehicle_make || ''} onChange={e => set('vehicle_make', e.target.value)} placeholder="e.g. Toyota, Maruti" />
-              </div>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Vehicle Model</label>
-                <input className="form-input" value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} placeholder="e.g. Innova, Swift" />
-              </div>
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Assigned Technician</label>
                 <select className="form-select" value={form.technician_id || ''} onChange={e => set('technician_id', parseInt(e.target.value) || null)}>
@@ -299,17 +282,6 @@ export default function InstallationForm() {
 
         {/* RIGHT */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Stage (admin) */}
-          {isAdmin && (
-            <div className="card">
-              <div className="detail-section-title">Stage (Admin)</div>
-              <select className="form-select" value={form.stage_id || ''} onChange={e => isNew ? set('stage_id', parseInt(e.target.value) || null) : updateStage(parseInt(e.target.value) || null)}>
-                <option value="">— Select Stage —</option>
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-          )}
-
           {/* Activity */}
           {!isNew && (
             <div className="card">
