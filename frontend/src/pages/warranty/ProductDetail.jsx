@@ -325,8 +325,8 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {tabModal && <TabModal tab={tabModal} onSave={saveTab} onClose={()=>setTabModal(null)} />}
-      {fieldModal && <FieldModal field={fieldModal.field} onSave={saveField} onClose={()=>setFieldModal(null)} />}
+      {tabModal && <TabModal initial={tabModal} onSave={saveTab} onClose={()=>setTabModal(null)} />}
+      {fieldModal && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={()=>setFieldModal(null)} />}
       {deleteConfirm && <Confirm message={`Delete ${deleteConfirm.name}?`} onConfirm={deleteConfirm.type==='tab'?()=>deleteTab(deleteConfirm.id):()=>deleteField(deleteConfirm.id)} onCancel={()=>setDeleteConfirm(null)} />}
     </Layout>
   );
