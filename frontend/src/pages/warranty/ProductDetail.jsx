@@ -72,7 +72,9 @@ export default function ProductDetail() {
     setForm(f => ({ 
       ...f, 
       bom_id: parseInt(bomId), 
-      title: selectedBOM.name, // Internal title becomes BOM Name
+      title: selectedBOM.name,
+      warranty_period: selectedBOM.warranty_period || f.warranty_period,
+      warranty_unit: selectedBOM.warranty_unit || f.warranty_unit,
       component_serials: newComponents 
     }));
   };
@@ -103,11 +105,11 @@ export default function ProductDetail() {
       const payload = { ...form, stage_id: form.stage_id || null, bom_id: form.bom_id || null };
       if (isNew) {
         const r = await api.post('/warranty/products', payload);
-        toast.success('✓ Product created successfully!');
+        toast.success('✓ Vehicle created!');
         navigate(`/warranty/products/${r.data.id}`);
       } else {
         await api.put(`/warranty/products/${id}`, payload);
-        toast.success('✓ Saved successfully!');
+        toast.success('✓ Saved!');
         setRecentlySaved(true);
         setTimeout(() => setRecentlySaved(false), 3000);
       }
@@ -133,21 +135,15 @@ export default function ProductDetail() {
     const stageRuleOp = f._stageRuleOp || 'has_value';
     const stageRuleVal = f._stageRuleVal || '';
     const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
-
     if (!payload.tab_id) payload.tab_id = fieldModal?.tabId||null;
-    
     if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
     else await api.post('/studio/layout/warranty/fields', payload);
-
     if (stageRule) {
       await api.post('/studio/layout/warranty/stage-rules', {
-        field_name: payload.field_name,
-        stage_id: parseInt(stageRule),
-        condition_operator: stageRuleOp,
-        condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
+        field_name: payload.field_name, stage_id: parseInt(stageRule),
+        condition_operator: stageRuleOp, condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
       });
     }
-
     toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
   };
 
@@ -163,8 +159,6 @@ export default function ProductDetail() {
     <Layout title={isNew ? 'New Product' : `Vehicle: ${form.name}`}>
       <div className="toolbar">
         <button className="btn btn-ghost" onClick={()=>navigate('/warranty/products')}><ArrowLeft size={15}/> Back</button>
-        
-        {/* Stage Bar */}
         {!isNew && stages.length > 0 && (
           <div style={{ display: "flex", gap: 6, width: "100%", marginLeft: 16 }}>
             {stages.map((s) => (
@@ -186,29 +180,23 @@ export default function ProductDetail() {
             ))}
           </div>
         )}
-
         <div className="toolbar-right" style={{ display:'flex', gap:8, marginLeft: 'auto' }}>
-          {isAdmin && (
-            <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}>
-              <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
-            </button>
-          )}
-          <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved}
-            style={{ background: recentlySaved ? 'var(--green)' : 'var(--accent)' }}>
+          {isAdmin && ( <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}><Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}</button> )}
+          <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved} style={{ background: recentlySaved ? 'var(--green)' : 'var(--accent)' }}>
             {recentlySaved ? <Check size={14}/> : <Save size={14}/>} {recentlySaved ? 'Saved' : 'Save'}
           </button>
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr', gap:20 }}>
         <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          {/* Main Info */}
+          {/* Main Info with Warranty Integrated */}
           <div className="card">
             <div className="card-header"><span className="card-title">VEHICLE INFORMATION</span></div>
             <div className="form-grid">
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group" style={{ gridColumn: '1/-1' }}>
                 <label className="form-label">VEHICLE NUMBER *</label>
-                <input className="form-input" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="e.g. KA01AB1234" />
+                <input className="form-input text-lg fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="e.g. KA01AB1234" />
               </div>
               <div className="form-group">
                 <label className="form-label">CHASSIS / SERIAL NUMBER</label>
@@ -216,112 +204,102 @@ export default function ProductDetail() {
               </div>
               <div className="form-group">
                 <label className="form-label">BOM / MODEL *</label>
-                <select className="form-input" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
+                <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
                   <option value="">-- Select BOM --</option>
                   {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
+              
+              <div className="form-group" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <label className="form-label">WARRANTY PERIOD</label>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
+                  <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
+                    <option value="months">months</option>
+                    <option value="years">years</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
+                <label className="form-label">WARRANTY NOTES</label>
+                <textarea className="form-input" rows={1} value={form.notes} onChange={e=>set('notes', e.target.value)} placeholder="e.g. Battery warranty 3yrs..." />
+              </div>
             </div>
           </div>
 
-          {/* Component Serials */}
-          {form.component_serials.length > 0 && (
-            <div className="card">
-              <div className="card-header"><span className="card-title">COMPONENT SERIAL NUMBERS</span></div>
-              <div className="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Component Name</th>
-                      <th>Serial Number</th>
-                      <th style={{ width: 150 }}>Warranty</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {form.component_serials.map((c, idx) => (
-                      <tr key={idx}>
-                        <td className="fw-600">{c.name}</td>
-                        <td>
-                          <input className="form-input" style={{ padding: '6px 12px', fontSize: 13 }} 
-                            value={c.serial_number} 
-                            onChange={e => updateCompSerial(idx, e.target.value)} 
-                            placeholder={`Enter ${c.name} Serial`} />
-                        </td>
-                        <td className="text-muted text-sm">{c.warranty_period} {c.warranty_unit}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+          {/* Custom Tabs */}
+          <div>
+            <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 2 }}>
+              {tabs.map((t,i) => (
+                <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+                  <button onClick={()=>setActiveTab(i)} style={{
+                    padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                    background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                    borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                    color:activeTab===i?'var(--accent)':'var(--text2)'
+                  }}>{t.name}</button>
+                  {editLayout && <>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal(t)}><Pencil size={11}/></button>
+                    <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                  </>}
+                </div>
+              ))}
+              {editLayout && <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal({})}><Plus size={13}/> Add Tab</button>}
             </div>
-          )}
-
-          {/* Tabs */}
-          <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-            {tabs.map((t,i) => (
-              <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
-                <button onClick={()=>setActiveTab(i)} style={{
-                  padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
-                  background:'transparent', marginBottom:-2, transition:'all 0.15s',
-                  borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
-                  color:activeTab===i?'var(--accent)':'var(--text2)'
-                }}>{t.name}</button>
-                {editLayout && <>
-                  <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal(t)}><Pencil size={11}/></button>
-                  <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
-                </>}
+            {currentTab && (
+              <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+                <div className="form-grid">
+                  {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
+                    <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
+                      {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
+                      <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
+                      {editLayout && (
+                        <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
+                          <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
+                          <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {editLayout && (
+                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 10, border: '1px dashed var(--border)', borderRadius: 8 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field: {...emptyField, sort_order: (currentTab.fields||[]).length}, tabId: currentTab.id})}><Plus size={14}/> Add Field</button>
+                    </div>
+                  )}
+                </div>
               </div>
-            ))}
-            {editLayout && <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal({})}><Plus size={13}/> Add Tab</button>}
+            )}
           </div>
-
-          {currentTab && (
-            <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-              <div className="form-grid">
-                {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
-                  <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
-                    {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
-                    <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
-                    {editLayout && (
-                      <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
-                        <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
-                        <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
-                      </div>
-                    )}
-                  </div>
-                ))}
-                {editLayout && (
-                  <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 10, border: '1px dashed var(--border)', borderRadius: 8 }}>
-                    <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field: {...emptyField, sort_order: (currentTab.fields||[]).length}, tabId: currentTab.id})}><Plus size={14}/> Add Field</button>
-                    {currentTab.fields?.length === 0 && <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:currentTab.id,name:currentTab.name})}><Trash2 size={14}/> Delete Empty Tab</button>}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
 
+        {/* Component Serials on the Right Side */}
         <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          <div className="card">
-            <div className="card-header"><span className="card-title">WARRANTY STATUS</span></div>
-            <div className="form-grid">
-              <div className="form-group" style={{ gridColumn: 'span 1' }}>
-                <label className="form-label">PERIOD</label>
-                <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
+          {form.component_serials.length > 0 ? (
+            <div className="card" style={{ position:'sticky', top: 20 }}>
+              <div className="card-header" style={{ background:'var(--bg2)' }}>
+                <span className="card-title" style={{ color:'var(--accent)' }}>COMPONENT TRACKING</span>
               </div>
-              <div className="form-group" style={{ gridColumn: 'span 1' }}>
-                <label className="form-label">UNIT</label>
-                <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
-                  <option value="months">months</option>
-                  <option value="years">years</option>
-                </select>
-              </div>
-              <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="form-label">NOTES</label>
-                <textarea className="form-textarea" rows={4} value={form.notes} onChange={e=>set('notes', e.target.value)} placeholder="Warranty specific notes..." />
+              <div style={{ padding: '0 12px' }}>
+                {form.component_serials.map((c, idx) => (
+                  <div key={idx} style={{ padding: '12px 0', borderBottom: idx < form.component_serials.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 6 }}>
+                      <span className="fw-600 size-13">{c.name}</span>
+                      <span className="text-muted size-11">{c.warranty_period} {c.warranty_unit}</span>
+                    </div>
+                    <input className="form-input" style={{ padding: '6px 10px', fontSize: 12, background: 'var(--bg1)' }} 
+                      value={c.serial_number} 
+                      onChange={e => updateCompSerial(idx, e.target.value)} 
+                      placeholder={`Enter ${c.name} Serial`} />
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="card" style={{ textAlign:'center', padding: '40px 20px', color:'var(--text3)' }}>
+              <Package size={40} style={{ margin:'0 auto 10px', opacity:0.3 }}/>
+              <p className="size-13">Select a BOM / Model to track component serial numbers.</p>
+            </div>
+          )}
         </div>
       </div>
 
