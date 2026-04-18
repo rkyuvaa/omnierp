@@ -21,6 +21,7 @@ def serialize_product(p: Product):
             "stage_name": p.stage.name if p.stage else None,
             "stage_color": p.stage.color if p.stage else None,
             "bom_id": p.bom_id,
+            "bom_name": p.bom.name if p.bom else None,
             "component_serials": [{
                 "bom_component_id": c.bom_component_id,
                 "name": c.bom_component.name if c.bom_component else "",

@@ -209,6 +209,7 @@ class Product(Base):
     custom_data = Column(JSON, default={})
     created_at = Column(DateTime, default=datetime.utcnow)
     stage = relationship("Stage")
+    bom = relationship("BOM")
     component_serials = relationship("ProductComponentSerial", back_populates="product", cascade="all, delete-orphan")
 
 class ProductComponentSerial(Base):

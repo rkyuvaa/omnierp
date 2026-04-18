@@ -244,7 +244,7 @@ export default function InstallationForm() {
                         <div style={{ width: 4, height: 18, background: 'var(--accent)', borderRadius: 2 }} />
                         <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
                           <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--accent)' }}>
-                            {selectedProduct.title || selectedProduct.name}
+                            {selectedProduct.bom_name || selectedProduct.title || selectedProduct.name}
                           </span>
                           <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text1)' }}>
                             S/N: {selectedProduct.serial_number}
