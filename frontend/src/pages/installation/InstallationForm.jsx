@@ -52,7 +52,7 @@ export default function InstallationForm() {
   useEffect(() => {
     api.get('/studio/stages/installation').then(r => setStages(r.data)).catch(() => {});
     api.get('/users/').then(r => setUsers(r.data)).catch(() => {});
-    api.get('/warranty/products?limit=1000').then(r => setVehicles(r.data.items || [])).catch(() => {});
+    api.get('/warranty/products').then(r => setVehicles(Array.isArray(r.data) ? r.data : (r.data.items || []))).catch(() => {});
     loadTabs();
     loadStageRules();
   }, []);
