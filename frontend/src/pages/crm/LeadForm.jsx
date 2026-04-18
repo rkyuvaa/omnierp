@@ -404,7 +404,7 @@ export default function LeadForm() {
       </div>
 
       {!isNew && stages.length > 0 && (
-        <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "nowrap", gap: 8, marginBottom: 20, padding: "10px 0", overflowX: "auto", whiteSpace: "nowrap", width: "100%", boxSizing: "border-box", alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 6, marginBottom: 20, width: "100%", boxSizing: "border-box" }}>
           
           {stages.map((s) => {
             const isCurrent = form.stage_id === s.id;
@@ -413,21 +413,21 @@ export default function LeadForm() {
                 key={s.id}
                 onClick={() => isAdmin && updateStage(s.id)}
                 style={{
-                  display: "flex", alignItems: "center", 
-                  padding: isCurrent ? "12px 32px" : "8px 20px", 
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "8px 12px", 
                   borderRadius: "100px",
                   cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
                   background: isCurrent ? s.color : s.color + "15",
                   color: isCurrent ? "#fff" : s.color,
-                  fontSize: isCurrent ? "16px" : "12px", 
+                  fontSize: "12px", 
                   fontFamily: "inherit", fontWeight: 800,
                   textTransform: "uppercase", letterSpacing: "1px",
                   boxShadow: isCurrent ? "0 8px 24px " + s.color + "60" : "none",
                   opacity: isCurrent ? 1 : 0.6,
                   border: "1px solid " + (isCurrent ? s.color : "transparent"),
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                  transform: isCurrent ? "scale(1)" : "scale(1)"
+                  minWidth: 0,
+                  flex: 1,
+                  textAlign: "center"
                 }}
               >
                 {s.name}

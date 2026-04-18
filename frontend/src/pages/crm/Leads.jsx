@@ -328,18 +328,18 @@ export default function CRMLeads() {
 
       {/* ── Stage cards with lead count ── */}
       {dashboard && (
-        <div className="hide-scrollbar" style={{ display: 'flex', gap: 10, paddingBottom: 12, overflowX: 'auto', marginBottom: 8, whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 12, width: '100%' }}>
           {dashboard.stage_counts.map(s => (
             <div key={s.id} onClick={() => handleStage(s.id)}
               style={{
-                display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px',
-                borderRadius: 24, cursor: 'pointer', whiteSpace: 'nowrap',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, padding: '8px 10px',
+                borderRadius: 24, cursor: 'pointer', flex: 1, textAlign: 'center',
                 border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
                 background: stageFilter === s.id ? s.color : (s.color + '15'),
                 color: stageFilter === s.id ? '#ffffff' : s.color,
                 transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
-                minWidth: 'max-content'
+                minWidth: 0
               }}>
               <span style={{ fontSize: 12, fontWeight: 750, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.name}</span>
               {s.count !== undefined && (
