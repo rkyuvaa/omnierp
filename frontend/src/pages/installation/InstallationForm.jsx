@@ -171,14 +171,14 @@ export default function InstallationForm() {
 
       {/* Stage bar */}
       {!isNew && stages.length > 0 && (
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20, padding: '10px 0', width: '100%' }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, padding: '0 0 10px', width: '100%', marginTop: -4 }}>
           {stages.map(s => {
             const isCurrent = form.stage_id === s.id;
             return (
               <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
                   padding: isCurrent ? "8px 12px" : "6px 8px", 
-                  borderRadius: 20,
+                  borderRadius: 100,
                   cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
                   background: isCurrent ? s.color : (s.color + "15"),
                   color: isCurrent ? "#fff" : s.color,
