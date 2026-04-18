@@ -9,6 +9,9 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, Pencil, Trash2, Package, Settings, Upload, Download, Eye, X, FileText, Check } from 'lucide-react';
 
+const emptyForm = { serial_number:'', bom_id:'', customer_name:'', email:'', phone:'', stage_id:'', custom_data:{} };
+const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
+const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 const UNITS = ['months','years'];
 const WARRANTY_STATUS = {
   not_started: { label:'Not Started', color:'var(--text3)' },
