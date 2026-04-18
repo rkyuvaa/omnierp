@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { Loader, Badge, Modal } from '../../components/Shared';
 import { FieldModal, TabModal } from '../../components/StudioModals';
+import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useAuth } from '../../hooks/useAuth';
 import { useStages } from '../../hooks/useData';
 import api from '../../utils/api';

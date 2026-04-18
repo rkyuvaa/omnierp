@@ -6,9 +6,25 @@ from ..auth import get_current_user
 
 router = APIRouter()
 
+def serialize_product(p: Product):
+    return {
+        "id": p.id,
+        "title": p.title,
+        "name": p.name,
+        "serial_number": p.serial_number,
+        "warranty_period": p.warranty_period,
+        "warranty_unit": p.warranty_unit,
+        "notes": p.notes,
+        "custom_data": p.custom_data or {},
+        "created_at": str(p.created_at),
+        "stage_name": p.stage.name if p.stage else None,
+        "stage_color": p.stage.color if p.stage else None,
+    }
+
 @router.get("/products")
 def get_products(db: Session = Depends(get_db)):
-    return db.query(Product).all()
+    products = db.query(Product).all()
+    return [serialize_product(p) for p in products]
 
 @router.get("/products/{id}")
 def get_product(id: int, db: Session = Depends(get_db)):
