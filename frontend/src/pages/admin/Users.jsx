@@ -428,56 +428,74 @@ export default function AdminUsers() {
                     <th></th>
                   </tr>
                 </thead>
-                                {users.map(u => (
-                      <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }}>
-                        <td style={{ padding: '14px 10px' }}>
-                          <div className="flex flex-col" style={{ gap: 2 }}>
-                            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text1)' }}>{u.name} {u.is_superadmin && <Badge color="var(--accent)" style={{ fontSize: 8 }}>ADMIN</Badge>}</span>
-                            <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 500 }}>{u.email}</span>
+                <tbody>
+                  {users.map(u => {
+                    const initials = u.name ? u.name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2) : '??';
+                    return (
+                      <tr key={u.id}>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <div style={{ 
+                              width: 32, height: 32, borderRadius: 8, 
+                              background: 'var(--accent-dim)', color: 'var(--accent)', 
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: 11, fontWeight: 900, border: '1px solid var(--accent)'
+                            }}>
+                              {initials}
+                            </div>
+                            <div style={{ display: 'flex', flexDirection: 'column' }}>
+                              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text1)' }}>{u.name}</span>
+                              <span style={{ fontSize: 10, color: 'var(--text3)' }}>{u.email}</span>
+                            </div>
                           </div>
                         </td>
-                        <td style={{ padding: '14px 10px' }}>
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column' }}>
                             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{u.department_name || '—'}</span>
-                            <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>{u.role_name || u.role?.name || 'Standard User'}</span>
+                            <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase' }}>{u.role_name || 'MEMBER'}</span>
                           </div>
                         </td>
-                        <td style={{ padding: '14px 10px' }}>
+                        <td style={{ padding: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{u.branch_name || u.branch?.name || '—'}</span>
+                             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{u.branch_name || '—'}</span>
                              {(u.allowed_branches || []).length > 0 && (
-                               <Badge color="var(--bg3)" style={{ color: 'var(--text2)', border: '1px solid var(--border)', fontSize: 9 }}>+{u.allowed_branches.length}</Badge>
+                               <Badge color="var(--bg3)" style={{ color: 'var(--accent)', fontSize: 8, fontWeight: 900, border: '1px solid var(--accent)' }}>
+                                 +{u.allowed_branches.length}
+                               </Badge>
                              )}
                           </div>
                         </td>
-                        <td style={{ padding: '14px 10px' }}>
-                          <div className="flex gap-1" style={{ flexWrap: 'wrap', maxWidth: 220 }}>
+                        <td style={{ padding: '12px' }}>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 200 }}>
                             {Object.keys(u.allowed_modules || {}).map(mKey => {
                               const mod = ALL_MODULES.find(x => x.key === mKey);
                               const label = mod ? mod.name : mKey.toUpperCase();
-                              return <Badge key={mKey} color="var(--accent-dim)" style={{ fontSize: 8, padding: '1px 5px', fontWeight: 800, color: 'var(--accent)', border: '1px solid var(--accent)' }}>{label}</Badge>
+                              return <Badge key={mKey} color="var(--accent-dim)" style={{ fontSize: 8, padding: '1px 4px', fontWeight: 800, color: 'var(--accent)', border: '1px solid var(--accent)' }}>{label}</Badge>
                             })}
                           </div>
                         </td>
-                        <td style={{ padding: '14px 10px' }}>
-                          <Badge color={u.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10, fontWeight: 800 }}>{u.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                        <td style={{ padding: '12px' }}>
+                           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <div style={{ width: 6, height: 6, borderRadius: '50%', background: u.is_active ? 'var(--green)' : 'var(--red)' }} />
+                              <span style={{ fontSize: 10, fontWeight: 800, color: u.is_active ? 'var(--green)' : 'var(--red)', textTransform: 'uppercase' }}>{u.is_active ? 'Active' : 'Offline'}</span>
+                           </div>
                         </td>
-                        <td style={{ padding: '14px 10px', textAlign: 'right' }}>
+                        <td style={{ padding: '12px', textAlign: 'right' }}>
                           <div className="flex gap-2 justify-end">
-                            <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => openEdit(u)} title="Edit User"><Pencil size={13} color="var(--text1)" /></button>
-                            <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.8 }} onClick={() => setDeleting(u.id)} title="Delete User"><Trash2 size={13} /></button>
+                            <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => openEdit(u)} title="Edit Configuration"><Pencil size={13} color="var(--text1)" /></button>
+                            <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.8 }} onClick={() => setDeleting(u.id)} title="Remove User"><Trash2 size={13} /></button>
                           </div>
                         </td>
                       </tr>
-                    ))}
-            ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
           )}
         </div>
       ) : (
-        <div className="card" style={{ maxWidth: 600 }}>
+        <div className="card">
             <div className="table-wrap">
               <table>
                 <thead><tr><th>Department Name</th><th>Status</th><th></th></tr></thead>
