@@ -16,6 +16,7 @@ import InstallationForm from './pages/installation/InstallationForm';
 import ProductList from './pages/warranty/ProductList';
 import ProductDetail from './pages/warranty/ProductDetail';
 import BOMList from './pages/warranty/BOMList';
+import BOMDetail from './pages/warranty/BOMDetail';
 import Studio from './pages/studio/Studio';
 import Users from './pages/admin/Users';
 import Roles from './pages/admin/Roles';
@@ -49,6 +50,7 @@ export default function App() {
           <Route path="/warranty/products" element={<PrivateRoute><ProductList /></PrivateRoute>} />
           <Route path="/warranty/products/:id" element={<PrivateRoute><ProductDetail /></PrivateRoute>} />
           <Route path="/warranty/bom" element={<PrivateRoute><BOMList /></PrivateRoute>} />
+          <Route path="/warranty/bom/:id" element={<PrivateRoute><BOMDetail /></PrivateRoute>} />
           <Route path="/admin/users" element={<PrivateRoute><Users /></PrivateRoute>} />
           <Route path="/admin/branches" element={<PrivateRoute><Branches /></PrivateRoute>} />
           <Route path="/admin/roles" element={<PrivateRoute><Roles /></PrivateRoute>} />

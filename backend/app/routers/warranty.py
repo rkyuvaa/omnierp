@@ -76,3 +76,22 @@ def update_product(id: int, data: dict, db: Session = Depends(get_db)):
 @router.get("/boms")
 def get_boms(db: Session = Depends(get_db)):
     return db.query(BOM).all()
+
+@router.get("/boms/{id}")
+def get_bom(id: int, db: Session = Depends(get_db)):
+    b = db.query(BOM).filter(BOM.id == id).first()
+    if not b: raise HTTPException(404)
+    return b
+
+@router.post("/boms")
+def create_bom(data: dict, db: Session = Depends(get_db)):
+    b = BOM(**data)
+    db.add(b); db.commit(); db.refresh(b)
+    return b
+
+@router.put("/boms/{id}")
+def update_bom(id: int, data: dict, db: Session = Depends(get_db)):
+    b = db.query(BOM).filter(BOM.id == id).first()
+    if not b: raise HTTPException(404)
+    for k, v in data.items(): setattr(b, k, v)
+    db.commit(); return b
