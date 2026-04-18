@@ -149,143 +149,159 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        <div className="card" style={{ padding: '30px' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 450px)', gap: 50 }}>
-            {/* Left Column: Basic Info & Branches */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
-              <div>
-                <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 20 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.2px' }}>General Information</span>
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Full Name *</label>
-                    <input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. John Doe" />
+        <div className="card" style={{ padding: '24px', minHeight: 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {/* ROW 1: General Information (4 Columns) */}
+          <section>
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 14 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>1. User Identity & Core Settings</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Full Name *</label>
+                <input className="form-input" style={{ padding: '8px 12px' }} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Entry Name" />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Email Address *</label>
+                <input className="form-input" style={{ padding: '8px 12px' }} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@omnierp.com" />
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Department</label>
+                <select className="form-select" style={{ padding: '7px 10px' }} value={form.department_id} onChange={e => set('department_id', e.target.value)}>
+                  <option value="">— Select —</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Global Role</label>
+                <select className="form-select" style={{ padding: '7px 10px' }} value={form.role_id} onChange={e => set('role_id', e.target.value)}>
+                  <option value="">— Default —</option>
+                  {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>{editing ? 'New Password' : 'Password *'}</label>
+                <input className="form-input" style={{ padding: '8px 12px' }} type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+              </div>
+              <div className="form-group">
+                 <label className="form-label" style={{ fontSize: 10 }}>Status</label>
+                  <select className="form-select" style={{ padding: '7px 10px' }} value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
+                    <option value="true">Active</option>
+                    <option value="false">Inactive</option>
+                  </select>
+              </div>
+              <div className="form-group" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'flex-end' }}>
+                <label className="flex items-center gap-3 cursor-pointer p-3 bg-accent-dim rounded-xl w-full" style={{ border: '1.5px solid var(--accent)', height: '38px' }}>
+                  <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
+                  <span className="form-label mb-0" style={{ fontWeight: 900, color: 'var(--accent)', fontSize: 11, letterSpacing: '0.5px' }}>GRANT SUPER ADMIN PRIVILEGES</span>
+                </label>
+              </div>
+            </div>
+          </section>
+
+          {/* ROW 2: Branch Authorization (Large Tiles) */}
+          <section>
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 14 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>2. Branch Portfolio Authorization</span>
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+              {branches.map(b => {
+                const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
+                return (
+                  <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: 16, 
+                    padding: '16px 20px', 
+                    background: isSelected ? 'var(--bg)' : 'var(--bg3)', 
+                    border: `2px solid ${isSelected ? 'var(--accent)' : 'transparent'}`, 
+                    boxShadow: isSelected ? '0 8px 20px rgba(99, 102, 241, 0.15)' : 'none', 
+                    borderRadius: 16, 
+                    cursor: 'pointer', 
+                    transition: 'all 0.25s',
+                    position: 'relative',
+                    overflow: 'hidden'
+                  }}>
+                    <div style={{ width: 44, height: 44, borderRadius: 12, background: isSelected ? 'var(--accent-dim)' : 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       <Building size={20} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <span style={{ fontSize: 13, fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text1)', display: 'block' }}>{b.name}</span>
+                      <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{isSelected ? 'Authorized' : 'Restricted'}</span>
+                    </div>
+                    {isSelected ? <CheckSquare size={20} color="var(--accent)" /> : <Square size={20} color="var(--text3)" />}
+                    {form.branch_id == b.id && (
+                      <div style={{ position: 'absolute', top: 0, left: 0, padding: '2px 8px', background: 'var(--accent)', color: 'white', fontSize: 8, fontWeight: 900, borderRadius: '0 0 10px 0' }}>PRIMARY</div>
+                    )}
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">Email Address *</label>
-                    <input className="form-input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="john@example.com" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Department</label>
-                    <select className="form-select" value={form.department_id} onChange={e => set('department_id', e.target.value)}>
-                      <option value="">— Select —</option>
-                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Global Role</label>
-                    <select className="form-select" value={form.role_id} onChange={e => set('role_id', e.target.value)}>
-                      <option value="">— Default —</option>
+                );
+              })}
+            </div>
+          </section>
+
+          {/* ROW 3: Module Permissions & Roles (Horizontal Grid) */}
+          <section style={{ flex: 1 }}>
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 14 }}>
+              <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>3. Professional Module Permissions</span>
+            </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+              {ALL_MODULES.map(m => {
+                const roleId = (form.allowed_modules || {})[m.key];
+                return (
+                  <div key={m.key} style={{ 
+                    display: 'flex', 
+                    flexDirection: 'column',
+                    gap: 12,
+                    padding: '16px', 
+                    background: roleId ? 'var(--bg)' : 'var(--bg2)', 
+                    border: `2px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
+                    borderRadius: 18, 
+                    boxShadow: roleId ? '0 10px 25px rgba(99, 102, 241, 0.12)' : 'none',
+                    transition: 'all 0.3s'
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ 
+                        width: 54, 
+                        height: 54, 
+                        minWidth: 54,
+                        background: roleId ? 'var(--accent)' : 'var(--bg3)', 
+                        borderRadius: 15, 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        color: roleId ? 'white' : 'var(--text3)' 
+                      }}>
+                        <Shield size={28} />
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                        <span style={{ fontSize: 14, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)', marginBottom: 2 }}>{m.name}</span>
+                        <span style={{ fontSize: 9, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{roleId ? 'Operational' : 'Access Locked'}</span>
+                      </div>
+                    </div>
+                    <select 
+                      className="form-select" 
+                      value={roleId || ''} 
+                      onChange={e => setModuleRole(m.key, e.target.value)} 
+                      style={{ 
+                        width: '100%', 
+                        borderRadius: 12, 
+                        padding: '10px 15px',
+                        fontSize: 13, 
+                        background: roleId ? 'var(--bg)' : 'var(--bg3)',
+                        border: roleId ? '2.5px solid var(--accent)' : '1px solid var(--border)', 
+                        fontWeight: roleId ? 800 : 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <option value="">— No Permissions —</option>
                       {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
                   </div>
-                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label">{editing ? 'New Password (Optional)' : 'Password *'}</label>
-                    <input className="form-input" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                     <label className="form-label">Account Status</label>
-                      <select className="form-select" value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                      </select>
-                  </div>
-                  <div className="form-group flex items-end">
-                    <label className="flex items-center gap-2 cursor-pointer p-3 bg-accent-dim rounded-xl" style={{ border: '1px solid var(--accent)', transition: 'all 0.2s' }}>
-                      <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
-                      <span className="form-label mb-0" style={{ fontWeight: 800, color: 'var(--accent)', fontSize: 12, letterSpacing: '0.5px' }}>SUPER ADMIN ACCESS</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 20 }}>
-                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Branch Authorization</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, padding: 15, background: 'var(--bg2)', borderRadius: 16, border: '1px solid var(--border)', minHeight: 120 }}>
-                  {branches.map(b => {
-                    const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
-                    return (
-                      <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: isSelected ? 'var(--bg)' : 'var(--bg3)', border: `1.5px solid ${isSelected ? 'var(--accent)' : 'transparent'}`, boxShadow: isSelected ? '0 4px 12px rgba(99, 102, 241, 0.12)' : 'none', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s' }}>
-                        {isSelected ? <CheckSquare size={18} color="var(--accent)" /> : <Square size={18} color="var(--text3)" />}
-                        <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--accent)' : 'var(--text2)' }}>{b.name}</span>
-                        {form.branch_id == b.id && <Badge color="var(--accent)" style={{ fontSize: 9 }}>PRIMARY</Badge>}
-                      </div>
-                    );
-                  })}
-                </div>
-                <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 12, fontStyle: 'italic', paddingLeft: 5 }}>* Users can view records starting from their Primary branch and any additional authorized branches.</p>
-              </div>
+                );
+              })}
             </div>
-
-            {/* Right Column: Module Access & Specialized Roles */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 24 }}>
-                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Module Permissions & Roles</span>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                {ALL_MODULES.map(m => {
-                  const roleId = (form.allowed_modules || {})[m.key];
-                  return (
-                    <div key={m.key} style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      padding: '16px 24px', 
-                      background: roleId ? 'var(--bg)' : 'var(--bg2)', 
-                      border: `2px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
-                      borderRadius: 16, 
-                      boxShadow: roleId ? '0 6px 16px rgba(99, 102, 241, 0.1)' : 'none',
-                      transition: 'all 0.25s'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
-                        <div style={{ 
-                          width: 48, 
-                          height: 48, 
-                          minWidth: 48,
-                          background: roleId ? 'var(--accent)' : 'var(--bg3)', 
-                          borderRadius: 14, 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          color: roleId ? 'white' : 'var(--text3)' 
-                        }}>
-                          <Shield size={24} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: 15, fontWeight: 800, color: roleId ? 'var(--text1)' : 'var(--text2)', marginBottom: 4 }}>{m.name}</span>
-                          <span style={{ fontSize: 10, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>{roleId ? 'Access Granted' : 'Locked'}</span>
-                        </div>
-                      </div>
-                      <select 
-                        className="form-select" 
-                        value={roleId || ''} 
-                        onChange={e => setModuleRole(m.key, e.target.value)} 
-                        style={{ 
-                          width: '180px', 
-                          borderRadius: 12, 
-                          padding: '10px 15px',
-                          fontSize: 13, 
-                          background: roleId ? 'var(--bg)' : 'var(--bg3)',
-                          border: roleId ? '2.5px solid var(--accent)' : '1px solid var(--border)', 
-                          fontWeight: roleId ? 800 : 500,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s'
-                        }}
-                      >
-                        <option value="">— No Access —</option>
-                        {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          </section>
         </div>
       </Layout>
     );
