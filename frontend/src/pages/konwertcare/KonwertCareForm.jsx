@@ -126,7 +126,7 @@ export default function KonwertCareForm() {
         </button>
         {!isNew && form.reference && <span className="ref-text" style={{ fontSize: 14 }}>{form.reference}</span>}
         {stages.length > 0 && (
-          <div className="flex gap-2" style={{ marginLeft: 16 }}>
+          <div className="hide-scrollbar" style={{ display: 'flex', gap: 6, marginLeft: 16, overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: '50%' }}>
             {stages.map(s => (
               <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => set('stage_id', s.id)}
                 style={form.stage_id === s.id

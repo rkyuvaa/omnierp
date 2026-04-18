@@ -172,7 +172,7 @@ export default function InstallationForm() {
 
       {/* Stage bar */}
       {!isNew && stages.length > 0 && (
-        <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20, padding: '10px 0' }}>
+        <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, marginBottom: 20, padding: '10px 0', overflowX: 'auto', whiteSpace: 'nowrap' }}>
           {stages.map(s => {
             const isCurrent = form.stage_id === s.id;
             return (

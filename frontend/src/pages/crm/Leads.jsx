@@ -328,7 +328,7 @@ export default function CRMLeads() {
 
       {/* ── Stage cards with lead count ── */}
       {dashboard && (
-        <div style={{ display: 'flex', gap: 10, paddingBottom: 10, flexWrap: 'wrap', marginBottom: 8 }}>
+        <div className="hide-scrollbar" style={{ display: 'flex', gap: 10, paddingBottom: 12, overflowX: 'auto', marginBottom: 8, whiteSpace: 'nowrap' }}>
           {dashboard.stage_counts.map(s => (
             <div key={s.id} onClick={() => handleStage(s.id)}
               style={{

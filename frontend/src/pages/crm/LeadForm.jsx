@@ -404,7 +404,7 @@ export default function LeadForm() {
       </div>
 
       {!isNew && stages.length > 0 && (
-        <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 20, padding: "10px 0", overflowX: "visible", whiteSpace: "nowrap", minWidth: "100%", width: "100%", maxWidth: "100%", boxSizing: "border-box", alignItems: "center" }}>
+        <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "nowrap", gap: 8, marginBottom: 20, padding: "10px 0", overflowX: "auto", whiteSpace: "nowrap", width: "100%", boxSizing: "border-box", alignItems: "center" }}>
           
           {stages.map((s) => {
             const isCurrent = form.stage_id === s.id;
