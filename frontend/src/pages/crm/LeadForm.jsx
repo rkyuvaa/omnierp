@@ -482,57 +482,42 @@ export default function LeadForm() {
                </div>
             </div>
           {tabs.length > 0 && (
-            <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "wrap", gap: 10, marginBottom: 20, padding: "10px 5px", borderBottom: "1px solid var(--border)" }}>
-              
-              {tabs.map((t, i) => {
-                const isActive = activeTab === i;
-                return (
-                  <div key={t.id} style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
-                    <button onClick={() => setActiveTab(i)} style={{
-                      padding: "6px 16px", borderRadius: isActive ? "8px 8px 0 0" : "8px", cursor: "pointer", transition: "all 0.2s",
-                      background: isActive ? "var(--accent)" : "transparent", color: isActive ? "#fff" : "var(--text2)", borderBottom: isActive ? "3px solid var(--accent)" : "3px solid transparent",
-                      fontSize: "11px", borderRadius: isActive ? "8px 8px 0 0" : "8px", border: isActive ? "1px solid var(--accent)" : "1px solid transparent", fontFamily: "inherit", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px",
-                      boxShadow: isActive ? "0 4px 12px var(--accent)40" : "none",
-                      border: "1px solid " + (isActive ? "var(--accent)" : "transparent"),
-                      whiteSpace: "nowrap"
-                    }}>{t.name}</button>
-                    {editLayout && (
-                      <div style={{ display: "flex", gap: 2 }}>
-                        <button className="btn btn-ghost btn-sm" style={{ padding: "4px" }} onClick={(e) => { e.stopPropagation(); setTabModal(t); }}><Pencil size={11}/></button>
-                        <button className="btn btn-danger btn-sm" style={{ padding: "4px", background: "rgba(239, 68, 68, 0.1)" }} onClick={(e) => { e.stopPropagation(); setDeleteConfirm({type: "tab", id: t.id, name: t.name}); }}><Trash2 size={11}/></button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-              
-          </div>
+            <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
+              {tabs.map((t,i) => (
+                <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+                  <button onClick={() => setActiveTab(i)} style={{
+                    padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                    background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                    borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                    color:activeTab===i?'var(--accent)':'var(--text2)'
+                  }}>{t.name}</button>
+                  {editLayout && <>
+                    <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
+                    <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                  </>}
+                </div>
+              ))}
+            </div>
           )}
-          </div>{/* Tab content */}
-          {currentTab&&(
-            <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden", borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
-              <div style={{ ...gridStyle, width: "100%", overflowX: "hidden" }}>
-                {(currentTab.fields||[]).filter(f => isVisible(f,form.custom_data)).map(f => (
-                  <div key={f.id} style={{ gridColumn: colSpan[f.width]||'1/-1', position:'relative' }}>
-                    {f.field_type!=='boolean'&&(
-                      <label className="form-label">{f.field_label}{f.required&&<span style={{color:'var(--red)'}}> *</span>}</label>
-                    )}
-                    <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name,v)}/>
-                    {editLayout&&(
+          </div>
+
+          {/* Tab content */}
+          {currentTab && (
+            <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 }}>
+                {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
+                  <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position:'relative' }}>
+                    {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{ color:'var(--red)' }}> *</span>}</label>}
+                    <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                    {editLayout && (
                       <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
-                        <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }}
-                          onClick={() => setFieldModal({field:{...f,_stageRule:stageRules.find(r=>r.field_name===f.field_name)?.stage_id||''},tabId:currentTab.id})}>
-                          <Pencil size={11}/>
-                        </button>
-                        <button className="btn btn-danger btn-sm" style={{ padding:'2px 6px' }}
-                          onClick={() => setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}>
-                          <Trash2 size={11}/>
-                        </button>
+                        <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }} onClick={() => setFieldModal({field:{...f},tabId:currentTab.id})}><Pencil size={11}/></button>
+                        <button className="btn btn-danger btn-sm" style={{ padding:'2px 6px' }} onClick={() => setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
                       </div>
                     )}
                   </div>
                 ))}
-                {editLayout&&(
+                {editLayout && (
                   <div style={{ gridColumn:'1/-1', marginTop:8 }}>
                     <button className="btn btn-ghost btn-sm"
                       onClick={() => setFieldModal({field:{...emptyField,tab_id:currentTab.id,sort_order:(currentTab.fields||[]).length},tabId:currentTab.id})}>
@@ -544,9 +529,9 @@ export default function LeadForm() {
                   <p className="text-muted text-sm" style={{ gridColumn:'1/-1' }}>No fields in this tab yet.</p>
                 )}
               </div>
-              
-          </div>
+            </div>
           )}
+
           {tabs.length===0&&(
             <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color:'var(--text2)', fontSize:13 }}>
               {editLayout ? (
