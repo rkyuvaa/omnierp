@@ -44,10 +44,10 @@ export default function AdminUsers() {
 
   const load = useCallback(() => {
     setLoading(true);
-    const pUsers = api.get('/users/').then(r => r.data).catch(() => []);
-    const pRoles = api.get('/roles/').then(r => r.data).catch(() => []);
-    const pBranches = api.get('/branches/').then(r => r.data).catch(() => []);
-    const pDepts = api.get('/departments/').then(r => r.data).catch(() => []);
+    const pUsers = api.get('/users').then(r => r.data).catch(() => []);
+    const pRoles = api.get('/roles').then(r => r.data).catch(() => []);
+    const pBranches = api.get('/branches').then(r => r.data).catch(() => []);
+    const pDepts = api.get('/departments').then(r => r.data).catch(() => []);
 
     Promise.all([pUsers, pRoles, pBranches, pDepts])
       .then(([u, r, b, d]) => { 
