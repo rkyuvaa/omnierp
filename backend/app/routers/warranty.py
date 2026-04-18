@@ -54,6 +54,10 @@ def create_product(data: dict, db: Session = Depends(get_db)):
         valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data", "bom_id"]
         product_data = {k: v for k, v in data.items() if k in valid_fields}
         
+        # Convert empty serial_number to None to avoid unique constraint clash when empty
+        if not product_data.get("serial_number"):
+            product_data["serial_number"] = None
+
         # Default title to BOM name if title is empty
         if not product_data.get("title") and product_data.get("bom_id"):
             bom = db.query(BOM).filter(BOM.id == product_data["bom_id"]).first()
@@ -86,6 +90,10 @@ def update_product(id: int, data: dict, db: Session = Depends(get_db)):
         for k, v in data.items():
             if k in valid_fields: setattr(p, k, v)
             
+        # Convert empty serial_number to None to avoid unique constraint clash when empty
+        if not p.serial_number:
+            p.serial_number = None
+
         # Default title to BOM name if title is empty
         if not p.title and p.bom_id:
             bom = db.query(BOM).filter(BOM.id == p.bom_id).first()
