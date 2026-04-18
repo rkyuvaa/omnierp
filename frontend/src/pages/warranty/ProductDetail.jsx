@@ -105,11 +105,11 @@ export default function ProductDetail() {
       const payload = { ...form, stage_id: form.stage_id || null, bom_id: form.bom_id || null };
       if (isNew) {
         const r = await api.post('/warranty/products', payload);
-        toast.success('✓ Vehicle created!');
+        toast.success('✓ Success');
         navigate(`/warranty/products/${r.data.id}`);
       } else {
         await api.put(`/warranty/products/${id}`, payload);
-        toast.success('✓ Saved!');
+        toast.success('✓ Saved');
         setRecentlySaved(true);
         setTimeout(() => setRecentlySaved(false), 3000);
       }
@@ -156,7 +156,7 @@ export default function ProductDetail() {
   const currentTab = tabs[activeTab];
 
   return (
-    <Layout title={isNew ? 'New Product' : `Vehicle: ${form.name}`}>
+    <Layout title={isNew ? 'New Entry' : `Vehicle: ${form.name}`}>
       <div className="toolbar">
         <button className="btn btn-ghost" onClick={()=>navigate('/warranty/products')}><ArrowLeft size={15}/> Back</button>
         {!isNew && stages.length > 0 && (
@@ -188,119 +188,126 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1.5fr 1fr', gap:20 }}>
-        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          {/* Main Info with Warranty Integrated */}
-          <div className="card">
-            <div className="card-header"><span className="card-title">VEHICLE INFORMATION</span></div>
-            <div className="form-grid">
-              <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="form-label">VEHICLE NUMBER *</label>
-                <input className="form-input text-lg fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="e.g. KA01AB1234" />
+      {/* Top Section: Side by Side */}
+      <div style={{ display:'grid', gridTemplateColumns:'420px 1fr', gap:20, marginBottom: 20 }}>
+        {/* Vehicle Info Card (Narrower) */}
+        <div className="card" style={{ height: 'fit-content' }}>
+          <div className="card-header"><span className="card-title">VEHICLE INFO</span></div>
+          <div className="form-grid" style={{ gridTemplateColumns: '1fr' }}>
+            <div className="form-group">
+              <label className="form-label">VEHICLE NUMBER *</label>
+              <input className="form-input text-lg fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="KA01AB1234" />
+            </div>
+            <div className="form-group">
+              <label className="form-label">CHASSIS / SERIAL</label>
+              <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="form-label">MODEL (BOM) *</label>
+              <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
+                <option value="">-- Select BOM --</option>
+                {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+            </div>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 120px', gap:10 }}>
+              <div className="form-group">
+                <label className="form-label">WARRANTY PERIOD</label>
+                <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
               </div>
               <div className="form-group">
-                <label className="form-label">CHASSIS / SERIAL NUMBER</label>
-                <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">BOM / MODEL *</label>
-                <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
-                  <option value="">-- Select BOM --</option>
-                  {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                <label className="form-label">UNIT</label>
+                <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
+                  <option value="months">months</option>
+                  <option value="years">years</option>
                 </select>
               </div>
-              
-              <div className="form-group" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-                <label className="form-label">WARRANTY PERIOD</label>
-                <div style={{ display:'flex', gap:8 }}>
-                  <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
-                  <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
-                    <option value="months">months</option>
-                    <option value="years">years</option>
-                  </select>
-                </div>
-              </div>
-              <div className="form-group" style={{ borderTop: '1px solid var(--border)', paddingTop: 16 }}>
-                <label className="form-label">WARRANTY NOTES</label>
-                <textarea className="form-input" rows={1} value={form.notes} onChange={e=>set('notes', e.target.value)} placeholder="e.g. Battery warranty 3yrs..." />
-              </div>
+            </div>
+            <div className="form-group">
+              <label className="form-label">NOTES</label>
+              <textarea className="form-input" rows={2} value={form.notes} onChange={e=>set('notes', e.target.value)} />
             </div>
           </div>
+        </div>
 
-          {/* Custom Tabs */}
-          <div>
-            <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 2 }}>
-              {tabs.map((t,i) => (
-                <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
-                  <button onClick={()=>setActiveTab(i)} style={{
-                    padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
-                    background:'transparent', marginBottom:-2, transition:'all 0.15s',
-                    borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
-                    color:activeTab===i?'var(--accent)':'var(--text2)'
-                  }}>{t.name}</button>
-                  {editLayout && <>
-                    <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal(t)}><Pencil size={11}/></button>
-                    <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
-                  </>}
-                </div>
-              ))}
-              {editLayout && <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal({})}><Plus size={13}/> Add Tab</button>}
+        {/* Component Tracking Card (Line-by-line) */}
+        <div className="card">
+          <div className="card-header"><span className="card-title">COMPONENT TRACKING</span></div>
+          <div className="table-wrap" style={{ border:'none' }}>
+            <table style={{ background:'transparent' }}>
+              <thead>
+                <tr style={{ borderBottom:'2px solid var(--border)' }}>
+                  <th style={{ padding:'10px 8px' }}>COMPONENT</th>
+                  <th style={{ padding:'10px 8px' }}>SERIAL NUMBER</th>
+                  <th style={{ padding:'10px 8px', width:120, textAlign:'center' }}>WARRANTY</th>
+                </tr>
+              </thead>
+              <tbody>
+                {form.component_serials.length > 0 ? (
+                  form.component_serials.map((c, idx) => (
+                    <tr key={idx} style={{ borderBottom:'1px solid var(--border)' }}>
+                      <td className="fw-600 size-13" style={{ padding:'12px 8px' }}>{c.name}</td>
+                      <td style={{ padding:'12px 8px' }}>
+                        <input className="form-input" style={{ height:32, fontSize:13 }} 
+                          value={c.serial_number} 
+                          onChange={e => updateCompSerial(idx, e.target.value)} 
+                          placeholder={`Enter ${c.name} S/N`} />
+                      </td>
+                      <td className="text-muted size-12" style={{ padding:'12px 8px', textAlign:'center' }}>
+                        {c.warranty_period} {c.warranty_unit}
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr><td colSpan={3} style={{ textAlign:'center', padding:40, color:'var(--text3)' }}>Select a BOM Model to start tracking</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Section: Custom Tabs (Full Width) */}
+      <div>
+        <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 2 }}>
+          {tabs.map((t,i) => (
+            <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+              <button onClick={()=>setActiveTab(i)} style={{
+                padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                color:activeTab===i?'var(--accent)':'var(--text2)'
+              }}>{t.name}</button>
+              {editLayout && <>
+                <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal(t)}><Pencil size={11}/></button>
+                <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+              </>}
             </div>
-            {currentTab && (
-              <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-                <div className="form-grid">
-                  {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
-                    <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
-                      {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
-                      <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
-                      {editLayout && (
-                        <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
-                          <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
-                          <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
+          ))}
+          {editLayout && <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal({})}><Plus size={13}/> Add Tab</button>}
+        </div>
+        {currentTab && (
+          <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+            <div className="form-grid">
+              {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
+                <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
+                  {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
+                  <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
                   {editLayout && (
-                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 10, border: '1px dashed var(--border)', borderRadius: 8 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field: {...emptyField, sort_order: (currentTab.fields||[]).length}, tabId: currentTab.id})}><Plus size={14}/> Add Field</button>
+                    <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
+                      <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
                     </div>
                   )}
                 </div>
-              </div>
-            )}
+              ))}
+              {editLayout && (
+                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 10, border: '1px dashed var(--border)', borderRadius: 8 }}>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field: {...emptyField, sort_order: (currentTab.fields||[]).length}, tabId: currentTab.id})}><Plus size={14}/> Add Field</button>
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-
-        {/* Component Serials on the Right Side */}
-        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
-          {form.component_serials.length > 0 ? (
-            <div className="card" style={{ position:'sticky', top: 20 }}>
-              <div className="card-header" style={{ background:'var(--bg2)' }}>
-                <span className="card-title" style={{ color:'var(--accent)' }}>COMPONENT TRACKING</span>
-              </div>
-              <div style={{ padding: '0 12px' }}>
-                {form.component_serials.map((c, idx) => (
-                  <div key={idx} style={{ padding: '12px 0', borderBottom: idx < form.component_serials.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                    <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 6 }}>
-                      <span className="fw-600 size-13">{c.name}</span>
-                      <span className="text-muted size-11">{c.warranty_period} {c.warranty_unit}</span>
-                    </div>
-                    <input className="form-input" style={{ padding: '6px 10px', fontSize: 12, background: 'var(--bg1)' }} 
-                      value={c.serial_number} 
-                      onChange={e => updateCompSerial(idx, e.target.value)} 
-                      placeholder={`Enter ${c.name} Serial`} />
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="card" style={{ textAlign:'center', padding: '40px 20px', color:'var(--text3)' }}>
-              <Package size={40} style={{ margin:'0 auto 10px', opacity:0.3 }}/>
-              <p className="size-13">Select a BOM / Model to track component serial numbers.</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       {tabModal && <TabModal initial={tabModal} onSave={saveTab} onClose={()=>setTabModal(null)} />}
