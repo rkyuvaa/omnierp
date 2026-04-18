@@ -149,89 +149,88 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        <div className="card" style={{ padding: '24px', minHeight: 'calc(100vh - 160px)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+        <div className="card" style={{ padding: '16px 20px', minHeight: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           
-          {/* ROW 1: General Information (4 Columns) */}
+          {/* ROW 1: General Information (Compact) */}
           <section>
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 14 }}>
-              <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>1. User Identity & Core Settings</span>
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>1. Identity & Core Settings</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
               <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10 }}>Full Name *</label>
-                <input className="form-input" style={{ padding: '8px 12px' }} value={form.name} onChange={e => set('name', e.target.value)} placeholder="Entry Name" />
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Full Name</label>
+                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} value={form.name} onChange={e => set('name', e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10 }}>Email Address *</label>
-                <input className="form-input" style={{ padding: '8px 12px' }} type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="email@omnierp.com" />
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Email Address</label>
+                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
               </div>
               <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10 }}>Department</label>
-                <select className="form-select" style={{ padding: '7px 10px' }} value={form.department_id} onChange={e => set('department_id', e.target.value)}>
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Department</label>
+                <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.department_id} onChange={e => set('department_id', e.target.value)}>
                   <option value="">— Select —</option>
                   {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10 }}>Global Role</label>
-                <select className="form-select" style={{ padding: '7px 10px' }} value={form.role_id} onChange={e => set('role_id', e.target.value)}>
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Global Role</label>
+                <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.role_id} onChange={e => set('role_id', e.target.value)}>
                   <option value="">— Default —</option>
                   {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                 </select>
               </div>
               <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10 }}>{editing ? 'New Password' : 'Password *'}</label>
-                <input className="form-input" style={{ padding: '8px 12px' }} type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>{editing ? 'New Password' : 'Password'}</label>
+                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="password" value={form.password} onChange={e => set('password', e.target.value)} />
               </div>
               <div className="form-group">
-                 <label className="form-label" style={{ fontSize: 10 }}>Status</label>
-                  <select className="form-select" style={{ padding: '7px 10px' }} value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
+                 <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Status</label>
+                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
                     <option value="true">Active</option>
                     <option value="false">Inactive</option>
                   </select>
               </div>
               <div className="form-group" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'flex-end' }}>
-                <label className="flex items-center gap-3 cursor-pointer p-3 bg-accent-dim rounded-xl w-full" style={{ border: '1.5px solid var(--accent)', height: '38px' }}>
+                <label className="flex items-center gap-2 cursor-pointer p-2 bg-accent-dim rounded-lg w-full" style={{ border: '1px solid var(--accent)', height: '32px' }}>
                   <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
-                  <span className="form-label mb-0" style={{ fontWeight: 900, color: 'var(--accent)', fontSize: 11, letterSpacing: '0.5px' }}>GRANT SUPER ADMIN PRIVILEGES</span>
+                  <span className="form-label mb-0" style={{ fontWeight: 900, color: 'var(--accent)', fontSize: 10 }}>GRANT SUPER ADMIN PRIVILEGES</span>
                 </label>
               </div>
             </div>
           </section>
 
-          {/* ROW 2: Branch Authorization (Large Tiles) */}
+          {/* ROW 2: Branch Authorization (Compact Tiles) */}
           <section>
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 14 }}>
-              <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>2. Branch Portfolio Authorization</span>
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>2. Branch Portfolio</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
               {branches.map(b => {
                 const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
                 return (
                   <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ 
                     display: 'flex', 
                     alignItems: 'center', 
-                    gap: 16, 
-                    padding: '16px 20px', 
+                    gap: 10, 
+                    padding: '8px 12px', 
                     background: isSelected ? 'var(--bg)' : 'var(--bg3)', 
-                    border: `2px solid ${isSelected ? 'var(--accent)' : 'transparent'}`, 
-                    boxShadow: isSelected ? '0 8px 20px rgba(99, 102, 241, 0.15)' : 'none', 
-                    borderRadius: 16, 
+                    border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`, 
+                    boxShadow: isSelected ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none', 
+                    borderRadius: 12, 
                     cursor: 'pointer', 
-                    transition: 'all 0.25s',
-                    position: 'relative',
-                    overflow: 'hidden'
+                    transition: 'all 0.2s',
+                    position: 'relative'
                   }}>
-                    <div style={{ width: 44, height: 44, borderRadius: 12, background: isSelected ? 'var(--accent-dim)' : 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <Building size={20} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
+                    <div style={{ width: 32, height: 32, borderRadius: 8, background: isSelected ? 'var(--accent-dim)' : 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                       <Building size={16} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
                     </div>
                     <div style={{ flex: 1 }}>
-                      <span style={{ fontSize: 13, fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text1)', display: 'block' }}>{b.name}</span>
-                      <span style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{isSelected ? 'Authorized' : 'Restricted'}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text1)', display: 'block' }}>{b.name}</span>
+                      <span style={{ fontSize: 8, color: 'var(--text3)', textTransform: 'uppercase' }}>{isSelected ? 'Authorized' : 'Locked'}</span>
                     </div>
-                    {isSelected ? <CheckSquare size={20} color="var(--accent)" /> : <Square size={20} color="var(--text3)" />}
+                    {isSelected ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
                     {form.branch_id == b.id && (
-                      <div style={{ position: 'absolute', top: 0, left: 0, padding: '2px 8px', background: 'var(--accent)', color: 'white', fontSize: 8, fontWeight: 900, borderRadius: '0 0 10px 0' }}>PRIMARY</div>
+                      <div style={{ position: 'absolute', top: 0, right: 0, padding: '1px 6px', background: 'var(--accent)', color: 'white', fontSize: 7, fontWeight: 900, borderRadius: '0 10px 0 10px' }}>PRIMARY</div>
                     )}
                   </div>
                 );
@@ -239,44 +238,42 @@ export default function AdminUsers() {
             </div>
           </section>
 
-          {/* ROW 3: Module Permissions & Roles (Horizontal Grid) */}
+          {/* ROW 3: Module Permissions (Surgical Layout) */}
           <section style={{ flex: 1 }}>
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 6, marginBottom: 14 }}>
-              <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.5px' }}>3. Professional Module Permissions</span>
+            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
+              <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>3. Module Permissions</span>
             </div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '14px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
               {ALL_MODULES.map(m => {
                 const roleId = (form.allowed_modules || {})[m.key];
                 return (
                   <div key={m.key} style={{ 
                     display: 'flex', 
                     flexDirection: 'column',
-                    gap: 12,
-                    padding: '16px', 
+                    gap: 8,
+                    padding: '10px 12px', 
                     background: roleId ? 'var(--bg)' : 'var(--bg2)', 
-                    border: `2px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
-                    borderRadius: 18, 
-                    boxShadow: roleId ? '0 10px 25px rgba(99, 102, 241, 0.12)' : 'none',
-                    transition: 'all 0.3s'
+                    border: `1.5px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
+                    borderRadius: 14, 
+                    boxShadow: roleId ? '0 6px 15px rgba(99, 102, 241, 0.08)' : 'none'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       <div style={{ 
-                        width: 54, 
-                        height: 54, 
-                        minWidth: 54,
+                        width: 36, 
+                        height: 36, 
                         background: roleId ? 'var(--accent)' : 'var(--bg3)', 
-                        borderRadius: 15, 
+                        borderRadius: 10, 
                         display: 'flex', 
                         alignItems: 'center', 
                         justifyContent: 'center', 
                         color: roleId ? 'white' : 'var(--text3)' 
                       }}>
-                        <Shield size={28} />
+                        <Shield size={20} />
                       </div>
                       <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <span style={{ fontSize: 14, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)', marginBottom: 2 }}>{m.name}</span>
-                        <span style={{ fontSize: 9, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '1px' }}>{roleId ? 'Operational' : 'Access Locked'}</span>
+                        <span style={{ fontSize: 12, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)' }}>{m.name}</span>
+                        <span style={{ fontSize: 8, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 800, textTransform: 'uppercase' }}>{roleId ? 'Granted' : 'Locked'}</span>
                       </div>
                     </div>
                     <select 
@@ -285,16 +282,15 @@ export default function AdminUsers() {
                       onChange={e => setModuleRole(m.key, e.target.value)} 
                       style={{ 
                         width: '100%', 
-                        borderRadius: 12, 
-                        padding: '10px 15px',
-                        fontSize: 13, 
+                        borderRadius: 8, 
+                        padding: '6px 10px',
+                        fontSize: 11, 
                         background: roleId ? 'var(--bg)' : 'var(--bg3)',
-                        border: roleId ? '2.5px solid var(--accent)' : '1px solid var(--border)', 
-                        fontWeight: roleId ? 800 : 500,
-                        cursor: 'pointer'
+                        border: roleId ? '1.5px solid var(--accent)' : '1px solid var(--border)', 
+                        fontWeight: roleId ? 800 : 500
                       }}
                     >
-                      <option value="">— No Permissions —</option>
+                      <option value="">— No Access —</option>
                       {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                     </select>
                   </div>
