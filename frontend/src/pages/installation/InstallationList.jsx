@@ -90,7 +90,13 @@ export default function InstallationList() {
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
               }}>
               <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1.1, whiteSpace: 'normal' }}>{s.name}</span>
-              <span style={{ fontSize: 12, fontWeight: 900, opacity: 0.9 }}>
+              <span style={{ 
+                fontSize: 14, fontWeight: 900, marginTop: 6,
+                background: '#ffffff', color: stageFilter === s.id ? s.color : s.color,
+                minWidth: 26, height: 26, borderRadius: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0 4px'
+              }}>
                 {s.count}
               </span>
             </div>
