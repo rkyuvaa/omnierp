@@ -11,9 +11,7 @@ const moduleItems = [
   {to:'/konwertcare',label:'Konwert Care+',icon:HeartPulse,key:'konwertcare'}
 ];
 const adminItems = [
-  {to:'/admin/users',label:'Users',icon:Users},
-  {to:'/admin/branches',label:'Branches',icon:GitBranch},
-  {to:'/admin/roles',label:'Roles',icon:Shield},
+  {to:'/admin/users',label:'User Management',icon:Users},
   {to:'/admin/modules',label:'Modules',icon:Layers},
   {to:'/warranty/bom',label:'BOM Master',icon:Package},
   {to:'/studio',label:'Studio',icon:Settings},

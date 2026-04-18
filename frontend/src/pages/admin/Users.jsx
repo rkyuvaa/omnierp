@@ -27,28 +27,21 @@ export default function AdminUsers() {
   const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [view, setView] = useState('users'); // 'users' or 'departments'
+  const [view, setView] = useState('users'); // 'users', 'departments', 'branches', 'roles'
   const [mode, setMode] = useState('list'); // 'list' or 'form'
   
   // User Form
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
-  const [deleting, setDeleting] = useState(null);
   const [history, setHistory] = useState([]);
 
-  const loadHistory = async (uid) => {
-    try {
-      const res = await api.get(`/audit?module=users&record_id=${uid}`);
-      setHistory(res.data.items || []);
-    } catch (e) { console.error("Error loading activity", e); }
-  };
-
-  // Department Modal
-  const [deptModal, setDeptModal] = useState(false);
-  const [deptForm, setDeptForm] = useState({ name: '', is_active: true });
-  const [deptEditing, setDeptEditing] = useState(null);
-  const [deletingDept, setDeletingDept] = useState(null);
+  // Generic Modals (Dept, Branch, Role)
+  const [modal, setModal] = useState(false);
+  const [modalMode, setModalMode] = useState(''); // 'dept', 'branch', 'role'
+  const [modalForm, setModalForm] = useState({});
+  const [modalEditing, setModalEditing] = useState(null);
+  const [confirming, setConfirming] = useState(null); // { type, id, name }
 
   const load = useCallback(() => {
     setLoading(true);
@@ -95,6 +88,13 @@ export default function AdminUsers() {
     setMode('form');
   };
 
+  const loadHistory = async (uid) => {
+    try {
+      const res = await api.get(`/audit?module=users&record_id=${uid}`);
+      setHistory(res.data.items || []);
+    } catch (e) { console.error("Error loading activity", e); }
+  };
+
   const saveUser = async () => {
     if (!form.name || !form.email) return toast.error('Name and Email are required');
     setSaving(true);
@@ -117,20 +117,48 @@ export default function AdminUsers() {
     finally { setSaving(false); }
   };
 
-  const saveDept = async () => {
-    if (!deptForm.name) return toast.error('Name is required');
+  const saveModal = async () => {
+    if (!modalForm.name) return toast.error('Name is required');
     try {
-      if (deptEditing) await api.put(`/api/departments/${deptEditing}`, deptForm);
-      else await api.post('/api/departments/', deptForm);
-      toast.success('Department saved');
-      setDeptModal(false); load();
-    } catch (e) { toast.error('Error saving department'); }
+      let url = '';
+      if (modalMode === 'dept') url = '/departments';
+      if (modalMode === 'branch') url = '/branches';
+      if (modalMode === 'role') url = '/roles';
+
+      if (modalEditing) await api.put(`${url}/${modalEditing}`, modalForm);
+      else await api.post(`${url}/`, modalForm);
+
+      toast.success('Record saved'); setModal(false); load();
+    } catch (e) { toast.error('Error saving data'); }
   };
 
-  const deleteUser = async () => {
-    await api.delete(`/users/${deleting}`);
-    toast.success('Deleted'); setDeleting(null); load();
+  const executeDelete = async () => {
+    try {
+      let url = '';
+      if (confirming.type === 'user') url = '/users';
+      if (confirming.type === 'dept') url = '/departments';
+      if (confirming.type === 'branch') url = '/branches';
+      if (confirming.type === 'role') url = '/roles';
+
+      await api.delete(`${url}/${confirming.id}`);
+      toast.success('Deleted successfully');
+      setConfirming(null); load();
+    } catch (e) { toast.error('Error deleting record'); }
   };
+
+  const toggleRolePerm = (key) => {
+    setModalForm(f => ({
+      ...f,
+      permissions: { ...(f.permissions || {}), [key]: !f.permissions?.[key] }
+    }));
+  };
+
+  const PERMS = [
+    { key: 'can_read', label: 'READ' },
+    { key: 'can_create', label: 'CREATE' },
+    { key: 'can_edit', label: 'EDIT' },
+    { key: 'can_delete', label: 'DELETE' },
+  ];
 
   const toggleBranch = (bid) => {
     const current = form.allowed_branches || [];
@@ -395,21 +423,24 @@ export default function AdminUsers() {
     <Layout title="User Management">
       <div className="toolbar" style={{ marginBottom: 20 }}>
         <div className="flex gap-2">
-          <button className={`btn ${view === 'users' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('users')}>
-            <UsersIcon size={16} /> Users
+          <button className={`btn ${view === 'users' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('users')} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700 }}>
+            <UsersIcon size={14} /> Users
           </button>
-          <button className={`btn ${view === 'departments' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('departments')}>
-            <Boxes size={16} /> Departments
+          <button className={`btn ${view === 'departments' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('departments')} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700 }}>
+            <Boxes size={14} /> Departments
+          </button>
+          <button className={`btn ${view === 'branches' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('branches')} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700 }}>
+            <Building size={14} /> Branches
+          </button>
+          <button className={`btn ${view === 'roles' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setView('roles')} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, fontWeight: 700 }}>
+            <Shield size={14} /> Roles
           </button>
         </div>
         <div className="toolbar-right">
-          {view === 'users' ? (
-            <button className="btn btn-primary" onClick={openNew}><Plus size={15} /> New User</button>
-          ) : (
-            <button className="btn btn-primary" onClick={() => { setDeptForm({ name: '', is_active: true }); setDeptEditing(null); setDeptModal(true); }}>
-              <Plus size={15} /> New Department
-            </button>
-          )}
+          {view === 'users' && <button className="btn btn-primary btn-sm" onClick={openNew}><Plus size={14} /> New User</button>}
+          {view === 'departments' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', is_active: true }); setModalEditing(null); setModalMode('dept'); setModal(true); }}><Plus size={14} /> New Dept</button>}
+          {view === 'branches' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', address: '', is_active: true }); setModalEditing(null); setModalMode('branch'); setModal(true); }}><Plus size={14} /> New Branch</button>}
+          {view === 'roles' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false } }); setModalEditing(null); setModalMode('role'); setModal(true); }}><Plus size={14} /> New Role</button>}
         </div>
       </div>
 
@@ -478,7 +509,7 @@ export default function AdminUsers() {
                       <td style={{ padding: '12px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                           <button className="btn btn-ghost btn-sm" style={{ padding: 5 }} onClick={() => openEdit(u)} title="Settings"><Pencil size={13} /></button>
-                          <button className="btn btn-danger btn-sm" style={{ padding: 5, opacity: 0.7 }} onClick={() => setDeleting(u.id)} title="Delete"><Trash2 size={13} /></button>
+                          <button className="btn btn-danger btn-sm" style={{ padding: 5, opacity: 0.7 }} onClick={() => setConfirming({ type: 'user', id: u.id, name: u.name })} title="Delete"><Trash2 size={13} /></button>
                         </div>
                       </td>
                     </tr>
@@ -488,52 +519,159 @@ export default function AdminUsers() {
             </div>
           )}
         </div>
+      ) : view === 'departments' ? (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Department Name</th>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Status</th>
+                  <th style={{ padding: '12px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {departments.map(d => (
+                  <tr key={d.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{d.name}</td>
+                    <td style={{ padding: '12px' }}>
+                      <Badge color={d.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10, fontWeight: 800 }}>{d.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <div className="flex gap-2 justify-end">
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { setModalForm({ name: d.name, is_active: d.is_active }); setModalEditing(d.id); setModalMode('dept'); setModal(true); }}><Pencil size={13} /></button>
+                        <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.7 }} onClick={() => setConfirming({ type: 'dept', id: d.id, name: d.name })}><Trash2 size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      ) : view === 'branches' ? (
+        <div className="card">
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Branch Name</th>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Location / Address</th>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Status</th>
+                  <th style={{ padding: '12px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {branches.map(b => (
+                  <tr key={b.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{b.name}</td>
+                    <td style={{ padding: '12px', fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>{b.address || 'Standard Location'}</td>
+                    <td style={{ padding: '12px' }}>
+                      <Badge color={b.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10, fontWeight: 800 }}>{b.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <div className="flex gap-2 justify-end">
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { setModalForm({ name: b.name, address: b.address || '', is_active: b.is_active }); setModalEditing(b.id); setModalMode('branch'); setModal(true); }}><Pencil size={13} /></button>
+                        <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.7 }} onClick={() => setConfirming({ type: 'branch', id: b.id, name: b.name })}><Trash2 size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       ) : (
         <div className="card">
-            <div className="table-wrap">
-              <table>
-                <thead><tr><th>Department Name</th><th>Status</th><th></th></tr></thead>
-                <tbody>
-                  {departments.map(d => (
-                    <tr key={d.id}>
-                      <td className="fw-600">{d.name}</td>
-                      <td><Badge color={d.is_active ? 'var(--green)' : 'var(--red)'}>{d.is_active ? 'Active' : 'Inactive'}</Badge></td>
-                      <td className="text-right">
-                        <div className="flex gap-2 justify-end">
-                          <button className="btn btn-ghost btn-sm" onClick={() => { setDeptForm({ name: d.name, is_active: d.is_active }); setDeptEditing(d.id); setDeptModal(true); }}><Pencil size={13} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                  {departments.length === 0 && <tr><td colSpan={3} className="text-center p-4">No departments found.</td></tr>}
-                </tbody>
-              </table>
-            </div>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr style={{ borderBottom: '2px solid var(--border)' }}>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Role Name</th>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Global Permissions</th>
+                  <th style={{ padding: '12px' }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {roles.map(r => (
+                  <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{r.name}</td>
+                    <td style={{ padding: '12px' }}>
+                      <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
+                        {PERMS.filter(p => r.permissions?.[p.key]).map(p => (
+                          <Badge key={p.key} color="var(--accent-dim)" style={{ color: 'var(--accent)', fontSize: 8, fontWeight: 900 }}>{p.label}</Badge>
+                        ))}
+                      </div>
+                    </td>
+                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <div className="flex gap-2 justify-end">
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { setModalForm({ name: r.name, permissions: r.permissions || {} }); setModalEditing(r.id); setModalMode('role'); setModal(true); }}><Pencil size={13} /></button>
+                        <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.7 }} onClick={() => setConfirming({ type: 'role', id: r.id, name: r.name })}><Trash2 size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
-      {/* DEPARTMENT MODAL */}
-      {deptModal && (
+      {modal && (
         <Modal 
-          title={deptEditing ? 'Edit Department' : 'New Department'} 
-          onClose={() => setDeptModal(false)}
-          footer={<><button className="btn btn-ghost" onClick={() => setDeptModal(false)}>Cancel</button><button className="btn btn-primary" onClick={saveDept}>Save</button></>}
+          title={modalEditing ? `Edit ${modalMode}` : `New ${modalMode}`} 
+          onClose={() => setModal(false)}
+          footer={<><button className="btn btn-ghost" onClick={() => setModal(false)}>Cancel</button><button className="btn btn-primary" onClick={saveModal}>Save Changes</button></>}
         >
-          <div className="form-group">
-            <label className="form-label">Department Name</label>
-            <input className="form-input" value={deptForm.name} onChange={e => setDeptForm({...deptForm, name: e.target.value})} placeholder="e.g. Sales, Installation Team" />
-          </div>
-          <div className="form-group mt-4">
-             <label className="form-label">Status</label>
-              <select className="form-select" value={deptForm.is_active} onChange={e => setDeptForm({...deptForm, is_active: e.target.value === 'true'})}>
-                <option value="true">Active</option>
-                <option value="false">Inactive</option>
-              </select>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div className="form-group">
+              <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Name / Identifier</label>
+              <input className="form-input" value={modalForm.name || ''} onChange={e => setModalForm({...modalForm, name: e.target.value})} placeholder="e.g. Sales, Bangalore Branch, Operator" />
+            </div>
+
+            {modalMode === 'branch' && (
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Location Address</label>
+                <textarea className="form-input" value={modalForm.address || ''} onChange={e => setModalForm({...modalForm, address: e.target.value})} placeholder="Full address details..." />
+              </div>
+            )}
+
+            {modalMode === 'role' && (
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10, fontWeight: 800, marginBottom: 10 }}>Global Permission Assets</label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {PERMS.map(p => {
+                    const active = modalForm.permissions?.[p.key];
+                    return (
+                      <div key={p.key} onClick={() => toggleRolePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: active ? 'var(--accent-dim)' : 'var(--bg2)', borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
+                        {active ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
+                        <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text2)' }}>{p.label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            <div className="form-group">
+               <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Operational Status</label>
+                <select className="form-select" value={String(modalForm.is_active !== false)} onChange={e => setModalForm({...modalForm, is_active: e.target.value === 'true'})}>
+                  <option value="true">Active (Live)</option>
+                  <option value="false">Inactive (Disabled)</option>
+                </select>
+            </div>
           </div>
         </Modal>
       )}
 
-      {deleting && <Confirm title="Delete User" message="Are you sure? This action cannot be undone." onConfirm={deleteUser} onCancel={() => setDeleting(null)} />}
+      {confirming && (
+        <Confirm 
+          title={`Delete ${confirming.type.toUpperCase()}`} 
+          message={`Are you sure you want to remove "${confirming.name}"? This action cannot be undone.`} 
+          onConfirm={executeDelete} 
+          onCancel={() => setConfirming(null)} 
+        />
+      )}
     </Layout>
   );
 }
