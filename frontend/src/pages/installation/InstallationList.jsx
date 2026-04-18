@@ -82,7 +82,7 @@ export default function InstallationList() {
             <div key={s.id} onClick={() => handleStage(s.id)}
               style={{
                 display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 12px', borderRadius: 24, cursor: 'pointer', flex: 1, minWidth: '95px',
+                padding: '10px 12px', borderRadius: 12, cursor: 'pointer', flex: 1, minWidth: '95px',
                 height: 72, textAlign: 'center', transition: 'all 0.2s',
                 border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
                 background: stageFilter === s.id ? s.color : (s.color + '15'),

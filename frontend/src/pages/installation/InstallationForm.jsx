@@ -178,7 +178,7 @@ export default function InstallationForm() {
               <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
                   padding: isCurrent ? "8px 12px" : "6px 8px", 
-                  borderRadius: 100,
+                  borderRadius: 12,
                   cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
                   background: isCurrent ? s.color : (s.color + "15"),
                   color: isCurrent ? "#fff" : s.color,
