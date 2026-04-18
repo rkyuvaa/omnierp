@@ -188,46 +188,93 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Main Layout: Wide Info & Tracking Sidebar */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 450px', gap:20, marginBottom: 20 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 450px', gap:20 }}>
         
-        {/* Condensed Vehicle Info Card */}
-        <div className="card" style={{ height: 'fit-content' }}>
-          <div className="card-header"><span className="card-title">VEHICLE INFORMATION</span></div>
-          <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px 12px' }}>
-            <div className="form-group">
-              <label className="form-label">VEHICLE NUMBER *</label>
-              <input className="form-input fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="KA01.." />
-            </div>
-            <div className="form-group">
-              <label className="form-label">CHASSIS / SERIAL</label>
-              <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="form-label">MODEL (BOM) *</label>
-              <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
-                <option value="">-- BOM --</option>
-                {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">WARRANTY (PRD/UNIT)</label>
-              <div style={{ display:'flex', gap:4 }}>
-                <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
-                <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
-                  <option value="months">Mo</option>
-                  <option value="years">Yr</option>
+        {/* Left Column: All Main Content matched to same width */}
+        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+          
+          {/* Condensed Vehicle Info Card */}
+          <div className="card" style={{ height: 'fit-content' }}>
+            <div className="card-header"><span className="card-title">VEHICLE INFORMATION</span></div>
+            <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px 12px' }}>
+              <div className="form-group">
+                <label className="form-label">VEHICLE NUMBER *</label>
+                <input className="form-input fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="KA01.." />
+              </div>
+              <div className="form-group">
+                <label className="form-label">CHASSIS / SERIAL</label>
+                <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">MODEL (BOM) *</label>
+                <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
+                  <option value="">-- BOM --</option>
+                  {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
+              <div className="form-group">
+                <label className="form-label">WARRANTY (PRD/UNIT)</label>
+                <div style={{ display:'flex', gap:4 }}>
+                  <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
+                  <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
+                    <option value="months">Mo</option>
+                    <option value="years">Yr</option>
+                  </select>
+                </div>
+              </div>
+              <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                <label className="form-label">WARRANTY NOTES</label>
+                <textarea className="form-input" rows={1} value={form.notes} onChange={e=>set('notes', e.target.value)} style={{ padding:'6px 10px' }} />
+              </div>
             </div>
-            <div className="form-group" style={{ gridColumn: '1/-1' }}>
-              <label className="form-label">WARRANTY NOTES</label>
-              <textarea className="form-input" rows={1} value={form.notes} onChange={e=>set('notes', e.target.value)} style={{ padding:'6px 10px' }} />
+          </div>
+
+          {/* Shrinked Custom Tabs (Now inside the left column) */}
+          <div>
+            <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 0 }}>
+              {tabs.map((t,i) => (
+                <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+                  <button onClick={()=>setActiveTab(i)} style={{
+                    padding:'8px 18px', border:'none', cursor:'pointer', fontSize:12, fontWeight:600,
+                    background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                    borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                    color:activeTab===i?'var(--accent)':'var(--text2)'
+                  }}>{t.name}</button>
+                  {editLayout && <>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal(t)}><Pencil size={11}/></button>
+                    <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                  </>}
+                </div>
+              ))}
+              {editLayout && <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal({})}><Plus size={13}/> Tab</button>}
             </div>
+            {currentTab && (
+              <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+                <div className="form-grid">
+                  {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
+                    <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
+                      {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
+                      <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
+                      {editLayout && (
+                        <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
+                          <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
+                          <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  {editLayout && (
+                    <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 8, border: '1px dashed var(--border)', borderRadius: 8 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field: {...emptyField, sort_order: (currentTab.fields||[]).length}, tabId: currentTab.id})}><Plus size={14}/> Field</button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* TRACKING Card (Single Line Layout) */}
+        {/* Tracking Card remains on the right */}
         <div className="card" style={{ height: 'fit-content' }}>
           <div className="card-header"><span className="card-title">TRACKING</span></div>
           <div style={{ padding: '0 10px 10px' }}>
@@ -247,50 +294,7 @@ export default function ProductDetail() {
             )}
           </div>
         </div>
-      </div>
 
-      {/* Bottom Section: Custom Tabs (Full Width) */}
-      <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
-        <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 0 }}>
-          {tabs.map((t,i) => (
-            <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
-              <button onClick={()=>setActiveTab(i)} style={{
-                padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
-                background:'transparent', marginBottom:-2, transition:'all 0.15s',
-                borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
-                color:activeTab===i?'var(--accent)':'var(--text2)'
-              }}>{t.name}</button>
-              {editLayout && <>
-                <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal(t)}><Pencil size={11}/></button>
-                <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
-              </>}
-            </div>
-          ))}
-          {editLayout && <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal({})}><Plus size={13}/> Add Tab</button>}
-        </div>
-        {currentTab && (
-          <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-            <div className="form-grid">
-              {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
-                <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
-                  {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
-                  <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
-                  {editLayout && (
-                    <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
-                      <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
-                    </div>
-                  )}
-                </div>
-              ))}
-              {editLayout && (
-                <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 10, border: '1px dashed var(--border)', borderRadius: 8 }}>
-                  <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field: {...emptyField, sort_order: (currentTab.fields||[]).length}, tabId: currentTab.id})}><Plus size={14}/> Add Field</button>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
 
       {tabModal && <TabModal initial={tabModal} onSave={saveTab} onClose={()=>setTabModal(null)} />}
