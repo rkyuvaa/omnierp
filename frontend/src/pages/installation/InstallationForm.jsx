@@ -220,11 +220,39 @@ export default function InstallationForm() {
                   {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>
-              <div className="form-group" style={{ gridColumn: '1/-1' }}>
-                <label className="form-label">Notes</label>
-                <textarea className="form-textarea" value={form.notes || ''} onChange={e => set('notes', e.target.value)} placeholder="Any additional notes..." rows={3} />
-              </div>
             </div>
+
+            {/* Dynamic Vehicle Info Display */}
+            {form.product_id && (
+              <div style={{ marginTop: 20, padding: 16, background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                  <div style={{ width: 4, height: 16, background: 'var(--accent)', borderRadius: 2 }} />
+                  <span style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle Information</span>
+                </div>
+                {(() => {
+                  const v = vehicles.find(x => x.id === form.product_id);
+                  if (!v) return <span style={{ fontSize: 12, color: 'var(--text3)' }}>Vehicle details restricted or not found.</span>;
+                  const customFields = Object.entries(v.custom_data || {});
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px 20px' }}>
+                       {/* Standard fields if available */}
+                       {v.reference && <div style={{ gridColumn: 'span 1' }}><div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600 }}>Reference</div><div style={{ fontSize: 13, fontWeight: 600 }}>{v.reference}</div></div>}
+                       {v.category_name && <div style={{ gridColumn: 'span 1' }}><div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600 }}>Category</div><div style={{ fontSize: 13, fontWeight: 600 }}>{v.category_name}</div></div>}
+                       
+                       {/* Custom fields from Studio */}
+                       {customFields.map(([key, val]) => (
+                         <div key={key} style={{ gridColumn: 'span 1' }}>
+                           <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                             {key.replace(/_/g, ' ')}
+                           </div>
+                           <div style={{ fontSize: 13, fontWeight: 600 }}>{String(val || '—')}</div>
+                         </div>
+                       ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
 
           <div style={{ width: '100%' }}>
