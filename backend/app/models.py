@@ -18,6 +18,7 @@ class User(Base):
     is_active = Column(Boolean, default=True)
     is_superadmin = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+    last_login = Column(DateTime, nullable=True)
     role = relationship("Role", back_populates="users")
     branch = relationship("Branch", back_populates="users")
     department = relationship("Department", back_populates="users")

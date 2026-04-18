@@ -35,6 +35,14 @@ export default function AdminUsers() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(null);
+  const [history, setHistory] = useState([]);
+
+  const loadHistory = async (uid) => {
+    try {
+      const res = await api.get(`/audit?module=users&record_id=${uid}`);
+      setHistory(res.data.items || []);
+    } catch (e) { console.error("Error loading activity", e); }
+  };
 
   // Department Modal
   const [deptModal, setDeptModal] = useState(false);
@@ -63,7 +71,12 @@ export default function AdminUsers() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const openNew = () => { setForm(emptyForm); setEditing(null); setMode('form'); };
+  const openNew = () => { 
+    setForm(emptyForm); 
+    setEditing(null); 
+    setHistory([]);
+    setMode('form'); 
+  };
   const openEdit = u => {
     setForm({ 
       name: u.name, 
@@ -78,6 +91,7 @@ export default function AdminUsers() {
       is_active: u.is_active 
     });
     setEditing(u.id); 
+    loadHistory(u.id);
     setMode('form');
   };
 
@@ -149,155 +163,217 @@ export default function AdminUsers() {
           </div>
         </div>
 
-        <div className="card" style={{ padding: '16px 20px', minHeight: 'calc(100vh - 140px)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          
-          {/* ROW 1: General Information (Compact) */}
-          <section>
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
-              <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>1. Identity & Core Settings</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Full Name</label>
-                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} value={form.name} onChange={e => set('name', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Email Address</label>
-                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Department</label>
-                <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.department_id} onChange={e => set('department_id', e.target.value)}>
-                  <option value="">— Select —</option>
-                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Global Role</label>
-                <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.role_id} onChange={e => set('role_id', e.target.value)}>
-                  <option value="">— Default —</option>
-                  {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>{editing ? 'New Password' : 'Password'}</label>
-                <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="password" value={form.password} onChange={e => set('password', e.target.value)} />
-              </div>
-              <div className="form-group">
-                 <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Status</label>
-                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
-                    <option value="true">Active</option>
-                    <option value="false">Inactive</option>
-                  </select>
-              </div>
-              <div className="form-group" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'flex-end' }}>
-                <label className="flex items-center gap-2 cursor-pointer p-2 bg-accent-dim rounded-lg w-full" style={{ border: '1px solid var(--accent)', height: '32px' }}>
-                  <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
-                  <span className="form-label mb-0" style={{ fontWeight: 900, color: 'var(--accent)', fontSize: 10 }}>GRANT SUPER ADMIN PRIVILEGES</span>
-                </label>
-              </div>
-            </div>
-          </section>
-
-          {/* ROW 2: Branch Authorization (Compact Tiles) */}
-          <section>
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
-              <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>2. Branch Portfolio</span>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
-              {branches.map(b => {
-                const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
-                return (
-                  <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: 10, 
-                    padding: '8px 12px', 
-                    background: isSelected ? 'var(--bg)' : 'var(--bg3)', 
-                    border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`, 
-                    boxShadow: isSelected ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none', 
-                    borderRadius: 12, 
-                    cursor: 'pointer', 
-                    transition: 'all 0.2s',
-                    position: 'relative'
-                  }}>
-                    <div style={{ width: 32, height: 32, borderRadius: 8, background: isSelected ? 'var(--accent-dim)' : 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                       <Building size={16} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <span style={{ fontSize: 12, fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text1)', display: 'block' }}>{b.name}</span>
-                      <span style={{ fontSize: 8, color: 'var(--text3)', textTransform: 'uppercase' }}>{isSelected ? 'Authorized' : 'Locked'}</span>
-                    </div>
-                    {isSelected ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
-                    {form.branch_id == b.id && (
-                      <div style={{ position: 'absolute', top: 0, right: 0, padding: '1px 6px', background: 'var(--accent)', color: 'white', fontSize: 7, fontWeight: 900, borderRadius: '0 10px 0 10px' }}>PRIMARY</div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </section>
-
-          {/* ROW 3: Module Permissions (Surgical Layout) */}
-          <section style={{ flex: 1 }}>
-            <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
-              <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>3. Module Permissions</span>
-            </div>
+        <div style={{ display: 'flex', gap: '16px', height: 'calc(100vh - 140px)' }}>
+          {/* MAIN EDITOR AREA */}
+          <div className="card" style={{ flex: 1, padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: '12px', overflowY: 'auto' }}>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
-              {ALL_MODULES.map(m => {
-                const roleId = (form.allowed_modules || {})[m.key];
-                return (
-                  <div key={m.key} style={{ 
-                    display: 'flex', 
-                    flexDirection: 'column',
-                    gap: 8,
-                    padding: '10px 12px', 
-                    background: roleId ? 'var(--bg)' : 'var(--bg2)', 
-                    border: `1.5px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
-                    borderRadius: 14, 
-                    boxShadow: roleId ? '0 6px 15px rgba(99, 102, 241, 0.08)' : 'none'
-                  }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <div style={{ 
-                        width: 36, 
-                        height: 36, 
-                        background: roleId ? 'var(--accent)' : 'var(--bg3)', 
-                        borderRadius: 10, 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        justifyContent: 'center', 
-                        color: roleId ? 'white' : 'var(--text3)' 
-                      }}>
-                        <Shield size={20} />
-                      </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                        <span style={{ fontSize: 12, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)' }}>{m.name}</span>
-                        <span style={{ fontSize: 8, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 800, textTransform: 'uppercase' }}>{roleId ? 'Granted' : 'Locked'}</span>
-                      </div>
-                    </div>
-                    <select 
-                      className="form-select" 
-                      value={roleId || ''} 
-                      onChange={e => setModuleRole(m.key, e.target.value)} 
-                      style={{ 
-                        width: '100%', 
-                        borderRadius: 8, 
-                        padding: '6px 10px',
-                        fontSize: 11, 
-                        background: roleId ? 'var(--bg)' : 'var(--bg3)',
-                        border: roleId ? '1.5px solid var(--accent)' : '1px solid var(--border)', 
-                        fontWeight: roleId ? 800 : 500
-                      }}
-                    >
-                      <option value="">— No Access —</option>
-                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+            {/* ROW 1: General Information */}
+            <section>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
+                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>1. Identity & Core Settings</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Full Name</label>
+                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} value={form.name} onChange={e => set('name', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Email Address</label>
+                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Department</label>
+                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.department_id} onChange={e => set('department_id', e.target.value)}>
+                    <option value="">— Select —</option>
+                    {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Global Role</label>
+                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.role_id} onChange={e => set('role_id', e.target.value)}>
+                    <option value="">— Default —</option>
+                    {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>{editing ? 'New Password' : 'Password'}</label>
+                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Status</label>
+                    <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
+                      <option value="true">Active</option>
+                      <option value="false">Inactive</option>
                     </select>
-                  </div>
-                );
-              })}
-            </div>
-          </section>
+                </div>
+                <div className="form-group" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'flex-end' }}>
+                  <label className="flex items-center gap-2 cursor-pointer p-2 bg-accent-dim rounded-lg w-full" style={{ border: '1px solid var(--accent)', height: '32px' }}>
+                    <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
+                    <span className="form-label mb-0" style={{ fontWeight: 900, color: 'var(--accent)', fontSize: 10 }}>GRANT SUPER ADMIN PRIVILEGES</span>
+                  </label>
+                </div>
+              </div>
+            </section>
+
+            {/* ROW 2: Branch Authorization */}
+            <section>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
+                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>2. Branch Portfolio</span>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
+                {branches.map(b => {
+                  const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
+                  return (
+                    <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      gap: 10, 
+                      padding: '8px 12px', 
+                      background: isSelected ? 'var(--bg)' : 'var(--bg3)', 
+                      border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`, 
+                      boxShadow: isSelected ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none', 
+                      borderRadius: 12, 
+                      cursor: 'pointer', 
+                      transition: 'all 0.2s',
+                      position: 'relative'
+                    }}>
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: isSelected ? 'var(--accent-dim)' : 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <Building size={16} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <span style={{ fontSize: 12, fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text1)', display: 'block' }}>{b.name}</span>
+                        <span style={{ fontSize: 8, color: 'var(--text3)', textTransform: 'uppercase' }}>{isSelected ? 'Authorized' : 'Locked'}</span>
+                      </div>
+                      {isSelected ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
+                      {form.branch_id == b.id && (
+                        <div style={{ position: 'absolute', top: 0, right: 0, padding: '1px 6px', background: 'var(--accent)', color: 'white', fontSize: 7, fontWeight: 900, borderRadius: '0 10px 0 10px' }}>PRIMARY</div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* ROW 3: Module Permissions */}
+            <section style={{ flex: 1 }}>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
+                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>3. Module Permissions</span>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+                {ALL_MODULES.map(m => {
+                  const roleId = (form.allowed_modules || {})[m.key];
+                  return (
+                    <div key={m.key} style={{ 
+                      display: 'flex', 
+                      flexDirection: 'column',
+                      gap: 8,
+                      padding: '10px 12px', 
+                      background: roleId ? 'var(--bg)' : 'var(--bg2)', 
+                      border: `1.5px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
+                      borderRadius: 14, 
+                      boxShadow: roleId ? '0 6px 15px rgba(99, 102, 241, 0.08)' : 'none'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ 
+                          width: 36, 
+                          height: 36, 
+                          background: roleId ? 'var(--accent)' : 'var(--bg3)', 
+                          borderRadius: 10, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          color: roleId ? 'white' : 'var(--text3)' 
+                        }}>
+                          <Shield size={20} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                          <span style={{ fontSize: 12, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)' }}>{m.name}</span>
+                          <span style={{ fontSize: 8, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 800, textTransform: 'uppercase' }}>{roleId ? 'Granted' : 'Locked'}</span>
+                        </div>
+                      </div>
+                      <select 
+                        className="form-select" 
+                        value={roleId || ''} 
+                        onChange={e => setModuleRole(m.key, e.target.value)} 
+                        style={{ 
+                          width: '100%', 
+                          borderRadius: 8, 
+                          padding: '6px 10px',
+                          fontSize: 11, 
+                          background: roleId ? 'var(--bg)' : 'var(--bg3)',
+                          border: roleId ? '1.5px solid var(--accent)' : '1px solid var(--border)', 
+                          fontWeight: roleId ? 800 : 500
+                        }}
+                      >
+                        <option value="">— No Access —</option>
+                        {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+          </div>
+
+          {/* RIGHT SIDEBAR: History & Stats */}
+          <div style={{ width: 280, display: 'flex', flexDirection: 'column', gap: 16 }}>
+             {/* Stats Card */}
+             <div className="card" style={{ padding: 16 }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                 <Clock size={16} color="var(--accent)" />
+                 <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '1px' }}>Account Lifecycle</span>
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                 <div>
+                   <label style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Member Since</label>
+                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{editing ? (users.find(u => u.id === editing)?.created_at?.split(' ')[0] || 'N/A') : 'Now'}</span>
+                 </div>
+                 <div>
+                   <label style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Last Active Session</label>
+                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{editing ? (users.find(u => u.id === editing)?.last_login || 'No recent activity') : 'Pending'}</span>
+                 </div>
+               </div>
+             </div>
+
+             {/* Activity Log Card */}
+             <div className="card" style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                 <History size={16} color="var(--accent)" />
+                 <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '1px' }}>Rights Audit Log</span>
+               </div>
+               
+               <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
+                  {history.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
+                      <p style={{ fontSize: 11 }}>No rights changes recorded.</p>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                      {history.map(log => (
+                        <div key={log.id} style={{ borderLeft: '2px solid var(--accent-dim)', paddingLeft: 12, position: 'relative' }}>
+                          <div style={{ position: 'absolute', top: 0, left: -4, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
+                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                             <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text1)' }}>{log.action}</span>
+                             <span style={{ fontSize: 9, color: 'var(--text3)' }}>{log.created_at.split(' ')[1].substring(0,5)}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>Modified by {log.user_name}</div>
+                          {log.changes && (
+                            <div style={{ marginTop: 6, padding: 6, background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
+                               {Object.entries(log.changes || {}).map(([key, val]) => (
+                                 <div key={key} style={{ fontSize: 9, marginBottom: 2 }}>
+                                   <b style={{ color: 'var(--accent)' }}>{key}:</b> {String(val.new)}
+                                 </div>
+                               ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+               </div>
+             </div>
+          </div>
         </div>
       </Layout>
     );

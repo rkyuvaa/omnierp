@@ -8,9 +8,19 @@ from app.auth import require_admin
 router = APIRouter()
 
 @router.get("/")
-def list_logs(module: Optional[str] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _=Depends(require_admin)):
+def list_logs(module: Optional[str] = None, record_id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _=Depends(require_admin)):
     q = db.query(AuditLog)
     if module: q = q.filter(AuditLog.module == module)
+    if record_id: q = q.filter(AuditLog.record_id == record_id)
     total = q.count()
     items = q.order_by(AuditLog.id.desc()).offset(skip).limit(limit).all()
-    return {"total": total, "items": [{"id": i.id, "user_name": i.user_name, "action": i.action, "module": i.module, "record_ref": i.record_ref, "created_at": str(i.created_at)} for i in items]}
+    return {
+        "total": total, 
+        "items": [
+            {
+                "id": i.id, "user_name": i.user_name, "action": i.action, 
+                "module": i.module, "record_ref": i.record_ref, 
+                "changes": i.changes, "created_at": str(i.created_at)
+            } for i in items
+        ]
+    }

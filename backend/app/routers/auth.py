@@ -23,6 +23,11 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     user = db.query(User).filter(User.email == form.username).first()
     if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    
+    from datetime import datetime
+    user.last_login = datetime.utcnow()
+    db.commit()
+
     token = create_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
 

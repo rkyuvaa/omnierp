@@ -43,6 +43,7 @@ def serialize(u: User):
         "branch_name": u.branch.name if u.branch else None,
         "department_name": getattr(u.department, 'name', None) if hasattr(u, 'department') else None,
         "created_at": str(u.created_at),
+        "last_login": str(u.last_login) if u.last_login else None,
     }
 
 @router.get("/")
@@ -83,13 +84,29 @@ def get_user(user_id: int, db: Session = Depends(get_db), current_user: User = D
 def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     user = db.query(User).filter(User.id == user_id).first()
     if not user: raise HTTPException(404, "Not found")
-    for k, v in data.model_dump(exclude_none=True).items():
+    
+    changes = {}
+    new_data = data.model_dump(exclude_none=True)
+    
+    # Track rights changes specifically
+    rights_keys = ["role_id", "branch_id", "allowed_branches", "allowed_modules", "is_superadmin", "is_active"]
+    for k in rights_keys:
+        if k in new_data:
+            old_val = getattr(user, k)
+            new_val = new_data[k]
+            if old_val != new_val:
+                changes[k] = {"old": old_val, "new": new_val}
+
+    for k, v in new_data.items():
         if k == "password":
             user.password_hash = hash_password(v)
+            changes["password"] = "Updated"
         else:
             setattr(user, k, v)
+            
     db.commit(); db.refresh(user)
-    log_action(db, current_user, "UPDATE", "users", user.id, user.email)
+    if changes:
+        log_action(db, current_user, "UPDATE", "users", user.id, user.email, changes=changes)
     return serialize(user)
 
 @router.delete("/{user_id}")
