@@ -54,11 +54,18 @@ def create_product(data: dict, db: Session = Depends(get_db)):
         valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data", "bom_id"]
         product_data = {k: v for k, v in data.items() if k in valid_fields}
         
+        # Default title to BOM name if title is empty
+        if not product_data.get("title") and product_data.get("bom_id"):
+            bom = db.query(BOM).filter(BOM.id == product_data["bom_id"]).first()
+            if bom: product_data["title"] = bom.name
+
         p = Product(**product_data)
         db.add(p); db.commit(); db.refresh(p)
 
         for c in comps:
-            cs = ProductComponentSerial(**c, product_id=p.id)
+            # Remove helper fields like 'name' before saving to ProductComponentSerial
+            cs_data = {k: v for k, v in c.items() if k in ["bom_component_id", "serial_number", "warranty_period", "warranty_unit"]}
+            cs = ProductComponentSerial(**cs_data, product_id=p.id)
             db.add(cs)
         
         db.commit(); db.refresh(p)
@@ -78,11 +85,17 @@ def update_product(id: int, data: dict, db: Session = Depends(get_db)):
         valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data", "bom_id"]
         for k, v in data.items():
             if k in valid_fields: setattr(p, k, v)
+            
+        # Default title to BOM name if title is empty
+        if not p.title and p.bom_id:
+            bom = db.query(BOM).filter(BOM.id == p.bom_id).first()
+            if bom: p.title = bom.name
         
         # Sync components
         db.query(ProductComponentSerial).filter(ProductComponentSerial.product_id == id).delete()
         for c in comps:
-            cs = ProductComponentSerial(**c, product_id=p.id)
+            cs_data = {k: v for k, v in c.items() if k in ["bom_component_id", "serial_number", "warranty_period", "warranty_unit"]}
+            cs = ProductComponentSerial(**cs_data, product_id=p.id)
             db.add(cs)
         
         db.commit(); db.refresh(p)
