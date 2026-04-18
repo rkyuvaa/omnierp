@@ -16,25 +16,6 @@ const emptySeq = { module: 'crm', prefix: '', suffix: '', padding: 4 };
 
 // ── Modals ───────────────────────────────────────────────────
 
-          <label className="form-label" style={{ color: 'var(--accent)', display: 'flex', alignItems: 'center', gap: 6 }}><GitMerge size={14}/> Auto-Move to Stage</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <select className="form-select" value={stageRuleOp} onChange={e => setStageRuleOp(e.target.value)}>
-              <option value="has_value">when field is filled</option>
-              <option value="equals">when field equals</option>
-            </select>
-            <select className="form-select" value={stageRuleStageId} onChange={e => setStageRuleStageId(e.target.value)}>
-              <option value="">No auto-move</option>
-              {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-            </select>
-          </div>
-          {stageRuleOp === 'equals' && stageRuleStageId && (
-            <input className="form-input mt-2" placeholder="Value to trigger..." value={stageRuleVal} onChange={e => setStageRuleVal(e.target.value)} />
-          )}
-        </div>
-      </div>
-    </Modal>
-  );
-}
 
 function StageModal({ initial, onSave, onClose }) {
   const [form, setForm] = useState(initial);

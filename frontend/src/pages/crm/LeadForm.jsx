@@ -165,13 +165,7 @@ function isFieldVisible(field, customData) {
     return String(val ?? '') === String(ruleValue ?? '');
   }
   // has_value (default)
-  return vabtn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(name)}>Save Tab</button></>}>
-      <div className="form-group">
-        <label className="form-label">Tab Name *</label>
-        <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Address Details" autoFocus/>
-      </div>
-    </Modal>
-  );
+  return val !== undefined && val !== '' && val !== false && val !== null && !(Array.isArray(val) && val.length === 0);
 }
 
 // ── Activity Type Manager ─────────────────────────────────────
