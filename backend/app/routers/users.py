@@ -41,7 +41,7 @@ def serialize(u: User):
         "allowed_modules": u.allowed_modules or [],
         "role_name": u.role.name if u.role else None,
         "branch_name": u.branch.name if u.branch else None,
-        "department_name": u.department.name if u.department else None,
+        "department_name": getattr(u.department, 'name', None) if hasattr(u, 'department') else None,
         "created_at": str(u.created_at),
     }
 
