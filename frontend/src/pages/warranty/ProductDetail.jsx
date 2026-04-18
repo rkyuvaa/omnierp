@@ -188,29 +188,29 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {/* Side-by-Side: Info (Left 70%) & Tracking (Right 30%) */}
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 340px', gap:20, marginBottom: 20 }}>
+      {/* Main Layout: Wide Info & Tracking Sidebar */}
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 450px', gap:20, marginBottom: 20 }}>
         
         {/* Condensed Vehicle Info Card */}
         <div className="card" style={{ height: 'fit-content' }}>
           <div className="card-header"><span className="card-title">VEHICLE INFORMATION</span></div>
           <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px 12px' }}>
-            <div className="form-group" style={{ gridColumn: 'span 1' }}>
+            <div className="form-group">
               <label className="form-label">VEHICLE NUMBER *</label>
               <input className="form-input fw-700" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="KA01.." />
             </div>
-            <div className="form-group" style={{ gridColumn: 'span 1' }}>
+            <div className="form-group">
               <label className="form-label">CHASSIS / SERIAL</label>
               <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
             </div>
-            <div className="form-group" style={{ gridColumn: 'span 1' }}>
+            <div className="form-group">
               <label className="form-label">MODEL (BOM) *</label>
               <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
                 <option value="">-- BOM --</option>
                 {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
               </select>
             </div>
-            <div className="form-group" style={{ gridColumn: 'span 1' }}>
+            <div className="form-group">
               <label className="form-label">WARRANTY (PRD/UNIT)</label>
               <div style={{ display:'flex', gap:4 }}>
                 <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
@@ -227,21 +227,19 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {/* Component Tracking Sidebar */}
+        {/* TRACKING Card (Single Line Layout) */}
         <div className="card" style={{ height: 'fit-content' }}>
           <div className="card-header"><span className="card-title">TRACKING</span></div>
-          <div style={{ padding: '0px 10px 10px' }}>
+          <div style={{ padding: '0 10px 10px' }}>
             {form.component_serials.length > 0 ? (
               form.component_serials.map((c, idx) => (
-                <div key={idx} style={{ padding: '8px 0', borderBottom: idx < form.component_serials.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ display:'flex', justifyContent:'space-between', marginBottom: 4 }}>
-                    <span className="fw-600 size-12" style={{ color: 'var(--text1)' }}>{c.name}</span>
-                    <span className="text-muted size-10">{c.warranty_period} {c.warranty_unit}</span>
-                  </div>
-                  <input className="form-input" style={{ height:28, fontSize:12, background:'var(--bg1)' }} 
+                <div key={idx} style={{ display:'grid', gridTemplateColumns:'120px 1fr 80px', alignItems:'center', gap:10, padding:'10px 0', borderBottom: idx < form.component_serials.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div className="fw-600 size-12 truncate" title={c.name}>{c.name}</div>
+                  <input className="form-input" style={{ height:30, fontSize:12, background:'var(--bg1)' }} 
                     value={c.serial_number} 
                     onChange={e => updateCompSerial(idx, e.target.value)} 
-                    placeholder="Serial #" />
+                    placeholder="S/N" />
+                  <div className="text-muted size-11 text-right">{c.warranty_period} {c.warranty_unit.substring(0,2)}</div>
                 </div>
               ))
             ) : (
@@ -252,8 +250,8 @@ export default function ProductDetail() {
       </div>
 
       {/* Bottom Section: Custom Tabs (Full Width) */}
-      <div>
-        <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 2 }}>
+      <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+        <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 0 }}>
           {tabs.map((t,i) => (
             <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
               <button onClick={()=>setActiveTab(i)} style={{
