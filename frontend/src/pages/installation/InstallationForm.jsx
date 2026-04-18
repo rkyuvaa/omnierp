@@ -171,30 +171,29 @@ export default function InstallationForm() {
 
       {/* Stage bar */}
       {!isNew && stages.length > 0 && (
-        <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'nowrap', gap: 8, marginBottom: 20, padding: '10px 0', overflowX: 'auto', whiteSpace: 'nowrap' }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20, padding: '10px 0' }}>
           {stages.map(s => {
             const isCurrent = form.stage_id === s.id;
             return (
               <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
-                  padding: isCurrent ? "12px 32px" : "8px 20px", 
-                  borderRadius: 100,
+                  padding: isCurrent ? "10px 28px" : "6px 18px", 
+                  borderRadius: 24,
                   cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
                   background: isCurrent ? s.color : (s.color + "15"),
                   color: isCurrent ? "#fff" : s.color,
-                  fontSize: isCurrent ? "16px" : "12px", 
+                  fontSize: isCurrent ? "14px" : "12px", 
                   fontWeight: 800,
-                  textTransform: "uppercase", letterSpacing: "1px",
-                  boxShadow: isCurrent ? `0 8px 24px ${s.color}60` : "none",
-                  opacity: isCurrent ? 1 : 0.65,
+                  textTransform: "uppercase", letterSpacing: "0.5px",
+                  boxShadow: isCurrent ? `0 6px 16px ${s.color}50` : "none",
+                  opacity: isCurrent ? 1 : 0.7,
                   border: `1px solid ${isCurrent ? s.color : "transparent"}`,
-                  flexShrink: 0,
+                  textAlign: 'center'
                 }}>
                 {s.name}
               </div>
             );
           })}
-          {!isAdmin && <span style={{ fontSize: 10, color: 'var(--text3)', marginLeft: 10, opacity: 0.7, alignSelf: 'center' }}>[View Only]</span>}
         </div>
       )}
 
