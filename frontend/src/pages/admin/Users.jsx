@@ -28,9 +28,9 @@ export default function AdminUsers() {
   const [departments, setDepartments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('users'); // 'users' or 'departments'
+  const [mode, setMode] = useState('list'); // 'list' or 'form'
   
-  // User Modal
-  const [modal, setModal] = useState(false);
+  // User Form
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
@@ -63,7 +63,7 @@ export default function AdminUsers() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
-  const openNew = () => { setForm(emptyForm); setEditing(null); setModal(true); };
+  const openNew = () => { setForm(emptyForm); setEditing(null); setMode('form'); };
   const openEdit = u => {
     setForm({ 
       name: u.name, 
@@ -78,7 +78,7 @@ export default function AdminUsers() {
       is_active: u.is_active 
     });
     setEditing(u.id); 
-    setModal(true);
+    setMode('form');
   };
 
   const saveUser = async () => {
@@ -90,15 +90,15 @@ export default function AdminUsers() {
         role_id: parseInt(form.role_id) || null,
         branch_id: parseInt(form.branch_id) || null,
         department_id: parseInt(form.department_id) || null,
-        allowed_branches: form.allowed_branches.map(id => parseInt(id))
+        allowed_branches: (form.allowed_branches || []).map(id => parseInt(id))
       };
       if (!payload.password) delete payload.password;
       
       if (editing) await api.put(`/users/${editing}`, payload);
-      else await api.post('/users/', payload);
+      else await api.post('/users', payload);
       
       toast.success(editing ? 'User updated' : 'User created');
-      setModal(false); load();
+      setMode('list'); load();
     } catch (e) { toast.error(e.response?.data?.detail || 'Error saving user'); }
     finally { setSaving(false); }
   };
@@ -134,6 +134,162 @@ export default function AdminUsers() {
   };
 
   if (loading) return <Layout title="User Management"><Loader /></Layout>;
+
+  if (mode === 'form') {
+    return (
+      <Layout title={editing ? 'Edit User Profile' : 'Create New User'}>
+        <div className="toolbar" style={{ marginBottom: 20 }}>
+          <button className="btn btn-ghost" onClick={() => setMode('list')}>
+             <X size={16} /> Cancel & Back
+          </button>
+          <div className="toolbar-right">
+             <button className="btn btn-primary" onClick={saveUser} disabled={saving}>
+                {saving ? 'Processing...' : 'Save User Settings'}
+              </button>
+          </div>
+        </div>
+
+        <div className="card" style={{ padding: '30px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(300px, 1fr) minmax(300px, 450px)', gap: 50 }}>
+            {/* Left Column: Basic Info & Branches */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+              <div>
+                <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 20 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.2px' }}>General Information</span>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+                  <div className="form-group">
+                    <label className="form-label">Full Name *</label>
+                    <input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. John Doe" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Email Address *</label>
+                    <input className="form-input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="john@example.com" />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Department</label>
+                    <select className="form-select" value={form.department_id} onChange={e => set('department_id', e.target.value)}>
+                      <option value="">— Select —</option>
+                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">Global Role</label>
+                    <select className="form-select" value={form.role_id} onChange={e => set('role_id', e.target.value)}>
+                      <option value="">— Default —</option>
+                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                    </select>
+                  </div>
+                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                    <label className="form-label">{editing ? 'New Password (Optional)' : 'Password *'}</label>
+                    <input className="form-input" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                     <label className="form-label">Account Status</label>
+                      <select className="form-select" value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                      </select>
+                  </div>
+                  <div className="form-group flex items-end">
+                    <label className="flex items-center gap-2 cursor-pointer p-3 bg-accent-dim rounded-xl" style={{ border: '1px solid var(--accent)', transition: 'all 0.2s' }}>
+                      <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
+                      <span className="form-label mb-0" style={{ fontWeight: 800, color: 'var(--accent)', fontSize: 12, letterSpacing: '0.5px' }}>SUPER ADMIN ACCESS</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 20 }}>
+                  <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Branch Authorization</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12, padding: 15, background: 'var(--bg2)', borderRadius: 16, border: '1px solid var(--border)', minHeight: 120 }}>
+                  {branches.map(b => {
+                    const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
+                    return (
+                      <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', background: isSelected ? 'var(--bg)' : 'var(--bg3)', border: `1.5px solid ${isSelected ? 'var(--accent)' : 'transparent'}`, boxShadow: isSelected ? '0 4px 12px rgba(99, 102, 241, 0.12)' : 'none', borderRadius: 12, cursor: 'pointer', transition: 'all 0.2s' }}>
+                        {isSelected ? <CheckSquare size={18} color="var(--accent)" /> : <Square size={18} color="var(--text3)" />}
+                        <span style={{ fontSize: 13, fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--accent)' : 'var(--text2)' }}>{b.name}</span>
+                        {form.branch_id == b.id && <Badge color="var(--accent)" style={{ fontSize: 9 }}>PRIMARY</Badge>}
+                      </div>
+                    );
+                  })}
+                </div>
+                <p style={{ fontSize: 11, color: 'var(--text3)', marginTop: 12, fontStyle: 'italic', paddingLeft: 5 }}>* Users can view records starting from their Primary branch and any additional authorized branches.</p>
+              </div>
+            </div>
+
+            {/* Right Column: Module Access & Specialized Roles */}
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 10, marginBottom: 24 }}>
+                <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1.2px' }}>Module Permissions & Roles</span>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {ALL_MODULES.map(m => {
+                  const roleId = (form.allowed_modules || {})[m.key];
+                  return (
+                    <div key={m.key} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      padding: '16px 24px', 
+                      background: roleId ? 'var(--bg)' : 'var(--bg2)', 
+                      border: `2px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
+                      borderRadius: 16, 
+                      boxShadow: roleId ? '0 6px 16px rgba(99, 102, 241, 0.1)' : 'none',
+                      transition: 'all 0.25s'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '20px', flex: 1 }}>
+                        <div style={{ 
+                          width: 48, 
+                          height: 48, 
+                          minWidth: 48,
+                          background: roleId ? 'var(--accent)' : 'var(--bg3)', 
+                          borderRadius: 14, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          color: roleId ? 'white' : 'var(--text3)' 
+                        }}>
+                          <Shield size={24} />
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: 15, fontWeight: 800, color: roleId ? 'var(--text1)' : 'var(--text2)', marginBottom: 4 }}>{m.name}</span>
+                          <span style={{ fontSize: 10, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px' }}>{roleId ? 'Access Granted' : 'Locked'}</span>
+                        </div>
+                      </div>
+                      <select 
+                        className="form-select" 
+                        value={roleId || ''} 
+                        onChange={e => setModuleRole(m.key, e.target.value)} 
+                        style={{ 
+                          width: '180px', 
+                          borderRadius: 12, 
+                          padding: '10px 15px',
+                          fontSize: 13, 
+                          background: roleId ? 'var(--bg)' : 'var(--bg3)',
+                          border: roleId ? '2.5px solid var(--accent)' : '1px solid var(--border)', 
+                          fontWeight: roleId ? 800 : 500,
+                          cursor: 'pointer',
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        <option value="">— No Access —</option>
+                        {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
+                      </select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout title="User Management">
@@ -182,16 +338,16 @@ export default function AdminUsers() {
                         </div>
                       </td>
                       <td>
-                        <div className="flex flex-col">
-                          <span style={{ fontSize: 13, fontWeight: 600 }}>{u.department_name || 'No Dept'}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text3)' }}>{u.role_name || 'No Global Role'}</span>
+                        <div className="flex flex-col" style={{ maxWidth: 150 }}>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{u.department_name || '—'}</span>
+                          <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>{u.role_name || '—'}</span>
                         </div>
                       </td>
                       <td>
                         <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-                          <Badge color="var(--bg3)" style={{ color: 'var(--text1)' }}>{u.branch_name || 'None'}</Badge>
+                          <Badge color="var(--bg3)" style={{ color: 'var(--text1)', fontWeight: 600 }}>{u.branch_name || 'None'}</Badge>
                           {(u.allowed_branches || []).length > 0 && (
-                            <Badge color="var(--bg2)" style={{ color: 'var(--accent)' }}>+{u.allowed_branches.length} more</Badge>
+                            <Badge color="var(--accent-dim)" style={{ color: 'var(--accent)', fontWeight: 700 }}>+{u.allowed_branches.length}</Badge>
                           )}
                         </div>
                       </td>
@@ -201,15 +357,15 @@ export default function AdminUsers() {
                             const mod = ALL_MODULES.find(x => x.key === mKey);
                             const label = mod ? mod.name : (isNaN(mKey) ? mKey : '');
                             if (!label) return null;
-                            return <Badge key={mKey} color="var(--accent2)" style={{ fontSize: 9, padding: '2px 6px' }}>{label}</Badge>
+                            return <Badge key={mKey} color="var(--accent2)" style={{ fontSize: 9, padding: '2px 6px', fontWeight: 600, textTransform: 'uppercase' }}>{label}</Badge>
                           })}
                         </div>
                       </td>
                       <td><Badge color={u.is_active ? 'var(--green)' : 'var(--red)'}>{u.is_active ? 'Active' : 'Inactive'}</Badge></td>
                       <td>
                         <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)}><Pencil size={13} /></button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleting(u.id)}><Trash2 size={13} /></button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)} title="Edit User"><Pencil size={13} /></button>
+                          <button className="btn btn-danger btn-sm" onClick={() => setDeleting(u.id)} title="Delete User"><Trash2 size={13} /></button>
                         </div>
                       </td>
                     </tr>
@@ -241,159 +397,6 @@ export default function AdminUsers() {
               </table>
             </div>
         </div>
-      )}
-
-      {/* BIG USER MODAL */}
-      {modal && (
-        <Modal 
-          title={editing ? 'Edit User Profile' : 'Create New User'} 
-          onClose={() => setModal(false)}
-          width="900px"
-          footer={
-            <div className="flex gap-2 justify-end w-full">
-              <button className="btn btn-ghost" onClick={() => setModal(false)}>Discard</button>
-              <button className="btn btn-primary" onClick={saveUser} disabled={saving}>
-                {saving ? 'Processing...' : 'Save User Settings'}
-              </button>
-            </div>
-          }
-        >
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-            {/* Left Column: Basic Info & Branches */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-              <div>
-                <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>General Information</span>
-                </div>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Full Name *</label>
-                    <input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} placeholder="e.g. John Doe" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Email Address *</label>
-                    <input className="form-input" type="email" value={form.email} onChange={e => set('email', e.target.value)} placeholder="john@example.com" />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Department</label>
-                    <select className="form-select" value={form.department_id} onChange={e => set('department_id', e.target.value)}>
-                      <option value="">— Select —</option>
-                      {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Global Role</label>
-                    <select className="form-select" value={form.role_id} onChange={e => set('role_id', e.target.value)}>
-                      <option value="">— Default —</option>
-                      {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                    </select>
-                  </div>
-                  <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                    <label className="form-label">{editing ? 'New Password (Optional)' : 'Password *'}</label>
-                    <input className="form-input" type="password" value={form.password} onChange={e => set('password', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                     <label className="form-label">Account Status</label>
-                      <select className="form-select" value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
-                        <option value="true">Active</option>
-                        <option value="false">Inactive</option>
-                      </select>
-                  </div>
-                  <div className="form-group flex items-end">
-                    <label className="flex items-center gap-2 cursor-pointer p-2 bg-accent-dim rounded-lg" style={{ border: '1px solid var(--accent)' }}>
-                      <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
-                      <span className="form-label mb-0" style={{ fontWeight: 800, color: 'var(--accent)', fontSize: 11 }}>SUPER ADMIN ACCESS</span>
-                    </label>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 8, marginBottom: 16 }}>
-                  <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>Branch Authorization</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, maxHeight: 180, overflowY: 'auto', padding: 12, background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                  {branches.map(b => {
-                    const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
-                    return (
-                      <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 14px', background: isSelected ? 'var(--bg)' : 'var(--bg3)', border: `1px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
-                        {isSelected ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
-                        <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--accent)' : 'var(--text2)' }}>{b.name}</span>
-                        {form.branch_id == b.id && <Badge color="var(--accent)" style={{ fontSize: 8 }}>PRIMARY</Badge>}
-                      </div>
-                    );
-                  })}
-                </div>
-                <p style={{ fontSize: 10, color: 'var(--text3)', marginTop: 10, fontStyle: 'italic' }}>* Users can view records starting from their Primary branch and any additional authorized branches.</p>
-              </div>
-            </div>
-
-            {/* Right Column: Module Access & Specialized Roles */}
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 8, marginBottom: 20 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>Module Permissions & Roles</span>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                {ALL_MODULES.map(m => {
-                  const roleId = (form.allowed_modules || {})[m.key];
-                  return (
-                    <div key={m.key} style={{ 
-                      display: 'flex', 
-                      alignItems: 'center', 
-                      justifyContent: 'space-between', 
-                      padding: '12px 18px', 
-                      background: roleId ? 'var(--bg)' : 'var(--bg2)', 
-                      border: `1.5px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
-                      borderRadius: 14, 
-                      boxShadow: roleId ? '0 4px 12px rgba(99, 102, 241, 0.08)' : 'none',
-                      transition: 'all 0.2s'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
-                        <div style={{ 
-                          width: 44, 
-                          height: 44, 
-                          minWidth: 44,
-                          background: roleId ? 'var(--accent)' : 'var(--bg3)', 
-                          borderRadius: 12, 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          justifyContent: 'center', 
-                          color: roleId ? 'white' : 'var(--text3)' 
-                        }}>
-                          <Shield size={22} />
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column' }}>
-                          <span style={{ fontSize: 13, fontWeight: 800, color: roleId ? 'var(--text1)' : 'var(--text2)', marginBottom: 2 }}>{m.name}</span>
-                          <span style={{ fontSize: 9, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{roleId ? 'Access Enabled' : 'Access Restricted'}</span>
-                        </div>
-                      </div>
-                      <select 
-                        className="form-select" 
-                        value={roleId || ''} 
-                        onChange={e => setModuleRole(m.key, e.target.value)} 
-                        style={{ 
-                          width: '140px', 
-                          borderRadius: 10, 
-                          padding: '8px 12px',
-                          fontSize: 12, 
-                          background: roleId ? 'var(--bg)' : 'var(--bg3)',
-                          border: roleId ? '2px solid var(--accent)' : '1px solid var(--border)', 
-                          fontWeight: roleId ? 700 : 500,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        <option value="">— No Access —</option>
-                        {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
-                      </select>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        </Modal>
       )}
 
       {/* DEPARTMENT MODAL */}
