@@ -73,25 +73,60 @@ def update_product(id: int, data: dict, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
 
+def serialize_bom(b: BOM):
+    return {
+        "id": b.id,
+        "name": b.name,
+        "description": b.description,
+        "warranty_period": b.warranty_period,
+        "warranty_unit": b.warranty_unit,
+        "created_at": str(b.created_at),
+        "components": [{
+            "id": c.id,
+            "name": c.name,
+            "part_number": c.part_number,
+            "quantity": c.quantity,
+            "warranty_period": c.warranty_period,
+            "warranty_unit": c.warranty_unit,
+            "sort_order": c.sort_order
+        } for c in sorted(b.components, key=lambda x: x.sort_order)]
+    }
+
 @router.get("/boms")
 def get_boms(db: Session = Depends(get_db)):
-    return db.query(BOM).all()
+    boms = db.query(BOM).all()
+    return [serialize_bom(b) for b in boms]
 
 @router.get("/boms/{id}")
 def get_bom(id: int, db: Session = Depends(get_db)):
     b = db.query(BOM).filter(BOM.id == id).first()
     if not b: raise HTTPException(404)
-    return b
+    return serialize_bom(b)
 
 @router.post("/boms")
 def create_bom(data: dict, db: Session = Depends(get_db)):
+    comps = data.pop("components", [])
     b = BOM(**data)
     db.add(b); db.commit(); db.refresh(b)
-    return b
+    for c in comps:
+        comp = BOMComponent(**c, bom_id=b.id)
+        db.add(comp)
+    db.commit(); db.refresh(b)
+    return serialize_bom(b)
 
 @router.put("/boms/{id}")
 def update_bom(id: int, data: dict, db: Session = Depends(get_db)):
+    comps = data.pop("components", [])
     b = db.query(BOM).filter(BOM.id == id).first()
     if not b: raise HTTPException(404)
     for k, v in data.items(): setattr(b, k, v)
-    db.commit(); return b
+    
+    # Simple sync: remove old and re-add new
+    db.query(BOMComponent).filter(BOMComponent.bom_id == id).delete()
+    for c in comps:
+        c.pop("id", None) # remove id if exists to create new
+        comp = BOMComponent(**c, bom_id=b.id)
+        db.add(comp)
+    
+    db.commit(); db.refresh(b)
+    return serialize_bom(b)
