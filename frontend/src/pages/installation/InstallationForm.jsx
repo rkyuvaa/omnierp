@@ -248,24 +248,32 @@ export default function InstallationForm() {
                       <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>
                         Component Details
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px', gap: 10, padding: '4px 0', borderBottom: '1px dashed var(--border)', marginBottom: 8 }}>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>Item Name</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', textAlign: 'right' }}>Serial</span>
+                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', textAlign: 'right' }}>Warranty</span>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                         {selectedProduct.component_serials && selectedProduct.component_serials.length > 0 ? (
                           selectedProduct.component_serials.map(c => (
-                            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
-                              <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>{c.bom_component?.name || 'Component'}</span>
-                              <Badge color="blue" style={{ fontSize: 11 }}>{c.serial_number}</Badge>
+                            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px', gap: 10, alignItems: 'center', padding: '2px 0' }}>
+                              <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 500 }}>{c.bom_component?.name || 'Component'}</span>
+                              <span style={{ fontSize: 12, color: 'var(--text1)', fontWeight: 700, textAlign: 'right' }}>{c.serial_number}</span>
+                              <span style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'right' }}>{c.warranty_period} {c.warranty_unit?.charAt(0)}</span>
                             </div>
                           ))
                         ) : (
-                          <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No components linked to this vehicle.</div>
+                          <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No components found.</div>
                         )}
                       </div>
                     </div>
 
-                    {/* RIGHT SIDE: Custom Field Details */}
+                    {/* RIGHT SIDE: Other Details */}
                     <div>
                       <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>
-                        Custom Details
+                        Other Details
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
                          {Object.entries(selectedProduct.custom_data || {}).map(([key, val]) => (
@@ -277,7 +285,7 @@ export default function InstallationForm() {
                            </div>
                          ))}
                          {Object.keys(selectedProduct.custom_data || {}).length === 0 && (
-                           <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No custom fields found.</div>
+                           <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No other details found.</div>
                          )}
                       </div>
                     </div>
