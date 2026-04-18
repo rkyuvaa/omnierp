@@ -81,21 +81,22 @@ export default function InstallationList() {
           {stageCounts.map(s => (
             <div key={s.id} onClick={() => handleStage(s.id)}
               style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                gap: 2, padding: '8px 12px', borderRadius: 12, cursor: 'pointer', flex: 1, minWidth: '90px',
-                textAlign: 'center', transition: 'all 0.2s',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 12px', borderRadius: 12, cursor: 'pointer', flex: 1, minWidth: '95px',
+                height: 72, textAlign: 'center', transition: 'all 0.2s',
                 border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
                 background: stageFilter === s.id ? s.color : (s.color + '15'),
                 color: stageFilter === s.id ? '#ffffff' : s.color,
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
               }}>
-              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px', lineHeight: 1.1, whiteSpace: 'normal' }}>{s.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
               <span style={{ 
-                fontSize: 14, fontWeight: 900, marginTop: 6,
-                background: '#ffffff', color: stageFilter === s.id ? s.color : s.color,
+                fontSize: 14, fontWeight: 900,
+                background: '#ffffff', color: s.color,
                 minWidth: 26, height: 26, borderRadius: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0 4px'
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0 4px',
+                marginTop: 'auto'
               }}>
                 {s.count}
               </span>
