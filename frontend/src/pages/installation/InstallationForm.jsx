@@ -36,6 +36,7 @@ export default function InstallationForm() {
   const [vehicles, setVehicles] = useState([]);
   const [activities, setActivities] = useState([]);
   const [usedProductIds, setUsedProductIds] = useState([]);
+  const [selectedProduct, setSelectedProduct] = useState(null);
   const [actDesc, setActDesc] = useState('');
   const [actDue, setActDue] = useState('');
   const [editLayout, setEditLayout] = useState(false);
@@ -69,6 +70,14 @@ export default function InstallationForm() {
       }).catch(() => { toast.error('Not found'); navigate('/installation'); });
     }
   }, [id, isNew]);
+
+  useEffect(() => {
+    if (form?.product_id) {
+      api.get(`/warranty/products/${form.product_id}`).then(r => setSelectedProduct(r.data)).catch(() => setSelectedProduct(null));
+    } else {
+      setSelectedProduct(null);
+    }
+  }, [form?.product_id]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));
@@ -222,35 +231,58 @@ export default function InstallationForm() {
               </div>
             </div>
 
-            {/* Dynamic Vehicle Info Display */}
+            {/* Dynamic Vehicle Info Display - Split View */}
             {form.product_id && (
-              <div style={{ marginTop: 20, padding: 16, background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <div style={{ marginTop: 20, padding: 20, background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
                   <div style={{ width: 4, height: 16, background: 'var(--accent)', borderRadius: 2 }} />
                   <span style={{ fontWeight: 700, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle Information</span>
                 </div>
-                {(() => {
-                  const v = vehicles.find(x => x.id === form.product_id);
-                  if (!v) return <span style={{ fontSize: 12, color: 'var(--text3)' }}>Vehicle details restricted or not found.</span>;
-                  const customFields = Object.entries(v.custom_data || {});
-                  return (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px 20px' }}>
-                       {/* Standard fields if available */}
-                       {v.reference && <div style={{ gridColumn: 'span 1' }}><div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600 }}>Reference</div><div style={{ fontSize: 13, fontWeight: 600 }}>{v.reference}</div></div>}
-                       {v.category_name && <div style={{ gridColumn: 'span 1' }}><div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600 }}>Category</div><div style={{ fontSize: 13, fontWeight: 600 }}>{v.category_name}</div></div>}
-                       
-                       {/* Custom fields from Studio */}
-                       {customFields.map(([key, val]) => (
-                         <div key={key} style={{ gridColumn: 'span 1' }}>
-                           <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                             {key.replace(/_/g, ' ')}
-                           </div>
-                           <div style={{ fontSize: 13, fontWeight: 600 }}>{String(val || '—')}</div>
-                         </div>
-                       ))}
+                
+                {!selectedProduct ? (
+                  <div className="spinner" style={{ width: 20, height: 20 }} />
+                ) : (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
+                    {/* LEFT SIDE: Component Details */}
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>
+                        Component Details
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {selectedProduct.component_serials && selectedProduct.component_serials.length > 0 ? (
+                          selectedProduct.component_serials.map(c => (
+                            <div key={c.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
+                              <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>{c.bom_component?.name || 'Component'}</span>
+                              <Badge color="blue" style={{ fontSize: 11 }}>{c.serial_number}</Badge>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No components linked to this vehicle.</div>
+                        )}
+                      </div>
                     </div>
-                  );
-                })()}
+
+                    {/* RIGHT SIDE: Custom Field Details */}
+                    <div>
+                      <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>
+                        Custom Details
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
+                         {Object.entries(selectedProduct.custom_data || {}).map(([key, val]) => (
+                           <div key={key}>
+                             <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                               {key.replace(/_/g, ' ')}
+                             </div>
+                             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{String(val || '—')}</div>
+                           </div>
+                         ))}
+                         {Object.keys(selectedProduct.custom_data || {}).length === 0 && (
+                           <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No custom fields found.</div>
+                         )}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
