@@ -452,11 +452,19 @@ export default function AdminUsers() {
                         </div>
                       </td>
                       <td style={{ padding: '12px' }}>
-                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 3, maxWidth: 200 }}>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 220 }}>
                           {Object.keys(u.allowed_modules || {}).map(mKey => {
                             const mod = ALL_MODULES.find(x => x.key === mKey);
-                            const label = mod ? mod.name : mKey.toUpperCase();
-                            return <Badge key={mKey} color="var(--accent-dim)" style={{ fontSize: 8, padding: '1px 4px', fontWeight: 800, color: 'var(--accent)', border: '1px solid var(--accent)' }}>{label}</Badge>
+                            const label = mod ? mod.name : (isNaN(mKey) ? mKey : `MOD ${mKey}`);
+                            return (
+                              <Badge key={mKey} color="var(--bg2)" style={{ 
+                                fontSize: 8, padding: '2px 6px', fontWeight: 900, 
+                                color: 'var(--text1)', border: '1px solid var(--border)',
+                                textTransform: 'uppercase', letterSpacing: '0.2px'
+                              }}>
+                                {label}
+                              </Badge>
+                            );
                           })}
                         </div>
                       </td>
