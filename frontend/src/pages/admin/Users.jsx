@@ -196,10 +196,13 @@ export default function AdminUsers() {
                         </div>
                       </td>
                       <td>
-                        <div className="flex gap-1" style={{ flexWrap: 'wrap', maxWidth: 200 }}>
-                          {Object.keys(u.allowed_modules || {}).map(m => (
-                            <Badge key={m} color="var(--accent2)" style={{ fontSize: 10 }}>{m}</Badge>
-                          ))}
+                        <div className="flex gap-1" style={{ flexWrap: 'wrap', maxWidth: 220 }}>
+                          {Object.keys(u.allowed_modules || {}).map(mKey => {
+                            const mod = ALL_MODULES.find(x => x.key === mKey);
+                            const label = mod ? mod.name : (isNaN(mKey) ? mKey : '');
+                            if (!label) return null;
+                            return <Badge key={mKey} color="var(--accent2)" style={{ fontSize: 9, padding: '2px 6px' }}>{label}</Badge>
+                          })}
                         </div>
                       </td>
                       <td><Badge color={u.is_active ? 'var(--green)' : 'var(--red)'}>{u.is_active ? 'Active' : 'Inactive'}</Badge></td>
@@ -332,22 +335,56 @@ export default function AdminUsers() {
                 <span style={{ fontSize: 11, fontWeight: 800, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>Module Permissions & Roles</span>
               </div>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 {ALL_MODULES.map(m => {
                   const roleId = (form.allowed_modules || {})[m.key];
                   return (
-                    <div key={m.key} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', background: roleId ? 'var(--bg)' : 'var(--bg2)', border: `1px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 14, boxShadow: roleId ? '0 4px 12px rgba(99, 102, 241, 0.08)' : 'none' }}>
-                      <div className="flex items-center gap-4">
-                        <div style={{ width: 40, height: 40, background: roleId ? 'var(--accent)' : 'var(--bg3)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: roleId ? 'white' : 'var(--text3)' }}>
-                          <Shield size={20} />
+                    <div key={m.key} style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'space-between', 
+                      padding: '12px 18px', 
+                      background: roleId ? 'var(--bg)' : 'var(--bg2)', 
+                      border: `1.5px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
+                      borderRadius: 14, 
+                      boxShadow: roleId ? '0 4px 12px rgba(99, 102, 241, 0.08)' : 'none',
+                      transition: 'all 0.2s'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flex: 1 }}>
+                        <div style={{ 
+                          width: 44, 
+                          height: 44, 
+                          minWidth: 44,
+                          background: roleId ? 'var(--accent)' : 'var(--bg3)', 
+                          borderRadius: 12, 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          justifyContent: 'center', 
+                          color: roleId ? 'white' : 'var(--text3)' 
+                        }}>
+                          <Shield size={22} />
                         </div>
-                        <div className="flex flex-col">
-                          <span style={{ fontSize: 14, fontWeight: 700, color: roleId ? 'var(--accent)' : 'var(--text1)' }}>{m.name}</span>
-                          <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>{roleId ? 'ACCESS GRANTED' : 'ACCESS DENIED'}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: roleId ? 'var(--text1)' : 'var(--text2)', marginBottom: 2 }}>{m.name}</span>
+                          <span style={{ fontSize: 9, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{roleId ? 'Access Enabled' : 'Access Restricted'}</span>
                         </div>
                       </div>
-                      <select className="form-select" value={roleId || ''} onChange={e => setModuleRole(m.key, e.target.value)} style={{ width: '150px', borderRadius: 8, fontSize: 12, border: roleId ? '1.5px solid var(--accent)' : '1px solid var(--border)', fontWeight: roleId ? 700 : 400 }}>
-                        <option value="">— Locked —</option>
+                      <select 
+                        className="form-select" 
+                        value={roleId || ''} 
+                        onChange={e => setModuleRole(m.key, e.target.value)} 
+                        style={{ 
+                          width: '140px', 
+                          borderRadius: 10, 
+                          padding: '8px 12px',
+                          fontSize: 12, 
+                          background: roleId ? 'var(--bg)' : 'var(--bg3)',
+                          border: roleId ? '2px solid var(--accent)' : '1px solid var(--border)', 
+                          fontWeight: roleId ? 700 : 500,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <option value="">— No Access —</option>
                         {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                     </div>
