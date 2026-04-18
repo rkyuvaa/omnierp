@@ -428,48 +428,49 @@ export default function AdminUsers() {
                     <th></th>
                   </tr>
                 </thead>
-                <tbody>
-                  {users.map(u => (
-                    <tr key={u.id}>
-                      <td>
-                        <div className="flex flex-col">
-                          <span className="fw-700 color-text1">{u.name} {u.is_superadmin && <Badge color="var(--accent)">Admin</Badge>}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text3)' }}>{u.email}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex flex-col" style={{ maxWidth: 150 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{u.department_name || '—'}</span>
-                          <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>{u.role_name || '—'}</span>
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-                          <Badge color="var(--bg3)" style={{ color: 'var(--text1)', fontWeight: 600 }}>{u.branch_name || 'None'}</Badge>
-                          {(u.allowed_branches || []).length > 0 && (
-                            <Badge color="var(--accent-dim)" style={{ color: 'var(--accent)', fontWeight: 700 }}>+{u.allowed_branches.length}</Badge>
-                          )}
-                        </div>
-                      </td>
-                      <td>
-                        <div className="flex gap-1" style={{ flexWrap: 'wrap', maxWidth: 220 }}>
-                          {Object.keys(u.allowed_modules || {}).map(mKey => {
-                            const mod = ALL_MODULES.find(x => x.key === mKey);
-                            const label = mod ? mod.name : (isNaN(mKey) ? mKey : '');
-                            if (!label) return null;
-                            return <Badge key={mKey} color="var(--accent2)" style={{ fontSize: 9, padding: '2px 6px', fontWeight: 600, textTransform: 'uppercase' }}>{label}</Badge>
-                          })}
-                        </div>
-                      </td>
-                      <td><Badge color={u.is_active ? 'var(--green)' : 'var(--red)'}>{u.is_active ? 'Active' : 'Inactive'}</Badge></td>
-                      <td>
-                        <div className="flex gap-2">
-                          <button className="btn btn-ghost btn-sm" onClick={() => openEdit(u)} title="Edit User"><Pencil size={13} /></button>
-                          <button className="btn btn-danger btn-sm" onClick={() => setDeleting(u.id)} title="Delete User"><Trash2 size={13} /></button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                                {users.map(u => (
+                      <tr key={u.id} style={{ borderBottom: '1px solid var(--border)', verticalAlign: 'middle' }}>
+                        <td style={{ padding: '14px 10px' }}>
+                          <div className="flex flex-col" style={{ gap: 2 }}>
+                            <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text1)' }}>{u.name} {u.is_superadmin && <Badge color="var(--accent)" style={{ fontSize: 8 }}>ADMIN</Badge>}</span>
+                            <span style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 500 }}>{u.email}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 10px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{u.department_name || '—'}</span>
+                            <span style={{ fontSize: 10, color: 'var(--accent)', fontWeight: 700, textTransform: 'uppercase' }}>{u.role_name || u.role?.name || 'Standard User'}</span>
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                             <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{u.branch_name || u.branch?.name || '—'}</span>
+                             {(u.allowed_branches || []).length > 0 && (
+                               <Badge color="var(--bg3)" style={{ color: 'var(--text2)', border: '1px solid var(--border)', fontSize: 9 }}>+{u.allowed_branches.length}</Badge>
+                             )}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 10px' }}>
+                          <div className="flex gap-1" style={{ flexWrap: 'wrap', maxWidth: 220 }}>
+                            {Object.keys(u.allowed_modules || {}).map(mKey => {
+                              const mod = ALL_MODULES.find(x => x.key === mKey);
+                              const label = mod ? mod.name : mKey.toUpperCase();
+                              return <Badge key={mKey} color="var(--accent-dim)" style={{ fontSize: 8, padding: '1px 5px', fontWeight: 800, color: 'var(--accent)', border: '1px solid var(--accent)' }}>{label}</Badge>
+                            })}
+                          </div>
+                        </td>
+                        <td style={{ padding: '14px 10px' }}>
+                          <Badge color={u.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10, fontWeight: 800 }}>{u.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                        </td>
+                        <td style={{ padding: '14px 10px', textAlign: 'right' }}>
+                          <div className="flex gap-2 justify-end">
+                            <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => openEdit(u)} title="Edit User"><Pencil size={13} color="var(--text1)" /></button>
+                            <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.8 }} onClick={() => setDeleting(u.id)} title="Delete User"><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+            ))}
                 </tbody>
               </table>
             </div>
