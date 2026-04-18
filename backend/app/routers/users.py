@@ -80,7 +80,7 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db), c
     if not user: raise HTTPException(404, "Not found")
     for k, v in data.model_dump(exclude_none=True).items():
         if k == "password":
-            user.hashed_password = hash_password(v)
+            user.password_hash = hash_password(v)
         else:
             setattr(user, k, v)
     db.commit(); db.refresh(user)

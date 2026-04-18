@@ -21,7 +21,7 @@ class UserOut(BaseModel):
 @router.post("/login")
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form.username).first()
-    if not user or not verify_password(form.password, user.hashed_password):
+    if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     token = create_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
@@ -52,7 +52,7 @@ def initial_setup(db: Session = Depends(get_db)):
     # Create admin user
     admin = User(
         name="Admin", email="admin@erp.com",
-        hashed_password=hash_password("admin123"),
+        password_hash=hash_password("admin123"),
         is_superadmin=True, role_id=admin_role.id, branch_id=hq.id,
         allowed_modules=["crm", "installation", "service", "studio"]
     )
