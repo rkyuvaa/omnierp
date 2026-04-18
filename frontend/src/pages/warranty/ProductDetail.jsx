@@ -8,17 +8,11 @@ import { useAuth } from '../../hooks/useAuth';
 import { useStages } from '../../hooks/useData';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Pencil, Trash2, Package, Settings, Upload, Download, Eye, X, FileText, Check } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Pencil, Trash2, Package, Settings, Check } from 'lucide-react';
 
-const emptyForm = { serial_number:'', bom_id:'', customer_name:'', email:'', phone:'', stage_id:'', custom_data:{} };
+const emptyForm = { name:'', serial_number:'', bom_id:'', warranty_period:12, warranty_unit:'months', notes:'', stage_id:'', custom_data:{}, component_serials:[] };
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
 const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
-const UNITS = ['months','years'];
-const WARRANTY_STATUS = {
-  not_started: { label:'Not Started', color:'var(--text3)' },
-  active:      { label:'Active',      color:'var(--green)' },
-  expired:     { label:'Expired',     color:'var(--red)' },
-};
 
 export default function ProductDetail() {
   const { id } = useParams();
@@ -26,6 +20,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.is_superadmin;
+  
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
@@ -50,13 +45,44 @@ export default function ProductDetail() {
     loadStageRules();
     if (!isNew) {
       api.get(`/warranty/products/${id}`).then(r => {
-        setForm({ ...emptyForm, ...r.data, custom_data: r.data.custom_data || {} });
+        setForm({ ...emptyForm, ...r.data, custom_data: r.data.custom_data || {}, component_serials: r.data.component_serials || [] });
         setLoading(false);
       });
     }
   }, [id, isNew, loadTabs, loadStageRules]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  
+  const handleBOMChange = (bomId) => {
+    const selectedBOM = boms.find(b => b.id === parseInt(bomId));
+    if (!selectedBOM) {
+      setForm(f => ({ ...f, bom_id: '', component_serials: [] }));
+      return;
+    }
+    
+    // Auto-load components from BOM
+    const newComponents = (selectedBOM.components || []).map(c => ({
+      bom_component_id: c.id,
+      name: c.name,
+      serial_number: '',
+      warranty_period: c.warranty_period,
+      warranty_unit: c.warranty_unit
+    }));
+    
+    setForm(f => ({ 
+      ...f, 
+      bom_id: parseInt(bomId), 
+      title: selectedBOM.name, // Internal title becomes BOM Name
+      component_serials: newComponents 
+    }));
+  };
+
+  const updateCompSerial = (idx, sn) => {
+    const next = [...form.component_serials];
+    next[idx].serial_number = sn;
+    set('component_serials', next);
+  };
+
   const setCustom = (k, v) => {
     setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));
     const rule = stageRules.find(r => r.field_name === k);
@@ -69,6 +95,9 @@ export default function ProductDetail() {
   };
 
   const save = async () => {
+    if (!form.name) return toast.error('Vehicle Number is required');
+    if (!form.bom_id) return toast.error('Please select a BOM / Model');
+    
     setSaving(true);
     try {
       const payload = { ...form, stage_id: form.stage_id || null, bom_id: form.bom_id || null };
@@ -83,7 +112,6 @@ export default function ProductDetail() {
         setTimeout(() => setRecentlySaved(false), 3000);
       }
     } catch(e) {
-      console.error('Save error:', e);
       toast.error(e.response?.data?.detail || 'Failed to save');
     }
     finally { setSaving(false); }
@@ -101,226 +129,190 @@ export default function ProductDetail() {
   };
 
   const saveField = async (f) => {
-    const stageRule = f._stageRule;
-    const stageRuleOp = f._stageRuleOp || 'has_value';
-    const stageRuleVal = f._stageRuleVal || '';
-    const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
-    
+    const payload = { ...f };
     if (!payload.tab_id) payload.tab_id = fieldModal?.tabId||null;
     if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
     else await api.post('/studio/layout/warranty/fields', payload);
-    
-    if (stageRule) {
-      await api.post('/studio/layout/warranty/stage-rules', {
-        field_name: payload.field_name,
-        stage_id: parseInt(stageRule),
-        condition_operator: stageRuleOp,
-        condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
-      });
-    } else {
-      const existing = stageRules.find(r => r.field_name === payload.field_name);
-      if (existing) await api.delete(`/studio/layout/stage-rules/${existing.id}`);
-    }
-    toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
+    toast.success('Field saved'); setFieldModal(null); loadTabs();
   };
 
   const deleteField = async (fid) => {
     await api.delete(`/studio/layout/fields/${fid}`);
-    toast.success('Deleted'); setDeleteConfirm(null); loadTabs(); loadStageRules();
+    toast.success('Deleted'); setDeleteConfirm(null); loadTabs();
   };
 
   if (loading) return <Layout title="Product"><Loader/></Layout>;
-
   const currentTab = tabs[activeTab];
-  const currentBOM = boms.find(b=>b.id===form.bom_id);
-  const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
   return (
-    <Layout title={isNew?'New Product':form.title||form.name||'Product'}>
+    <Layout title={isNew ? 'New Product' : `Vehicle: ${form.name}`}>
       <div className="toolbar">
         <button className="btn btn-ghost" onClick={()=>navigate('/warranty/products')}><ArrowLeft size={15}/> Back</button>
         
+        {/* Stage Bar */}
         {!isNew && stages.length > 0 && (
-          <div className="hide-scrollbar" style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 0, padding: "10px 0", overflowX: "visible", whiteSpace: "nowrap", alignItems: "center", marginLeft: 16 }}>
-            {stages.map((s) => {
-              const isCurrent = form.stage_id === s.id;
-              return (
-                <div 
-                  key={s.id}
-                  onClick={() => isAdmin && set('stage_id', s.id)}
-                  style={{
-                    display: "flex", alignItems: "center", 
-                    padding: isCurrent ? "12px 32px" : "8px 20px", 
-                    borderRadius: "100px",
-                    cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
-                    background: isCurrent ? s.color : s.color + "15",
-                    color: isCurrent ? "#fff" : s.color,
-                    fontSize: isCurrent ? "16px" : "12px", 
-                    fontFamily: "inherit", fontWeight: 800,
-                    textTransform: "uppercase", letterSpacing: "1px",
-                    boxShadow: isCurrent ? `0 8px 24px ${s.color}60` : "none",
-                    opacity: isCurrent ? 1 : 0.6,
-                    border: "1px solid " + (isCurrent ? s.color : "transparent"),
-                    whiteSpace: "nowrap",
-                    flexShrink: 0
-                  }}
-                >
-                  {s.name}
-                </div>
-              );
-            })}
+          <div style={{ display: "flex", gap: 6, width: "100%", marginLeft: 16 }}>
+            {stages.map((s) => (
+              <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
+                style={{
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  padding: "8px 12px", borderRadius: "100px", flex: 1, textAlign: "center",
+                  cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
+                  background: form.stage_id === s.id ? s.color : s.color + "15",
+                  color: form.stage_id === s.id ? "#fff" : s.color,
+                  fontSize: "11px", fontWeight: 800, textTransform: "uppercase",
+                  boxShadow: form.stage_id === s.id ? "0 4px 12px " + s.color + "60" : "none",
+                  border: "1px solid " + (form.stage_id === s.id ? s.color : "transparent"),
+                  minWidth: 0
+                }}
+              >
+                {s.name}
+              </div>
+            ))}
           </div>
         )}
 
-        <div className="toolbar-right" style={{ display:'flex', gap:8 }}>
+        <div className="toolbar-right" style={{ display:'flex', gap:8, marginLeft: 'auto' }}>
           {isAdmin && (
-            <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}
-              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
+            <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}>
               <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
           )}
-          <button className="btn" 
-            onClick={save} 
-            disabled={saving || recentlySaved}
-            style={{ 
-              background: recentlySaved ? 'var(--green)' : 'var(--accent)',
-              color: 'white',
-              borderColor: recentlySaved ? 'var(--green)' : 'var(--accent)'
-            }}
-          >
-            {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14}/> Save</>}
+          <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved}
+            style={{ background: recentlySaved ? 'var(--green)' : 'var(--accent)' }}>
+            {recentlySaved ? <Check size={14}/> : <Save size={14}/>} {recentlySaved ? 'Saved' : 'Save'}
           </button>
         </div>
       </div>
 
-      <div className="detail-layout">
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr', gap:20 }}>
+        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+          {/* Main Info */}
           <div className="card">
-            <div className="detail-section-title">Core Information</div>
+            <div className="card-header"><span className="card-title">VEHICLE INFORMATION</span></div>
             <div className="form-grid">
-               <div className="form-group">
-                 <label className="form-label">Product Name *</label>
-                 <input className="form-input" value={form.name || ''} onChange={e => set('name', e.target.value)} />
-               </div>
-               <div className="form-grid form-grid-2">
-                 <div className="form-group">
-                   <label className="form-label">Serial Number *</label>
-                   <input className="form-input" value={form.serial_number || ''} onChange={e => set('serial_number', e.target.value)} />
-                 </div>
-                 <div className="form-group">
-                   <label className="form-label">BOM / Model</label>
-                   <select className="form-select" value={form.bom_id || ''} onChange={e => set('bom_id', parseInt(e.target.value) || null)}>
-                     <option value="">— Select BOM —</option>
-                     {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                   </select>
-                 </div>
-               </div>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">VEHICLE NUMBER *</label>
+                <input className="form-input" value={form.name} onChange={e=>set('name', e.target.value.toUpperCase())} placeholder="e.g. KA01AB1234" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">CHASSIS / SERIAL NUMBER</label>
+                <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">BOM / MODEL *</label>
+                <select className="form-input" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
+                  <option value="">-- Select BOM --</option>
+                  {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
             </div>
           </div>
 
-          <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-               <div style={{ display:'flex', gap:8 }}>
-                  {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
-               </div>
-            </div>
-          {tabs.length > 0 && (
-            <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-              {tabs.map((t,i) => (
-                <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
-                  <button onClick={() => setActiveTab(i)} style={{
-                    padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
-                    background:'transparent', marginBottom:-2, transition:'all 0.15s',
-                    borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
-                    color:activeTab===i?'var(--accent)':'var(--text2)'
-                  }}>{t.name}</button>
-                  {editLayout && <>
-                    <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
-                    <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
-                  </>}
-                </div>
-              ))}
+          {/* Component Serials */}
+          {form.component_serials.length > 0 && (
+            <div className="card">
+              <div className="card-header"><span className="card-title">COMPONENT SERIAL NUMBERS</span></div>
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Component Name</th>
+                      <th>Serial Number</th>
+                      <th style={{ width: 150 }}>Warranty</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {form.component_serials.map((c, idx) => (
+                      <tr key={idx}>
+                        <td className="fw-600">{c.name}</td>
+                        <td>
+                          <input className="form-input" style={{ padding: '6px 12px', fontSize: 13 }} 
+                            value={c.serial_number} 
+                            onChange={e => updateCompSerial(idx, e.target.value)} 
+                            placeholder={`Enter ${c.name} Serial`} />
+                        </td>
+                        <td className="text-muted text-sm">{c.warranty_period} {c.warranty_unit}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           )}
+
+          {/* Tabs */}
+          <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
+            {tabs.map((t,i) => (
+              <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+                <button onClick={()=>setActiveTab(i)} style={{
+                  padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                  background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                  borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                  color:activeTab===i?'var(--accent)':'var(--text2)'
+                }}>{t.name}</button>
+                {editLayout && <>
+                  <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal(t)}><Pencil size={11}/></button>
+                  <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                </>}
+              </div>
+            ))}
+            {editLayout && <button className="btn btn-ghost btn-sm" onClick={()=>setTabModal({})}><Plus size={13}/> Add Tab</button>}
           </div>
 
           {currentTab && (
-            <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
-              <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+            <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
+              <div className="form-grid">
                 {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
-                  <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position:'relative' }}>
-                    {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{ color:'var(--red)' }}> *</span>}</label>}
-                    <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                  <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
+                    {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
+                    <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
                     {editLayout && (
                       <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
-                        <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }} onClick={() => setFieldModal({field:{...f},tabId:currentTab.id})}><Pencil size={11}/></button>
-                        <button className="btn btn-danger btn-sm" style={{ padding:'2px 6px' }} onClick={() => setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
+                        <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
+                        <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
                       </div>
                     )}
                   </div>
                 ))}
                 {editLayout && (
-                  <div style={{ gridColumn:'1/-1', marginTop:8 }}>
-                    <button className="btn btn-ghost btn-sm"
-                      onClick={() => setFieldModal({field:{...emptyField,tab_id:currentTab.id,sort_order:(currentTab.fields||[]).length},tabId:currentTab.id})}>
-                      <Plus size={13}/> Add Field to "{currentTab.name}"
-                    </button>
+                  <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 10, border: '1px dashed var(--border)', borderRadius: 8 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field: {...emptyField, sort_order: (currentTab.fields||[]).length}, tabId: currentTab.id})}><Plus size={14}/> Add Field</button>
+                    {currentTab.fields?.length === 0 && <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'tab',id:currentTab.id,name:currentTab.name})}><Trash2 size={14}/> Delete Empty Tab</button>}
                   </div>
                 )}
               </div>
             </div>
           )}
-
-          {tabs.length===0&&(
-            <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color:'var(--text2)', fontSize:13 }}>
-              {editLayout ? (
-                <div>
-                  <p style={{ marginBottom: 16 }}>No tabs configured. Add a tab to start organizing your custom fields.</p>
-                  <button className="btn btn-primary" onClick={() => setTabModal({})}><Plus size={16}/> Create First Tab</button>
-                  <div style={{ marginTop: 12 }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({field:{...emptyField,tab_id:null},tabId:null})}><Plus size={13}/> Add Field (No Tab)</button>
-                  </div>
-                </div>
-              ) : 'No additional fields configured.'}
-            </div>
-          )}
         </div>
 
-        <div className="card" style={{ alignSelf: 'start' }}>
-          <div className="detail-section-title">Warranty Status</div>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Period</label>
-              <div style={{ display:'flex', gap:8 }}>
-                <input className="form-input" type="number" style={{ width:80 }} value={form.warranty_period} onChange={e=>set('warranty_period',parseInt(e.target.value)||0)}/>
-                <select className="form-select" value={form.warranty_unit} onChange={e=>set('warranty_unit',e.target.value)}>
-                  {UNITS.map(u=><option key={u} value={u}>{u}</option>)}
+        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+          <div className="card">
+            <div className="card-header"><span className="card-title">WARRANTY STATUS</span></div>
+            <div className="form-grid">
+              <div className="form-group" style={{ gridColumn: 'span 1' }}>
+                <label className="form-label">PERIOD</label>
+                <input className="form-input" type="number" value={form.warranty_period} onChange={e=>set('warranty_period', parseInt(e.target.value)||0)} />
+              </div>
+              <div className="form-group" style={{ gridColumn: 'span 1' }}>
+                <label className="form-label">UNIT</label>
+                <select className="form-input" value={form.warranty_unit} onChange={e=>set('warranty_unit', e.target.value)}>
+                  <option value="months">months</option>
+                  <option value="years">years</option>
                 </select>
               </div>
-            </div>
-            <div className="form-group">
-               <label className="form-label">Notes</label>
-               <textarea className="form-textarea" value={form.notes||''} onChange={e=>set('notes',e.target.value)} placeholder="Warranty specific notes..."/>
+              <div className="form-group" style={{ gridColumn: '1/-1' }}>
+                <label className="form-label">NOTES</label>
+                <textarea className="form-textarea" rows={4} value={form.notes} onChange={e=>set('notes', e.target.value)} placeholder="Warranty specific notes..." />
+              </div>
             </div>
           </div>
         </div>
       </div>
-      
-      {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
-      {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
-      {deleteConfirm && (
-        <div className="modal-overlay">
-          <div className="modal" style={{ maxWidth: 380 }}>
-            <div className="modal-body" style={{ textAlign: 'center', padding: '32px 24px' }}>
-              <p style={{ marginBottom: 20 }}>Delete <b>{deleteConfirm.name}</b>?</p>
-              <div className="flex gap-2" style={{ justifyContent: 'center' }}>
-                <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
-                <button className="btn btn-danger" onClick={() => { if (deleteConfirm.type === 'tab') deleteTab(deleteConfirm.id); else deleteField(deleteConfirm.id); }}>Delete</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+
+      {tabModal && <TabModal tab={tabModal} onSave={saveTab} onClose={()=>setTabModal(null)} />}
+      {fieldModal && <FieldModal field={fieldModal.field} onSave={saveField} onClose={()=>setFieldModal(null)} />}
+      {deleteConfirm && <Confirm message={`Delete ${deleteConfirm.name}?`} onConfirm={deleteConfirm.type==='tab'?()=>deleteTab(deleteConfirm.id):()=>deleteField(deleteConfirm.id)} onCancel={()=>setDeleteConfirm(null)} />}
     </Layout>
   );
 }

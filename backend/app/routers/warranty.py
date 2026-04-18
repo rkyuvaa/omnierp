@@ -20,6 +20,13 @@ def serialize_product(p: Product):
             "created_at": str(p.created_at) if p.created_at else "",
             "stage_name": p.stage.name if p.stage else None,
             "stage_color": p.stage.color if p.stage else None,
+            "component_serials": [{
+                "bom_component_id": c.bom_component_id,
+                "name": c.bom_component.name if c.bom_component else "",
+                "serial_number": c.serial_number or "",
+                "warranty_period": c.warranty_period,
+                "warranty_unit": c.warranty_unit
+            } for c in p.component_serials]
         }
     except Exception as e:
         print(f"Serialization error for product {getattr(p, 'id', 'unknown')}: {e}")
@@ -43,12 +50,18 @@ def get_product(id: int, db: Session = Depends(get_db)):
 @router.post("/products")
 def create_product(data: dict, db: Session = Depends(get_db)):
     try:
-        # Filter out fields that are NOT in the Product model
-        valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data"]
+        comps = data.pop("component_serials", [])
+        valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data", "bom_id"]
         product_data = {k: v for k, v in data.items() if k in valid_fields}
         
         p = Product(**product_data)
         db.add(p); db.commit(); db.refresh(p)
+
+        for c in comps:
+            cs = ProductComponentSerial(**c, product_id=p.id)
+            db.add(cs)
+        
+        db.commit(); db.refresh(p)
         return serialize_product(p)
     except Exception as e:
         print(f"Error in create_product: {e}")
@@ -58,15 +71,21 @@ def create_product(data: dict, db: Session = Depends(get_db)):
 @router.put("/products/{id}")
 def update_product(id: int, data: dict, db: Session = Depends(get_db)):
     try:
+        comps = data.pop("component_serials", [])
         p = db.query(Product).filter(Product.id == id).first()
         if not p: raise HTTPException(404)
         
-        valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data"]
+        valid_fields = ["title", "name", "serial_number", "warranty_period", "warranty_unit", "stage_id", "notes", "custom_data", "bom_id"]
         for k, v in data.items():
-            if k in valid_fields:
-                setattr(p, k, v)
+            if k in valid_fields: setattr(p, k, v)
         
-        db.commit()
+        # Sync components
+        db.query(ProductComponentSerial).filter(ProductComponentSerial.product_id == id).delete()
+        for c in comps:
+            cs = ProductComponentSerial(**c, product_id=p.id)
+            db.add(cs)
+        
+        db.commit(); db.refresh(p)
         return serialize_product(p)
     except Exception as e:
         print(f"Error in update_product: {e}")
