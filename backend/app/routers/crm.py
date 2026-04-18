@@ -236,18 +236,23 @@ def crm_dashboard(
     else:
         day_pairs = [("today", today), ("tomorrow", tomorrow)]
 
-    act_types = db.query(CRMActivityType).filter(CRMActivityType.is_active == True).order_by(CRMActivityType.sort_order).all()
-    type_names = [t.name for t in act_types] if act_types else ["note", "call", "follow-up"]
+    try:
+        act_types_q = db.query(CRMActivityType).filter(CRMActivityType.is_active == True).order_by(CRMActivityType.sort_order).all()
+        type_names = [t.name for t in act_types_q] if act_types_q else ["note", "call", "follow-up"]
+    except:
+        type_names = ["note", "call", "follow-up"]
 
     def count_activities(day, act_type, user_id=None):
-        q = db.query(Activity).filter(
-            Activity.done == False,
-            cast(Activity.due_date, Date) == day,
-            Activity.activity_type == act_type
-        )
-        if user_id:
-            q = q.filter(Activity.created_by == user_id)
-        return q.count()
+        try:
+            q = db.query(Activity).filter(
+                Activity.done == False,
+                cast(Activity.due_date, Date) == day,
+                Activity.activity_type == act_type
+            )
+            if user_id:
+                q = q.filter(Activity.created_by == user_id)
+            return q.count()
+        except: return 0
 
     activity_grid = {}
     for day_label, day in day_pairs:

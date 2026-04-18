@@ -221,7 +221,7 @@ export default function LeadForm() {
   const [actTypeModal, setActTypeModal] = useState(false);
   const [recentlySaved, setRecentlySaved] = useState(false);
 
-  const [stages, setStages] = useState([]);
+  const stages = useStages('crm');
   const users = useUsers();
 
   const loadTabs = useCallback(() => api.get('/studio/layout/crm/tabs').then(r => setTabs(r.data)), []);
@@ -232,7 +232,7 @@ export default function LeadForm() {
       setActType(t => t || (r.data[0]?.name || ''));
     }), []);
 
-  useEffect(() => { api.get("/studio/stages?module=crm").then(r => setStages(r.data)); loadTabs(); loadStageRules(); loadActivityTypes(); }, []);
+  useEffect(() => { loadTabs(); loadStageRules(); loadActivityTypes(); }, []);
 
   useEffect(() => {
     if (isNew && user) {

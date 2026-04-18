@@ -45,8 +45,11 @@ def ser_field(f):
 
 # ── Stages ────────────────────────────────────────────────────
 @router.get("/stages/{module}")
-def get_stages(module: str, db: Session = Depends(get_db)):
-    return db.query(Stage).filter(Stage.module == module).order_by(Stage.sort_order).all()
+@router.get("/stages")
+def get_stages(module: str = None, module_query: str = Query(None, alias="module"), db: Session = Depends(get_db)):
+    m = module or module_query
+    if not m: return []
+    return db.query(Stage).filter(Stage.module == m).order_by(Stage.sort_order).all()
 
 # ── Layout (Tabs & Fields) ────────────────────────────────────
 @router.get("/layout/{module}/tabs")
