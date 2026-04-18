@@ -10,7 +10,7 @@ export default function BOMDetail() {
   const { id } = useParams();
   const isNew = id === 'new';
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', description: '', components: [] });
+  const [form, setForm] = useState({ name: '', description: '', warranty_period: 12, warranty_unit: 'months', components: [] });
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
 
@@ -79,6 +79,21 @@ export default function BOMDetail() {
               <label className="form-label">BOM / Model Name</label>
               <input className="form-input" value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="e.g. Standard EV Kit" />
             </div>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 16 }}>
+              <div className="form-group">
+                <label className="form-label">Default Warranty Period</label>
+                <input className="form-input" type="number" value={form.warranty_period} onChange={e => setForm({...form, warranty_period: parseInt(e.target.value)||0})} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Unit</label>
+                <select className="form-input" value={form.warranty_unit} onChange={e => setForm({...form, warranty_unit: e.target.value})}>
+                  <option value="months">Months</option>
+                  <option value="years">Years</option>
+                </select>
+              </div>
+            </div>
+
             <div className="form-group" style={{ marginTop: 16 }}>
               <label className="form-label">Description</label>
               <textarea className="form-textarea" value={form.description || ''} onChange={e => setForm({...form, description: e.target.value})} placeholder="Describe the model..." rows={4} />
