@@ -12,7 +12,6 @@ const moduleItems = [
 ];
 const adminItems = [
   {to:'/admin/users',label:'User Management',icon:Users},
-  {to:'/admin/modules',label:'Modules',icon:Layers},
   {to:'/warranty/bom',label:'BOM Master',icon:Package},
   {to:'/studio',label:'Studio',icon:Settings},
   {to:'/audit',label:'Audit Log',icon:ClipboardList}
