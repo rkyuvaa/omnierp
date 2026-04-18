@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { Loader, Badge, Modal } from '../../components/Shared';
+import { Loader, Badge, Modal, Confirm } from '../../components/Shared';
 import { FieldModal, TabModal } from '../../components/StudioModals';
 import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useAuth } from '../../hooks/useAuth';
@@ -250,7 +250,7 @@ export default function ProductDetail() {
             </div>
             {currentTab && (
               <div className="card" style={{ borderTop: 'none', borderTopLeftRadius: 0, borderTopRightRadius: 0 }}>
-                <div className="form-grid">
+                <div className="form-grid" style={{ gridTemplateColumns: 'repeat(4, 1fr)' }}>
                   {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
                     <div key={f.id} style={{ gridColumn: colSpan[f.width] || '1/-1', position:'relative' }}>
                       {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}</label>}
