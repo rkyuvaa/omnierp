@@ -215,81 +215,93 @@ export default function AdminUsers() {
               </div>
             </section>
 
-            {/* ROW 2: Branch Authorization */}
+            {/* ROW 2: Branch Authorization (Micro Tiles) */}
             <section>
-              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
-                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>2. Branch Portfolio</span>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 8 }}>
+                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>2. Branch Portfolio</span>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '6px' }}>
                 {branches.map(b => {
-                  const isSelected = form.branch_id == b.id || (form.allowed_branches || []).includes(b.id);
+                  const isPrimary = form.branch_id == b.id;
+                  const isAllowed = (form.allowed_branches || []).includes(b.id);
+                  const isSelected = isPrimary || isAllowed;
+                  
                   return (
-                    <div key={b.id} onClick={() => toggleBranch(b.id)} style={{ 
+                    <div key={b.id} style={{ 
                       display: 'flex', 
                       alignItems: 'center', 
-                      gap: 10, 
-                      padding: '8px 12px', 
+                      gap: 8, 
+                      padding: '6px 10px', 
                       background: isSelected ? 'var(--bg)' : 'var(--bg3)', 
-                      border: `1.5px solid ${isSelected ? 'var(--accent)' : 'var(--border)'}`, 
-                      boxShadow: isSelected ? '0 4px 12px rgba(99, 102, 241, 0.1)' : 'none', 
-                      borderRadius: 12, 
-                      cursor: 'pointer', 
+                      border: `1.5px solid ${isPrimary ? 'var(--accent)' : (isSelected ? 'var(--accent-dim)' : 'var(--border)')}`, 
+                      borderRadius: 10, 
                       transition: 'all 0.2s',
-                      position: 'relative'
+                      position: 'relative',
+                      boxShadow: isPrimary ? '0 4px 10px rgba(99, 102, 241, 0.15)' : 'none'
                     }}>
-                      <div style={{ width: 32, height: 32, borderRadius: 8, background: isSelected ? 'var(--accent-dim)' : 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <Building size={16} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
+                      <div 
+                        onClick={() => toggleBranch(b.id)}
+                        style={{ width: 24, height: 24, borderRadius: 6, background: isSelected ? 'var(--accent-dim)' : 'var(--bg2)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                      >
+                        <Building size={14} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
                       </div>
-                      <div style={{ flex: 1 }}>
-                        <span style={{ fontSize: 12, fontWeight: 800, color: isSelected ? 'var(--accent)' : 'var(--text1)', display: 'block' }}>{b.name}</span>
-                        <span style={{ fontSize: 8, color: 'var(--text3)', textTransform: 'uppercase' }}>{isSelected ? 'Authorized' : 'Locked'}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 800, color: isSelected ? 'var(--text1)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</span>
+                        {isSelected && !isPrimary ? (
+                          <span 
+                            onClick={() => set('branch_id', b.id)} 
+                            style={{ fontSize: 7, color: 'var(--accent)', cursor: 'pointer', fontWeight: 900, textTransform: 'uppercase', textDecoration: 'underline' }}
+                          >
+                            Set as Primary
+                          </span>
+                        ) : (
+                           <span style={{ fontSize: 7, color: 'var(--text3)', textTransform: 'uppercase' }}>{isPrimary ? 'Primary' : (isSelected ? 'Authorized' : 'Locked')}</span>
+                        )}
                       </div>
-                      {isSelected ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
-                      {form.branch_id == b.id && (
-                        <div style={{ position: 'absolute', top: 0, right: 0, padding: '1px 6px', background: 'var(--accent)', color: 'white', fontSize: 7, fontWeight: 900, borderRadius: '0 10px 0 10px' }}>PRIMARY</div>
-                      )}
+                      <div onClick={() => toggleBranch(b.id)} style={{ cursor: 'pointer' }}>
+                        {isSelected ? <CheckSquare size={14} color={isPrimary ? "var(--accent)" : "var(--accent-dim)"} /> : <Square size={14} color="var(--text3)" />}
+                      </div>
                     </div>
                   );
                 })}
               </div>
             </section>
 
-            {/* ROW 3: Module Permissions */}
+            {/* ROW 3: Module Permissions (Nano Grid - 6 Columns) */}
             <section style={{ flex: 1 }}>
-              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
-                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>3. Module Permissions</span>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 8 }}>
+                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>3. Module Permissions</span>
               </div>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
                 {ALL_MODULES.map(m => {
                   const roleId = (form.allowed_modules || {})[m.key];
                   return (
                     <div key={m.key} style={{ 
                       display: 'flex', 
                       flexDirection: 'column',
-                      gap: 8,
-                      padding: '10px 12px', 
+                      gap: 6,
+                      padding: '8px', 
                       background: roleId ? 'var(--bg)' : 'var(--bg2)', 
                       border: `1.5px solid ${roleId ? 'var(--accent)' : 'var(--border)'}`, 
-                      borderRadius: 14, 
-                      boxShadow: roleId ? '0 6px 15px rgba(99, 102, 241, 0.08)' : 'none'
+                      borderRadius: 12, 
+                      boxShadow: roleId ? '0 4px 10px rgba(99, 102, 241, 0.05)' : 'none'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                         <div style={{ 
-                          width: 36, 
-                          height: 36, 
+                          width: 28, 
+                          height: 28, 
                           background: roleId ? 'var(--accent)' : 'var(--bg3)', 
-                          borderRadius: 10, 
+                          borderRadius: 8, 
                           display: 'flex', 
                           alignItems: 'center', 
                           justifyContent: 'center', 
                           color: roleId ? 'white' : 'var(--text3)' 
                         }}>
-                          <Shield size={20} />
+                          <Shield size={16} />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                          <span style={{ fontSize: 12, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)' }}>{m.name}</span>
-                          <span style={{ fontSize: 8, color: roleId ? 'var(--accent)' : 'var(--text3)', fontWeight: 800, textTransform: 'uppercase' }}>{roleId ? 'Granted' : 'Locked'}</span>
+                          <span style={{ fontSize: 10, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
                         </div>
                       </div>
                       <select 
@@ -298,15 +310,15 @@ export default function AdminUsers() {
                         onChange={e => setModuleRole(m.key, e.target.value)} 
                         style={{ 
                           width: '100%', 
-                          borderRadius: 8, 
-                          padding: '6px 10px',
-                          fontSize: 11, 
+                          borderRadius: 6, 
+                          padding: '4px 6px',
+                          fontSize: 10, 
                           background: roleId ? 'var(--bg)' : 'var(--bg3)',
-                          border: roleId ? '1.5px solid var(--accent)' : '1px solid var(--border)', 
+                          border: roleId ? '1px solid var(--accent)' : '1px solid var(--border)', 
                           fontWeight: roleId ? 800 : 500
                         }}
                       >
-                        <option value="">— No Access —</option>
+                        <option value="">— None —</option>
                         {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                       </select>
                     </div>
