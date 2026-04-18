@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye,
 
 const empty = { customer_name:'', email:'', phone:'', vehicle_number:'', vehicle_make:'', vehicle_model:'', problem_description:'', notes:'', stage_id:'', staff_id:'', custom_data:{} };
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
+const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
 export default function ServiceForm() {
   const { id } = useParams();

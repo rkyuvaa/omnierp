@@ -10,6 +10,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Bell, Check } from 'lucide-react';
 
 const emptyForm = { customer_name: '', vehicle_number: '', vehicle_make: '', vehicle_model: '', stage_id: '', technician_id: '', notes: '', custom_data: {} };
+const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';
@@ -236,36 +237,27 @@ export default function InstallationForm() {
 
           {/* Tabs section */}
           <div style={{ width: '100%' }}>
-            {editLayout && (
-              <button className="btn btn-ghost btn-sm" style={{ marginBottom: 8 }} onClick={() => setTabModal({})}>
-                <Plus size={13} /> Add Tab
-              </button>
-            )}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+               <div style={{ display:'flex', gap:8 }}>
+                  {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
+               </div>
+            </div>
             {tabs.length > 0 && (
-              <div className="hide-scrollbar" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 0, padding: '8px 5px', borderBottom: '1px solid var(--border)' }}>
-                {tabs.map((t, i) => {
-                  const isActive = activeTab === i;
-                  return (
-                    <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                      <button onClick={() => setActiveTab(i)} style={{
-                        padding: '6px 16px', cursor: 'pointer', transition: 'all 0.2s',
-                        background: isActive ? 'var(--accent)' : 'transparent',
-                        color: isActive ? '#fff' : 'var(--text2)',
-                        fontSize: '11px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px',
-                        border: `1px solid ${isActive ? 'var(--accent)' : 'transparent'}`,
-                        borderRadius: isActive ? '8px 8px 0 0' : '8px',
-                        boxShadow: isActive ? '0 4px 12px var(--accent)40' : 'none',
-                        fontFamily: 'inherit',
-                      }}>{t.name}</button>
-                      {editLayout && (
-                        <div style={{ display: 'flex', gap: 2 }}>
-                          <button className="btn btn-ghost btn-sm" style={{ padding: 4 }} onClick={() => setTabModal(t)}><Pencil size={11} /></button>
-                          <button className="btn btn-danger btn-sm" style={{ padding: 4 }} onClick={() => setDeleteConfirm({ type: 'tab', id: t.id, name: t.name })}><Trash2 size={11} /></button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
+              <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
+                {tabs.map((t, i) => (
+                  <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <button onClick={() => setActiveTab(i)} style={{
+                      padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                      background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                      borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                      color:activeTab===i?'var(--accent)':'var(--text2)'
+                    }}>{t.name}</button>
+                    {editLayout && <>
+                      <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
+                      <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                    </>}
+                  </div>
+                ))}
               </div>
             )}
 
@@ -273,7 +265,7 @@ export default function InstallationForm() {
               <div className="card" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                   {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
-                    <div key={f.id} style={{ gridColumn: f.width === 'full' ? '1/-1' : f.width === 'half' ? 'span 2' : 'span 1', position: 'relative' }}>
+                    <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position: 'relative' }}>
                       {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{color:'var(--red)'}}> *</span>}</label>}
                       <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
                       {editLayout && (

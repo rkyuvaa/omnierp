@@ -12,6 +12,7 @@ import { ArrowLeft, Save, Plus, Check, Settings, Pencil, Trash2, Bell, Upload, D
 
 const emptyForm = (userId) => ({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to: userId||'', custom_data:{} });
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
+const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 const FIELD_TYPES = ['text','number','date','textarea','selection','boolean','checkbox','file'];
 const WIDTH_OPTIONS = [
   { value:'full', label:'Full Row' },

@@ -21,6 +21,7 @@ const ISSUE_TYPES = [
 ];
 
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
+const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
 export default function KonwertCareForm() {
   const { id } = useParams();
