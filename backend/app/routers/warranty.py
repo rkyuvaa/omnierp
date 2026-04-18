@@ -156,17 +156,42 @@ def create_bom(data: dict, db: Session = Depends(get_db)):
 
 @router.put("/boms/{id}")
 def update_bom(id: int, data: dict, db: Session = Depends(get_db)):
-    comps = data.pop("components", [])
-    b = db.query(BOM).filter(BOM.id == id).first()
-    if not b: raise HTTPException(404)
-    for k, v in data.items(): setattr(b, k, v)
-    
-    # Simple sync: remove old and re-add new
-    db.query(BOMComponent).filter(BOMComponent.bom_id == id).delete()
-    for c in comps:
-        c.pop("id", None) # remove id if exists to create new
-        comp = BOMComponent(**c, bom_id=b.id)
-        db.add(comp)
-    
-    db.commit(); db.refresh(b)
-    return serialize_bom(b)
+    try:
+        comps = data.pop("components", [])
+        b = db.query(BOM).filter(BOM.id == id).first()
+        if not b: raise HTTPException(404)
+        
+        valid_fields = ["name", "description", "warranty_period", "warranty_unit"]
+        for k, v in data.items():
+            if k in valid_fields: setattr(b, k, v)
+        
+        # Smart sync for components
+        existing_comp_ids = [c.id for c in b.components]
+        incoming_comp_ids = [c.get("id") for c in comps if c.get("id")]
+        
+        # 1. Delete removed components (only if not used by others)
+        for ec_id in existing_comp_ids:
+            if ec_id not in incoming_comp_ids:
+                db.query(BOMComponent).filter(BOMComponent.id == ec_id).delete()
+        
+        # 2. Update or Create
+        for c_data in comps:
+            cid = c_data.get("id")
+            # Filter valid component fields
+            cv_fields = ["name", "part_number", "quantity", "warranty_period", "warranty_unit", "sort_order"]
+            cv_data = {k: v for k, v in c_data.items() if k in cv_fields}
+            
+            if cid and cid in existing_comp_ids:
+                # Update existing
+                db.query(BOMComponent).filter(BOMComponent.id == cid).update(cv_data)
+            else:
+                # Create new
+                new_c = BOMComponent(**cv_data, bom_id=id)
+                db.add(new_c)
+        
+        db.commit(); db.refresh(b)
+        return serialize_bom(b)
+    except Exception as e:
+        print(f"Error in update_bom: {e}")
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
