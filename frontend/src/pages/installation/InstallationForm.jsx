@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
-import { Loader, Modal } from '../../components/Shared';
+import { Loader, Modal, Badge } from '../../components/Shared';
+import { FieldModal, TabModal } from '../../components/StudioModals';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -40,14 +41,16 @@ export default function InstallationForm() {
   const [fieldModal, setFieldModal] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [recentlySaved, setRecentlySaved] = useState(false);
+  const [stageRules, setStageRules] = useState([]);
 
-  const loadTabs = useCallback(() =>
-    api.get('/studio/layout/installation/tabs').then(r => setTabs(r.data)).catch(() => {}), []);
+  const loadTabs = useCallback(() => api.get('/studio/layout/installation/tabs').then(r => setTabs(r.data)), []);
+  const loadStageRules = useCallback(() => api.get('/studio/layout/installation/stage-rules').then(r => setStageRules(r.data)), []);
 
   useEffect(() => {
     api.get('/studio/stages/installation').then(r => setStages(r.data)).catch(() => {});
     api.get('/users/').then(r => setUsers(r.data)).catch(() => {});
     loadTabs();
+    loadStageRules();
   }, []);
 
   useEffect(() => {
@@ -110,10 +113,9 @@ export default function InstallationForm() {
     setActivities(a => a.map(x => x.id === aid ? { ...x, done: true } : x));
   };
 
-  const saveTab = async (name) => {
-    if (!name.trim()) return;
-    if (tabModal?.id) await api.put(`/studio/layout/tabs/${tabModal.id}`, { name, sort_order: tabModal.sort_order || 0 });
-    else await api.post('/studio/layout/installation/tabs', { name, sort_order: tabs.length });
+  const saveTab = async (tab) => {
+    if (tab.id) await api.put(`/studio/layout/tabs/${tab.id}`, tab);
+    else await api.post('/studio/layout/installation/tabs', { ...tab, sort_order: tabs.length });
     toast.success('Tab saved'); setTabModal(null); loadTabs();
   };
 
@@ -364,15 +366,8 @@ export default function InstallationForm() {
         </div>
       </div>
 
-      {/* Tab modal */}
-      {tabModal !== null && (
-        <TabEditorModal tab={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />
-      )}
-
-      {/* Field modal */}
-      {fieldModal !== null && (
-        <FieldEditorModal field={fieldModal.field} onSave={saveField} onClose={() => setFieldModal(null)} />
-      )}
+      {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
 
       {/* Delete confirm */}
       {deleteConfirm && (
@@ -395,81 +390,3 @@ export default function InstallationForm() {
   );
 }
 
-function TabEditorModal({ tab, onSave, onClose }) {
-  const [name, setName] = useState(tab?.name || '');
-  return (
-    <Modal title={tab?.id ? 'Edit Tab' : 'New Tab'} onClose={onClose}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(name)}>Save Tab</button></>}>
-      <div className="form-group">
-        <label className="form-label">Tab Name *</label>
-        <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Installation Details" autoFocus />
-      </div>
-    </Modal>
-  );
-}
-
-function FieldEditorModal({ field, onSave, onClose }) {
-  const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'boolean'];
-  const [f, setF] = useState({ field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: 0, ...field });
-  const [optInput, setOptInput] = useState('');
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-  const needsOptions = ['selection'].includes(f.field_type);
-  return (
-    <Modal title={field.id ? 'Edit Field' : 'New Field'} onClose={onClose} large
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(f)}>Save Field</button></>}>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div className="form-group">
-          <label className="form-label">Field Label *</label>
-          <input className="form-input" value={f.field_label} onChange={e => { set('field_label', e.target.value); if (!field.id) set('field_name', e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '')); }} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Field Key</label>
-          <input className="form-input" value={f.field_name} onChange={e => set('field_name', e.target.value)} />
-        </div>
-        <div className="form-group">
-          <label className="form-label">Type</label>
-          <select className="form-select" value={f.field_type} onChange={e => set('field_type', e.target.value)}>
-            {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-          </select>
-        </div>
-        <div className="form-group">
-          <label className="form-label">Width</label>
-          <select className="form-select" value={f.width} onChange={e => set('width', e.target.value)}>
-            <option value="full">Full Row</option>
-            <option value="half">Half Row</option>
-            <option value="quarter">Quarter Row</option>
-          </select>
-        </div>
-        {!['boolean'].includes(f.field_type) && (
-          <div className="form-group">
-            <label className="form-label">Placeholder</label>
-            <input className="form-input" value={f.placeholder || ''} onChange={e => set('placeholder', e.target.value)} />
-          </div>
-        )}
-        <div className="form-group">
-          <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} className="form-label">
-            <input type="checkbox" checked={f.required} onChange={e => set('required', e.target.checked)} style={{ accentColor: 'var(--accent)' }} />
-            Required field
-          </label>
-        </div>
-      </div>
-      {needsOptions && (
-        <div className="form-group" style={{ marginTop: 12 }}>
-          <label className="form-label">Options</label>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-            <input className="form-input" placeholder="Add option..." value={optInput} onChange={e => setOptInput(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && optInput.trim()) { set('options', [...(f.options || []), optInput.trim()]); setOptInput(''); } }} />
-            <button className="btn btn-ghost" onClick={() => { if (optInput.trim()) { set('options', [...(f.options || []), optInput.trim()]); setOptInput(''); } }}><Plus size={14} /></button>
-          </div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-            {(f.options || []).map((o, i) => (
-              <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '3px 10px', background: 'var(--bg3)', borderRadius: 20, fontSize: 13 }}>
-                {o}<button onClick={() => set('options', f.options.filter((_, j) => j !== i))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--red)' }}>×</button>
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-    </Modal>
-  );
-}

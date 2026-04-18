@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { Loader, Badge, Modal } from '../../components/Shared';
+import { FieldModal, TabModal } from '../../components/StudioModals';
 import { useStages, useUsers } from '../../hooks/useData';
 import { useAuth } from '../../hooks/useAuth';
 import api, { BASE_URL } from '../../utils/api';
@@ -164,186 +165,7 @@ function isFieldVisible(field, customData) {
     return String(val ?? '') === String(ruleValue ?? '');
   }
   // has_value (default)
-  return val !== undefined && val !== '' && val !== false && val !== null &&
-    !(Array.isArray(val) && val.length === 0);
-}
-
-// ── Field Editor Modal ────────────────────────────────────────
-function FieldEditor({ field, tabs, stages, stageRules, onSave, onClose }) {
-  const [f, setF] = useState({ ...emptyField, ...field });
-  const [optInput, setOptInput] = useState('');
-  const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-  const existingRule = stageRules.find(r => r.field_name === (field.field_name || ''));
-  const needsOptions = ['selection', 'checkbox'].includes(f.field_type);
-  const allFields = tabs.flatMap(t => t.fields || []).filter(fld => fld.field_name !== f.field_name);
-
-  // visibility rule helpers
-  const visField = f.visibility_rule?.field || '';
-  const visOp = f.visibility_rule?.operator || 'has_value';
-  const visVal = f.visibility_rule?.value || '';
-  const visFieldObj = allFields.find(fld => fld.field_name === visField);
-  const visFieldOptions = visFieldObj?.options || [];
-
-  const setVisField = (fieldName) => {
-    if (!fieldName) { set('visibility_rule', null); return; }
-    set('visibility_rule', { field: fieldName, operator: 'has_value', value: '' });
-  };
-  const setVisOp = (op) => set('visibility_rule', { ...f.visibility_rule, operator: op, value: '' });
-  const setVisVal = (val) => set('visibility_rule', { ...f.visibility_rule, value: val });
-
-  // stage rule helpers
-  const stageRuleStageId = f._stageRule ?? (existingRule?.stage_id || '');
-  const stageRuleOp = f._stageRuleOp ?? (existingRule?.condition_operator || 'has_value');
-  const stageRuleVal = f._stageRuleVal ?? (existingRule?.condition_value || '');
-  const fieldOptions = f.options || [];
-
-  return (
-    <Modal title={field.id ? 'Edit Field' : 'New Field'} onClose={onClose} large
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(f)}>Save Field</button></>}>
-      <div className="form-grid">
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div className="form-group">
-            <label className="form-label">Field Label *</label>
-            <input className="form-input" value={f.field_label} onChange={e => {
-              set('field_label', e.target.value);
-              if (!field.id) set('field_name', e.target.value.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''));
-            }}/>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Field Key</label>
-            <input className="form-input" value={f.field_name} onChange={e => set('field_name', e.target.value)}/>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Type</label>
-            <select className="form-select" value={f.field_type} onChange={e => set('field_type', e.target.value)}>
-              {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-            </select>
-          </div>
-          <div className="form-group">
-            <label className="form-label">Width</label>
-            <select className="form-select" value={f.width} onChange={e => set('width', e.target.value)}>
-              {WIDTH_OPTIONS.map(w => <option key={w.value} value={w.value}>{w.label}</option>)}
-            </select>
-          </div>
-          {!['boolean', 'checkbox', 'file'].includes(f.field_type) && (
-            <div className="form-group">
-              <label className="form-label">Placeholder</label>
-              <input className="form-input" value={f.placeholder} onChange={e => set('placeholder', e.target.value)}/>
-              
-          </div>
-          )}
-          <div className="form-group">
-            <label className="form-label">Tab</label>
-            <select className="form-select" value={f.tab_id || ''} onChange={e => set('tab_id', parseInt(e.target.value) || null)}>
-              <option value="">— No Tab —</option>
-              {tabs.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-            </select>
-          </div>
-          <div className="form-group" style={{ gridColumn: '1/-1' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }} className="form-label">
-              <input type="checkbox" checked={f.required} onChange={e => set('required', e.target.checked)} style={{ accentColor: 'var(--accent)' }}/>
-              Required field
-            </label>
-          </div>
-        </div>
-
-        {needsOptions && (
-          <div className="form-group">
-            <label className="form-label">Options</label>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-              <input className="form-input" placeholder="Add option..." value={optInput} onChange={e => setOptInput(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && optInput.trim()) { set('options', [...(f.options||[]), optInput.trim()]); setOptInput(''); }}}/>
-              <button className="btn btn-ghost" onClick={() => { if (optInput.trim()) { set('options', [...(f.options||[]), optInput.trim()]); setOptInput(''); }}}><Plus size={14}/></button>
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {(f.options||[]).map((o, i) => (
-                <span key={i} style={{ display:'flex', alignItems:'center', gap:4, padding:'3px 10px', background:'var(--bg3)', borderRadius:20, fontSize:13 }}>
-                  {o}<button onClick={() => set('options', f.options.filter((_,j) => j !== i))} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--red)', lineHeight:1 }}>×</button>
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── Visibility Rule ── */}
-        <div className="form-group">
-          <label className="form-label">Visibility Condition</label>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <select className="form-select" value={visField} onChange={e => setVisField(e.target.value)}>
-              <option value="">Always visible</option>
-              {allFields.map(fld => <option key={fld.field_name} value={fld.field_name}>{fld.field_label}</option>)}
-            </select>
-            {visField && (
-              <select className="form-select" value={visOp} onChange={e => setVisOp(e.target.value)}>
-                <option value="has_value">has any value</option>
-                <option value="equals">equals specific value</option>
-              </select>
-            )}
-          </div>
-          {visField && visOp === 'equals' && (
-            <div style={{ marginTop: 8 }}>
-              {visFieldObj && ['selection','checkbox'].includes(visFieldObj.field_type) ? (
-                <select className="form-select" value={visVal} onChange={e => setVisVal(e.target.value)}>
-                  <option value="">— Select value —</option>
-                  {visFieldOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              ) : visFieldObj?.field_type === 'boolean' ? (
-                <select className="form-select" value={visVal} onChange={e => setVisVal(e.target.value)}>
-                  <option value="true">True (checked)</option>
-                  <option value="false">False (unchecked)</option>
-                </select>
-              ) : (
-                <input className="form-input" placeholder="Enter expected value..." value={visVal} onChange={e => setVisVal(e.target.value)}/>
-              )}
-              
-          </div>
-          )}
-        </div>
-
-        {/* ── Auto-Stage Rule ── */}
-        {!['file', 'checkbox'].includes(f.field_type) && (
-          <div className="form-group">
-            <label className="form-label">Auto-move to Stage</label>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-              <select className="form-select" value={stageRuleOp} onChange={e => set('_stageRuleOp', e.target.value)}>
-                <option value="has_value">when field has any value</option>
-                <option value="equals">when field equals specific value</option>
-              </select>
-              <select className="form-select" value={stageRuleStageId} onChange={e => set('_stageRule', e.target.value)}>
-                <option value="">No auto-stage</option>
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            {stageRuleOp === 'equals' && stageRuleStageId && (
-              <div style={{ marginTop: 8 }}>
-                {['selection'].includes(f.field_type) ? (
-                  <select className="form-select" value={stageRuleVal} onChange={e => set('_stageRuleVal', e.target.value)}>
-                    <option value="">— Select trigger value —</option>
-                    {fieldOptions.map(o => <option key={o} value={o}>{o}</option>)}
-                  </select>
-                ) : f.field_type === 'boolean' ? (
-                  <select className="form-select" value={stageRuleVal} onChange={e => set('_stageRuleVal', e.target.value)}>
-                    <option value="true">True (checked)</option>
-                    <option value="false">False (unchecked)</option>
-                  </select>
-                ) : (
-                  <input className="form-input" placeholder="Enter trigger value..." value={stageRuleVal} onChange={e => set('_stageRuleVal', e.target.value)}/>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </Modal>
-  );
-}
-
-// ── Tab Editor ────────────────────────────────────────────────
-function TabEditor({ tab, onSave, onClose }) {
-  const [name, setName] = useState(tab?.name||'');
-  return (
-    <Modal title={tab?.id?'Edit Tab':'New Tab'} onClose={onClose}
-      footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(name)}>Save Tab</button></>}>
+  return vabtn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(name)}>Save Tab</button></>}>
       <div className="form-group">
         <label className="form-label">Tab Name *</label>
         <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Address Details" autoFocus/>
@@ -567,10 +389,9 @@ export default function LeadForm() {
     setActivities(a => a.map(x => x.id===aid?{...x,done:true}:x));
   };
 
-  const saveTab = async (name) => {
-    if (!name.trim()) return;
-    if (tabModal?.id) await api.put(`/studio/layout/tabs/${tabModal.id}`, { name, sort_order:tabModal.sort_order||0 });
-    else await api.post('/studio/layout/crm/tabs', { name, sort_order:tabs.length });
+  const saveTab = async (tab) => {
+    if (tab.id) await api.put(`/studio/layout/tabs/${tab.id}`, tab);
+    else await api.post('/studio/layout/crm/tabs', { ...tab, sort_order: tabs.length });
     toast.success('Tab saved'); setTabModal(null); loadTabs();
   };
 
@@ -878,8 +699,8 @@ export default function LeadForm() {
         </div>
       </div>
 
-      {tabModal!==null&&<TabEditor tab={tabModal} onSave={saveTab} onClose={() => setTabModal(null)}/>}
-      {fieldModal!==null&&<FieldEditor field={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)}/>}
+      {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {actTypeModal&&<ActivityTypeModal onClose={() => setActTypeModal(false)} onSaved={loadActivityTypes}/>}
       {deleteConfirm&&(
         <div className="modal-overlay">

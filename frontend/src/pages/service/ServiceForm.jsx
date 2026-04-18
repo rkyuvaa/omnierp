@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import { Loader, Modal, Badge } from '../../components/Shared';
+import { FieldModal, TabModal } from '../../components/StudioModals';
 import { useStages, useUsers } from '../../hooks/useData';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
@@ -275,10 +276,9 @@ export default function ServiceForm() {
       if (isMatch) set('stage_id', parseInt(rule.stage_id));
     }
   };
-  const saveTab = async (name) => {
-    if (!name.trim()) return;
-    if (tabModal?.id) await api.put(`/studio/layout/tabs/${tabModal.id}`, { name, sort_order:tabModal.sort_order||0 });
-    else await api.post('/studio/layout/service/tabs', { name, sort_order:tabs.length });
+  const saveTab = async (tab) => {
+    if (tab.id) await api.put(`/studio/layout/tabs/${tab.id}`, tab);
+    else await api.post('/studio/layout/service/tabs', { ...tab, sort_order: tabs.length });
     toast.success('Tab saved'); setTabModal(null); loadTabs();
   };
   const deleteTab = async (tid) => {
@@ -450,8 +450,8 @@ export default function ServiceForm() {
           </div>
         </div>
       </div>
-      {tabModal !== null && <TabEditor tab={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
-      {fieldModal !== null && <FieldEditor field={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
+      {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {deleteConfirm && (
         <div className="modal-overlay">
           <div className="modal" style={{ maxWidth: 380 }}>
