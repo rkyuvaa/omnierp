@@ -66,12 +66,22 @@ def get_one(id: int, db: Session = Depends(get_db)):
 @router.post("/")
 def create_inst(data: InstIn, db: Session = Depends(get_db)):
     try:
-        # Robust reference generation using max ID
+        # Guaranteed unique reference generation
         last = db.query(Installation).order_by(Installation.id.desc()).first()
         next_id = (last.id + 1) if last else 1
-        ref = f"INST/{datetime.datetime.now().year}/{next_id:04d}"
+        year = datetime.datetime.now().year
+        ref = f"INST/{year}/{next_id:04d}"
         
+        # Check for collision and skip
+        while db.query(Installation).filter(Installation.reference == ref).first():
+            next_id += 1
+            ref = f"INST/{year}/{next_id:04d}"
+            
         r_data = data.model_dump()
+        
+        # Mandatory field fallbacks
+        if not r_data.get('customer_name'):
+            r_data['customer_name'] = "New Customer"
         
         # Robust date parsing
         sd = r_data.get('schedule_date')
