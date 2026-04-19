@@ -6,17 +6,57 @@ import api from '../utils/api';
 export function UserSelect({ field, value, onChange }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const deptIds = Array.isArray(field.options) ? field.options : [];
+  const deptIds = Array.isArray(field.options) ? field.options[0] : null; // First element is still the dept filter
+  // Actually, in the new multi-dept, options is the array of IDs. 
+  // Wait, I changed it to multi-dept in the last turn.
+  // So field.options is [deptId, deptId, ..., 'true']? No, that's messy.
+  
+  // Let's refine the logic:
+  // All elements in field.options that are numeric/IDs are depts.
+  // The 'true' flag for multi-select is the last element if it matches 'true' or 'false'.
+  
+  const isMulti = field.options?.includes('true');
+  const actualDeptIds = (field.options || []).filter(x => x !== 'true' && x !== 'false');
 
   useEffect(() => {
     api.get('/users/').then(r => {
       let filtered = r.data || [];
-      if (deptIds.length > 0) {
-        filtered = filtered.filter(u => deptIds.some(id => String(u.department_id) === String(id)));
+      if (actualDeptIds.length > 0) {
+        filtered = filtered.filter(u => actualDeptIds.some(id => String(u.department_id) === String(id)));
       }
       setUsers(filtered);
     }).finally(() => setLoading(false));
-  }, [JSON.stringify(deptIds)]);
+  }, [JSON.stringify(actualDeptIds)]);
+
+  if (isMulti) {
+    const selected = Array.isArray(value) ? value : [];
+    const toggle = (id) => {
+      const sId = String(id);
+      if (selected.includes(sId)) onChange(selected.filter(x => x !== sId));
+      else onChange([...selected, sId]);
+    };
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        <select className="form-select" value="" onChange={e => toggle(e.target.value)} disabled={loading}>
+          <option value="">{loading ? 'Loading...' : '— Add User —'}</option>
+          {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+        </select>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {selected.map(id => {
+            const u = users.find(x => String(x.id) === String(id));
+            if (!u && !loading) return null;
+            return (
+              <span key={id} style={{ display:'flex',alignItems:'center',gap:4,padding:'3px 10px',background:'var(--accent-dim)',color:'var(--accent)',borderRadius:20,fontSize:11,fontWeight:800 }}>
+                {u?.name || 'Loading...'} 
+                <button onClick={() => toggle(id)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', lineHeight: 1 }}>×</button>
+              </span>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <select className="form-select" value={value || ''} onChange={e => onChange(e.target.value)} disabled={loading}>

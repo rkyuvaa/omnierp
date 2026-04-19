@@ -123,6 +123,24 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
           </div>
         )}
 
+        {f.field_type === 'user' && (
+          <div className="form-group">
+            <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={f.options?.[1] === 'true'} 
+                onChange={e => {
+                  const opts = [...(f.options || [])];
+                  opts[1] = e.target.checked ? 'true' : 'false';
+                  set('options', opts);
+                }} 
+                style={{ accentColor: 'var(--accent)' }} 
+              />
+              <span className="form-label" style={{ margin: 0 }}>Allow Multiple User Selection</span>
+            </label>
+          </div>
+        )}
+
         {needsOptions && (
           <div className="form-group">
             <label className="form-label">Options</label>
