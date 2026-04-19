@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
+import uuid, os, shutil
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Optional
@@ -135,3 +136,25 @@ def save_sequence(module: str, data: SequenceIn, db: Session = Depends(get_db), 
     else:
         for k, v in data.model_dump().items(): setattr(seq, k, v)
     db.commit(); return seq
+
+# ── File Upload ───────────────────────────────────────────────
+@router.post("/upload")
+def upload_file(file: UploadFile = File(...), current_user=Depends(get_current_user)):
+    # Create directory if not exists
+    upload_dir = "static/uploads"
+    if not os.path.exists(upload_dir):
+        os.makedirs(upload_dir)
+        
+    ext = os.path.splitext(file.filename)[1]
+    unique_name = f"{uuid.uuid4()}{ext}"
+    file_path = os.path.join(upload_dir, unique_name)
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {
+        "filename": unique_name,
+        "original_name": file.filename,
+        "url": f"/static/uploads/{unique_name}",
+        "content_type": file.content_type
+    }

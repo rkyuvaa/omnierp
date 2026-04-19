@@ -162,7 +162,7 @@ export function FileField({ value, onChange }) {
     setUploading(true);
     try {
       const fd = new FormData(); fd.append('file', file);
-      const r = await fetch(`${baseUrl}/api/upload`, { 
+      const r = await fetch(`${baseUrl}/api/studio/upload`, { 
         method:'POST', 
         headers:{Authorization:`Bearer ${token}`}, 
         body:fd 
