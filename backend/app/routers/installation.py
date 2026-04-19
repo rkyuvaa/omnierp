@@ -65,29 +65,46 @@ def get_one(id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_inst(data: InstIn, db: Session = Depends(get_db)):
-    # Robust reference generation using max ID
-    last = db.query(Installation).order_by(Installation.id.desc()).first()
-    next_id = (last.id + 1) if last else 1
-    ref = f"INST/{datetime.datetime.now().year}/{next_id:04d}"
-    
-    # Parse date if present
-    r_data = data.model_dump()
-    if r_data.get('schedule_date'):
-        try: r_data['schedule_date'] = datetime.datetime.strptime(r_data['schedule_date'], '%Y-%m-%d').date()
-        except: pass
+    try:
+        # Robust reference generation using max ID
+        last = db.query(Installation).order_by(Installation.id.desc()).first()
+        next_id = (last.id + 1) if last else 1
+        ref = f"INST/{datetime.datetime.now().year}/{next_id:04d}"
+        
+        r_data = data.model_dump()
+        
+        # Robust date parsing
+        sd = r_data.get('schedule_date')
+        if sd and str(sd).strip():
+            try: r_data['schedule_date'] = datetime.datetime.strptime(str(sd), '%Y-%m-%d').date()
+            except: r_data['schedule_date'] = None
+        else:
+            r_data['schedule_date'] = None
 
-    r = Installation(**r_data, reference=ref)
-    db.add(r); db.commit(); db.refresh(r); return serialize(r)
+        r = Installation(**r_data, reference=ref)
+        db.add(r); db.commit(); db.refresh(r); return serialize(r)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Database Error: {str(e)}")
 
 @router.put("/{id}")
 def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
-    r = db.query(Installation).filter(Installation.id == id).first()
-    if not r: raise HTTPException(404, "Not found")
-    
-    r_data = data.model_dump()
-    if r_data.get('schedule_date'):
-        try: r_data['schedule_date'] = datetime.datetime.strptime(r_data['schedule_date'], '%Y-%m-%d').date()
-        except: pass
+    try:
+        r = db.query(Installation).filter(Installation.id == id).first()
+        if not r: raise HTTPException(404, "Not found")
+        
+        r_data = data.model_dump()
+        
+        # Robust date parsing
+        sd = r_data.get('schedule_date')
+        if sd and str(sd).strip():
+            try: r_data['schedule_date'] = datetime.datetime.strptime(str(sd), '%Y-%m-%d').date()
+            except: r_data['schedule_date'] = None
+        else:
+            r_data['schedule_date'] = None
 
-    for k, v in r_data.items(): setattr(r, k, v)
-    db.commit(); return serialize(r)
+        for k, v in r_data.items(): setattr(r, k, v)
+        db.commit(); return serialize(r)
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Database Error: {str(e)}")
