@@ -246,7 +246,7 @@ export default function InstallationForm() {
           {/* Core fields */}
           <div className="card mb-4" style={{ height: 'fit-content' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              <div className="form-group" style={{ gridColumn: 'span 4' }}>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Vehicle Number *</label>
                 <select 
                   className="form-select fw-600" 
@@ -256,6 +256,10 @@ export default function InstallationForm() {
                   <option value="">— Select Vehicle —</option>
                   {vehicles.filter(v => v.id === form.product_id || !usedProductIds.includes(v.id)).map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
                 </select>
+              </div>
+              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                <label className="form-label">Schedule Date</label>
+                <input type="date" className="form-input fw-600" value={form.schedule_date || ''} onChange={e => set('schedule_date', e.target.value)} />
               </div>
             </div>
           </div>

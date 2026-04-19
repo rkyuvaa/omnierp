@@ -17,6 +17,7 @@ class InstIn(BaseModel):
     stage_id: Optional[int] = None
     technician_id: Optional[int] = None
     product_id: Optional[int] = None
+    schedule_date: Optional[str] = None
     notes: Optional[str] = None
     custom_data: dict = {}
 
@@ -35,6 +36,7 @@ def serialize(r):
             "technician_id": r.technician_id,
             "technician_name": r.technician.name if r.technician else "Unassigned",
             "product_id": r.product_id,
+            "schedule_date": str(r.schedule_date) if r.schedule_date else None,
             "created_at": str(r.created_at) if r.created_at else None,
             "custom_data": r.custom_data or {}
         }
