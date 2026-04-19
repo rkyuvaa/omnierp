@@ -3,8 +3,8 @@ import axios from 'axios';
 // Detect if we are on localhost (dev) or on a server (production)
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 const BASE_URL = isLocal 
-  ? 'http://localhost:8000/api' 
-  : `${window.location.protocol}//${window.location.hostname}${window.location.port && window.location.port !== '80' && window.location.port !== '443' ? ':' + window.location.port : ''}/api`;
+  ? 'http://localhost:8000/api/' 
+  : `${window.location.protocol}//${window.location.hostname}${window.location.port && window.location.port !== '80' && window.location.port !== '443' ? ':' + window.location.port : ''}/api/`;
 
 const api = axios.create({ baseURL: BASE_URL, timeout: 30000 });
 
