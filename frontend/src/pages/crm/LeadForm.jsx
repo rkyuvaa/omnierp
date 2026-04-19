@@ -459,14 +459,6 @@ export default function LeadForm() {
               </div>
             </div>
           )}
-              </div>
-                )}
-                {(currentTab.fields||[]).length===0&&!editLayout&&(
-                  <p className="text-muted text-sm" style={{ gridColumn:'1/-1' }}>No fields in this tab yet.</p>
-                )}
-              </div>
-            </div>
-          )}
 
           {tabs.length===0&&(
             <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color:'var(--text2)', fontSize:13 }}>
