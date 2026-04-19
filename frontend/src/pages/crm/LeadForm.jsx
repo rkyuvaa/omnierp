@@ -283,11 +283,11 @@ export default function LeadForm() {
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
-  const visibleTabs = (tabs || []).filter(t => 
-    !t.visibility_stages || 
-    (Array.isArray(t.visibility_stages) && t.visibility_stages.length === 0) || 
-    (Array.isArray(t.visibility_stages) && t.visibility_stages.includes(form?.stage_id))
-  );
+  const visibleTabs = (tabs || []).filter(t => {
+    if (!t.visibility_stages || t.visibility_stages.length === 0) return true;
+    if (!form?.stage_id) return false;
+    return t.visibility_stages.includes(Number(form.stage_id));
+  });
 
   useEffect(() => {
     if (loading || !form) return;
@@ -570,7 +570,7 @@ export default function LeadForm() {
         </div>
       </div>
 
-      {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal !== null && <FieldModal initial={{...fieldModal.field, module: 'crm'}} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {actTypeModal&&<ActivityTypeModal onClose={() => setActTypeModal(false)} onSaved={loadActivityTypes}/>}
       {deleteConfirm&&(

@@ -4,7 +4,13 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Optional
 from ..database import get_db
-from ..models import Stage, CRMTab, CRMField, CRMStageRule, SequenceConfig, InstallationTab, InstallationField
+from ..models import (
+    Stage, CRMTab, CRMField, CRMStageRule, SequenceConfig, 
+    InstallationTab, InstallationField,
+    ServiceTab, ServiceField,
+    WarrantyTab, WarrantyField,
+    KonwertCareTab, KonwertCareField
+)
 from ..auth import get_current_user, require_admin
 from pydantic import BaseModel
 
@@ -41,9 +47,16 @@ class SequenceIn(BaseModel):
 
 # ── Helpers ───────────────────────────────────────────────────
 def get_layout_models(module: str):
-    if module == "installation":
-        return InstallationTab, InstallationField
-    return CRMTab, CRMField
+    mapping = {
+        "crm": (CRMTab, CRMField),
+        "installation": (InstallationTab, InstallationField),
+        "service": (ServiceTab, ServiceField),
+        "warranty": (WarrantyTab, WarrantyField),
+        "konwertcare": (KonwertCareTab, KonwertCareField)
+    }
+    if module not in mapping:
+        raise HTTPException(status_code=400, detail="Invalid module")
+    return mapping[module]
 
 def ser_field(f):
     return {"id":f.id,"tab_id":f.tab_id,"field_name":f.field_name,"field_label":f.field_label,

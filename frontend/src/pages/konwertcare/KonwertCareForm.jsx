@@ -9,7 +9,9 @@ import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check } from 'lucide-react';
-const empty = {
+import SubFormSection from '../crm/SubFormSection';
+
+const empty = { 
   customer_name: '', phone: '', email: '',
   vehicle_number: '', vehicle_make: '', vehicle_model: '',
   product_serial: '', issue_type: '', issue_description: '',
@@ -115,8 +117,14 @@ export default function KonwertCareForm() {
     }
     finally { setSaving(false); }
   };
+  const visibleTabs = (tabs || []).filter(t => {
+    if (!t.visibility_stages || t.visibility_stages.length === 0) return true;
+    if (!form?.stage_id) return false;
+    return t.visibility_stages.includes(Number(form.stage_id));
+  });
+
   if (loading) return <Layout title="Konwert Care+"><Loader /></Layout>;
-  const currentTab = tabs[activeTab];
+  const currentTab = visibleTabs[activeTab];
   const colSpan = { full: '1/-1', half: 'span 2', quarter: 'span 1' };
   return (
     <Layout title={isNew ? 'New Care Request' : `Care — ${form.reference || ''}`}>
@@ -139,9 +147,9 @@ export default function KonwertCareForm() {
         )}
         <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
           {isAdmin && (
-            <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}
-              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
-              <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
+            <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e => !e)}
+              style={editLayout ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
+              <Settings size={14} /> {editLayout ? 'Exit Layout' : 'Edit Layout'}
             </button>
           )}
           <button className="btn btn-primary" onClick={save} disabled={saving}>
@@ -213,19 +221,19 @@ export default function KonwertCareForm() {
                     {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
                   </div>
                 </div>
-                {tabs.length > 0 && (
-                  <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-                    {tabs.map((t,i) => (
-                      <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+                {visibleTabs.length > 0 && (
+                  <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'wrap', borderBottom: '2px solid var(--border)', marginBottom: 20 }}>
+                    {visibleTabs.map((t, i) => (
+                      <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <button onClick={() => setActiveTab(i)} style={{
-                          padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
-                          background:'transparent', marginBottom:-2, transition:'all 0.15s',
-                          borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
-                          color:activeTab===i?'var(--accent)':'var(--text2)'
+                          padding: '8px 18px', border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                          background: 'transparent', marginBottom: -2, transition: 'all 0.15s',
+                          borderBottom: activeTab === i ? '2px solid var(--accent)' : '2px solid transparent',
+                          color: activeTab === i ? 'var(--accent)' : 'var(--text2)'
                         }}>{t.name}</button>
                         {editLayout && <>
-                          <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
-                          <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                          <button className="btn btn-ghost btn-sm" style={{ padding: '2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
+                          <button className="btn btn-danger btn-sm" style={{ padding: '2px 4px' }} onClick={() => setDeleteConfirm({ type: 'tab', id: t.id, name: t.name })}><Trash2 size={11}/></button>
                         </>}
                       </div>
                     ))}
@@ -238,7 +246,17 @@ export default function KonwertCareForm() {
                     {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
                       <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position:'relative' }}>
                         {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{ color:'var(--red)' }}> *</span>}</label>}
-                        <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                        {f.field_type === 'form' ? (
+                          <SubFormSection 
+                            module="konwertcare" 
+                            parentId={form.id} 
+                            parentData={form} 
+                            templateId={f.form_template_id} 
+                            embedded={true} 
+                          />
+                        ) : (
+                          <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                        )}
                         {editLayout && (
                           <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
                             <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }} onClick={() => setFieldModal({field:{...f},tabId:currentTab.id})}><Pencil size={11}/></button>
@@ -294,7 +312,7 @@ export default function KonwertCareForm() {
           </div>
         </div>
       </div>
-      {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {deleteConfirm && (
         <div className="modal-overlay">

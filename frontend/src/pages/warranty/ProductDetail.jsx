@@ -9,6 +9,7 @@ import { useStages } from '../../hooks/useData';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, Pencil, Trash2, Package, Settings, Check, User as UserIcon } from 'lucide-react';
+import SubFormSection from '../crm/SubFormSection';
 
 const emptyForm = { name:'', serial_number:'', bom_id:'', warranty_period:12, warranty_unit:'months', notes:'', stage_id:'', custom_data:{}, component_serials:[] };
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
@@ -116,8 +117,14 @@ export default function ProductDetail() {
     loadTabs(); setDeleteConfirm(null);
   };
 
+  const visibleTabs = (tabs || []).filter(t => {
+    if (!t.visibility_stages || t.visibility_stages.length === 0) return true;
+    if (!form?.stage_id) return false;
+    return t.visibility_stages.includes(Number(form.stage_id));
+  });
+
   if (loading) return <Layout title="Loading..."><Loader/></Layout>;
-  const currentTab = tabs[activeTab];
+  const currentTab = visibleTabs[activeTab];
 
   return (
     <Layout title={isNew ? 'New Registration' : `Vehicle: ${form.name}`}>
@@ -179,7 +186,7 @@ export default function ProductDetail() {
           {/* STUDIO TABS & FIELDS */}
           <div style={{ width: '100%' }}>
             <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-              {tabs.map((t, i) => (
+              {visibleTabs.map((t, i) => (
                 <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                   <button onClick={() => setActiveTab(i)} style={{
                     padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
@@ -201,8 +208,20 @@ export default function ProductDetail() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                   {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
                     <div key={f.id} style={{ gridColumn: colSpan[f.width]||'1/-1', position:'relative' }}>
-                      <label className="form-label">{f.field_label}</label>
-                      <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
+                      {f.field_type === 'form' ? (
+                        <SubFormSection 
+                          module="warranty" 
+                          parentId={form.id} 
+                          parentData={form} 
+                          templateId={f.form_template_id} 
+                          embedded={true} 
+                        />
+                      ) : (
+                        <>
+                          <label className="form-label">{f.field_label}</label>
+                          <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)} />
+                        </>
+                      )}
                       {editLayout && (
                         <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
                           <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
@@ -292,7 +311,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      {tabModal && <TabModal initial={tabModal} onSave={saveTab} onClose={()=>setTabModal(null)} />}
+      {tabModal && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={()=>setTabModal(null)} />}
       {fieldModal && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={()=>setFieldModal(null)} />}
       {deleteConfirm && <Confirm message={`Delete ${deleteConfirm.name}?`} onConfirm={() => {
         if (deleteConfirm.type === 'tab') deleteTab(deleteConfirm.id);
