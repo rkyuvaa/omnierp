@@ -60,7 +60,7 @@ export default function AdminUsers() {
     Promise.all([pUsers, pRoles, pBranches, pDepts]).then(([u, r, b, d]) => {
       setUsers(u); setRoles(r); setBranches(b); setDepartments(d);
     }).catch(e => {
-        toast.error("Resource fetch failed");
+        toast.error(`Resource fetch failed: ${e.message}`);
         console.error(e);
     }).finally(() => setLoading(false));
   }, []);
@@ -128,7 +128,7 @@ export default function AdminUsers() {
       else await api.post(`${url}`, modalForm);
 
       toast.success('Record saved'); setModal(false); load();
-    } catch (e) { toast.error('Error saving data'); }
+    } catch (e) { toast.error(`Error saving data: ${e.message}`); }
   };
 
   const executeDelete = async () => {
@@ -142,7 +142,7 @@ export default function AdminUsers() {
       await api.delete(`${url}${confirming.id}/`);
       toast.success('Deleted successfully');
       setConfirming(null); load();
-    } catch (e) { toast.error('Error deleting record'); }
+    } catch (e) { toast.error(`Error deleting record: ${e.message}`); }
   };
 
   const toggleRolePerm = (key) => {
