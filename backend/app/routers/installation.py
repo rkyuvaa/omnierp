@@ -68,12 +68,25 @@ def create_inst(data: InstIn, db: Session = Depends(get_db)):
     # Simple reference generation
     count = db.query(Installation).count()
     ref = f"INST/{datetime.datetime.now().year}/{count+1:04d}"
-    r = Installation(**data.model_dump(), reference=ref)
+    
+    # Parse date if present
+    r_data = data.model_dump()
+    if r_data.get('schedule_date'):
+        try: r_data['schedule_date'] = datetime.datetime.strptime(r_data['schedule_date'], '%Y-%m-%d').date()
+        except: pass
+
+    r = Installation(**r_data, reference=ref)
     db.add(r); db.commit(); db.refresh(r); return serialize(r)
 
 @router.put("/{id}")
 def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
     r = db.query(Installation).filter(Installation.id == id).first()
     if not r: raise HTTPException(404, "Not found")
-    for k, v in data.model_dump().items(): setattr(r, k, v)
+    
+    r_data = data.model_dump()
+    if r_data.get('schedule_date'):
+        try: r_data['schedule_date'] = datetime.datetime.strptime(r_data['schedule_date'], '%Y-%m-%d').date()
+        except: pass
+
+    for k, v in r_data.items(): setattr(r, k, v)
     db.commit(); return serialize(r)
