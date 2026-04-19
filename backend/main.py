@@ -38,7 +38,7 @@ app.include_router(crm_layout.router, prefix="/api/crm-layout", tags=["crm-layou
 if not os.path.exists("static/uploads"):
     os.makedirs("static/uploads")
 
-app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/api/static", StaticFiles(directory="static"), name="static")
 
 @app.get("/")
 def root():

@@ -191,20 +191,16 @@ export function FileField({ value, onChange }) {
   const isImage = value?.content_type?.startsWith('image/');
   
   if (value?.filename) return (
-    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-      {isImage && (
-        <div style={{ width: '100%', height: 180, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg3)' }}>
-          <img src={fileUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-        </div>
-      )}
-      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)' }}>
-        <FileText size={16} style={{ color:'var(--accent)', flexShrink:0 }}/>
+    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)' }}>
+      <FileText size={16} style={{ color:'var(--accent)', flexShrink:0 }}/>
       <span style={{ flex:1, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value.original_name}</span>
-      <a href={fileUrl} download={value.original_name} className="btn btn-ghost btn-sm"><Download size={13}/></a>
-      <button className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()}><Upload size={13}/></button>
-      <button className="btn btn-danger btn-sm" onClick={() => onChange(null)}><X size={13}/></button>
-      <input ref={inputRef} type="file" style={{ display:'none' }} onChange={handleUpload}/>
+      <div style={{ display:'flex', gap:4 }}>
+        <button className="btn btn-ghost btn-sm" title="Preview" onClick={() => window.open(fileUrl, '_blank')}><Eye size={13}/></button>
+        <a href={fileUrl} download={value.original_name} className="btn btn-ghost btn-sm" title="Download"><Download size={13}/></a>
+        <button className="btn btn-ghost btn-sm" title="Change" onClick={() => inputRef.current?.click()}><Upload size={13}/></button>
+        <button className="btn btn-danger btn-sm" title="Remove" onClick={() => onChange(null)}><X size={13}/></button>
       </div>
+      <input ref={inputRef} type="file" style={{ display:'none' }} onChange={handleUpload}/>
     </div>
   );
 
