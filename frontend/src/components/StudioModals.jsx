@@ -38,7 +38,7 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
   const needsOptions = ['selection', 'checkbox'].includes(f.field_type);
-  const allFields = (tabs || []).flatMap(t => t.fields || []).filter(x => x.field_name !== f.field_name);
+  const allFields = (tabs || []).flatMap(t => Array.isArray(t.fields) ? t.fields : []).filter(x => x.field_name !== f.field_name);
 
   const handleSave = () => {
     if (!f.field_label || !f.field_name) return toast.error('Label and Name are required');

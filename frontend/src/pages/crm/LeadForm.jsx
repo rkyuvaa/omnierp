@@ -144,9 +144,10 @@ export default function LeadForm() {
   const loadStageRules = useCallback(() => api.get('/studio/layout/crm/stage-rules').then(r => setStageRules(r.data)), []);
   const loadActivityTypes = useCallback(() =>
     api.get('/crm/activity-types').then(r => {
-      setActivityTypes(r.data);
-      setActType(t => t || (r.data[0]?.name || ''));
-    }), []);
+      const data = Array.isArray(r.data) ? r.data : [];
+      setActivityTypes(data);
+      setActType(t => t || (data[0]?.name || ''));
+    }).catch(()=>{}), []);
 
   useEffect(() => { loadTabs(); loadStageRules(); loadActivityTypes(); }, []);
 
@@ -284,10 +285,10 @@ export default function LeadForm() {
   };
 
   const visibleTabs = useMemo(() => (tabs || []).filter(t => {
-    if (!t.visibility_stages || t.visibility_stages.length === 0) return true;
+    if (!t || !Array.isArray(t.visibility_stages) || t.visibility_stages.length === 0) return true;
     const sId = Number(form?.stage_id);
     if (!sId) return false;
-    return t.visibility_stages.map(Number).includes(sId);
+    return (t.visibility_stages || []).map(Number).includes(sId);
   }), [tabs, form?.stage_id]);
 
   useEffect(() => {
@@ -299,8 +300,8 @@ export default function LeadForm() {
 
   if (loading||!form) return <Layout title="Lead"><Loader/></Layout>;
 
-  const currentTab = visibleTabs[activeTab];
-  const actTypeMap = Object.fromEntries(activityTypes.map(t => [t.name, t]));
+  const currentTab = (visibleTabs || [])[activeTab];
+  const actTypeMap = Object.fromEntries((activityTypes || []).map(t => [t.name, t]));
 
   // Grid layout: full=4cols, half=2cols, quarter=1col out of 4
   const gridStyle = { display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 };
@@ -414,7 +415,7 @@ export default function LeadForm() {
             </div>
           {visibleTabs.length > 0 && (
             <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-              {visibleTabs.map((t,i) => (
+              {(visibleTabs || []).map((t,i) => (
                 <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
                   <button onClick={() => setActiveTab(i)} style={{
                     padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,

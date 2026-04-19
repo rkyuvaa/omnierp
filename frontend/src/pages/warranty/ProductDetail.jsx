@@ -118,14 +118,15 @@ export default function ProductDetail() {
   };
 
   const visibleTabs = useMemo(() => (tabs || []).filter(t => {
-    if (!t.visibility_stages || t.visibility_stages.length === 0) return true;
+    if (!t || !Array.isArray(t.visibility_stages) || t.visibility_stages.length === 0) return true;
     const sId = Number(form?.stage_id);
     if (!sId) return false;
-    return t.visibility_stages.map(Number).includes(sId);
+    return (t.visibility_stages || []).map(Number).includes(sId);
   }), [tabs, form?.stage_id]);
 
+  const currentTab = (visibleTabs || [])[activeTab];
+
   if (loading) return <Layout title="Loading..."><Loader/></Layout>;
-  const currentTab = visibleTabs[activeTab];
 
   return (
     <Layout title={isNew ? 'New Registration' : `Vehicle: ${form.name}`}>

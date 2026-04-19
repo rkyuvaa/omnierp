@@ -187,7 +187,7 @@ export default function Studio() {
                   Tabs <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={12}/></button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                  {tabs.map((t, i) => (
+                  {(tabs || []).map((t, i) => (
                     <div key={t.id} className={`nav-item ${activeTabIdx === i ? 'active' : ''}`} 
                       style={{ 
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
