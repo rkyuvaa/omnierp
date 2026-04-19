@@ -168,9 +168,23 @@ export function FileField({ value, onChange }) {
         body:fd 
       });
       const data = await r.json();
-      onChange({ filename:data.filename, original_name:data.original_name, url:data.url, content_type:data.content_type });
-      toast.success('Uploaded');
-    } catch { toast.error('Upload failed'); } finally { setUploading(false); }
+      console.log('Upload response:', data);
+      const fileData = {
+        filename: data.filename || data.file_name,
+        original_name: data.original_name || data.name,
+        url: data.url || data.path,
+        content_type: data.content_type || data.type
+      };
+      if (fileData.filename) {
+        onChange(fileData);
+        toast.success('Uploaded');
+      } else {
+        throw new Error('Invalid response');
+      }
+    } catch (err) { 
+      console.error('Upload error:', err);
+      toast.error('Upload failed'); 
+    } finally { setUploading(false); }
   };
 
   const fileUrl = value?.url ? `${baseUrl}${value.url}` : null;
