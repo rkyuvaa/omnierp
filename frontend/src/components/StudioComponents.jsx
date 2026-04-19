@@ -2,6 +2,32 @@ import { useState, useRef, useEffect } from 'react';
 import { Upload, Download, X, FileText, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
+import { useAuth } from '../hooks/useAuth';
+
+export function BranchSelect({ field, value, onChange }) {
+  const { user } = useAuth();
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const filterAuth = field.options?.[0] === 'true';
+
+  useEffect(() => {
+    api.get('/branches/').then(r => {
+      let data = r.data || [];
+      if (filterAuth && user && !user.is_superadmin) {
+        const allowedIds = (user.allowed_branches || []).map(id => String(id));
+        data = data.filter(b => allowedIds.includes(String(b.id)));
+      }
+      setBranches(data);
+    }).finally(() => setLoading(false));
+  }, [filterAuth, user]);
+
+  return (
+    <select className="form-select" value={value || ''} onChange={e => onChange(e.target.value)} disabled={loading}>
+      <option value="">{loading ? 'Loading...' : '— Select Branch —'}</option>
+      {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+    </select>
+  );
+}
 
 export function UserSelect({ field, value, onChange }) {
   const [users, setUsers] = useState([]);
@@ -198,6 +224,7 @@ export function FieldInput({ field, value, onChange }) {
     case 'file': return <FileField field={field} value={v} onChange={onChange}/>;
     case 'selection': return <select className="form-select" value={v} onChange={e=>onChange(e.target.value)}><option value="">— Select —</option>{(field.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>;
     case 'user': return <UserSelect field={field} value={v} onChange={onChange}/>;
+    case 'branch': return <BranchSelect field={field} value={v} onChange={onChange}/>;
     default: return <input className="form-input" type="text" placeholder={field.placeholder} value={v} onChange={e=>onChange(e.target.value)}/>;
   }
 }

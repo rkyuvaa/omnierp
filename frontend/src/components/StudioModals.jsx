@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
-const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'user', 'boolean', 'checkbox', 'file'];
+const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'user', 'branch', 'boolean', 'checkbox', 'file'];
 const WIDTH_OPTIONS = [{value:'full',label:'Full Row'},{value:'half',label:'Half Row'},{value:'quarter',label:'Quarter Row'}];
 
 export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose }) {
@@ -138,6 +138,21 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
               />
               <span className="form-label" style={{ margin: 0 }}>Allow Multiple User Selection</span>
             </label>
+          </div>
+        )}
+
+        {f.field_type === 'branch' && (
+          <div className="form-group">
+            <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
+              <input 
+                type="checkbox" 
+                checked={f.options?.[0] === 'true'} 
+                onChange={e => set('options', [e.target.checked ? 'true' : 'false'])} 
+                style={{ accentColor: 'var(--accent)' }} 
+              />
+              <span className="form-label" style={{ margin: 0 }}>Apply User Authorization Filter</span>
+            </label>
+            <div className="text-muted size-10 mt-1">If enabled, the record will only show branches allocated to the current user in this dropdown.</div>
           </div>
         )}
 
