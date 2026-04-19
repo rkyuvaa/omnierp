@@ -7,7 +7,7 @@ import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Bell, Check } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Bell, Check, Eye, Download } from 'lucide-react';
 import SubFormSection from "../crm/SubFormSection";
 
 const emptyForm = { product_id: '', technician_id: '', notes: '', custom_data: {} };
@@ -176,7 +176,7 @@ export default function InstallationForm() {
 
   const allTabs = [...visibleTabs];
   if (relatedLead) {
-    allTabs.push({ id: 'crm-related', name: 'CRM Info', isRelated: true });
+    allTabs.push({ id: 'crm-related', name: 'Vehicle Documents', isRelated: true });
   }
 
   useEffect(() => {
@@ -289,7 +289,7 @@ export default function InstallationForm() {
                   <span className="size-12 fw-700">{relatedLead.title}</span>
                 </div>
                 
-                {crmTabs.map(ct => (
+                {crmTabs.filter(ct => ct.name === 'Vehicle Documents').map(ct => (
                   <div key={ct.id} style={{ marginBottom:30 }}>
                     <div className="size-11 fw-800 uppercase text-muted mb-4" style={{ display:'flex', alignItems:'center', gap:8 }}>
                       <div style={{ width:12, height:2, background:'var(--border)' }} />
@@ -303,6 +303,21 @@ export default function InstallationForm() {
                             {(() => {
                               const val = relatedLead.custom_data?.[f.field_name];
                               if (!val) return '—';
+                              if (f.field_type === 'file' && typeof val === 'object') {
+                                const baseUrl = window.location.origin;
+                                const fileUrl = val.url ? (val.url.startsWith('http') ? val.url : `${baseUrl}${val.url}`) : null;
+                                return (
+                                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+                                    <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis' }}>{val.original_name || val.filename}</span>
+                                    {fileUrl && (
+                                      <div style={{ display:'flex', gap:8 }}>
+                                        <button className="btn btn-ghost btn-sm" onClick={() => window.open(fileUrl, '_blank')} title="View Document"><Eye size={14}/></button>
+                                        <a href={fileUrl} download={val.original_name} className="btn btn-ghost btn-sm" title="Download"><Download size={14}/></a>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              }
                               if (typeof val === 'object' && !Array.isArray(val)) {
                                 return val.filename || val.original_name || JSON.stringify(val);
                               }
