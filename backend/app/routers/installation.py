@@ -117,8 +117,4 @@ def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
         db.commit(); return serialize(r)
     except Exception as e:
         db.rollback()
-        import traceback
-        with open("backend_error.log", "a") as f:
-            f.write(f"\n--- {datetime.datetime.now()} ---\n")
-            f.write(traceback.format_exc())
-        raise HTTPException(500, f"Critical Database Error: {str(e)}")
+        raise HTTPException(500, f"Database Error: {str(e)}")
