@@ -41,6 +41,8 @@ def me(current_user: User = Depends(get_current_user)):
         "allowed_modules": current_user.allowed_modules or [],
         "role_id": current_user.role_id,
         "branch_id": current_user.branch_id,
+        "department_id": current_user.department_id,
+        "allowed_branches": current_user.allowed_branches or []
     }
 
 @router.post("/setup")
