@@ -307,14 +307,13 @@ export default function InstallationForm() {
                                 const baseUrl = window.location.origin;
                                 const fileUrl = val.url ? (val.url.startsWith('http') ? val.url : `${baseUrl}${val.url}`) : null;
                                 return (
-                                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                                    <span style={{ flex:1, overflow:'hidden', textOverflow:'ellipsis' }}>{val.original_name || val.filename}</span>
-                                    {fileUrl && (
-                                      <div style={{ display:'flex', gap:8 }}>
-                                        <button className="btn btn-ghost btn-sm" onClick={() => window.open(fileUrl, '_blank')} title="View Document"><Eye size={14}/></button>
-                                        <a href={fileUrl} download={val.original_name} className="btn btn-ghost btn-sm" title="Download"><Download size={14}/></a>
+                                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:38, background:'var(--bg2)', borderRadius:6, border:'1px solid var(--border)' }}>
+                                    {fileUrl ? (
+                                      <div style={{ display:'flex', gap:10 }}>
+                                        <button className="btn btn-ghost btn-sm" style={{ padding:4 }} onClick={() => window.open(fileUrl, '_blank')} title="View Document"><Eye size={16}/></button>
+                                        <a href={fileUrl} download={val.original_name} className="btn btn-ghost btn-sm" style={{ padding:4 }} title="Download"><Download size={16}/></a>
                                       </div>
-                                    )}
+                                    ) : '—'}
                                   </div>
                                 );
                               }
