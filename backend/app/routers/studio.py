@@ -6,10 +6,10 @@ from typing import List, Optional
 from ..database import get_db
 from ..models import (
     Stage, CRMTab, CRMField, CRMStageRule, SequenceConfig, 
-    InstallationTab, InstallationField,
-    ServiceTab, ServiceField,
-    WarrantyTab, WarrantyField,
-    KonwertCareTab, KonwertCareField
+    InstallationTab, InstallationField, InstallationStageRule,
+    ServiceTab, ServiceField, ServiceStageRule,
+    WarrantyTab, WarrantyField, WarrantyStageRule,
+    KonwertCareTab, KonwertCareField, KonwertCareStageRule
 )
 from ..auth import get_current_user, require_admin
 from pydantic import BaseModel
