@@ -1,6 +1,28 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, Download, X, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
+
+export function UserSelect({ field, value, onChange }) {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const deptId = field.options?.[0];
+
+  useEffect(() => {
+    api.get('/users/').then(r => {
+      let filtered = r.data || [];
+      if (deptId) filtered = filtered.filter(u => String(u.department_id) === String(deptId));
+      setUsers(filtered);
+    }).finally(() => setLoading(false));
+  }, [deptId]);
+
+  return (
+    <select className="form-select" value={value || ''} onChange={e => onChange(e.target.value)} disabled={loading}>
+      <option value="">{loading ? 'Loading...' : '— Select User —'}</option>
+      {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+    </select>
+  );
+}
 
 export function FileField({ value, onChange }) {
   const [uploading, setUploading] = useState(false);
@@ -74,6 +96,7 @@ export function FieldInput({ field, value, onChange }) {
     case 'checkbox': return <CheckboxField field={field} value={v} onChange={onChange}/>;
     case 'file': return <FileField field={field} value={v} onChange={onChange}/>;
     case 'selection': return <select className="form-select" value={v} onChange={e=>onChange(e.target.value)}><option value="">— Select —</option>{(field.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>;
+    case 'user': return <UserSelect field={field} value={v} onChange={onChange}/>;
     default: return <input className="form-input" type="text" placeholder={field.placeholder} value={v} onChange={e=>onChange(e.target.value)}/>;
   }
 }

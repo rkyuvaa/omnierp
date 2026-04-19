@@ -2,17 +2,23 @@ import { useState, useEffect } from 'react';
 import { Modal, Badge } from './Shared';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import api from '../utils/api';
 
-const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'boolean', 'checkbox', 'file'];
+const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'user', 'boolean', 'checkbox', 'file'];
 const WIDTH_OPTIONS = [{value:'full',label:'Full Row'},{value:'half',label:'Half Row'},{value:'quarter',label:'Quarter Row'}];
 
 export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose }) {
   const [f, setF] = useState({ field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0, ...initial });
   const [optInput, setOptInput] = useState('');
+  const [departments, setDepartments] = useState([]);
   
   const [stageRuleOp, setStageRuleOp] = useState('has_value');
   const [stageRuleStageId, setStageRuleStageId] = useState('');
   const [stageRuleVal, setStageRuleVal] = useState('');
+
+  useEffect(() => {
+    api.get('/departments/').then(r => setDepartments(r.data)).catch(()=>{});
+  }, []);
 
   useEffect(() => {
     if (f.field_name && stageRules) {
@@ -88,6 +94,21 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
             <span className="form-label" style={{ margin: 0 }}>Required field</span>
           </label>
         </div>
+
+        {f.field_type === 'user' && (
+          <div className="form-group">
+            <label className="form-label">Restrict to Department</label>
+            <select 
+              className="form-select" 
+              value={f.options?.[0] || ''} 
+              onChange={e => set('options', e.target.value ? [e.target.value] : [])}
+            >
+              <option value="">— Show All Users —</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+            <div className="text-muted size-10 mt-1">Leave empty to show all organizational users.</div>
+          </div>
+        )}
 
         {needsOptions && (
           <div className="form-group">

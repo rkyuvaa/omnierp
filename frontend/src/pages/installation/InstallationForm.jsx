@@ -211,7 +211,7 @@ export default function InstallationForm() {
           {/* Core fields */}
           <div className="card mb-4" style={{ height: 'fit-content' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
+              <div className="form-group" style={{ gridColumn: 'span 4' }}>
                 <label className="form-label">Vehicle Number *</label>
                 <select 
                   className="form-select fw-600" 
@@ -220,13 +220,6 @@ export default function InstallationForm() {
                 >
                   <option value="">— Select Vehicle —</option>
                   {vehicles.filter(v => v.id === form.product_id || !usedProductIds.includes(v.id)).map(v => <option key={v.id} value={v.id}>{v.name}</option>)}
-                </select>
-              </div>
-              <div className="form-group" style={{ gridColumn: 'span 2' }}>
-                <label className="form-label">Assigned Technician</label>
-                <select className="form-select" value={form.technician_id || ''} onChange={e => set('technician_id', parseInt(e.target.value) || null)}>
-                  <option value="">— Unassigned —</option>
-                  {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>
             </div>
