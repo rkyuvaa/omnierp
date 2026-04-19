@@ -45,20 +45,23 @@ export default function AdminUsers() {
 
   const loadHistory = async (uid) => {
     try {
-      const res = await api.get(`/api/audit?module=users&record_id=${uid}`);
+      const res = await api.get(`/api/audit/?module=users&record_id=${uid}`);
       setHistory(res.data.items || []);
     } catch (e) { console.error("Error loading activity", e); }
   };
 
   const load = useCallback(() => {
     setLoading(true);
-    const pUsers = api.get('/api/users').then(r => r.data).catch(() => []);
-    const pRoles = api.get('/api/roles').then(r => r.data).catch(() => []);
-    const pBranches = api.get('/api/branches').then(r => r.data).catch(() => []);
-    const pDepts = api.get('/api/departments').then(r => r.data).catch(() => []);
+    const pUsers = api.get('/api/users/').then(r => r.data);
+    const pRoles = api.get('/api/roles/').then(r => r.data);
+    const pBranches = api.get('/api/branches/').then(r => r.data);
+    const pDepts = api.get('/api/departments/').then(r => r.data);
 
     Promise.all([pUsers, pRoles, pBranches, pDepts]).then(([u, r, b, d]) => {
       setUsers(u); setRoles(r); setBranches(b); setDepartments(d);
+    }).catch(e => {
+        toast.error("Resource fetch failed");
+        console.error(e);
     }).finally(() => setLoading(false));
   }, []);
 
@@ -104,8 +107,8 @@ export default function AdminUsers() {
       };
       if (!payload.password) delete payload.password;
       
-      if (editing) await api.put(`/api/users/${editing}`, payload);
-      else await api.post('/api/users', payload);
+      if (editing) await api.put(`/api/users/${editing}/`, payload);
+      else await api.post('/api/users/', payload);
       
       toast.success(editing ? 'User updated' : 'User created');
       setMode('list'); load();
@@ -117,12 +120,12 @@ export default function AdminUsers() {
     if (!modalForm.name) return toast.error('Name is required');
     try {
       let url = '';
-      if (modalMode === 'dept') url = '/api/departments';
-      if (modalMode === 'branch') url = '/api/branches';
-      if (modalMode === 'role') url = '/api/roles';
+      if (modalMode === 'dept') url = '/api/departments/';
+      if (modalMode === 'branch') url = '/api/branches/';
+      if (modalMode === 'role') url = '/api/roles/';
 
-      if (modalEditing) await api.put(`${url}/${modalEditing}`, modalForm);
-      else await api.post(`${url}/`, modalForm);
+      if (modalEditing) await api.put(`${url}${modalEditing}/`, modalForm);
+      else await api.post(`${url}`, modalForm);
 
       toast.success('Record saved'); setModal(false); load();
     } catch (e) { toast.error('Error saving data'); }
@@ -131,12 +134,12 @@ export default function AdminUsers() {
   const executeDelete = async () => {
     try {
       let url = '';
-      if (confirming.type === 'user') url = '/api/users';
-      if (confirming.type === 'dept') url = '/api/departments';
-      if (confirming.type === 'branch') url = '/api/branches';
-      if (confirming.type === 'role') url = '/api/roles';
+      if (confirming.type === 'user') url = '/api/users/';
+      if (confirming.type === 'dept') url = '/api/departments/';
+      if (confirming.type === 'branch') url = '/api/branches/';
+      if (confirming.type === 'role') url = '/api/roles/';
 
-      await api.delete(`${url}/${confirming.id}`);
+      await api.delete(`${url}${confirming.id}/`);
       toast.success('Deleted successfully');
       setConfirming(null); load();
     } catch (e) { toast.error('Error deleting record'); }
