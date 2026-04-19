@@ -151,19 +151,20 @@ export default function InstallationForm() {
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
-  if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
-
-  const visibleTabs = tabs.filter(t => 
+  const visibleTabs = (tabs || []).filter(t => 
     !t.visibility_stages || 
     (Array.isArray(t.visibility_stages) && t.visibility_stages.length === 0) || 
-    (Array.isArray(t.visibility_stages) && t.visibility_stages.includes(form.stage_id))
+    (Array.isArray(t.visibility_stages) && t.visibility_stages.includes(form?.stage_id))
   );
 
   useEffect(() => {
+    if (loading || !form) return;
     if (activeTab >= visibleTabs.length && visibleTabs.length > 0) {
       setActiveTab(0);
     }
-  }, [visibleTabs.length, activeTab]);
+  }, [visibleTabs.length, activeTab, loading, form]);
+
+  if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
   const currentTab = visibleTabs[activeTab];
 
   return (
