@@ -65,9 +65,10 @@ def get_one(id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_inst(data: InstIn, db: Session = Depends(get_db)):
-    # Simple reference generation
-    count = db.query(Installation).count()
-    ref = f"INST/{datetime.datetime.now().year}/{count+1:04d}"
+    # Robust reference generation using max ID
+    last = db.query(Installation).order_by(Installation.id.desc()).first()
+    next_id = (last.id + 1) if last else 1
+    ref = f"INST/{datetime.datetime.now().year}/{next_id:04d}"
     
     # Parse date if present
     r_data = data.model_dump()
