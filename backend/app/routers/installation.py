@@ -24,24 +24,24 @@ class InstIn(BaseModel):
 def serialize(r):
     try:
         return {
-            "id": r.id, 
-            "reference": r.reference, 
-            "customer_name": r.customer_name or "—",
-            "vehicle_number": r.product.name if r.product else (r.vehicle_number or "—"),
+            "id": r.id,
+            "reference": r.reference,
+            "customer_name": r.customer_name or "Unknown",
+            "vehicle_number": r.vehicle_number or (r.product.name if getattr(r, 'product', None) else "—"),
             "vehicle_make": r.vehicle_make or "—",
             "vehicle_model": r.vehicle_model or "—",
             "stage_id": r.stage_id,
-            "stage_name": r.stage.name if r.stage else None,
-            "stage_color": r.stage.color if r.stage else None,
+            "stage_name": r.stage.name if getattr(r, 'stage', None) else "Unassigned",
+            "stage_color": r.stage.color if getattr(r, 'stage', None) else "#94a3b8",
             "technician_id": r.technician_id,
-            "technician_name": r.technician.name if r.technician else "Unassigned",
+            "technician_name": r.technician.name if getattr(r, 'technician', None) else "Unassigned",
             "product_id": r.product_id,
             "schedule_date": str(r.schedule_date) if r.schedule_date else None,
             "created_at": str(r.created_at) if r.created_at else None,
             "custom_data": r.custom_data or {}
         }
-    except:
-        return {"id": getattr(r, 'id', 0), "reference": "Error"}
+    except Exception as e:
+        return {"id": r.id, "reference": r.reference, "error": str(e)}
 
 @router.get("/")
 def get_inst(search: str = "", stage_id: str = "", page: int = 1, db: Session = Depends(get_db)):
