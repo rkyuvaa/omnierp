@@ -24,6 +24,7 @@ def patch_db():
             
             ("installation", "installation_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
             ("installation", "installation_fields", "form_template_id", "INTEGER"),
+            ("installation", "installations", "schedule_date", "DATE"),
             
             ("service", "service_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
             ("service", "service_fields", "form_template_id", "INTEGER"),
