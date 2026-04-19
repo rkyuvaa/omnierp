@@ -48,6 +48,8 @@ export default function InstallationForm() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [recentlySaved, setRecentlySaved] = useState(false);
   const [stageRules, setStageRules] = useState([]);
+  const [relatedLead, setRelatedLead] = useState(null);
+  const [crmTabs, setCrmTabs] = useState([]);
 
   const loadTabs = useCallback(() => api.get('/studio/layout/installation/tabs').then(r => setTabs(r.data)), []);
   const loadStageRules = useCallback(() => api.get('/studio/layout/installation/stage-rules').then(r => setStageRules(r.data)), []);
@@ -59,6 +61,7 @@ export default function InstallationForm() {
     api.get('/installation/').then(r => setUsedProductIds((r.data.items || []).map(i => i.product_id).filter(Boolean))).catch(() => {});
     loadTabs();
     loadStageRules();
+    api.get('/studio/layout/crm/tabs').then(r => setCrmTabs(r.data)).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -79,6 +82,19 @@ export default function InstallationForm() {
       setSelectedProduct(null);
     }
   }, [form?.product_id]);
+
+  useEffect(() => {
+    if (form && (form.vehicle_number || selectedProduct?.name || form.customer_name)) {
+      const search = selectedProduct?.name || form.vehicle_number || form.customer_name;
+      api.get(`/crm/leads?search=${encodeURIComponent(search)}`).then(r => {
+        if (r.data.items && r.data.items.length > 0) {
+          setRelatedLead(r.data.items[0]);
+        } else {
+          setRelatedLead(null);
+        }
+      }).catch(() => setRelatedLead(null));
+    }
+  }, [form?.vehicle_number, form?.customer_name, selectedProduct?.name]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));
@@ -158,15 +174,20 @@ export default function InstallationForm() {
     (Array.isArray(t.visibility_stages) && t.visibility_stages.includes(form?.stage_id))
   );
 
+  const allTabs = [...visibleTabs];
+  if (relatedLead) {
+    allTabs.push({ id: 'crm-related', name: 'CRM Info', isRelated: true });
+  }
+
   useEffect(() => {
     if (loading || !form) return;
-    if (activeTab >= visibleTabs.length && visibleTabs.length > 0) {
+    if (activeTab >= allTabs.length && allTabs.length > 0) {
       setActiveTab(0);
     }
-  }, [visibleTabs.length, activeTab, loading, form]);
+  }, [allTabs.length, activeTab, loading, form]);
 
   if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
-  const currentTab = visibleTabs[activeTab];
+  const currentTab = allTabs[activeTab];
 
   return (
     <Layout title={isNew ? 'New Entry' : (form.reference || 'Installation')}>
@@ -241,17 +262,17 @@ export default function InstallationForm() {
 
           {/* Custom Tabs */}
           <div style={{ width: '100%' }}>
-            {visibleTabs.length > 0 && (
+            {allTabs.length > 0 && (
               <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-                {visibleTabs.map((t, i) => (
+                {allTabs.map((t, i) => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <button onClick={() => setActiveTab(i)} style={{
                       padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
                       background:'transparent', marginBottom:-2, transition:'all 0.15s',
                       borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
                       color:activeTab===i?'var(--accent)':'var(--text2)'
-                    }}>{t.name}</button>
-                    {editLayout && <>
+                    }}>{t.isRelated ? '🔗 ' : ''}{t.name}</button>
+                    {!t.isRelated && editLayout && <>
                       <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
                       <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
                     </>}
@@ -261,7 +282,33 @@ export default function InstallationForm() {
               </div>
             )}
 
-            {currentTab && (
+            {currentTab?.isRelated ? (
+              <div className="card" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, paddingBottom:10, borderBottom:'1px solid var(--border)' }}>
+                  <Badge color="var(--accent-dim)" style={{ color:'var(--accent)' }}>CRM SOURCE: {relatedLead.reference}</Badge>
+                  <span className="size-12 fw-700">{relatedLead.title}</span>
+                </div>
+                
+                {crmTabs.map(ct => (
+                  <div key={ct.id} style={{ marginBottom:30 }}>
+                    <div className="size-11 fw-800 uppercase text-muted mb-4" style={{ display:'flex', alignItems:'center', gap:8 }}>
+                      <div style={{ width:12, height:2, background:'var(--border)' }} />
+                      {ct.name}
+                    </div>
+                    <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 }}>
+                      {(ct.fields || []).map(f => (
+                        <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1' }}>
+                          <label className="form-label">{f.field_label}</label>
+                          <div className="p-3 bg-gray-50 border rounded-lg size-13 color-text2 font-medium">
+                            {relatedLead.custom_data?.[f.field_name] || '—'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : currentTab && (
               <div className="card" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                   {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
