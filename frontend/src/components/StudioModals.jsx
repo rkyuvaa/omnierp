@@ -38,7 +38,7 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
   const needsOptions = ['selection', 'checkbox'].includes(f.field_type);
-  const allFields = tabs.flatMap(t => t.fields || []).filter(x => x.field_name !== f.field_name);
+  const allFields = (tabs || []).flatMap(t => t.fields || []).filter(x => x.field_name !== f.field_name);
 
   const handleSave = () => {
     if (!f.field_label || !f.field_name) return toast.error('Label and Name are required');
@@ -82,7 +82,7 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
             <label className="form-label">Tab</label>
             <select className="form-select" value={f.tab_id || ''} onChange={e => set('tab_id', parseInt(e.target.value) || null)}>
               <option value="">— No Tab —</option>
-              {tabs.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+               { (tabs || []).map(t => <option key={t.id} value={t.id}>{t.name}</option>) }
             </select>
           </div>
           {!['boolean','checkbox','file','form'].includes(f.field_type) && (
@@ -119,7 +119,7 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
                 onChange={e => e.target.value && !f.options.includes(e.target.value) && set('options', [...f.options, e.target.value])}
               >
                 <option value="">— Add Department —</option>
-                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                 { (departments || []).map(d => <option key={d.id} value={d.id}>{d.name}</option>) }
               </select>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
@@ -218,7 +218,7 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
               </select>
               <select className="form-select" value={stageRuleStageId} onChange={e => setStageRuleStageId(e.target.value)}>
                 <option value="">No auto-move</option>
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                 { (stages || []).map(s => <option key={s.id} value={s.id}>{s.name}</option>) }
               </select>
             </div>
             {stageRuleOp === 'equals' && stageRuleStageId && (
@@ -262,19 +262,19 @@ export function TabModal({ initial, stages, onSave, onClose }) {
       <div className="form-group border-t pt-4">
         <label className="form-label" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
           Visibility — Show only in these stages
-          <button className="btn btn-ghost btn-xs" onClick={() => setViz(viz.length === stages.length ? [] : stages.map(s => s.id))}>
-            {viz.length === stages.length ? 'Clear All' : 'Select All'}
+           <button className="btn btn-ghost btn-xs" onClick={() => setViz(viz.length === (stages || []).length ? [] : (stages || []).map(s => s.id))}>
+            {viz.length === (stages || []).length ? 'Clear All' : 'Select All'}
           </button>
         </label>
         <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
-          {stages.map(s => (
+           { (stages || []).map(s => (
             <button key={s.id} onClick={() => toggle(s.id)}
               className={`btn btn-sm ${viz.includes(s.id) ? 'btn-primary' : 'btn-ghost'}`}
               style={{ fontSize:11, padding:'4px 10px', height: 'auto', borderRadius:20 }}>
               {s.name}
             </button>
-          ))}
-          {stages.length === 0 && <span className="text-muted text-sm italic">Create stages first to set visibility</span>}
+          )) }
+          { (stages || []).length === 0 && <span className="text-muted text-sm italic">Create stages first to set visibility</span>}
         </div>
         <div className="text-muted text-xs mt-2">If no stages are selected, the tab will be visible everywhere.</div>
       </div>
