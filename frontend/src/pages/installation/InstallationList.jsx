@@ -138,7 +138,8 @@ export default function InstallationList() {
                     <th>Make / Model</th>
                     <th>Stage</th>
                     <th>Technician</th>
-                    <th>Created</th>
+                    <th>Schedule Date</th>
+                    <th>Created At</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -151,6 +152,7 @@ export default function InstallationList() {
                       <td className="text-muted">{[i.vehicle_make, i.vehicle_model].filter(Boolean).join(' / ') || '—'}</td>
                       <td>{i.stage_name && <Badge color={i.stage_color}>{i.stage_name}</Badge>}</td>
                       <td className="text-muted">{i.technician_name || '—'}</td>
+                      <td className="fw-700 color-text1">{i.schedule_date || '—'}</td>
                       <td className="text-muted text-sm">{i.created_at?.slice(0, 10)}</td>
                       <td onClick={e => e.stopPropagation()}>
                         <div className="flex gap-2">
