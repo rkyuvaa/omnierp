@@ -226,18 +226,43 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
   );
 }
 
-export function TabModal({ initial, onSave, onClose }) {
+export function TabModal({ initial, stages, onSave, onClose }) {
   const [name, setName] = useState(initial?.name || '');
+  const [viz, setViz] = useState(initial?.visibility_stages || []);
+
+  const toggle = (id) => setViz(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
+
   const handleSave = () => {
     if (!name.trim()) return toast.error('Name is required');
-    onSave({ ...initial, name });
+    onSave({ ...initial, name, visibility_stages: viz });
   };
+  
   return (
     <Modal title={initial?.id ? 'Edit Tab' : 'New Tab'} onClose={onClose}
       footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={handleSave}>Save Tab</button></>}>
-      <div className="form-group">
+      <div className="form-group mb-4">
         <label className="form-label">Tab Name *</label>
         <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Technical Specs" autoFocus />
+      </div>
+      
+      <div className="form-group border-t pt-4">
+        <label className="form-label" style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          Visibility — Show only in these stages
+          <button className="btn btn-ghost btn-xs" onClick={() => setViz(viz.length === stages.length ? [] : stages.map(s => s.id))}>
+            {viz.length === stages.length ? 'Clear All' : 'Select All'}
+          </button>
+        </label>
+        <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginTop:8 }}>
+          {stages.map(s => (
+            <button key={s.id} onClick={() => toggle(s.id)}
+              className={`btn btn-sm ${viz.includes(s.id) ? 'btn-primary' : 'btn-ghost'}`}
+              style={{ fontSize:11, padding:'4px 10px', height: 'auto', borderRadius:20 }}>
+              {s.name}
+            </button>
+          ))}
+          {stages.length === 0 && <span className="text-muted text-sm italic">Create stages first to set visibility</span>}
+        </div>
+        <div className="text-muted text-xs mt-2">If no stages are selected, the tab will be visible everywhere.</div>
       </div>
     </Modal>
   );

@@ -282,9 +282,21 @@ export default function LeadForm() {
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
+  const visibleTabs = tabs.filter(t => 
+    !t.visibility_stages || 
+    t.visibility_stages.length === 0 || 
+    t.visibility_stages.includes(form.stage_id)
+  );
+
+  useEffect(() => {
+    if (activeTab >= visibleTabs.length && visibleTabs.length > 0) {
+      setActiveTab(0);
+    }
+  }, [visibleTabs.length, activeTab]);
+
   if (loading||!form) return <Layout title="Lead"><Loader/></Layout>;
 
-  const currentTab = tabs[activeTab];
+  const currentTab = visibleTabs[activeTab];
   const actTypeMap = Object.fromEntries(activityTypes.map(t => [t.name, t]));
 
   // Grid layout: full=4cols, half=2cols, quarter=1col out of 4
@@ -397,9 +409,9 @@ export default function LeadForm() {
                   {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
                </div>
             </div>
-          {tabs.length > 0 && (
+          {visibleTabs.length > 0 && (
             <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-              {tabs.map((t,i) => (
+              {visibleTabs.map((t,i) => (
                 <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
                   <button onClick={() => setActiveTab(i)} style={{
                     padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
@@ -440,6 +452,14 @@ export default function LeadForm() {
                       <Plus size={13}/> Add Field to "{currentTab.name}"
                     </button>
                   </div>
+                )}
+                {(currentTab.fields||[]).length===0&&!editLayout&&(
+                  <p className="text-muted text-sm" style={{ gridColumn:'1/-1' }}>No fields in this tab yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+              </div>
                 )}
                 {(currentTab.fields||[]).length===0&&!editLayout&&(
                   <p className="text-muted text-sm" style={{ gridColumn:'1/-1' }}>No fields in this tab yet.</p>

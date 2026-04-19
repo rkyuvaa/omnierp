@@ -82,6 +82,7 @@ class CRMTab(Base):
     name = Column(String(100))
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    visibility_stages = Column(JSON, default=[]) # List of stage IDs where this tab is visible
     fields = relationship("CRMField", back_populates="tab", cascade="all, delete-orphan", order_by="CRMField.sort_order")
 
 class CRMField(Base):

@@ -303,7 +303,7 @@ export default function Studio() {
         </>
       )}
 
-      {tabModal && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {tabModal && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal && <FieldModal initial={fieldModal} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {stageModal && <StageModal initial={stageModal} onSave={saveStage} onClose={() => setStageModal(null)} />}
       {deleting && <Confirm message={`Delete ${deleting.name}?`} onConfirm={confirmDelete} onCancel={() => setDeleting(null)} />}

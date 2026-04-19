@@ -14,6 +14,7 @@ router = APIRouter()
 class TabIn(BaseModel):
     name: str
     sort_order: int = 0
+    visibility_stages: List[int] = []
 
 class FieldIn(BaseModel):
     tab_id: Optional[int] = None
@@ -62,6 +63,7 @@ def get_tabs(module: str, db: Session = Depends(get_db)):
             "id": t.id,
             "name": t.name,
             "sort_order": t.sort_order,
+            "visibility_stages": t.visibility_stages or [],
             "fields": [ser_field(f) for f in t.fields if f.is_active]
         })
     return res
@@ -77,6 +79,7 @@ def update_tab(tid: int, data: TabIn, db: Session = Depends(get_db), _=Depends(r
     tab = db.query(CRMTab).filter(CRMTab.id == tid).first()
     if not tab: raise HTTPException(404)
     tab.name = data.name; tab.sort_order = data.sort_order
+    tab.visibility_stages = data.visibility_stages
     db.commit(); return tab
 
 @router.delete("/layout/tabs/{tid}")

@@ -151,8 +151,20 @@ export default function InstallationForm() {
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
+  const visibleTabs = tabs.filter(t => 
+    !t.visibility_stages || 
+    t.visibility_stages.length === 0 || 
+    t.visibility_stages.includes(form.stage_id)
+  );
+
+  useEffect(() => {
+    if (activeTab >= visibleTabs.length && visibleTabs.length > 0) {
+      setActiveTab(0);
+    }
+  }, [visibleTabs.length, activeTab]);
+
   if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
-  const currentTab = tabs[activeTab];
+  const currentTab = visibleTabs[activeTab];
 
   return (
     <Layout title={isNew ? 'New Entry' : (form.reference || 'Installation')}>
@@ -227,9 +239,9 @@ export default function InstallationForm() {
 
           {/* Custom Tabs */}
           <div style={{ width: '100%' }}>
-            {tabs.length > 0 && (
+            {visibleTabs.length > 0 && (
               <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
-                {tabs.map((t, i) => (
+                {visibleTabs.map((t, i) => (
                   <div key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <button onClick={() => setActiveTab(i)} style={{
                       padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
@@ -346,7 +358,7 @@ export default function InstallationForm() {
           )}
         </div>
       </div>
-      {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
 
       {/* Delete confirm */}
