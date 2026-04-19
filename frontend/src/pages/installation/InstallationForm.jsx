@@ -277,6 +277,15 @@ export default function InstallationForm() {
                 <label className="form-label">Schedule Date</label>
                 <input type="date" className="form-input fw-600" value={form.schedule_date || ''} onChange={e => set('schedule_date', e.target.value)} />
               </div>
+              <div className="form-group" style={{ gridColumn: 'span 4' }}>
+                <label className="form-label">Customer Name *</label>
+                <input 
+                  className="form-input fw-700" 
+                  placeholder="Enter Customer Name" 
+                  value={form.customer_name || ''} 
+                  onChange={e => set('customer_name', e.target.value)} 
+                />
+              </div>
             </div>
           </div>
 
