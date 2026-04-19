@@ -188,7 +188,7 @@ export default function ProductDetail() {
         </div>
       </div>
 
-      <div style={{ display:'grid', gridTemplateColumns:'1fr 450px', gap:20 }}>
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 700px', gap:20 }}>
         
         {/* Left Column: All Main Content matched to same width */}
         <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
@@ -270,24 +270,61 @@ export default function ProductDetail() {
           </div>
         </div>
 
-        {/* Tracking Card remains on the right */}
-        <div className="card" style={{ height: 'fit-content' }}>
-          <div className="card-header"><span className="card-title">TRACKING</span></div>
-          <div style={{ padding: '0 10px 10px' }}>
-            {form.component_serials.length > 0 ? (
-              form.component_serials.map((c, idx) => (
-                <div key={idx} style={{ display:'grid', gridTemplateColumns:'120px 1fr 80px', alignItems:'center', gap:10, padding:'10px 0', borderBottom: idx < form.component_serials.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <div className="fw-600 size-12 truncate" title={c.name}>{c.name}</div>
-                  <input className="form-input" style={{ height:30, fontSize:12, background:'var(--bg1)' }} 
-                    value={c.serial_number} 
-                    onChange={e => updateCompSerial(idx, e.target.value)} 
-                    placeholder="S/N" />
-                  <div className="text-muted size-11 text-right">{c.warranty_period} {c.warranty_unit.substring(0,2)}</div>
+        {/* Right Column: High-Density Summary Card (Based on Second Image) */}
+        <div style={{ display:'flex', flexDirection:'column', gap:20 }}>
+          <div className="card" style={{ height: 'fit-content', padding:0 }}>
+            <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--border)', display:'flex', alignItems:'center', gap:20 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                <div style={{ width:4, height:24, background:'var(--green)', borderRadius:2 }} />
+                <span className="fw-800 size-16" style={{ color:'var(--green)' }}>{form.title || 'MODEL'}</span>
+              </div>
+              <div className="fw-700 size-15">S/N: <span className="text-muted">{form.serial_number || '—'}</span></div>
+              <div className="fw-700 size-15">WTY: <span className="text-muted">{form.warranty_period} {form.warranty_unit.toUpperCase()}</span></div>
+            </div>
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:30, padding:20 }}>
+              {/* Left Side: Components */}
+              <div>
+                <div style={{ display:'flex', justifyContent:'space-between', paddingBottom:8, borderBottom:'1px dashed var(--border)', marginBottom:10 }}>
+                  <span className="size-11 fw-700 text-muted uppercase">Item Name</span>
+                  <div style={{ display:'flex', gap:40 }}>
+                    <span className="size-11 fw-700 text-muted uppercase">Serial</span>
+                    <span className="size-11 fw-700 text-muted uppercase">Warranty</span>
+                  </div>
                 </div>
-              ))
-            ) : (
-              <p className="size-12 text-muted text-center py-4">Select model to track parts</p>
-            )}
+                <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                  {form.component_serials.map((c, idx) => (
+                    <div key={idx} style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span className="size-12 fw-600 color-text1">{c.name}</span>
+                      <div style={{ display:'flex', gap:30, alignItems:'center' }}>
+                        <span className="size-12 fw-800">{c.serial_number || '—'}</span>
+                        <span className="size-11 text-muted">{c.warranty_period}{c.warranty_unit.substring(0,1)}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Side: Other Details */}
+              <div>
+                <div className="size-11 fw-700 text-success uppercase" style={{ borderBottom:'1px solid var(--border)', paddingBottom:5, marginBottom:15 }}>Other Details</div>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'15px 10px' }}>
+                  {[
+                    { l: 'PHONE NUMBER', v: form.custom_data.phone_number },
+                    { l: 'VEHICLE YEAR', v: form.custom_data.vehicle_year },
+                    { l: 'CUSTOMER NAME', v: form.custom_data.customer_name },
+                    { l: 'INVOICE NUMBER', v: form.custom_data.invoice_number },
+                    { l: 'INVOICE DETAILS', v: form.custom_data.invoice_details },
+                    { l: 'CUSTOMER ADDRESS', v: form.custom_data.customer_address }
+                  ].map((d, i) => (
+                    <div key={i}>
+                      <div className="size-10 text-muted fw-600 mb-1 uppercase">{d.l}</div>
+                      <div className="size-12 fw-800 truncate" title={d.v}>{d.v || '—'}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
