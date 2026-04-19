@@ -203,7 +203,9 @@ export default function InstallationForm() {
             );
           })}
         </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 700px', gap: 24 }}>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 700px', gap: 24 }}>
         {/* LEFT */}
         <div>
           {/* Core fields */}
@@ -343,9 +345,6 @@ export default function InstallationForm() {
           )}
         </div>
       </div>
-       </div>
-      </div>
-
       {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
 
