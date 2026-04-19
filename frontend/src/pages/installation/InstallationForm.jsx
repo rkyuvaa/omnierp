@@ -77,7 +77,12 @@ export default function InstallationForm() {
 
   useEffect(() => {
     if (form?.product_id) {
-      api.get(`/warranty/products/${form.product_id}`).then(r => setSelectedProduct(r.data)).catch(() => setSelectedProduct(null));
+      api.get(`/warranty/products/${form.product_id}`).then(r => {
+        setSelectedProduct(r.data);
+        if (!form.customer_name) {
+          set('customer_name', r.data.customer_name || r.data.custom_data?.customer_name || '');
+        }
+      }).catch(() => setSelectedProduct(null));
     } else {
       setSelectedProduct(null);
     }
