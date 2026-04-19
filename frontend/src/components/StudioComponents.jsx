@@ -124,7 +124,6 @@ export function UserSelect({ field, value, onChange }) {
     </div>
   );
 }
-}
 
 export function FileField({ value, onChange }) {
   const [uploading, setUploading] = useState(false);
