@@ -190,6 +190,7 @@ export function FileField({ value, onChange }) {
       <button className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()}><Upload size={13}/></button>
       <button className="btn btn-danger btn-sm" onClick={() => onChange(null)}><X size={13}/></button>
       <input ref={inputRef} type="file" style={{ display:'none' }} onChange={handleUpload}/>
+      </div>
     </div>
   );
 
