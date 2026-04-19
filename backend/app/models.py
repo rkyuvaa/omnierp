@@ -286,6 +286,111 @@ class InstallationStageRule(Base):
     condition_operator = Column(String(20), default="has_value")
     condition_value = Column(String(100), nullable=True)
     stage = relationship("Stage")
+
+class ServiceTab(Base):
+    __tablename__ = "service_tabs"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    visibility_stages = Column(JSON, default=[])
+    fields = relationship("ServiceField", back_populates="tab", cascade="all, delete-orphan", order_by="ServiceField.sort_order")
+
+class ServiceField(Base):
+    __tablename__ = "service_fields"
+    id = Column(Integer, primary_key=True, index=True)
+    tab_id = Column(Integer, ForeignKey("service_tabs.id"), nullable=True)
+    field_name = Column(String(100), index=True)
+    field_label = Column(String(100))
+    field_type = Column(String(50))
+    placeholder = Column(String(200), nullable=True)
+    options = Column(JSON, default=[])
+    required = Column(Boolean, default=False)
+    width = Column(String(20), default="full")
+    visibility_rule = Column(JSON, nullable=True)
+    form_template_id = Column(Integer, nullable=True)
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    tab = relationship("ServiceTab", back_populates="fields")
+
+class ServiceStageRule(Base):
+    __tablename__ = "service_stage_rules"
+    id = Column(Integer, primary_key=True, index=True)
+    field_name = Column(String(100))
+    stage_id = Column(Integer, ForeignKey("stages.id"))
+    condition_operator = Column(String(20), default="has_value")
+    condition_value = Column(String(100), nullable=True)
+    stage = relationship("Stage")
+
+class WarrantyTab(Base):
+    __tablename__ = "warranty_tabs"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    visibility_stages = Column(JSON, default=[])
+    fields = relationship("WarrantyField", back_populates="tab", cascade="all, delete-orphan", order_by="WarrantyField.sort_order")
+
+class WarrantyField(Base):
+    __tablename__ = "warranty_fields"
+    id = Column(Integer, primary_key=True, index=True)
+    tab_id = Column(Integer, ForeignKey("warranty_tabs.id"), nullable=True)
+    field_name = Column(String(100), index=True)
+    field_label = Column(String(100))
+    field_type = Column(String(50))
+    placeholder = Column(String(200), nullable=True)
+    options = Column(JSON, default=[])
+    required = Column(Boolean, default=False)
+    width = Column(String(20), default="full")
+    visibility_rule = Column(JSON, nullable=True)
+    form_template_id = Column(Integer, nullable=True)
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    tab = relationship("WarrantyTab", back_populates="fields")
+
+class WarrantyStageRule(Base):
+    __tablename__ = "warranty_stage_rules"
+    id = Column(Integer, primary_key=True, index=True)
+    field_name = Column(String(100))
+    stage_id = Column(Integer, ForeignKey("stages.id"))
+    condition_operator = Column(String(20), default="has_value")
+    condition_value = Column(String(100), nullable=True)
+    stage = relationship("Stage")
+
+class KonwertCareTab(Base):
+    __tablename__ = "konwert_care_tabs"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    visibility_stages = Column(JSON, default=[])
+    fields = relationship("KonwertCareField", back_populates="tab", cascade="all, delete-orphan", order_by="KonwertCareField.sort_order")
+
+class KonwertCareField(Base):
+    __tablename__ = "konwert_care_fields"
+    id = Column(Integer, primary_key=True, index=True)
+    tab_id = Column(Integer, ForeignKey("konwert_care_tabs.id"), nullable=True)
+    field_name = Column(String(100), index=True)
+    field_label = Column(String(100))
+    field_type = Column(String(50))
+    placeholder = Column(String(200), nullable=True)
+    options = Column(JSON, default=[])
+    required = Column(Boolean, default=False)
+    width = Column(String(20), default="full")
+    visibility_rule = Column(JSON, nullable=True)
+    form_template_id = Column(Integer, nullable=True)
+    sort_order = Column(Integer, default=0)
+    is_active = Column(Boolean, default=True)
+    tab = relationship("KonwertCareTab", back_populates="fields")
+
+class KonwertCareStageRule(Base):
+    __tablename__ = "konwert_care_stage_rules"
+    id = Column(Integer, primary_key=True, index=True)
+    field_name = Column(String(100))
+    stage_id = Column(Integer, ForeignKey("stages.id"))
+    condition_operator = Column(String(20), default="has_value")
+    condition_value = Column(String(100), nullable=True)
+    stage = relationship("Stage")
 class ServiceRequest(Base):
     __tablename__ = "service_requests"
     id = Column(Integer, primary_key=True, index=True)

@@ -117,11 +117,12 @@ export default function ProductDetail() {
     loadTabs(); setDeleteConfirm(null);
   };
 
-  const visibleTabs = (tabs || []).filter(t => {
+  const visibleTabs = useMemo(() => (tabs || []).filter(t => {
     if (!t.visibility_stages || t.visibility_stages.length === 0) return true;
-    if (!form?.stage_id) return false;
-    return t.visibility_stages.includes(Number(form.stage_id));
-  });
+    const sId = Number(form?.stage_id);
+    if (!sId) return false;
+    return t.visibility_stages.map(Number).includes(sId);
+  }), [tabs, form?.stage_id]);
 
   if (loading) return <Layout title="Loading..."><Loader/></Layout>;
   const currentTab = visibleTabs[activeTab];

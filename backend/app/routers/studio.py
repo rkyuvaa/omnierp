@@ -48,11 +48,11 @@ class SequenceIn(BaseModel):
 # ── Helpers ───────────────────────────────────────────────────
 def get_layout_models(module: str):
     mapping = {
-        "crm": (CRMTab, CRMField),
-        "installation": (InstallationTab, InstallationField),
-        "service": (ServiceTab, ServiceField),
-        "warranty": (WarrantyTab, WarrantyField),
-        "konwertcare": (KonwertCareTab, KonwertCareField)
+        "crm": (CRMTab, CRMField, CRMStageRule),
+        "installation": (InstallationTab, InstallationField, InstallationStageRule),
+        "service": (ServiceTab, ServiceField, ServiceStageRule),
+        "warranty": (WarrantyTab, WarrantyField, WarrantyStageRule),
+        "konwertcare": (KonwertCareTab, KonwertCareField, KonwertCareStageRule)
     }
     if module not in mapping:
         raise HTTPException(status_code=400, detail="Invalid module")
@@ -75,7 +75,7 @@ def get_stages(module: str = None, module_query: str = Query(None, alias="module
 # ── Layout (Tabs & Fields) ────────────────────────────────────
 @router.get("/layout/{module}/tabs")
 def get_tabs(module: str, db: Session = Depends(get_db)):
-    TabModel, _ = get_layout_models(module)
+    TabModel, _, _ = get_layout_models(module)
     tabs = db.query(TabModel).filter(TabModel.is_active == True).order_by(TabModel.sort_order).all()
     res = []
     for t in tabs:
@@ -90,7 +90,7 @@ def get_tabs(module: str, db: Session = Depends(get_db)):
 
 @router.post("/layout/{module}/tabs")
 def create_tab(module: str, data: TabIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    TabModel, _ = get_layout_models(module)
+    TabModel, _, _ = get_layout_models(module)
     tab = TabModel(**data.model_dump(exclude={'visibility_stages'}))
     # Some tables might not have module column if they are specific
     if hasattr(tab, 'module'): tab.module = module
@@ -100,7 +100,7 @@ def create_tab(module: str, data: TabIn, db: Session = Depends(get_db), _=Depend
 
 @router.put("/layout/{module}/tabs/{tid}")
 def update_tab(module: str, tid: int, data: TabIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    TabModel, _ = get_layout_models(module)
+    TabModel, _, _ = get_layout_models(module)
     tab = db.query(TabModel).filter(TabModel.id == tid).first()
     if not tab: raise HTTPException(404)
     tab.name = data.name; tab.sort_order = data.sort_order
@@ -109,14 +109,14 @@ def update_tab(module: str, tid: int, data: TabIn, db: Session = Depends(get_db)
 
 @router.delete("/layout/{module}/tabs/{tid}")
 def delete_tab(module: str, tid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
-    TabModel, _ = get_layout_models(module)
+    TabModel, _, _ = get_layout_models(module)
     tab = db.query(TabModel).filter(TabModel.id == tid).first()
     if not tab: raise HTTPException(404)
     tab.is_active = False; db.commit(); return {"status": "ok"}
 
 @router.post("/layout/{module}/fields")
 def create_field(module: str, data: FieldIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    _, FieldModel = get_layout_models(module)
+    _, FieldModel, _ = get_layout_models(module)
     field = FieldModel(**data.model_dump())
     if hasattr(field, 'module'): field.module = module
     db.add(field); db.commit(); db.refresh(field)
@@ -124,7 +124,7 @@ def create_field(module: str, data: FieldIn, db: Session = Depends(get_db), _=De
 
 @router.put("/layout/{module}/fields/{fid}")
 def update_field(module: str, fid: int, data: FieldIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    _, FieldModel = get_layout_models(module)
+    _, FieldModel, _ = get_layout_models(module)
     f = db.query(FieldModel).filter(FieldModel.id == fid).first()
     if not f: raise HTTPException(404)
     for k, v in data.model_dump().items(): setattr(f, k, v)
@@ -132,7 +132,7 @@ def update_field(module: str, fid: int, data: FieldIn, db: Session = Depends(get
 
 @router.delete("/layout/{module}/fields/{fid}")
 def delete_field(module: str, fid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
-    _, FieldModel = get_layout_models(module)
+    _, FieldModel, _ = get_layout_models(module)
     f = db.query(FieldModel).filter(FieldModel.id == fid).first()
     if not f: raise HTTPException(404)
     f.is_active = False; db.commit(); return {"status": "ok"}
@@ -140,19 +140,21 @@ def delete_field(module: str, fid: int, db: Session = Depends(get_db), _=Depends
 # ── Stage Rules ───────────────────────────────────────────────
 @router.get("/layout/{module}/stage-rules")
 def get_rules(module: str, db: Session = Depends(get_db)):
-    # Rules are linked to stages, and stages are linked to modules
-    return db.query(CRMStageRule).join(Stage).filter(Stage.module == module).all()
+    _, _, RuleModel = get_layout_models(module)
+    return db.query(RuleModel).all()
 
 @router.post("/layout/{module}/stage-rules")
 def create_rule(module: str, data: StageRuleIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    db.query(CRMStageRule).filter(CRMStageRule.field_name == data.field_name).delete()
-    rule = CRMStageRule(**data.model_dump())
+    _, _, RuleModel = get_layout_models(module)
+    db.query(RuleModel).filter(RuleModel.field_name == data.field_name).delete()
+    rule = RuleModel(**data.model_dump())
     db.add(rule); db.commit(); db.refresh(rule)
     return rule
 
-@router.delete("/layout/stage-rules/{rid}")
-def delete_rule(rid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
-    db.query(CRMStageRule).filter(CRMStageRule.id == rid).delete()
+@router.delete("/layout/{module}/stage-rules/{rid}")
+def delete_rule(module: str, rid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
+    _, _, RuleModel = get_layout_models(module)
+    db.query(RuleModel).filter(RuleModel.id == rid).delete()
     db.commit(); return {"status": "ok"}
 
 # ── Sequence ──────────────────────────────────────────────────
