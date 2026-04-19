@@ -78,10 +78,15 @@ export default function InstallationForm() {
   useEffect(() => {
     if (form?.product_id) {
       api.get(`/warranty/products/${form.product_id}`).then(r => {
-        setSelectedProduct(r.data);
-        if (!form.customer_name) {
-          set('customer_name', r.data.customer_name || r.data.custom_data?.customer_name || '');
-        }
+        const p = r.data;
+        setSelectedProduct(p);
+        setForm(f => ({
+          ...f,
+          customer_name: p.customer_name || p.custom_data?.customer_name || f.customer_name || '',
+          vehicle_number: p.name || p.serial_number || f.vehicle_number || '',
+          vehicle_make: p.vehicle_make || p.custom_data?.vehicle_make || f.vehicle_make || '',
+          vehicle_model: p.vehicle_model || p.custom_data?.vehicle_model || f.vehicle_model || ''
+        }));
       }).catch(() => setSelectedProduct(null));
     } else {
       setSelectedProduct(null);
