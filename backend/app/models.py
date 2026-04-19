@@ -324,3 +324,36 @@ class KonwertCareTicket(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     stage = relationship("Stage")
     staff = relationship("User", foreign_keys=[staff_id])
+class FormDefinition(Base):
+    __tablename__ = "form_definitions"
+    id = Column(Integer, primary_key=True, index=True)
+    module = Column(String(50), index=True) # cm, installation, etc.
+    name = Column(String(100))
+    prefix_template = Column(String(50), default="") # e.g. "FRM-"
+    suffix_template = Column(String(50), default="")
+    reset_cycle = Column(String(20), default="none") # daily, weekly, monthly, none
+    last_number = Column(Integer, default=0)
+    last_reset_date = Column(DateTime, nullable=True)
+    
+    fields_config = Column(JSON, default=[]) # List of fields in THIS form
+    mapping_config = Column(JSON, default={}) # { "form_field": "parent_field" }
+    pdf_config = Column(JSON, default={}) # { "logo": "...", "header": "...", "footer": "..." }
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class FormSubmission(Base):
+    __tablename__ = "form_submissions"
+    id = Column(Integer, primary_key=True, index=True)
+    form_definition_id = Column(Integer, ForeignKey("form_definitions.id"))
+    parent_id = Column(Integer, index=True) # lead_id or installation_id
+    reference_number = Column(String(100), unique=True)
+    
+    data = Column(JSON, default={})
+    status = Column(String(20), default="draft") # draft, final
+    created_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    # Relationship to user
+    author = relationship("User")
+    definition = relationship("FormDefinition")

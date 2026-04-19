@@ -8,6 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Bell, Check } from 'lucide-react';
+import SubFormSection from "../crm/SubFormSection";
 
 const emptyForm = { product_id: '', technician_id: '', notes: '', custom_data: {} };
 const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
@@ -357,8 +358,10 @@ export default function InstallationForm() {
               Select a vehicle to view installation details
             </div>
           )}
-        </div>
       </div>
+
+      {!isNew && <SubFormSection module="installation" parentId={form.id} parentData={form} />}
+
       {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
 

@@ -4,7 +4,8 @@ import { Modal, Confirm, Badge, Loader } from '../../components/Shared';
 import { FieldModal, TabModal } from '../../components/StudioModals';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, RotateCw, Settings, Layers, GitMerge, ChevronRight } from 'lucide-react';
+import { Plus, Pencil, Trash2, RotateCw, Settings, Layers, FileText, ChevronRight } from 'lucide-react';
+import DocumentManagement from './DocumentManagement';
 
 const MODULES = ['crm', 'installation', 'service', 'warranty', 'konwertcare'];
 const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'boolean', 'checkbox', 'file'];
@@ -15,7 +16,6 @@ const emptyStage = { module: 'crm', name: '', color: '#6366f1', sort_order: 0, i
 const emptySeq = { module: 'crm', prefix: '', suffix: '', padding: 4 };
 
 // ── Modals ───────────────────────────────────────────────────
-
 
 function StageModal({ initial, onSave, onClose }) {
   const [form, setForm] = useState(initial);
@@ -65,6 +65,7 @@ export default function Studio() {
   const [stages, setStages] = useState([]);
   const [stageRules, setStageRules] = useState([]);
   const [sequence, setSequence] = useState(null);
+  const [documentTemplates, setDocumentTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [activeTabIdx, setActiveTabIdx] = useState(0);
@@ -76,16 +77,18 @@ export default function Studio() {
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
-      const [tabsRes, stagesRes, rulesRes, seqRes] = await Promise.all([
+      const [tabsRes, stagesRes, rulesRes, seqRes, docsRes] = await Promise.all([
         api.get(`/studio/layout/${module}/tabs`),
         api.get(`/studio/stages/${module}`),
         api.get(`/studio/layout/${module}/stage-rules`),
-        api.get(`/studio/sequence/${module}`)
+        api.get(`/studio/sequence/${module}`),
+        api.get(`/forms/studio/forms/${module}`)
       ]);
       setTabs(tabsRes.data);
       setStages(stagesRes.data);
       setStageRules(rulesRes.data);
       setSequence(seqRes.data);
+      setDocumentTemplates(docsRes.data);
       if (activeTabIdx >= tabsRes.data.length && tabsRes.data.length > 0) setActiveTabIdx(0);
     } catch (e) {
       toast.error('Failed to sync Studio');
@@ -96,7 +99,6 @@ export default function Studio() {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  // CRUD Handlers
   const saveTab = async (form) => {
     try {
       if (form.id) await api.put(`/studio/layout/tabs/${form.id}`, form);
@@ -147,6 +149,7 @@ export default function Studio() {
       if (type === 'tab') await api.delete(`/studio/layout/tabs/${id}`);
       else if (type === 'field') await api.delete(`/studio/layout/fields/${id}`);
       else if (type === 'stage') await api.delete(`/studio/stages/${id}`);
+      else if (type === 'document') await api.delete(`/forms/studio/forms/${id}`);
       toast.success('Deleted'); setDeleting(null); loadData();
     } catch { toast.error('Cannot delete: record in use'); setDeleting(null); }
   };
@@ -164,7 +167,7 @@ export default function Studio() {
           ))}
         </div>
         <div className="ml-auto flex gap-2">
-          {['layout', 'stages', 'sequences'].map(t => (
+          {['layout', 'stages', 'sequences', 'documents'].map(t => (
             <button key={t} className={`btn btn-ghost btn-sm ${tab === t ? 'active' : ''}`} onClick={() => setTab(t)}
               style={tab === t ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
               {t.charAt(0).toUpperCase() + t.slice(1)}
@@ -299,6 +302,16 @@ export default function Studio() {
                 </div>
               </div>
             </div>
+          )}
+
+          {tab === 'documents' && (
+            <DocumentManagement 
+              module={module} 
+              templates={documentTemplates} 
+              onDataChange={loadData}
+              onDelete={(id, name) => setDeleting({ type: 'document', id, name })}
+              parentFields={tabs.flatMap(t => t.fields)}
+            />
           )}
         </>
       )}

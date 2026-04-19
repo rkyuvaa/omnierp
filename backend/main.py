@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from fastapi.staticfiles import StaticFiles
 import os
-from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout
+from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms
 
 app = FastAPI(title="OmniERP API", version="1.0.0")
 
@@ -32,6 +32,7 @@ app.include_router(dashboard.router, prefix="/api/dashboard", tags=["dashboard"]
 app.include_router(audit.router, prefix="/api/audit", tags=["audit"])
 app.include_router(warranty.router, prefix="/api/warranty", tags=["warranty"])
 app.include_router(crm_layout.router, prefix="/api/crm-layout", tags=["crm-layout"])
+app.include_router(forms.router, prefix="/api/forms", tags=["Forms"])
 
 
 # Ensure static/uploads exists
