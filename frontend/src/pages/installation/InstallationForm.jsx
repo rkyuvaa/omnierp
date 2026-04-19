@@ -103,7 +103,12 @@ export default function InstallationForm() {
     if (!form.product_id) return toast.error('Please select a Vehicle Number');
     setSaving(true);
     try {
-      const payload = { ...form, stage_id: form.stage_id || null, technician_id: form.technician_id || null, product_id: parseInt(form.product_id) || null };
+      let finalStageId = form.stage_id;
+      if (form.schedule_date && (!finalStageId || stages.find(s => s.id === finalStageId)?.sort_order === 0)) {
+        const sch = stages.find(s => s.name.toLowerCase() === 'scheduled');
+        if (sch) finalStageId = sch.id;
+      }
+      const payload = { ...form, stage_id: finalStageId || null, technician_id: form.technician_id || null, product_id: parseInt(form.product_id) || null };
       if (isNew) {
         const r = await api.post('/installation/', payload);
         toast.success('✓ Success');
