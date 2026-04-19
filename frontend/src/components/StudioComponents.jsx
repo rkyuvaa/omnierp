@@ -191,7 +191,7 @@ export function FileField({ value, onChange }) {
   const isImage = value?.content_type?.startsWith('image/');
   
   if (value?.filename) return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'0 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)', height:46, width:'100%' }}>
+    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'0 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)', height:42, width:'100%', boxSizing:'border-box' }}>
       <FileText size={16} style={{ color:'var(--accent)', flexShrink:0 }}/>
       <span style={{ flex:1, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value.original_name}</span>
       <div style={{ display:'flex', gap:2, flexShrink:0 }}>
@@ -205,9 +205,10 @@ export function FileField({ value, onChange }) {
   );
 
   return (
-    <div>
+    <div style={{ width:'100%' }}>
       <input type="file" style={{ display:'none' }} ref={inputRef} onChange={handleUpload}/>
-      <button className="btn btn-ghost" style={{ width:'100%', justifyContent:'center', border:'2px dashed var(--border)', borderRadius:8, padding:'10px' }}
+      <button className="btn btn-ghost" 
+        style={{ width:'100%', height:42, minHeight:42, justifyContent:'center', border:'2px dashed var(--border)', borderRadius:8, padding:0 }}
         onClick={() => inputRef.current?.click()} disabled={uploading}>
         {uploading ? <div className="spinner" style={{ width:14, height:14 }}/> : <><Upload size={14}/> Choose File</>}
       </button>
