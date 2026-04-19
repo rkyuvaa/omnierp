@@ -262,6 +262,13 @@ export default function InstallationForm() {
                       )}
                     </div>
                   ))}
+                  {editLayout && (
+                    <div style={{ gridColumn: '1/-1', marginTop: 8 }}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({ field: { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: (currentTab.fields || []).length, tab_id: currentTab.id }, tabId: currentTab.id })}>
+                        <Plus size={13} /> Add Field to "{currentTab.name}"
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

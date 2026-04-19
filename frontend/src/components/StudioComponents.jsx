@@ -6,15 +6,17 @@ import api from '../utils/api';
 export function UserSelect({ field, value, onChange }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const deptId = field.options?.[0];
+  const deptIds = Array.isArray(field.options) ? field.options : [];
 
   useEffect(() => {
     api.get('/users/').then(r => {
       let filtered = r.data || [];
-      if (deptId) filtered = filtered.filter(u => String(u.department_id) === String(deptId));
+      if (deptIds.length > 0) {
+        filtered = filtered.filter(u => deptIds.some(id => String(u.department_id) === String(id)));
+      }
       setUsers(filtered);
     }).finally(() => setLoading(false));
-  }, [deptId]);
+  }, [JSON.stringify(deptIds)]);
 
   return (
     <select className="form-select" value={value || ''} onChange={e => onChange(e.target.value)} disabled={loading}>

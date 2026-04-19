@@ -97,16 +97,29 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
 
         {f.field_type === 'user' && (
           <div className="form-group">
-            <label className="form-label">Restrict to Department</label>
-            <select 
-              className="form-select" 
-              value={f.options?.[0] || ''} 
-              onChange={e => set('options', e.target.value ? [e.target.value] : [])}
-            >
-              <option value="">— Show All Users —</option>
-              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-            </select>
-            <div className="text-muted size-10 mt-1">Leave empty to show all organizational users.</div>
+            <label className="form-label">Restrict to Department(s)</label>
+            <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+              <select 
+                className="form-select" 
+                value="" 
+                onChange={e => e.target.value && !f.options.includes(e.target.value) && set('options', [...f.options, e.target.value])}
+              >
+                <option value="">— Add Department —</option>
+                {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {f.options.map(id => {
+                const d = departments.find(x => String(x.id) === String(id));
+                return (
+                  <span key={id} style={{ display:'flex',alignItems:'center',gap:4,padding:'3px 10px',background:'var(--bg3)',borderRadius:20,fontSize:12,fontWeight:600 }}>
+                    {d?.name || 'Unknown'} 
+                    <button onClick={() => set('options', f.options.filter(x => x !== id))} style={{ background: 'none', border: 'none', color: 'var(--red)', cursor: 'pointer', lineHeight: 1 }}>×</button>
+                  </span>
+                )
+              })}
+            </div>
+            <div className="text-muted size-10 mt-1">Leave empty to show all organizational users. Click to add multiple.</div>
           </div>
         )}
 
