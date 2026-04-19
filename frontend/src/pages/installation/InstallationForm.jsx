@@ -153,8 +153,8 @@ export default function InstallationForm() {
 
   const visibleTabs = tabs.filter(t => 
     !t.visibility_stages || 
-    t.visibility_stages.length === 0 || 
-    t.visibility_stages.includes(form.stage_id)
+    (Array.isArray(t.visibility_stages) && t.visibility_stages.length === 0) || 
+    (Array.isArray(t.visibility_stages) && t.visibility_stages.includes(form.stage_id))
   );
 
   useEffect(() => {
