@@ -203,13 +203,11 @@ export default function InstallationForm() {
             );
           })}
         </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 24 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 700px', gap: 24 }}>
         {/* LEFT */}
         <div>
           {/* Core fields */}
-          <div className="card mb-4">
+          <div className="card mb-4" style={{ height: 'fit-content' }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
               <div className="form-group" style={{ gridColumn: 'span 2' }}>
                 <label className="form-label">Vehicle Number *</label>
@@ -230,83 +228,10 @@ export default function InstallationForm() {
                 </select>
               </div>
             </div>
-
-            {/* Dynamic Vehicle Info Display - Split View */}
-            {form.product_id && (
-              <div style={{ marginTop: 20, padding: '20px 24px', background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
-                {!selectedProduct ? (
-                  <div className="spinner" style={{ width: 20, height: 20 }} />
-                ) : (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 32 }}>
-                    {/* LEFT SIDE: Components with Vehicle Identity as Header */}
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
-                        <div style={{ width: 4, height: 18, background: 'var(--accent)', borderRadius: 2 }} />
-                        <div style={{ display: 'flex', gap: 20, alignItems: 'center' }}>
-                          <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--accent)' }}>
-                            {selectedProduct.bom_name || selectedProduct.title || selectedProduct.name}
-                          </span>
-                          <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text1)' }}>
-                            S/N: {selectedProduct.serial_number}
-                          </span>
-                          <span style={{ fontWeight: 800, fontSize: 13, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text1)' }}>
-                            WTY: {selectedProduct.warranty_period} {selectedProduct.warranty_unit}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px', gap: 10, padding: '4px 0', borderBottom: '1px dashed var(--border)', marginBottom: 8 }}>
-                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>Item Name</span>
-                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', textAlign: 'right' }}>Serial</span>
-                        <span style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', textAlign: 'right' }}>Warranty</span>
-                      </div>
-
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                        {selectedProduct.component_serials && selectedProduct.component_serials.length > 0 ? (
-                          selectedProduct.component_serials.map(c => (
-                            <div key={c.id} style={{ display: 'grid', gridTemplateColumns: '1fr 100px 80px', gap: 10, alignItems: 'center', padding: '2px 0' }}>
-                              <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 500 }}>{c.bom_component?.name || 'Component'}</span>
-                              <span style={{ fontSize: 12, color: 'var(--text1)', fontWeight: 700, textAlign: 'right' }}>{c.serial_number}</span>
-                              <span style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'right' }}>{c.warranty_period} {c.warranty_unit?.charAt(0)}</span>
-                            </div>
-                          ))
-                        ) : (
-                          <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No components found.</div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* RIGHT SIDE: Other Details */}
-                    <div>
-                      <div style={{ fontSize: 11, color: 'var(--accent)', fontWeight: 800, textTransform: 'uppercase', marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 4 }}>
-                        Other Details
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px 16px' }}>
-                         {Object.entries(selectedProduct.custom_data || {}).map(([key, val]) => (
-                           <div key={key}>
-                             <div style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                               {key.replace(/_/g, ' ')}
-                             </div>
-                             <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{String(val || '—')}</div>
-                           </div>
-                         ))}
-                         {Object.keys(selectedProduct.custom_data || {}).length === 0 && (
-                           <div style={{ gridColumn: 'span 2', fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>No other details found.</div>
-                         )}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
 
+          {/* Custom Tabs */}
           <div style={{ width: '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-               <div style={{ display:'flex', gap:8 }}>
-                  {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
-               </div>
-            </div>
             {tabs.length > 0 && (
               <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
                 {tabs.map((t, i) => (
@@ -323,6 +248,7 @@ export default function InstallationForm() {
                     </>}
                   </div>
                 ))}
+                {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Tab</button>}
               </div>
             )}
 
@@ -341,53 +267,83 @@ export default function InstallationForm() {
                       )}
                     </div>
                   ))}
-                  {editLayout && (
-                    <div style={{ gridColumn: '1/-1', marginTop: 8 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({ field: { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: (currentTab.fields || []).length, tab_id: currentTab.id }, tabId: currentTab.id })}>
-                        <Plus size={13} /> Add Field to "{currentTab.name}"
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             )}
           </div>
         </div>
 
-        {/* RIGHT */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-          {/* Activity */}
-          {!isNew && (
-            <div className="card">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
-                <Bell size={14} />
-                <span className="card-title">Activity</span>
-              </div>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <input className="form-input" placeholder="Add a note or task..." value={actDesc} onChange={e => setActDesc(e.target.value)} onKeyDown={e => e.key === 'Enter' && addActivity()} />
-                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                  <label className="form-label" style={{ margin: 0, fontSize: 12, whiteSpace: 'nowrap' }}>Due</label>
-                  <input className="form-input" type="datetime-local" value={actDue} onChange={e => setActDue(e.target.value)} style={{ flex: 1 }} />
-                  <button className="btn btn-primary btn-sm" onClick={addActivity} style={{ flexShrink: 0 }}><Plus size={13} /> Add</button>
+        {/* RIGHT: High-Density Summary Card */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          {selectedProduct ? (
+            <div className="card" style={{ padding: 0 }}>
+              <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--border)', display:'flex', alignItems:'center', gap:20 }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:4, height:24, background:'var(--green)', borderRadius:2 }} />
+                  <span className="fw-800 size-16" style={{ color:'var(--green)' }}>
+                    {selectedProduct.bom_name || selectedProduct.title || selectedProduct.name}
+                  </span>
                 </div>
+                <div className="fw-700 size-15">S/N: <span className="text-muted">{selectedProduct.serial_number || '—'}</span></div>
+                <div className="fw-700 size-15">WTY: <span className="text-muted">{selectedProduct.warranty_period} {selectedProduct.warranty_unit?.toUpperCase()}</span></div>
               </div>
-              {activities.length > 0 && (
-                <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  {activities.map(a => (
-                    <div key={a.id} style={{ display: 'flex', gap: 8, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 8, opacity: a.done ? 0.45 : 1, alignItems: 'flex-start' }}>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 12 }}>{a.description}</div>
-                        {a.due_date && !a.done && <div style={{ fontSize: 10, color: 'var(--amber)', marginTop: 2 }}>due {new Date(a.due_date).toLocaleDateString()}</div>}
-                        <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2 }}>{timeAgo(a.created_at)}</div>
-                      </div>
-                      {!a.done && <button className="btn btn-ghost btn-sm" onClick={() => markDone(a.id)} title="Mark done"><Check size={12} /></button>}
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 30, padding: 20 }}>
+                {/* Left Side: Components */}
+                <div>
+                  <div style={{ display:'flex', justifyContent:'space-between', paddingBottom:8, borderBottom:'1px dashed var(--border)', marginBottom:10 }}>
+                    <span className="size-11 fw-700 text-muted uppercase">Item Name</span>
+                    <div style={{ display:'flex', gap:40 }}>
+                      <span className="size-11 fw-700 text-muted uppercase">Serial</span>
+                      <span className="size-11 fw-700 text-muted uppercase">Warranty</span>
                     </div>
-                  ))}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {selectedProduct.component_serials && selectedProduct.component_serials.length > 0 ? (
+                      selectedProduct.component_serials.map((c, idx) => (
+                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span className="size-12 fw-600 color-text1">{c.bom_component?.name || 'Component'}</span>
+                          <div style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
+                            <span className="size-12 fw-800">{c.serial_number || '—'}</span>
+                            <span className="size-11 text-muted">{c.warranty_period}{c.warranty_unit?.substring(0, 1)}</span>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="size-12 text-muted italic">No components found.</div>
+                    )}
+                  </div>
                 </div>
-              )}
+
+                {/* Right Side: Other Details */}
+                <div>
+                  <div className="size-11 fw-700 text-success uppercase" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 5, marginBottom: 15 }}>Other Details</div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px 10px' }}>
+                    {[
+                      { l: 'PHONE NUMBER', k: 'phone_number' },
+                      { l: 'VEHICLE YEAR', k: 'vehicle_year' },
+                      { l: 'CUSTOMER NAME', k: 'customer_name' },
+                      { l: 'INVOICE NUMBER', k: 'invoice_number' },
+                      { l: 'INVOICE DETAILS', k: 'invoice_details' },
+                      { l: 'CUSTOMER ADDRESS', k: 'customer_address' }
+                    ].map((d, i) => (
+                      <div key={i}>
+                        <div className="size-10 text-muted fw-600 mb-1 uppercase">{d.l}</div>
+                        <div className="size-12 fw-800 truncate" title={selectedProduct.custom_data?.[d.k]}>{selectedProduct.custom_data?.[d.k] || '—'}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="card text-center p-8 text-muted size-14">
+              Select a vehicle to view installation details
             </div>
           )}
         </div>
+      </div>
+       </div>
       </div>
 
       {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
