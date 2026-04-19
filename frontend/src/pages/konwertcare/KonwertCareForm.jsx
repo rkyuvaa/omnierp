@@ -65,12 +65,12 @@ export default function KonwertCareForm() {
     }
   };
   const saveTab = async (tab) => {
-    if (tab.id) await api.put(`/studio/layout/tabs/${tab.id}`, tab);
+    if (tab.id) await api.put(`/studio/layout/konwertcare/tabs/${tab.id}`, tab);
     else await api.post('/studio/layout/konwertcare/tabs', { ...tab, sort_order: tabs.length });
     toast.success('Tab saved'); setTabModal(null); loadTabs();
   };
   const deleteTab = async (tid) => {
-    await api.delete(`/studio/layout/tabs/${tid}`);
+    await api.delete(`/studio/layout/konwertcare/tabs/${tid}`);
     toast.success('Deleted'); setDeleteConfirm(null); loadTabs();
   };
   const saveField = async (f) => {
@@ -80,7 +80,7 @@ export default function KonwertCareForm() {
     const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
     
     if (!payload.tab_id) payload.tab_id = fieldModal?.tabId||null;
-    if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
+    if (f.id) await api.put(`/studio/layout/konwertcare/fields/${f.id}`, payload);
     else await api.post('/studio/layout/konwertcare/fields', payload);
     
     if (stageRule) {
@@ -92,7 +92,7 @@ export default function KonwertCareForm() {
     toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
   };
   const deleteField = async (fid) => {
-    await api.delete(`/studio/layout/fields/${fid}`);
+    await api.delete(`/studio/layout/konwertcare/fields/${fid}`);
     toast.success('Deleted'); setDeleteConfirm(null); loadTabs(); loadStageRules();
   };
   const save = async () => {

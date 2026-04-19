@@ -98,14 +98,22 @@ export default function ProductDetail() {
   };
 
   const saveTab = async (t) => {
-    if (t.id) await api.put(`/studio/layout/tabs/${t.id}`, t);
+    if (t.id) await api.put(`/studio/layout/warranty/tabs/${t.id}`, t);
     else await api.post('/studio/layout/warranty/tabs', { ...t, sort_order: tabs.length });
     loadTabs(); setTabModal(null);
   };
+  const deleteTab = async (id) => {
+    await api.delete(`/studio/layout/warranty/tabs/${id}`);
+    loadTabs(); setDeleteConfirm(null); setActiveTab(0);
+  };
   const saveField = async (f) => {
-    if (f.id) await api.put(`/studio/layout/fields/${f.id}`, f);
+    if (f.id) await api.put(`/studio/layout/warranty/fields/${f.id}`, f);
     else await api.post('/studio/layout/warranty/fields', { ...f, tab_id: fieldModal.tabId });
     loadTabs(); setFieldModal(null);
+  };
+  const deleteField = async (id) => {
+    await api.delete(`/studio/layout/warranty/fields/${id}`);
+    loadTabs(); setDeleteConfirm(null);
   };
 
   if (loading) return <Layout title="Loading..."><Loader/></Layout>;
@@ -286,7 +294,10 @@ export default function ProductDetail() {
 
       {tabModal && <TabModal initial={tabModal} onSave={saveTab} onClose={()=>setTabModal(null)} />}
       {fieldModal && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={()=>setFieldModal(null)} />}
-      {deleteConfirm && <Confirm message={`Delete ${deleteConfirm.name}?`} onConfirm={()=>setDeleteConfirm(null)} onCancel={()=>setDeleteConfirm(null)} />}
+      {deleteConfirm && <Confirm message={`Delete ${deleteConfirm.name}?`} onConfirm={() => {
+        if (deleteConfirm.type === 'tab') deleteTab(deleteConfirm.id);
+        else deleteField(deleteConfirm.id);
+      }} onCancel={()=>setDeleteConfirm(null)} />}
     </Layout>
   );
 }

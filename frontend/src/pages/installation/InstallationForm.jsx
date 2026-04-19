@@ -129,26 +129,26 @@ export default function InstallationForm() {
   };
 
   const saveTab = async (tab) => {
-    if (tab.id) await api.put(`/studio/layout/tabs/${tab.id}`, tab);
+    if (tab.id) await api.put(`/studio/layout/installation/tabs/${tab.id}`, tab);
     else await api.post('/studio/layout/installation/tabs', { ...tab, sort_order: tabs.length });
     toast.success('Tab saved'); setTabModal(null); loadTabs();
   };
 
   const deleteTab = async (tid) => {
-    await api.delete(`/studio/layout/tabs/${tid}`);
+    await api.delete(`/studio/layout/installation/tabs/${tid}`);
     toast.success('Tab deleted'); setDeleteConfirm(null); setActiveTab(0); loadTabs();
   };
 
   const saveField = async (f) => {
     const payload = { ...f };
     delete payload._new;
-    if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
+    if (f.id) await api.put(`/studio/layout/installation/fields/${f.id}`, payload);
     else await api.post('/studio/layout/installation/fields', { ...payload, tab_id: fieldModal?.tabId });
     toast.success('Field saved'); setFieldModal(null); loadTabs();
   };
 
   const deleteField = async (fid) => {
-    await api.delete(`/studio/layout/fields/${fid}`);
+    await api.delete(`/studio/layout/installation/fields/${fid}`);
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
@@ -288,7 +288,7 @@ export default function InstallationForm() {
                   ))}
                   {editLayout && (
                     <div style={{ gridColumn: '1/-1', marginTop: 8 }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({ field: { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: (currentTab.fields || []).length, tab_id: currentTab.id }, tabId: currentTab.id })}>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({ field: { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', sort_order: (currentTab.fields || []).length, tab_id: currentTab.id, module: 'installation' }, tabId: currentTab.id })}>
                         <Plus size={13} /> Add Field to "{currentTab.name}"
                       </button>
                     </div>
@@ -372,7 +372,7 @@ export default function InstallationForm() {
     </div>
 
       {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
-      {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
+      {fieldModal !== null && <FieldModal initial={{...fieldModal.field, module: 'installation'}} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
 
       {/* Delete confirm */}
       {deleteConfirm && (

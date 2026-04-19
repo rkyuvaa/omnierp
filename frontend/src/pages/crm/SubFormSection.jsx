@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
-import { Plus, FileText, Download, Pencil, Trash2, CheckCircle, Clock } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Plus, FileText, Download, Pencil, Trash2, CheckCircle, Clock, X, RotateCcw } from 'lucide-react';
+import SignatureCanvas from 'react-signature-canvas';
 import { Modal, Badge, Loader } from '../../components/Shared';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -150,6 +151,7 @@ export default function SubFormSection({ module, parentId, parentData, templateI
 function SubmissionModal({ form, setForm, onSave, onClose }) {
   const fields = form.fields_config || form.definition?.fields_config || [];
   const isFinal = form.status === 'final';
+  const sigRef = useRef({});
 
   const updateField = (key, val) => {
     setForm(f => ({ ...f, data: { ...f.data, [key]: val } }));
@@ -174,39 +176,72 @@ function SubmissionModal({ form, setForm, onSave, onClose }) {
         <button className="btn btn-primary" onClick={() => onSave('final')}>Finalize & Submit</button>
       </>}>
       
-      <div className="form-grid">
+      <div className="form-grid" style={{ padding: 10 }}>
         {fields.map(f => (
-          <div key={f.key} className="form-group" style={{ gridColumn: f.width === 'full' ? '1/-1' : 'span 1' }}>
-            <label className="form-label">{f.label}</label>
+          <div key={f.key} className="form-group" style={{ 
+            gridColumn: f.width === 'full' ? '1/-1' : f.width === 'half' ? 'span 2' : 'span 1',
+            marginBottom: 20
+          }}>
+            <label className="form-label mb-2 uppercase size-10 fw-800 text-muted letter-spacing-1">{f.label}</label>
             
             {f.type === 'textarea' ? (
-              <textarea className="form-input" disabled={isFinal} value={form.data[f.key] || ''} onChange={e => updateField(f.key, e.target.value)} />
+              <textarea className="form-input" disabled={isFinal} value={form.data[f.key] || ''} onChange={e => updateField(f.key, e.target.value)} rows={4} />
             ) : f.type === 'info' ? (
-              <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 text-sm">{f.label}</div>
+              <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 text-sm italic">{f.label}</div>
             ) : f.type === 'signature' ? (
-              <div className="border-2 border-dashed rounded-lg p-8 text-center bg-gray-50 text-muted italic">
-                Signature Pad (Digital Signatures will be collected here)
+              <div style={{ position: 'relative' }}>
+                {isFinal ? (
+                  <div className="border rounded-lg p-2 bg-gray-50 flex justify-center">
+                    <img src={form.data[f.key]} alt="Signature" style={{ maxHeight: 100 }} />
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed rounded-lg bg-gray-50 overflow-hidden" style={{ height: 160 }}>
+                    <SignatureCanvas 
+                      ref={(ref) => sigRef.current[f.key] = ref}
+                      penColor="black"
+                      canvasProps={{ width: 800, height: 160, className: 'sigCanvas' }}
+                      onEnd={() => {
+                        const data = sigRef.current[f.key].toDataURL();
+                        updateField(f.key, data);
+                      }}
+                    />
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      onClick={() => { sigRef.current[f.key].clear(); updateField(f.key, null); }}
+                      style={{ position: 'absolute', top: 5, right: 5, padding: 4 }}
+                    >
+                      <RotateCcw size={12}/>
+                    </button>
+                  </div>
+                )}
               </div>
             ) : f.type === 'table' ? (
-              <div className="border rounded-lg overflow-hidden">
+              <div className="border rounded-lg overflow-hidden shadow-sm">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50"><tr><th className="p-2 border-b">Description</th><th className="p-2 border-b w-24">Qty</th><th className="p-2 border-b">Value</th><th className="p-2 border-b w-10"></th></tr></thead>
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-2 border-b text-left size-9 fw-900 uppercase">Description</th>
+                      <th className="p-2 border-b w-24 text-center size-9 fw-900 uppercase">Qty</th>
+                      <th className="p-2 border-b text-right size-9 fw-900 uppercase">Value</th>
+                      <th className="p-2 border-b w-10"></th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {(form.data[f.key] || []).map((row, idx) => (
                       <tr key={idx}>
-                        <td className="p-1"><input className="form-input form-input-sm" disabled={isFinal} value={row.desc || ''} onChange={e => updateTableRow(f.key, idx, 'desc', e.target.value)} /></td>
-                        <td className="p-1"><input className="form-input form-input-sm" disabled={isFinal} type="number" value={row.qty || ''} onChange={e => updateTableRow(f.key, idx, 'qty', e.target.value)} /></td>
-                        <td className="p-1"><input className="form-input form-input-sm" disabled={isFinal} value={row.val || ''} onChange={e => updateTableRow(f.key, idx, 'val', e.target.value)} /></td>
-                        <td className="p-1">
-                          {!isFinal && <button className="btn btn-danger btn-sm p-1" onClick={() => {
+                        <td className="p-2"><input className="form-input form-input-sm" disabled={isFinal} value={row.desc || ''} onChange={e => updateTableRow(f.key, idx, 'desc', e.target.value)} /></td>
+                        <td className="p-2"><input className="form-input form-input-sm text-center" disabled={isFinal} type="number" value={row.qty || ''} onChange={e => updateTableRow(f.key, idx, 'qty', e.target.value)} /></td>
+                        <td className="p-2"><input className="form-input form-input-sm text-right" disabled={isFinal} value={row.val || ''} onChange={e => updateTableRow(f.key, idx, 'val', e.target.value)} /></td>
+                        <td className="p-2">
+                          {!isFinal && <button className="btn btn-danger btn-sm p-1" style={{ height: 28, width: 28 }} onClick={() => {
                             const next = form.data[f.key].filter((_, i) => i !== idx); updateField(f.key, next);
-                          }}><Trash2 size={12}/></button>}
+                          }}><X size={12}/></button>}
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-                {!isFinal && <button className="btn btn-ghost btn-sm w-full rounded-none border-t" onClick={() => addTableRow(f.key)}><Plus size={12}/> Add Row</button>}
+                {!isFinal && <button className="btn btn-ghost btn-sm w-full rounded-none border-t h-10 hover:bg-gray-50" onClick={() => addTableRow(f.key)}><Plus size={14}/> Add Row</button>}
               </div>
             ) : (
               <input className="form-input" type={f.type} disabled={isFinal} value={form.data[f.key] || ''} onChange={e => updateField(f.key, e.target.value)} />
@@ -214,7 +249,20 @@ function SubmissionModal({ form, setForm, onSave, onClose }) {
           </div>
         ))}
       </div>
-      {isFinal && <div className="mt-6 p-4 bg-green-50 text-green-700 rounded-lg border border-green-200 text-sm fw-600 flex items-center gap-2"><CheckCircle size={16}/> This document is finalized and secured.</div>}
+      {isFinal && (
+        <div className="mt-8 p-4 bg-green-50 text-green-700 rounded-xl border-l-4 border-green-500 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+             <div className="bg-green-100 p-2 rounded-full"><CheckCircle size={20}/></div>
+             <div>
+               <div className="fw-900 size-13 uppercase letter-spacing-1">Document Certified</div>
+               <div className="size-11 opacity-80">This document is final and cannot be modified.</div>
+             </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => window.open(`${api.defaults.baseURL}/forms/submissions/${form.id}/pdf`, '_blank')}>
+            <Download size={14}/> Download PDF
+          </button>
+        </div>
+      )}
     </Modal>
   );
 }

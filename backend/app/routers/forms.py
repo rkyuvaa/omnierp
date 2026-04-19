@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
@@ -6,6 +6,7 @@ from datetime import datetime
 from app.database import get_db
 from app.models import FormDefinition, FormSubmission, User
 from app.auth import get_current_user
+from app.utils.pdf import generate_form_html, render_to_pdf
 
 router = APIRouter()
 
@@ -156,3 +157,18 @@ def get_submission(sid: int, db: Session = Depends(get_db)):
         "pdf_config": sub.definition.pdf_config,
         "created_at": sub.created_at
     }
+@router.get("/submissions/{sid}/pdf")
+def get_submission_pdf(sid: int, db: Session = Depends(get_db)):
+    sub = db.query(FormSubmission).filter(FormSubmission.id == sid).first()
+    if not sub: raise HTTPException(404)
+    
+    html = generate_form_html(sub, sub.definition)
+    pdf = render_to_pdf(html)
+    
+    if not pdf: raise HTTPException(500, "PDF Generation Failed")
+    
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"inline; filename={sub.reference_number}.pdf"}
+    )

@@ -101,7 +101,7 @@ export default function Studio() {
 
   const saveTab = async (form) => {
     try {
-      if (form.id) await api.put(`/studio/layout/tabs/${form.id}`, form);
+      if (form.id) await api.put(`/studio/layout/${module}/tabs/${form.id}`, form);
       else await api.post(`/studio/layout/${module}/tabs`, form);
       toast.success('Tab updated'); setTabModal(null); loadData();
     } catch { toast.error('Check server logs'); }
@@ -112,7 +112,7 @@ export default function Studio() {
     const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
     try {
       let savedF;
-      if (f.id) savedF = (await api.put(`/studio/layout/fields/${f.id}`, payload)).data;
+      if (f.id) savedF = (await api.put(`/studio/layout/${module}/fields/${f.id}`, payload)).data;
       else savedF = (await api.post(`/studio/layout/${module}/fields`, payload)).data;
       
       if (sr) {
@@ -146,8 +146,8 @@ export default function Studio() {
   const confirmDelete = async () => {
     const { type, id } = deleting;
     try {
-      if (type === 'tab') await api.delete(`/studio/layout/tabs/${id}`);
-      else if (type === 'field') await api.delete(`/studio/layout/fields/${id}`);
+      if (type === 'tab') await api.delete(`/studio/layout/${module}/tabs/${id}`);
+      else if (type === 'field') await api.delete(`/studio/layout/${module}/fields/${id}`);
       else if (type === 'stage') await api.delete(`/studio/stages/${id}`);
       else if (type === 'document') await api.delete(`/forms/studio/forms/${id}`);
       toast.success('Deleted'); setDeleting(null); loadData();

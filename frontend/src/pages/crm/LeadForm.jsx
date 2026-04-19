@@ -242,13 +242,13 @@ export default function LeadForm() {
   };
 
   const saveTab = async (tab) => {
-    if (tab.id) await api.put(`/studio/layout/tabs/${tab.id}`, tab);
+    if (tab.id) await api.put(`/studio/layout/crm/tabs/${tab.id}`, tab);
     else await api.post('/studio/layout/crm/tabs', { ...tab, sort_order: tabs.length });
     toast.success('Tab saved'); setTabModal(null); loadTabs();
   };
 
   const deleteTab = async (tid) => {
-    await api.delete(`/studio/layout/tabs/${tid}`);
+    await api.delete(`/studio/layout/crm/tabs/${tid}`);
     toast.success('Tab deleted');
     setDeleteConfirm(null);
     setActiveTab(0);
@@ -262,7 +262,7 @@ export default function LeadForm() {
     const payload = { ...f };
     delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
     if (!payload.tab_id) payload.tab_id = fieldModal?.tabId || null;
-    if (f.id) await api.put(`/studio/layout/fields/${f.id}`, payload);
+    if (f.id) await api.put(`/studio/layout/crm/fields/${f.id}`, payload);
     else await api.post('/studio/layout/crm/fields', payload);
     if (stageRule) {
       await api.post('/studio/layout/crm/stage-rules', {
@@ -279,7 +279,7 @@ export default function LeadForm() {
   };
 
   const deleteField = async (fid) => {
-    await api.delete(`/studio/layout/fields/${fid}`);
+    await api.delete(`/studio/layout/crm/fields/${fid}`);
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
@@ -460,7 +460,7 @@ export default function LeadForm() {
                 {editLayout && (
                   <div style={{ gridColumn:'1/-1', marginTop:8 }}>
                     <button className="btn btn-ghost btn-sm"
-                      onClick={() => setFieldModal({field:{...emptyField,tab_id:currentTab.id,sort_order:(currentTab.fields||[]).length},tabId:currentTab.id})}>
+                      onClick={() => setFieldModal({field:{...emptyField, tab_id:currentTab.id, module: 'crm', sort_order:(currentTab.fields||[]).length}, tabId:currentTab.id})}>
                       <Plus size={13}/> Add Field to "{currentTab.name}"
                     </button>
                   </div>
@@ -479,7 +479,7 @@ export default function LeadForm() {
                   <p style={{ marginBottom: 16 }}>No tabs configured. Add a tab to start organizing your custom fields.</p>
                   <button className="btn btn-primary" onClick={() => setTabModal({})}><Plus size={16}/> Create First Tab</button>
                   <div style={{ marginTop: 12 }}>
-                    <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({field:{...emptyField,tab_id:null},tabId:null})}><Plus size={13}/> Add Field (No Tab)</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({field:{...emptyField, tab_id:null, module: 'crm'}, tabId:null})}><Plus size={13}/> Add Field (No Tab)</button>
                   </div>
                 </div>
               ) : 'No additional fields configured.'}
@@ -571,7 +571,7 @@ export default function LeadForm() {
       </div>
 
       {tabModal !== null && <TabModal initial={tabModal} onSave={saveTab} onClose={() => setTabModal(null)} />}
-      {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
+      {fieldModal !== null && <FieldModal initial={{...fieldModal.field, module: 'crm'}} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
       {actTypeModal&&<ActivityTypeModal onClose={() => setActTypeModal(false)} onSaved={loadActivityTypes}/>}
       {deleteConfirm&&(
         <div className="modal-overlay">

@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import List, Optional
 from ..database import get_db
-from ..models import Stage, CRMTab, CRMField, CRMStageRule, SequenceConfig
+from ..models import Stage, CRMTab, CRMField, CRMStageRule, SequenceConfig, InstallationTab, InstallationField
 from ..auth import get_current_user, require_admin
 from pydantic import BaseModel
 
@@ -40,10 +40,16 @@ class SequenceIn(BaseModel):
     padding: int = 4
 
 # ── Helpers ───────────────────────────────────────────────────
+def get_layout_models(module: str):
+    if module == "installation":
+        return InstallationTab, InstallationField
+    return CRMTab, CRMField
+
 def ser_field(f):
     return {"id":f.id,"tab_id":f.tab_id,"field_name":f.field_name,"field_label":f.field_label,
             "field_type":f.field_type,"placeholder":f.placeholder or "","options":f.options or [],
-            "required":f.required,"width":f.width or "full","visibility_rule":f.visibility_rule,"sort_order":f.sort_order}
+            "required":f.required,"width":f.width or "full","visibility_rule":f.visibility_rule,
+            "sort_order":f.sort_order, "form_template_id": getattr(f, 'form_template_id', None)}
 
 # ── Stages ────────────────────────────────────────────────────
 @router.get("/stages/{module}")
@@ -56,54 +62,65 @@ def get_stages(module: str = None, module_query: str = Query(None, alias="module
 # ── Layout (Tabs & Fields) ────────────────────────────────────
 @router.get("/layout/{module}/tabs")
 def get_tabs(module: str, db: Session = Depends(get_db)):
-    tabs = db.query(CRMTab).filter(CRMTab.module == module, CRMTab.is_active == True).order_by(CRMTab.sort_order).all()
+    TabModel, _ = get_layout_models(module)
+    tabs = db.query(TabModel).filter(TabModel.is_active == True).order_by(TabModel.sort_order).all()
     res = []
     for t in tabs:
         res.append({
             "id": t.id,
             "name": t.name,
             "sort_order": t.sort_order,
-            "visibility_stages": t.visibility_stages or [],
+            "visibility_stages": getattr(t, 'visibility_stages', []),
             "fields": [ser_field(f) for f in t.fields if f.is_active]
         })
     return res
 
 @router.post("/layout/{module}/tabs")
 def create_tab(module: str, data: TabIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    tab = CRMTab(**data.model_dump(), module=module)
+    TabModel, _ = get_layout_models(module)
+    tab = TabModel(**data.model_dump(exclude={'visibility_stages'}))
+    # Some tables might not have module column if they are specific
+    if hasattr(tab, 'module'): tab.module = module
+    if hasattr(tab, 'visibility_stages'): tab.visibility_stages = data.visibility_stages
     db.add(tab); db.commit(); db.refresh(tab)
     return {"id": tab.id, "name": tab.name, "sort_order": tab.sort_order, "fields": []}
 
-@router.put("/layout/tabs/{tid}")
-def update_tab(tid: int, data: TabIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    tab = db.query(CRMTab).filter(CRMTab.id == tid).first()
+@router.put("/layout/{module}/tabs/{tid}")
+def update_tab(module: str, tid: int, data: TabIn, db: Session = Depends(get_db), _=Depends(require_admin)):
+    TabModel, _ = get_layout_models(module)
+    tab = db.query(TabModel).filter(TabModel.id == tid).first()
     if not tab: raise HTTPException(404)
     tab.name = data.name; tab.sort_order = data.sort_order
-    tab.visibility_stages = data.visibility_stages
-    db.commit(); return tab
+    if hasattr(tab, 'visibility_stages'): tab.visibility_stages = data.visibility_stages
+    db.commit(); return {"id":tab.id, "name":tab.name}
 
-@router.delete("/layout/tabs/{tid}")
-def delete_tab(tid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
-    tab = db.query(CRMTab).filter(CRMTab.id == tid).first()
+@router.delete("/layout/{module}/tabs/{tid}")
+def delete_tab(module: str, tid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
+    TabModel, _ = get_layout_models(module)
+    tab = db.query(TabModel).filter(TabModel.id == tid).first()
     if not tab: raise HTTPException(404)
     tab.is_active = False; db.commit(); return {"status": "ok"}
 
 @router.post("/layout/{module}/fields")
 def create_field(module: str, data: FieldIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    field = CRMField(**data.model_dump(), module=module)
+    _, FieldModel = get_layout_models(module)
+    field = FieldModel(**data.model_dump())
+    if hasattr(field, 'module'): field.module = module
     db.add(field); db.commit(); db.refresh(field)
     return ser_field(field)
 
-@router.put("/layout/fields/{fid}")
-def update_field(fid: int, data: FieldIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    f = db.query(CRMField).filter(CRMField.id == fid).first()
+@router.put("/layout/{module}/fields/{fid}")
+def update_field(module: str, fid: int, data: FieldIn, db: Session = Depends(get_db), _=Depends(require_admin)):
+    _, FieldModel = get_layout_models(module)
+    f = db.query(FieldModel).filter(FieldModel.id == fid).first()
     if not f: raise HTTPException(404)
     for k, v in data.model_dump().items(): setattr(f, k, v)
     db.commit(); return ser_field(f)
 
-@router.delete("/layout/fields/{fid}")
-def delete_field(fid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
-    f = db.query(CRMField).filter(CRMField.id == fid).first()
+@router.delete("/layout/{module}/fields/{fid}")
+def delete_field(module: str, fid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
+    _, FieldModel = get_layout_models(module)
+    f = db.query(FieldModel).filter(FieldModel.id == fid).first()
     if not f: raise HTTPException(404)
     f.is_active = False; db.commit(); return {"status": "ok"}
 
