@@ -191,14 +191,12 @@ export function FileField({ value, onChange }) {
   const isImage = value?.content_type?.startsWith('image/');
   
   if (value?.filename) return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'0 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)', height:42, width:'100%', boxSizing:'border-box' }}>
-      <FileText size={16} style={{ color:'var(--accent)', flexShrink:0 }}/>
-      <span style={{ flex:1, fontSize:12, fontWeight:500, color:'var(--text2)' }}>File Attached</span>
-      <div style={{ display:'flex', gap:2, flexShrink:0 }}>
-        <button className="btn btn-ghost btn-xs" title="Preview" onClick={() => window.open(fileUrl, '_blank')}><Eye size={14}/></button>
-        <a href={fileUrl} download={value.original_name} className="btn btn-ghost btn-xs" title="Download"><Download size={14}/></a>
-        <button className="btn btn-ghost btn-xs" title="Change" onClick={() => inputRef.current?.click()}><Upload size={14}/></button>
-        <button className="btn btn-danger btn-xs" title="Remove" onClick={() => onChange(null)}><X size={14}/></button>
+    <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:12, padding:'0 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)', height:42, width:'100%', boxSizing:'border-box' }}>
+      <div style={{ display:'flex', gap:4, alignItems:'center' }}>
+        <button className="btn btn-ghost btn-sm" title="Preview" onClick={() => window.open(fileUrl, '_blank')} style={{ color:'#10b981' }}><Eye size={18}/></button>
+        <a href={fileUrl} download={value.original_name} className="btn btn-ghost btn-sm" title="Download"><Download size={14}/></a>
+        <button className="btn btn-ghost btn-sm" title="Change" onClick={() => inputRef.current?.click()}><Upload size={14}/></button>
+        <button className="btn btn-danger btn-sm" title="Remove" onClick={() => onChange(null)}><X size={14}/></button>
       </div>
       <input ref={inputRef} type="file" style={{ display:'none' }} onChange={handleUpload}/>
     </div>
