@@ -1,6 +1,6 @@
 import sys
 import os
-from sqlalchemy import create_all, text
+from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 # Add the backend directory to sys.path
