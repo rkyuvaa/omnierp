@@ -359,6 +359,7 @@ export default function InstallationForm() {
             </div>
           )}
       </div>
+    </div>
 
       {!isNew && <SubFormSection module="installation" parentId={form.id} parentData={form} />}
 
