@@ -205,7 +205,7 @@ export default function InstallationForm() {
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 700px', gap: 24 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 24 }}>
         {/* LEFT */}
         <div>
           {/* Core fields */}
@@ -275,66 +275,67 @@ export default function InstallationForm() {
           </div>
         </div>
 
-        {/* RIGHT: High-Density Summary Card */}
+        {/* RIGHT: High-Density Summary Sidebar (Vertical Stack) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
           {selectedProduct ? (
             <div className="card" style={{ padding: 0 }}>
-              <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--border)', display:'flex', alignItems:'center', gap:20 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
-                  <div style={{ width:4, height:24, background:'var(--green)', borderRadius:2 }} />
-                  <span className="fw-800 size-16" style={{ color:'var(--green)' }}>
+              {/* Header */}
+              <div style={{ padding: '15px 20px', borderBottom: '1px solid var(--border)', background: 'var(--bg2)' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom: 8 }}>
+                  <div style={{ width:4, height:20, background:'var(--green)', borderRadius:2 }} />
+                  <span className="fw-800 size-15 uppercase" style={{ color:'var(--green)', letterSpacing: '0.5px' }}>
                     {selectedProduct.bom_name || selectedProduct.title || selectedProduct.name}
                   </span>
                 </div>
-                <div className="fw-700 size-15">S/N: <span className="text-muted">{selectedProduct.serial_number || '—'}</span></div>
-                <div className="fw-700 size-15">WTY: <span className="text-muted">{selectedProduct.warranty_period} {selectedProduct.warranty_unit?.toUpperCase()}</span></div>
+                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                  <div className="fw-700 size-12 uppercase text-muted">S/N: <span className="text-normal color-text1">{selectedProduct.serial_number || '—'}</span></div>
+                  <div className="fw-700 size-12 uppercase text-muted">WTY: <span className="text-normal color-text1">{selectedProduct.warranty_period} {selectedProduct.warranty_unit?.toUpperCase()}</span></div>
+                </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 30, padding: 20 }}>
-                {/* Left Side: Components */}
-                <div>
-                  <div style={{ display:'flex', justifyContent:'space-between', paddingBottom:8, borderBottom:'1px dashed var(--border)', marginBottom:10 }}>
-                    <span className="size-11 fw-700 text-muted uppercase">Item Name</span>
-                    <div style={{ display:'flex', gap:40 }}>
-                      <span className="size-11 fw-700 text-muted uppercase">Serial</span>
-                      <span className="size-11 fw-700 text-muted uppercase">Warranty</span>
-                    </div>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                    {selectedProduct.component_serials && selectedProduct.component_serials.length > 0 ? (
-                      selectedProduct.component_serials.map((c, idx) => (
-                        <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span className="size-12 fw-600 color-text1">{c.bom_component?.name || 'Component'}</span>
-                          <div style={{ display: 'flex', gap: 30, alignItems: 'center' }}>
-                            <span className="size-12 fw-800">{c.serial_number || '—'}</span>
-                            <span className="size-11 text-muted">{c.warranty_period}{c.warranty_unit?.substring(0, 1)}</span>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="size-12 text-muted italic">No components found.</div>
-                    )}
+              {/* Component Section */}
+              <div style={{ padding: 20, borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display:'flex', justifyContent:'space-between', paddingBottom:8, borderBottom:'1px dashed var(--border)', marginBottom:10 }}>
+                  <span className="size-10 fw-800 text-muted uppercase">Item Name</span>
+                  <div style={{ display:'flex', gap:30 }}>
+                    <span className="size-10 fw-800 text-muted uppercase">Serial</span>
+                    <span className="size-10 fw-800 text-muted uppercase">Wty</span>
                   </div>
                 </div>
-
-                {/* Right Side: Other Details */}
-                <div>
-                  <div className="size-11 fw-700 text-success uppercase" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 5, marginBottom: 15 }}>Other Details</div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px 10px' }}>
-                    {[
-                      { l: 'PHONE NUMBER', k: 'phone_number' },
-                      { l: 'VEHICLE YEAR', k: 'vehicle_year' },
-                      { l: 'CUSTOMER NAME', k: 'customer_name' },
-                      { l: 'INVOICE NUMBER', k: 'invoice_number' },
-                      { l: 'INVOICE DETAILS', k: 'invoice_details' },
-                      { l: 'CUSTOMER ADDRESS', k: 'customer_address' }
-                    ].map((d, i) => (
-                      <div key={i}>
-                        <div className="size-10 text-muted fw-600 mb-1 uppercase">{d.l}</div>
-                        <div className="size-12 fw-800 truncate" title={selectedProduct.custom_data?.[d.k]}>{selectedProduct.custom_data?.[d.k] || '—'}</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {selectedProduct.component_serials && selectedProduct.component_serials.length > 0 ? (
+                    selectedProduct.component_serials.map((c, idx) => (
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span className="size-12 fw-700 color-text1 truncate" style={{ maxWidth: 160 }}>{c.bom_component?.name || 'Component'}</span>
+                        <div style={{ display: 'flex', gap: 24, alignItems: 'center' }}>
+                          <span className="size-12 fw-800 mono">{c.serial_number || '—'}</span>
+                          <span className="size-11 text-muted fw-600">{c.warranty_period}{c.warranty_unit?.substring(0, 1)}</span>
+                        </div>
                       </div>
-                    ))}
-                  </div>
+                    ))
+                  ) : (
+                    <div className="size-12 text-muted italic">No components found.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Other Details Section */}
+              <div style={{ padding: 20 }}>
+                <div className="size-11 fw-900 text-success uppercase mb-3" style={{ borderBottom: '1px solid var(--border)', paddingBottom: 5 }}>Other Details</div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 10px' }}>
+                  {[
+                    { l: 'PHONE NUMBER', k: 'phone_number' },
+                    { l: 'VEHICLE YEAR', k: 'vehicle_year' },
+                    { l: 'CUSTOMER NAME', k: 'customer_name' },
+                    { l: 'INVOICE NUMBER', k: 'invoice_number' },
+                    { l: 'INVOICE DETAILS', k: 'invoice_details' },
+                    { l: 'CUSTOMER ADDRESS', k: 'customer_address' }
+                  ].map((d, i) => (
+                    <div key={i} style={{ gridColumn: (d.k === 'customer_address' || d.k === 'invoice_details') ? 'span 2' : 'span 1' }}>
+                      <div className="size-9 text-muted fw-700 mb-1 uppercase letter-spacing-1">{d.l}</div>
+                      <div className="size-12 fw-800 color-text1" style={{ wordBreak: 'break-word' }}>{selectedProduct.custom_data?.[d.k] || '—'}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
             </div>
