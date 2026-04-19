@@ -300,7 +300,14 @@ export default function InstallationForm() {
                         <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1' }}>
                           <label className="form-label">{f.field_label}</label>
                           <div className="p-3 bg-gray-50 border rounded-lg size-13 color-text2 font-medium">
-                            {relatedLead.custom_data?.[f.field_name] || '—'}
+                            {(() => {
+                              const val = relatedLead.custom_data?.[f.field_name];
+                              if (!val) return '—';
+                              if (typeof val === 'object' && !Array.isArray(val)) {
+                                return val.filename || val.original_name || JSON.stringify(val);
+                              }
+                              return String(val);
+                            })()}
                           </div>
                         </div>
                       ))}
