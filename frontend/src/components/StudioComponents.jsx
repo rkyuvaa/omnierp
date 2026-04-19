@@ -155,7 +155,7 @@ export function FileField({ value, onChange }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef();
   const token = localStorage.getItem('token');
-  const baseUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+  const baseUrl = window.location.origin;
   
   const handleUpload = async (e) => {
     const file = e.target.files[0]; if (!file) return;
@@ -174,10 +174,17 @@ export function FileField({ value, onChange }) {
   };
 
   const fileUrl = value?.url ? `${baseUrl}${value.url}` : null;
+  const isImage = value?.content_type?.startsWith('image/');
   
   if (value?.filename) return (
-    <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)' }}>
-      <FileText size={16} style={{ color:'var(--accent)', flexShrink:0 }}/>
+    <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+      {isImage && (
+        <div style={{ width: '100%', height: 180, borderRadius: 8, overflow: 'hidden', border: '1px solid var(--border)', background: 'var(--bg3)' }}>
+          <img src={fileUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+        </div>
+      )}
+      <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'var(--bg3)', borderRadius:8, border:'1px solid var(--border)' }}>
+        <FileText size={16} style={{ color:'var(--accent)', flexShrink:0 }}/>
       <span style={{ flex:1, fontSize:12, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{value.original_name}</span>
       <a href={fileUrl} download={value.original_name} className="btn btn-ghost btn-sm"><Download size={13}/></a>
       <button className="btn btn-ghost btn-sm" onClick={() => inputRef.current?.click()}><Upload size={13}/></button>
