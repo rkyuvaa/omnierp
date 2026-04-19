@@ -114,8 +114,9 @@ export default function InstallationForm() {
         toast.success('✓ Success');
         navigate(`/installation/${r.data.id}`);
       } else {
-        await api.put(`/installation/${id}`, payload);
+        const r = await api.put(`/installation/${id}`, payload);
         toast.success('✓ Saved');
+        setForm(f => ({ ...f, ...r.data }));
         setRecentlySaved(true);
         setTimeout(() => setRecentlySaved(false), 3000);
       }
