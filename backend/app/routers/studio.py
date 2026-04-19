@@ -83,8 +83,8 @@ def get_tabs(module: str, db: Session = Depends(get_db)):
             "id": t.id,
             "name": t.name,
             "sort_order": t.sort_order,
-            "visibility_stages": getattr(t, 'visibility_stages', []),
-            "fields": [ser_field(f) for f in t.fields if f.is_active]
+            "visibility_stages": getattr(t, 'visibility_stages', []) or [],
+            "fields": [ser_field(f) for f in t.fields if getattr(f, 'is_active', True)]
         })
     return res
 
