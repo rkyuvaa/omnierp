@@ -151,6 +151,8 @@ export default function InstallationForm() {
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
+  if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
+
   const visibleTabs = tabs.filter(t => 
     !t.visibility_stages || 
     (Array.isArray(t.visibility_stages) && t.visibility_stages.length === 0) || 
@@ -162,8 +164,6 @@ export default function InstallationForm() {
       setActiveTab(0);
     }
   }, [visibleTabs.length, activeTab]);
-
-  if (loading || !form) return <Layout title="Installation"><Loader /></Layout>;
   const currentTab = visibleTabs[activeTab];
 
   return (

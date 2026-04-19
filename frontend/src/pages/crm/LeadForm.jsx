@@ -282,6 +282,8 @@ export default function LeadForm() {
     toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
   };
 
+  if (loading||!form) return <Layout title="Lead"><Loader/></Layout>;
+
   const visibleTabs = tabs.filter(t => 
     !t.visibility_stages || 
     (Array.isArray(t.visibility_stages) && t.visibility_stages.length === 0) || 
@@ -293,8 +295,6 @@ export default function LeadForm() {
       setActiveTab(0);
     }
   }, [visibleTabs.length, activeTab]);
-
-  if (loading||!form) return <Layout title="Lead"><Loader/></Layout>;
 
   const currentTab = visibleTabs[activeTab];
   const actTypeMap = Object.fromEntries(activityTypes.map(t => [t.name, t]));
