@@ -206,11 +206,27 @@ export default function ProductDetail() {
                 <input className="form-input" value={form.serial_number} onChange={e=>set('serial_number', e.target.value)} />
               </div>
               <div className="form-group">
+                <label className="form-label">ENGINE NUMBER</label>
+                <input className="form-input" value={form.custom_data.engine_number || ''} onChange={e=>setCustom('engine_number', e.target.value)} />
+              </div>
+              <div className="form-group">
                 <label className="form-label">MODEL (BOM) *</label>
                 <select className="form-input fw-600" value={form.bom_id} onChange={e=>handleBOMChange(e.target.value)}>
                   <option value="">-- BOM --</option>
                   {boms.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">VEHICLE BRAND</label>
+                <input className="form-input" value={form.custom_data.vehicle_brand || ''} onChange={e=>setCustom('vehicle_brand', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">INSTALLED BY</label>
+                <input className="form-input" value={form.custom_data.technician_name || ''} readOnly disabled style={{ background:'var(--bg2)' }} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">INSTALLATION DATE</label>
+                <input className="form-input" type="date" value={form.custom_data.installation_date || ''} onChange={e=>setCustom('installation_date', e.target.value)} />
               </div>
               <div className="form-group">
                 <label className="form-label">WARRANTY (PRD/UNIT)</label>
