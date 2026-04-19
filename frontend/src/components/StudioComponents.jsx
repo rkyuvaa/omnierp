@@ -6,6 +6,10 @@ import api from '../utils/api';
 export function UserSelect({ field, value, onChange }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = useRef();
+
   const isMulti = field.options?.includes('true');
   const actualDeptIds = (field.options || []).filter(x => x !== 'true' && x !== 'false');
 
@@ -17,61 +21,109 @@ export function UserSelect({ field, value, onChange }) {
       }
       setUsers(filtered);
     }).finally(() => setLoading(false));
+
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [JSON.stringify(actualDeptIds)]);
 
-  if (isMulti) {
-    const selected = Array.isArray(value) ? value : [];
-    const toggle = (id) => {
-      const sId = String(id);
-      if (selected.includes(sId)) onChange(selected.filter(x => x !== sId));
-      else onChange([...selected, sId]);
-    };
+  const selectedArr = Array.isArray(value) ? value : (value ? [String(value)] : []);
+  
+  const toggle = (id) => {
+    const sId = String(id);
+    if (isMulti) {
+      if (selectedArr.includes(sId)) onChange(selectedArr.filter(x => x !== sId));
+      else onChange([...selectedArr, sId]);
+    } else {
+      onChange(sId);
+      setOpen(false);
+    }
+    setSearch('');
+  };
 
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <select className="form-select fw-600" value="" onChange={e => toggle(e.target.value)} disabled={loading} style={{ border: '2px solid var(--border)' }}>
-          <option value="">{loading ? 'Fetching...' : '— Click to Add User —'}</option>
-          {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-        </select>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-          {selected.map(id => {
-            const u = users.find(x => String(x.id) === String(id));
-            if (!u && !loading) return null;
-            return (
-              <div key={id} style={{ 
-                display:'flex', 
-                alignItems:'center', 
-                gap:6, 
-                padding:'5px 12px', 
-                background:'var(--accent)', 
-                color:'white', 
-                borderRadius:8, 
-                fontSize:12, 
-                fontWeight:700,
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-              }}>
-                <User size={12} strokeWidth={3} />
-                <span>{u?.name || '...'}</span>
-                <button 
-                  onClick={() => toggle(id)} 
-                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', display:'flex', alignItems:'center', justifyContent:'center', width:18, height:18, borderRadius:4, marginLeft:4 }}
-                >
-                  <X size={12} strokeWidth={3} />
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    );
-  }
+  const filteredUsers = users.filter(u => 
+    u.name.toLowerCase().includes(search.toLowerCase()) && 
+    (!isMulti || !selectedArr.includes(String(u.id)))
+  );
 
   return (
-    <select className="form-select" value={value || ''} onChange={e => onChange(e.target.value)} disabled={loading}>
-      <option value="">{loading ? 'Loading...' : '— Select User —'}</option>
-      {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-    </select>
+    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+      {/* Search Input Area */}
+      <div 
+        className="form-input" 
+        style={{ 
+          display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', minHeight: 40, 
+          cursor: 'text', padding: '4px 10px', background: '#fff' 
+        }}
+        onClick={() => setOpen(true)}
+      >
+        {selectedArr.map(id => {
+          const u = users.find(x => String(x.id) === id);
+          if (!u) return null;
+          return (
+            <div key={id} style={{ 
+              display:'flex', alignItems:'center', gap:4, padding:'2px 8px', 
+              background:'var(--bg2)', border:'1px solid var(--border)', 
+              borderRadius:4, fontSize:11, fontWeight:700, color:'var(--text1)' 
+            }}>
+              <span>{u.name}</span>
+              <button 
+                onClick={(e) => { e.stopPropagation(); toggle(id); }}
+                style={{ background:'none', border:'none', color:'var(--text3)', cursor:'pointer', padding:0, display:'flex' }}
+              >
+                <X size={11} />
+              </button>
+            </div>
+          );
+        })}
+        <input 
+          style={{ flex: 1, border: 'none', outline: 'none', minWidth: 60, fontSize: 13, background: 'transparent' }}
+          placeholder={selectedArr.length === 0 ? (loading ? 'Loading...' : 'Search user...') : ''}
+          value={search}
+          onChange={e => { setSearch(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+        />
+      </div>
+
+      {/* Dropdown Results */}
+      {open && (
+        <div style={{ 
+          position: 'absolute', top: '105%', left: 0, right: 0, zIndex: 100,
+          background: '#fff', border: '1px solid var(--border)', borderRadius: 8, 
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)', maxHeight: 250, overflowY: 'auto'
+        }}>
+          {filteredUsers.length > 0 ? (
+            filteredUsers.map(u => (
+              <div 
+                key={u.id}
+                onClick={() => toggle(u.id)}
+                style={{ 
+                  padding: '10px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                  borderBottom: '1px solid var(--bg3)', transition: 'all 0.15s'
+                }}
+                onMouseEnter={e => e.target.style.background = 'var(--bg2)'}
+                onMouseLeave={e => e.target.style.background = 'transparent'}
+              >
+                <div style={{ display:'flex', alignItems:'center', gap:10 }}>
+                  <div style={{ width:24, height:24, borderRadius:'50%', background:'var(--accent-dim)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+                    <User size={12} color="var(--accent)" />
+                  </div>
+                  <span>{u.name}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: 15, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>
+              {loading ? 'Fetching users...' : 'No users found'}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
+}
 }
 
 export function FileField({ value, onChange }) {
