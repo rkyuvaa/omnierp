@@ -4,13 +4,14 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
-const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'user', 'branch', 'boolean', 'checkbox', 'file'];
-const WIDTH_OPTIONS = [{value:'full',label:'Full Row'},{value:'half',label:'Half Row'},{value:'quarter',label:'Quarter Row'}];
+const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'user', 'branch', 'boolean', 'checkbox', 'file', 'form'];
+const WIDTH_OPTIONS = [{value:'full',label:'Full Row (1/1)'},{value:'half',label:'Half Row (1/2)'},{value:'quarter',label:'Quarter (1/4)'},{value:'third',label:'Third (1/3)'}];
 
 export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose }) {
-  const [f, setF] = useState({ field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0, ...initial });
+  const [f, setF] = useState({ field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0, form_template_id: null, ...initial });
   const [optInput, setOptInput] = useState('');
   const [departments, setDepartments] = useState([]);
+  const [formTemplates, setFormTemplates] = useState([]);
   
   const [stageRuleOp, setStageRuleOp] = useState('has_value');
   const [stageRuleStageId, setStageRuleStageId] = useState('');
@@ -18,7 +19,11 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
 
   useEffect(() => {
     api.get('/departments/').then(r => setDepartments(r.data)).catch(()=>{});
-  }, []);
+    // Find module from tabs parent or assume current module context
+    // For simplicity, we fetch all templates and filter by component's provided module or detect
+    const module = initial.module || 'crm'; 
+    api.get(`/forms/studio/forms/${module}`).then(r => setFormTemplates(r.data)).catch(()=>{});
+  }, [initial.module]);
 
   useEffect(() => {
     if (f.field_name && stageRules) {
@@ -80,10 +85,19 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
               {tabs.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
             </select>
           </div>
-          {!['boolean','checkbox','file'].includes(f.field_type) && (
+          {!['boolean','checkbox','file','form'].includes(f.field_type) && (
             <div className="form-group">
               <label className="form-label">Placeholder</label>
               <input className="form-input" value={f.placeholder || ''} onChange={e => set('placeholder', e.target.value)} />
+            </div>
+          )}
+          {f.field_type === 'form' && (
+            <div className="form-group">
+              <label className="form-label">Link to Document Template *</label>
+              <select className="form-select" value={f.form_template_id || ''} onChange={e => set('form_template_id', parseInt(e.target.value) || null)}>
+                <option value="">— Select Template —</option>
+                {formTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
             </div>
           )}
         </div>

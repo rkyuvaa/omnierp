@@ -438,7 +438,17 @@ export default function LeadForm() {
                 {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
                   <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position:'relative' }}>
                     {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{ color:'var(--red)' }}> *</span>}</label>}
-                    <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                    {f.field_type === 'form' ? (
+                      <SubFormSection 
+                        module="crm" 
+                        parentId={form.id} 
+                        parentData={form} 
+                        templateId={f.form_template_id} 
+                        embedded={true} 
+                      />
+                    ) : (
+                      <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                    )}
                     {editLayout && (
                       <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
                         <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }} onClick={() => setFieldModal({field:{...f},tabId:currentTab.id})}><Pencil size={11}/></button>
@@ -577,8 +587,6 @@ export default function LeadForm() {
               </div>
             </div>
           </div>
-
-          {!isNew && <SubFormSection module="crm" parentId={form.id} parentData={form} />}
         </div>
       )}
     </Layout>

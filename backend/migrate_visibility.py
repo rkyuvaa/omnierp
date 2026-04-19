@@ -17,6 +17,13 @@ def fix_db():
     if "visibility_stages" not in cols:
         print("Adding visibility_stages to crm_tabs...")
         cur.execute("ALTER TABLE crm_tabs ADD COLUMN visibility_stages JSON DEFAULT '[]'")
+    
+    # Check crm_fields
+    cur.execute("PRAGMA table_info(crm_fields)")
+    cols = [c[1] for c in cur.fetchall()]
+    if "form_template_id" not in cols:
+        print("Adding form_template_id to crm_fields...")
+        cur.execute("ALTER TABLE crm_fields ADD COLUMN form_template_id INTEGER")
     else:
         print("visibility_stages already in crm_tabs")
         

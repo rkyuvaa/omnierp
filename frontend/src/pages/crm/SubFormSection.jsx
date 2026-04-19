@@ -4,7 +4,7 @@ import { Modal, Badge, Loader } from '../../components/Shared';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
-export default function SubFormSection({ module, parentId, parentData }) {
+export default function SubFormSection({ module, parentId, parentData, templateId = null, embedded = false }) {
   const [loading, setLoading] = useState(true);
   const [templates, setTemplates] = useState([]);
   const [submissions, setSubmissions] = useState([]);
@@ -16,8 +16,8 @@ export default function SubFormSection({ module, parentId, parentData }) {
         api.get(`/forms/studio/forms/${module}`),
         api.get(`/forms/submissions/${module}/${parentId}`)
       ]);
-      setTemplates(tRes.data);
-      setSubmissions(sRes.data);
+      setTemplates(templateId ? tRes.data.filter(x => x.id === templateId) : tRes.data);
+      setSubmissions(templateId ? sRes.data.filter(x => x.form_definition_id === templateId) : sRes.data);
     } catch { toast.error('Failed to load documents'); }
     finally { setLoading(false); }
   };
@@ -63,6 +63,42 @@ export default function SubFormSection({ module, parentId, parentData }) {
   };
 
   if (loading) return <Loader />;
+
+  if (embedded) {
+    return (
+      <div className="embedded-forms" style={{ gridColumn: '1/-1', marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexItems: 'center', marginBottom: 12 }}>
+          {templates.map(t => (
+            <button key={t.id} className="btn btn-primary btn-sm" onClick={() => startNew(t)}>
+              <Plus size={14}/> New {t.name}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {submissions.map(sub => (
+            <div key={sub.id} className="bg-white border rounded-lg p-2 flex justify-between items-center shadow-sm hover:border-accent transition-all cursor-default">
+              <div className="flex flex-col">
+                <span className="text-xs fw-800">{sub.reference_number}</span>
+                <span className="text-[10px] text-muted uppercase">{sub.status}</span>
+              </div>
+              <div className="flex gap-1">
+                <button className="btn btn-ghost p-1" style={{ height: 26 }} onClick={() => editSubmission(sub)}><Pencil size={11}/></button>
+                <button className="btn btn-ghost p-1" style={{ height: 26 }} onClick={() => window.open(`${api.defaults.baseURL}/forms/submissions/${sub.id}/pdf`, '_blank')}><Download size={11}/></button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {activeForm && (
+          <SubmissionModal 
+            form={activeForm} 
+            setForm={setActiveForm} 
+            onSave={save} 
+            onClose={() => setActiveForm(null)} 
+          />
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className="mt-8">

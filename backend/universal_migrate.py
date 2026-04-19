@@ -19,21 +19,28 @@ def migrate():
     
     # SQL to add the column if it doesn't exist
     if is_postgres:
-        sql = "ALTER TABLE crm_tabs ADD COLUMN IF NOT EXISTS visibility_stages JSONB DEFAULT '[]'::jsonb;"
+        queries = [
+            "ALTER TABLE crm_tabs ADD COLUMN IF NOT EXISTS visibility_stages JSONB DEFAULT '[]'::jsonb;",
+            "ALTER TABLE crm_fields ADD COLUMN IF NOT EXISTS form_template_id INTEGER;"
+        ]
     else:
-        # SQLite doesn't support IF NOT EXISTS for columns, but we can catch the error
-        sql = "ALTER TABLE crm_tabs ADD COLUMN visibility_stages JSON DEFAULT '[]';"
+        # SQLite
+        queries = [
+            "ALTER TABLE crm_tabs ADD COLUMN visibility_stages JSON DEFAULT '[]';",
+            "ALTER TABLE crm_fields ADD COLUMN form_template_id INTEGER;"
+        ]
 
     with engine.connect() as conn:
-        try:
-            conn.execute(text(sql))
-            conn.commit()
-            print("Successfully added 'visibility_stages' to 'crm_tabs'")
-        except Exception as e:
-            if "already exists" in str(e) or "duplicate column" in str(e):
-                print("Column 'visibility_stages' already exists.")
-            else:
-                print(f"Error during migration: {e}")
+        for sql in queries:
+            try:
+                conn.execute(text(sql))
+                conn.commit()
+                print(f"Executed: {sql[:50]}...")
+            except Exception as e:
+                if "already exists" in str(e) or "duplicate column" in str(e):
+                    pass
+                else:
+                    print(f"Error: {e}")
 
 if __name__ == "__main__":
     migrate()

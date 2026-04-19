@@ -117,43 +117,70 @@ function TemplateModal({ initial, parentFields, onSave, onClose }) {
           )}
 
           {activeTab === 'fields' && (
-            <div>
-              <div className="flex justify-between items-center mb-4">
-                <span className="fw-600">Fields List</span>
-                <button className="btn btn-ghost btn-sm" onClick={() => {
-                  const newFields = [...(form.fields_config || []), { label: 'New Field', key: 'field_' + Date.now(), type: 'text', width: 'full' }];
-                  set('fields_config', newFields);
-                }}><Plus size={14}/> Add Field</button>
-              </div>
-              <div className="flex flex-col gap-3">
-                {(form.fields_config || []).map((f, i) => (
-                  <div key={i} className="card p-3 flex gap-4 items-end bg-gray-50 border-gray-200">
-                    <div className="form-group mb-0" style={{ flex: 2 }}>
-                      <label className="form-label text-xs">Field Label</label>
-                      <input className="form-input form-input-sm" value={f.label} onChange={e => {
-                        const next = [...form.fields_config]; next[i].label = e.target.value; set('fields_config', next);
-                      }} />
-                    </div>
-                    <div className="form-group mb-0" style={{ flex: 1 }}>
-                      <label className="form-label text-xs">Type</label>
-                      <select className="form-select form-select-sm" value={f.type} onChange={e => {
-                        const next = [...form.fields_config]; next[i].type = e.target.value; set('fields_config', next);
-                      }}>
-                        <option value="text">Text</option>
-                        <option value="number">Number</option>
-                        <option value="date">Date</option>
-                        <option value="textarea">Textarea</option>
-                        <option value="selection">Selection</option>
-                        <option value="signature">Signature Pad</option>
-                        <option value="table">Item Table</option>
-                        <option value="info">Read-only Info</option>
-                      </select>
-                    </div>
-                    <button className="btn btn-danger btn-sm" style={{ padding: 8 }} onClick={() => {
-                      const next = form.fields_config.filter((_, idx) => idx !== i); set('fields_config', next);
-                    }}><Trash2 size={14}/></button>
+            <div style={{ background: '#f0f2f5', padding: 40, borderRadius: 8, minHeight: '842px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              {/* A4 Sheet Preview */}
+              <div className="a4-sheet" style={{ 
+                width: '595px', minHeight: '842px', background: '#fff', boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+                padding: '40px', position: 'relative', display: 'flex', flexDirection: 'column'
+              }}>
+                {/* Header Section */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '2px solid #000', paddingBottom: 15, marginBottom: 20 }}>
+                  <div style={{ fontWeight: 800, fontSize: 18 }}>{form.pdf_config.logo ? <img src={form.pdf_config.logo} style={{ height: 40 }} /> : 'COMPANY LOGO'}</div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontWeight: 900, fontSize: 12 }}>{form.name.toUpperCase()}</div>
+                    <div style={{ fontSize: 10, color: '#666' }}>{form.prefix_template}NNNN{form.suffix_template}</div>
                   </div>
-                ))}
+                </div>
+
+                {/* Sub-form Fields Designer */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px 10px', flex: 1 }}>
+                  {(form.fields_config || []).map((f, i) => (
+                    <div key={i} className="field-block" style={{ 
+                      gridColumn: f.width === 'half' ? 'span 2' : f.width === 'quarter' ? 'span 1' : '1/-1',
+                      border: '1px dashed #ddd', padding: 8, borderRadius: 4, position: 'relative', background: '#fafafa'
+                    }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#999', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
+                         {f.label.toUpperCase()}
+                         <div className="flex gap-1">
+                           <select value={f.type} onChange={e => {
+                             const next = [...form.fields_config]; next[i].type = e.target.value; set('fields_config', next);
+                           }} style={{ fontSize: 8, padding: '1px 2px', background: '#eee', border: 'none', borderRadius: 2 }}>
+                             <option value="text">text</option>
+                             <option value="number">number</option>
+                             <option value="date">date</option>
+                             <option value="textarea">textarea</option>
+                             <option value="selection">selection</option>
+                             <option value="table">table</option>
+                             <option value="signature">sign</option>
+                             <option value="info">info</option>
+                           </select>
+                           <button onClick={() => {
+                             const next = [...form.fields_config];
+                             next[i].width = next[i].width === 'full' ? 'half' : next[i].width === 'half' ? 'quarter' : 'full';
+                             set('fields_config', next);
+                           }} style={{ fontSize: 8, padding: '2px 4px', background: '#eee', border: 'none', borderRadius: 2 }}>{f.width || 'full'}</button>
+                           <button onClick={() => {
+                             const next = form.fields_config.filter((_, idx) => idx !== i); set('fields_config', next);
+                           }} style={{ color: 'red', fontSize: 10, border: 'none', background: 'none' }}>×</button>
+                         </div>
+                      </div>
+                      <div style={{ fontSize: 12, color: '#ccc' }}>{f.type} input space...</div>
+                    </div>
+                  ))}
+
+                  <button className="btn btn-ghost btn-sm" style={{ gridColumn: '1/-1', border: '2px dashed #eee', height: 40 }}
+                    onClick={() => {
+                      const next = [...(form.fields_config || []), { label: 'New Field', key: 'f' + Date.now(), type: 'text', width: 'full' }];
+                      set('fields_config', next);
+                    }}>
+                    <Plus size={14}/> Add Field to Document
+                  </button>
+                </div>
+
+                {/* Footer Section */}
+                <div style={{ marginTop: 40, borderTop: '1px solid #eee', paddingTop: 10, fontSize: 10, color: '#999' }}>
+                  {form.pdf_config.footer || 'Footer / Terms and Conditions'}
+                </div>
               </div>
             </div>
           )}
