@@ -1,20 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Download, X, FileText } from 'lucide-react';
+import { Upload, Download, X, FileText, User } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
 export function UserSelect({ field, value, onChange }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const deptIds = Array.isArray(field.options) ? field.options[0] : null; // First element is still the dept filter
-  // Actually, in the new multi-dept, options is the array of IDs. 
-  // Wait, I changed it to multi-dept in the last turn.
-  // So field.options is [deptId, deptId, ..., 'true']? No, that's messy.
-  
-  // Let's refine the logic:
-  // All elements in field.options that are numeric/IDs are depts.
-  // The 'true' flag for multi-select is the last element if it matches 'true' or 'false'.
-  
   const isMulti = field.options?.includes('true');
   const actualDeptIds = (field.options || []).filter(x => x !== 'true' && x !== 'false');
 
@@ -37,20 +28,37 @@ export function UserSelect({ field, value, onChange }) {
     };
 
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <select className="form-select" value="" onChange={e => toggle(e.target.value)} disabled={loading}>
-          <option value="">{loading ? 'Loading...' : '— Add User —'}</option>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <select className="form-select fw-600" value="" onChange={e => toggle(e.target.value)} disabled={loading} style={{ border: '2px solid var(--border)' }}>
+          <option value="">{loading ? 'Fetching...' : '— Click to Add User —'}</option>
           {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
         </select>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
           {selected.map(id => {
             const u = users.find(x => String(x.id) === String(id));
             if (!u && !loading) return null;
             return (
-              <span key={id} style={{ display:'flex',alignItems:'center',gap:4,padding:'3px 10px',background:'var(--accent-dim)',color:'var(--accent)',borderRadius:20,fontSize:11,fontWeight:800 }}>
-                {u?.name || 'Loading...'} 
-                <button onClick={() => toggle(id)} style={{ background: 'none', border: 'none', color: 'var(--accent)', cursor: 'pointer', lineHeight: 1 }}>×</button>
-              </span>
+              <div key={id} style={{ 
+                display:'flex', 
+                alignItems:'center', 
+                gap:6, 
+                padding:'5px 12px', 
+                background:'var(--accent)', 
+                color:'white', 
+                borderRadius:8, 
+                fontSize:12, 
+                fontWeight:700,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+              }}>
+                <User size={12} strokeWidth={3} />
+                <span>{u?.name || '...'}</span>
+                <button 
+                  onClick={() => toggle(id)} 
+                  style={{ background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', cursor: 'pointer', display:'flex', alignItems:'center', justifyContent:'center', width:18, height:18, borderRadius:4, marginLeft:4 }}
+                >
+                  <X size={12} strokeWidth={3} />
+                </button>
+              </div>
             );
           })}
         </div>
