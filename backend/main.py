@@ -56,12 +56,16 @@ def debug_db():
     from app.database import SessionLocal
     from app.models import Lead
     db = SessionLocal()
-    leads = db.query(Lead).filter(Lead.custom_data != {}).limit(10).all()
-    results = []
-    for lead in leads:
-        results.append({"id": lead.id, "ref": lead.reference, "data": lead.custom_data})
-    db.close()
-    return results
+    try:
+        count = db.query(Lead).count()
+        # Just get one sample to be safe
+        lead = db.query(Lead).filter(Lead.custom_data != None).first()
+        data = lead.custom_data if lead else "No data"
+        return {"count": count, "sample_data": data}
+    except Exception as e:
+        return {"error": str(e)}
+    finally:
+        db.close()
 
 @app.get("/")
 def root():
