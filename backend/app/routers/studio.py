@@ -177,7 +177,7 @@ def save_sequence(module: str, data: SequenceIn, db: Session = Depends(get_db), 
 @router.post("/upload")
 def upload_file(file: UploadFile = File(...), current_user=Depends(get_current_user)):
     # Create directory if not exists
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__))) # back to backend root
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # back to backend root
     upload_dir = os.path.join(BASE_DIR, "static", "uploads")
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
