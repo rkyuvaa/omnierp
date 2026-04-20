@@ -22,19 +22,28 @@ def trigger_konwert_care_handoff(installation: Installation, db: Session):
             print(f"DEBUG: Stage '{stage_name}' does not match targets. Skipping.")
             return None
 
-        # Check if a ticket already exists (ignore if names are empty/none)
-        if not installation.vehicle_number and not installation.customer_name:
-            print("DEBUG: Missing vehicle/customer. Skipping.")
-            return None
-            
+        # Check if a ticket already exists for THIS specific installation
+        # We check the JSON field 'custom_data' for the 'installation_id'
+        from sqlalchemy import cast, String
+        from sqlalchemy.dialects.postgresql import JSONB
+        
         existing = db.query(KonwertCareTicket).filter(
-            KonwertCareTicket.vehicle_number == installation.vehicle_number,
-            KonwertCareTicket.customer_name == installation.customer_name
+            KonwertCareTicket.custom_data['installation_id'].astext == str(installation.id)
         ).first()
         
         if existing:
-            print(f"DEBUG: Ticket already exists for {installation.vehicle_number}. skipping.")
+            print(f"DEBUG: Ticket already exists for Installation ID {installation.id}. skipping.")
             return None
+            
+        # Fallback check for Vehicle Number + Customer if ID check was missing
+        if installation.vehicle_number:
+            existing_v = db.query(KonwertCareTicket).filter(
+                KonwertCareTicket.vehicle_number == installation.vehicle_number,
+                KonwertCareTicket.customer_name == installation.customer_name
+            ).first()
+            if existing_v:
+                print(f"DEBUG: Record matching Vehicle {installation.vehicle_number} already exists. Skipping.")
+                return None
             
         # Generate Reference
         last = db.query(KonwertCareTicket).order_by(KonwertCareTicket.id.desc()).first()
