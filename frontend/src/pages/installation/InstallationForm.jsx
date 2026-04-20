@@ -391,8 +391,7 @@ export default function InstallationForm() {
                               const val = relatedLead.custom_data?.[f.field_name];
                               if (!val) return '—';
                               if (f.field_type === 'file' && typeof val === 'object') {
-                                const baseUrl = window.location.origin;
-                                const fileUrl = val.url ? (val.url.startsWith('http') ? val.url : `${baseUrl}${val.url}`) : null;
+                                const fileUrl = val.url;
                                 return (
                                   <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:38, background:'var(--bg2)', borderRadius:6, border:'1px solid var(--border)' }}>
                                     {fileUrl ? (

@@ -47,6 +47,7 @@ upload_dir = os.path.join(static_dir, "uploads")
 if not os.path.exists(upload_dir):
     os.makedirs(upload_dir)
 
+app.mount("/api/static/uploads", StaticFiles(directory=upload_dir), name="uploads")
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
 
