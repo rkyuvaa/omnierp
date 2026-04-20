@@ -68,25 +68,33 @@ def get_ticket_navigation(id: int, db: Session = Depends(get_db)):
 
 @router.post("/")
 def create_ticket(data: dict, db: Session = Depends(get_db), cu=Depends(get_current_user)):
-    import datetime
-    last = db.query(KonwertCareTicket).order_by(KonwertCareTicket.id.desc()).first()
-    next_id = (last.id + 1) if last else 1
-    ref = f"CARE/{datetime.datetime.now().year}/{next_id:04d}"
-    # Map and filter fields to match the model
-    staff_id = data.pop('assigned_to', None)
-    if staff_id: data['staff_id'] = staff_id
-    
-    # Filter valid fields for KonwertCareTicket
-    valid_fields = [
-        'customer_name', 'phone', 'email', 'vehicle_number', 'product_serial',
-        'vehicle_make', 'vehicle_model', 'issue_type', 'issue_description',
-        'stage_id', 'staff_id', 'notes', 'custom_data'
-    ]
-    creation_data = {k: v for k, v in data.items() if k in valid_fields}
-    
-    t = KonwertCareTicket(**creation_data, reference=ref, created_by=cu.id)
-    db.add(t); db.commit(); db.refresh(t)
-    return serialize(t)
+    try:
+        import datetime
+        last = db.query(KonwertCareTicket).order_by(KonwertCareTicket.id.desc()).first()
+        next_id = (last.id + 1) if last else 1
+        ref = f"CARE/{datetime.datetime.now().year}/{next_id:04d}"
+        
+        # Map and filter fields to match the model
+        staff_id = data.pop('assigned_to', None)
+        if staff_id: data['staff_id'] = staff_id
+        
+        # Filter valid fields for KonwertCareTicket
+        valid_fields = [
+            'customer_name', 'phone', 'email', 'vehicle_number', 'product_serial',
+            'vehicle_make', 'vehicle_model', 'issue_type', 'issue_description',
+            'stage_id', 'staff_id', 'notes', 'custom_data'
+        ]
+        creation_data = {k: v for k, v in data.items() if k in valid_fields}
+        
+        t = KonwertCareTicket(**creation_data, reference=ref, created_by=cu.id)
+        db.add(t)
+        db.commit()
+        db.refresh(t)
+        return serialize(t)
+    except Exception as e:
+        db.rollback()
+        print(f"DEBUG: Create Ticket Error: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.put("/{id}")
 def update_ticket(id: int, data: dict, db: Session = Depends(get_db)):
