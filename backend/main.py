@@ -60,14 +60,21 @@ def debug_files():
     if os.path.exists(upload_path):
         files = os.listdir(upload_path)
     
-    # Check parent dir too
-    parent_static = os.path.join(os.path.dirname(BASE_DIR), "static")
-    parent_upload = os.path.join(parent_static, "uploads")
+    # Deep search for any folder named 'uploads'
+    found_uploads = []
+    root_to_search = os.path.dirname(os.path.dirname(BASE_DIR)) # erp root
+    for root, dirs, files in os.walk(os.path.dirname(BASE_DIR)):
+        if 'uploads' in dirs:
+            upload_path = os.path.join(root, 'uploads')
+            found_uploads.append({
+                "path": upload_path,
+                "count": len(os.listdir(upload_path)),
+                "sample": os.listdir(upload_path)[:5]
+            })
     
     return {
         "base_dir": BASE_DIR,
-        "backend_static": {"path": static_path, "exists": os.path.exists(static_path), "count": len(os.listdir(upload_path)) if os.path.exists(upload_path) else 0},
-        "parent_static": {"path": parent_static, "exists": os.path.exists(parent_static), "count": len(os.listdir(parent_upload)) if os.path.exists(parent_upload) else 0, "sample": os.listdir(parent_upload)[:5] if os.path.exists(parent_upload) else []},
+        "found_uploads": found_uploads,
         "cwd": os.getcwd()
     }
 
