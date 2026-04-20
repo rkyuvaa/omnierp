@@ -60,21 +60,16 @@ def debug_files():
     if os.path.exists(upload_path):
         files = os.listdir(upload_path)
     
-    # Deep search for any folder named 'uploads'
-    found_uploads = []
-    root_to_search = os.path.dirname(os.path.dirname(BASE_DIR)) # erp root
-    for root, dirs, files in os.walk(os.path.dirname(BASE_DIR)):
-        if 'uploads' in dirs:
-            upload_path = os.path.join(root, 'uploads')
-            found_uploads.append({
-                "path": upload_path,
-                "count": len(os.listdir(upload_path)),
-                "sample": os.listdir(upload_path)[:5]
-            })
+    # Final attempt: find ANY .jpg or .png file in ~/erp
+    all_images = []
+    import glob
+    search_pattern = os.path.join(os.path.dirname(BASE_DIR), "**", "*.jpg")
+    all_images = glob.glob(search_pattern, recursive=True)[:10] # first 10
     
     return {
         "base_dir": BASE_DIR,
         "found_uploads": found_uploads,
+        "image_scout": all_images,
         "cwd": os.getcwd()
     }
 
