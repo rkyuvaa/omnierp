@@ -116,14 +116,18 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
               <select 
                 className="form-select" 
                 value="" 
-                onChange={e => e.target.value && !f.options.includes(e.target.value) && set('options', [...f.options, e.target.value])}
+                onChange={e => {
+                  if (!e.target.value) return;
+                  const val = String(e.target.value);
+                  if (!f.options.includes(val)) set('options', [...f.options, val]);
+                }}
               >
                 <option value="">— Add Department —</option>
-                 { (departments || []).map(d => <option key={d.id} value={d.id}>{d.name}</option>) }
+                 { (departments || []).map(d => <option key={d.id} value={String(d.id)}>{d.name}</option>) }
               </select>
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {f.options.map(id => {
+              {f.options.filter(id => id !== 'true' && id !== 'false').map(id => {
                 const d = departments.find(x => String(x.id) === String(id));
                 return (
                   <span key={id} style={{ display:'flex',alignItems:'center',gap:4,padding:'3px 10px',background:'var(--bg3)',borderRadius:20,fontSize:12,fontWeight:600 }}>
@@ -142,10 +146,11 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
             <label className="flex items-center gap-2" style={{ cursor: 'pointer' }}>
               <input 
                 type="checkbox" 
-                checked={f.options?.[1] === 'true'} 
+                checked={f.options?.includes('true')} 
                 onChange={e => {
-                  const opts = [...(f.options || [])];
-                  opts[1] = e.target.checked ? 'true' : 'false';
+                  const isChecked = e.target.checked;
+                  let opts = (f.options || []).filter(x => x !== 'true' && x !== 'false');
+                  if (isChecked) opts.push('true');
                   set('options', opts);
                 }} 
                 style={{ accentColor: 'var(--accent)' }} 
