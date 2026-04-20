@@ -1,12 +1,11 @@
-from sqlalchemy.orm import Session
-from ..models import KonwertCareTicket, Installation, Stage
 from datetime import datetime
 import logging
 
-def trigger_konwert_care_handoff(installation: Installation, db: Session):
+def trigger_konwert_care_handoff(installation, db):
     """
     Automatically creates a Konwert Care+ ticket when an installation is completed.
     """
+    from ..models import KonwertCareTicket, Installation, Stage
     try:
         # Fetch stage name for logging/debugging
         stage_name = "Unknown"

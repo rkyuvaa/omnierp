@@ -4,7 +4,7 @@ from typing import List, Optional
 from ..database import get_db
 from ..models import Installation, Stage, User, Activity
 from ..auth import get_current_user, require_admin
-from ..utils.automation import trigger_konwert_care_handoff
+# from ..utils.automation import trigger_konwert_care_handoff -> Move to local import
 from pydantic import BaseModel
 import datetime
 
@@ -142,6 +142,7 @@ def create_inst(data: InstIn, db: Session = Depends(get_db)):
         db.add(r); db.commit(); db.refresh(r)
         
         # Automation: Bridge to Konwert Care+
+        from ..utils.automation import trigger_konwert_care_handoff
         trigger_konwert_care_handoff(r, db)
                 
         return serialize(r)
@@ -180,6 +181,7 @@ def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
         db.commit()
         
         # Automation: Bridge to Konwert Care+
+        from ..utils.automation import trigger_konwert_care_handoff
         trigger_konwert_care_handoff(r, db)
                 
         return serialize(r)
