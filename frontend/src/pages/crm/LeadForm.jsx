@@ -386,28 +386,22 @@ export default function LeadForm() {
           {/* Core fields */}
           <div className="card mb-4">
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
-              {!isNew && (
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label" style={{ color: 'var(--accent)', fontWeight: 600 }}>Record Number</label>
-                  <input className="form-input" value={form.reference || ''} readOnly style={{ background: 'var(--bg)', fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent-dim)' }} />
-                </div>
-              )}
+              <div className="form-group" style={{ gridColumn:'span 2' }}>
+                <label className="form-label">
+                  Vehicle Number <span style={{ color:'var(--red)' }}>*</span>
+                </label>
+                <input className="form-input" value={form.title}
+                  style={titleError?{borderColor:'var(--red)',boxShadow:'0 0 0 2px rgba(239,68,68,0.15)'}:{}}
+                  onChange={e => { set('title',e.target.value.toUpperCase()); if(e.target.value.trim()) setTitleError(false); }}
+                  placeholder="e.g. KA01AB1234"/>
+                {titleError&&<span style={{ fontSize:11, color:'var(--red)', marginTop:4, display:'block' }}>Vehicle Number is required</span>}
+              </div>
               <div className="form-group" style={{ gridColumn:'span 2' }}>
                 <label className="form-label">Assigned To</label>
                 <select className="form-select" value={form.assigned_to||''} onChange={e => set('assigned_to',parseInt(e.target.value)||null)}>
                   <option value="">— Unassigned —</option>
                   {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
-              </div>
-              <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                <label className="form-label">
-                  Record Title / Lead Name <span style={{ color:'var(--red)' }}>*</span>
-                </label>
-                <input className="form-input" value={form.title}
-                  style={titleError?{borderColor:'var(--red)',boxShadow:'0 0 0 2px rgba(239,68,68,0.15)'}:{}}
-                  onChange={e => { set('title',e.target.value); if(e.target.value.trim()) setTitleError(false); }}
-                  placeholder="e.g. Sales Inquiry / Customer Name"/>
-                {titleError&&<span style={{ fontSize:11, color:'var(--red)', marginTop:4, display:'block' }}>Title is required</span>}
               </div>
               <div className="form-group" style={{ gridColumn:'span 2' }}>
                 <label className="form-label">Customer Name</label>
