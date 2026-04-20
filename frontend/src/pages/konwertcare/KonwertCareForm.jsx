@@ -8,7 +8,7 @@ import { useStages, useUsers } from '../../hooks/useData';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check, ChevronLeft, ChevronRight, Zap, ShieldCheck } from 'lucide-react';
 import SubFormSection from '../crm/SubFormSection';
 
 const empty = { 
@@ -123,6 +123,18 @@ export default function KonwertCareForm() {
       toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); 
     }
     finally { setSaving(false); }
+  };
+  const [activating, setActivating] = useState(false);
+  const activateWarranty = async () => {
+    if (!window.confirm('Are you sure you want to activate the warranty for this vehicle starting today?')) return;
+    setActivating(true);
+    try {
+      const r = await api.post(`/konwertcare/${id}/activate`);
+      setForm(f => ({ ...f, ...r.data, custom_data: r.data.custom_data || {} }));
+      toast.success('🚀 Warranty Activated Successfully!');
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to activate warranty');
+    } finally { setActivating(false); }
   };
   const visibleTabs = useMemo(() => (tabs || []).filter(t => {
     if (!t.visibility_stages || t.visibility_stages.length === 0) return true;
@@ -329,6 +341,49 @@ export default function KonwertCareForm() {
             </div>
           </div>
         </div>
+
+        {!isNew && (
+            <div className="card" style={{ marginTop: 16, border: '1px solid var(--border)', background: 'var(--bg3)' }}>
+              <div className="detail-section-title" style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <ShieldCheck size={16} color="var(--accent)"/> Warranty Control
+              </div>
+              
+              {form.custom_data?.warranty_status === 'Active' ? (
+                <div style={{ textAlign:'center', padding:'10px 0' }}>
+                  <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 12px', background:'rgba(34,197,94,0.1)', color:'var(--green)', borderRadius:20, fontWeight:700, fontSize:12, marginBottom:10 }}>
+                    <Check size={14}/> WARRANTY ACTIVE
+                  </div>
+                  <div style={{ fontSize:11, color:'var(--text3)', lineHeight:1.5 }}>
+                    Activated on: <b>{new Date(form.custom_data.warranty_activated_at).toLocaleDateString()}</b><br/>
+                    Status: Verified
+                  </div>
+                  <button className="btn btn-primary btn-sm" style={{ marginTop:12, width:'100%', gap:6 }} onClick={() => toast('Certificate PDF generation coming soon!')}>
+                    <Download size={14}/> Download Certificate
+                  </button>
+                </div>
+              ) : (
+                <div style={{ textAlign:'center', padding:'10px 0' }}>
+                  <div style={{ color:'var(--text3)', fontSize:12, marginBottom:16, lineHeight:1.5 }}>
+                    Warranty is currently <b>Not Started</b>. Verify customer feedback before activation.
+                  </div>
+                  <button 
+                    className="btn btn-primary" 
+                    style={{ width:'100%', background:'var(--accent)', color:'white', fontWeight:800, gap:8 }}
+                    onClick={activateWarranty}
+                    disabled={activating || !form.product_serial}
+                  >
+                    {activating ? <div className="spinner" style={{ width:14, height:14 }}/> : <Zap size={14} />}
+                    ACTIVATE WARRANTY
+                  </button>
+                  {!form.product_serial && (
+                    <div style={{ fontSize:10, color:'var(--red)', marginTop:8 }}>
+                      Requires Product Serial Number
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+        )}
       </div>
       {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
       {fieldModal !== null && <FieldModal initial={fieldModal.field} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}

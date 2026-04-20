@@ -1,7 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
-from ..models import KonwertCareTicket
+from ..models import KonwertCareTicket, ProductComponentSerial, Stage
+from datetime import datetime
 from ..auth import get_current_user
 from typing import Optional, List
 from sqlalchemy import or_
@@ -80,5 +81,35 @@ def update_ticket(id: int, data: dict, db: Session = Depends(get_db)):
     t = db.query(KonwertCareTicket).filter(KonwertCareTicket.id == id).first()
     if not t: raise HTTPException(404)
     for k, v in data.items(): setattr(t, k, v)
+    db.commit(); db.refresh(t)
+    return serialize(t)
+
+@router.post("/{id}/activate")
+def activate_warranty(id: int, db: Session = Depends(get_db)):
+    t = db.query(KonwertCareTicket).filter(KonwertCareTicket.id == id).first()
+    if not t: raise HTTPException(404, "Ticket not found")
+    
+    if not t.product_serial:
+        raise HTTPException(400, "No product serial associated with this record")
+        
+    # Check if already activated
+    custom = t.custom_data or {}
+    if custom.get('warranty_status') == 'Active':
+        return serialize(t)
+        
+    # 1. Update Warranty Module (ProductComponentSerial)
+    serial = db.query(ProductComponentSerial).filter(ProductComponentSerial.serial_number == t.product_serial).first()
+    if serial:
+        serial.warranty_status = 'active'
+        # Record activation date in serial's custom_data if needed
+        scustom = serial.custom_data or {}
+        scustom['warranty_start_date'] = datetime.now().isoformat()
+        serial.custom_data = scustom
+    
+    # 2. Update Care Ticket
+    custom['warranty_status'] = 'Active'
+    custom['warranty_activated_at'] = datetime.now().isoformat()
+    t.custom_data = custom
+    
     db.commit(); db.refresh(t)
     return serialize(t)
