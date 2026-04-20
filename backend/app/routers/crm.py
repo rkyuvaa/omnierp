@@ -25,6 +25,12 @@ class LeadIn(BaseModel):
     notes: Optional[str] = None
     custom_data: dict = {}
 
+class ActivityTypeIn(BaseModel):
+    name: str
+    icon: str = "📝"
+    color: str = "#6366f1"
+    sort_order: int = 0
+
 class ActivityIn(BaseModel):
     lead_id: int
     activity_type: str
@@ -187,6 +193,24 @@ def mark_activity_done(aid: int, db: Session = Depends(get_db), cu=Depends(get_c
     a = db.query(Activity).filter(Activity.id == aid).first()
     if not a: raise HTTPException(404)
     a.done = True; db.commit(); return {"message": "Done"}
+
+@router.get("/activity-types")
+def list_activity_types(db: Session = Depends(get_db), _=Depends(get_current_user)):
+    from app.models import CRMActivityType
+    return db.query(CRMActivityType).filter(CRMActivityType.is_active == True).order_by(CRMActivityType.sort_order).all()
+
+@router.post("/activity-types")
+def create_activity_type(data: ActivityTypeIn, db: Session = Depends(get_db), _=Depends(require_admin)):
+    from app.models import CRMActivityType
+    t = CRMActivityType(**data.model_dump())
+    db.add(t); db.commit(); db.refresh(t); return t
+
+@router.delete("/activity-types/{tid}")
+def delete_activity_type(tid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
+    from app.models import CRMActivityType
+    t = db.query(CRMActivityType).filter(CRMActivityType.id == tid).first()
+    if not t: raise HTTPException(404)
+    t.is_active = False; db.commit(); return {"message": "Deleted"}
 
 @router.get("/leads/export/excel")
 def export_leads(db: Session = Depends(get_db), cu=Depends(get_current_user)):
