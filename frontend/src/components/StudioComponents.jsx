@@ -230,6 +230,73 @@ export function CheckboxField({ field, value, onChange }) {
   );
 }
 
+export function TimerField({ value, onChange }) {
+  const [now, setNow] = useState(Date.now());
+  const timerData = value || { elapsed: 0, startAt: null };
+  const isRunning = !!timerData.startAt;
+
+  useEffect(() => {
+    let interval = null;
+    if (isRunning) {
+      interval = setInterval(() => setNow(Date.now()), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  const getSeconds = () => {
+    if (!isRunning) return timerData.elapsed || 0;
+    const diff = Math.floor((now - new Date(timerData.startAt).getTime()) / 1000);
+    return (timerData.elapsed || 0) + diff;
+  };
+
+  const format = (s) => {
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = s % 60;
+    return [h, m, sec].map(v => v.toString().padStart(2, '0')).join(':');
+  };
+
+  const start = () => onChange({ ...timerData, startAt: new Date().toISOString() });
+  const stop = () => {
+    const finalSeconds = getSeconds();
+    onChange({ elapsed: finalSeconds, startAt: null });
+  };
+  const reset = () => {
+    if (window.confirm('Reset timer?')) onChange({ elapsed: 0, startAt: null });
+  };
+
+  const seconds = getSeconds();
+
+  return (
+    <div style={{ 
+      display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', 
+      background: 'var(--bg2)', borderRadius: 10, border: '1px solid var(--border)',
+      width: '100%', boxSizing: 'border-box'
+    }}>
+      <div style={{ 
+        flex: 1, fontFamily: 'monospace', fontSize: 20, fontWeight: 700, 
+        color: isRunning ? 'var(--green)' : 'var(--text1)', letterSpacing: 1 
+      }}>
+        {format(seconds)}
+      </div>
+      <div style={{ display: 'flex', gap: 6 }}>
+        {isRunning ? (
+          <button className="btn btn-danger btn-sm" style={{ padding: '6px 12px' }} onClick={stop} title="Stop Timer">
+            <Square size={14} fill="currentColor" /> Stop
+          </button>
+        ) : (
+          <button className="btn btn-primary btn-sm" style={{ padding: '6px 12px' }} onClick={start} title="Start Timer">
+            <Play size={14} fill="currentColor" /> Start
+          </button>
+        )}
+        <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={reset} title="Reset">
+          <RotateCcw size={16} />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function FieldInput({ field, value, onChange }) {
   const v = value ?? (field.field_type==='boolean' ? false : field.field_type==='checkbox' ? [] : '');
   switch(field.field_type) {
@@ -239,6 +306,7 @@ export function FieldInput({ field, value, onChange }) {
     case 'boolean': return <label style={{ display:'flex', alignItems:'center', gap:8, cursor:'pointer' }}><input type="checkbox" checked={!!v} onChange={e=>onChange(e.target.checked)} style={{ width:16, height:16, accentColor:'var(--accent)' }}/><span className="text-sm">{field.field_label}</span></label>;
     case 'checkbox': return <CheckboxField field={field} value={v} onChange={onChange}/>;
     case 'file': return <FileField field={field} value={v} onChange={onChange}/>;
+    case 'timer': return <TimerField value={v} onChange={onChange}/>;
     case 'selection': return <select className="form-select" value={v} onChange={e=>onChange(e.target.value)}><option value="">— Select —</option>{(field.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>;
     case 'user': return <UserSelect field={field} value={v} onChange={onChange}/>;
     case 'branch': return <BranchSelect field={field} value={v} onChange={onChange}/>;
