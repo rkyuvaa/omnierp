@@ -7,7 +7,21 @@ from ..auth import get_current_user, require_admin
 from pydantic import BaseModel
 import datetime
 
+from sqlalchemy import func
 router = APIRouter()
+
+@router.get("/summary")
+def get_summary(db: Session = Depends(get_db)):
+    results = db.query(Installation.stage_id, func.count(Installation.id)).group_by(Installation.stage_id).all()
+    counts = {r[0]: r[1] for r in results}
+    # Also fetch stage metadata
+    stages = db.query(Stage).filter(Stage.module == "installation").order_by(Stage.sort_order).all()
+    return [{
+        "id": s.id, 
+        "name": s.name, 
+        "color": s.color, 
+        "count": counts.get(s.id, 0)
+    } for s in stages]
 
 class InstIn(BaseModel):
     customer_name: Optional[str] = None

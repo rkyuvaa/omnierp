@@ -36,21 +36,12 @@ export default function InstallationList() {
   };
 
   useEffect(() => {
-    api.get('/studio/stages/installation').then(r => setStages(r.data)).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    // Count per stage
-    if (stages.length > 0) {
-      Promise.all(stages.map(s =>
-        api.get('/installation/', { params: { stage_id: s.id, page: 1 } })
-          .then(r => ({ id: s.id, count: r.data.total || 0, ...s }))
-          .catch(() => ({ id: s.id, count: 0, ...s }))
-      )).then(counts => setStageCounts(counts));
-    }
-  }, [stages]);
-
-  useEffect(() => { load(); }, [page]);
+    api.get('/installation/summary').then(r => {
+      setStageCounts(r.data);
+      setStages(r.data);
+    }).catch(() => {});
+    load();
+  }, [page]);
 
   const doSearch = (v) => {
     clearTimeout(timer.current);
