@@ -48,43 +48,9 @@ if not os.path.exists(upload_dir):
     os.makedirs(upload_dir)
 
 app.mount("/api/static/uploads", StaticFiles(directory=upload_dir), name="uploads")
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="legacy_uploads")
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
-
-@app.get("/api/debug-db")
-def debug_db():
-    from app.database import SessionLocal
-    from app.models import Lead
-    db = SessionLocal()
-    try:
-        count = db.query(Lead).count()
-        import json, os
-        all_leads = db.query(Lead).filter(Lead.custom_data != None).all()
-        lead_with_file = None
-        for l in all_leads:
-            if '"url":' in json.dumps(l.custom_data):
-                lead_with_file = l
-                break
-
-        specific_file = "cc3b8738b844041989c763384576cda.pdf"
-        found_at = "Not found anywhere"
-        for root, dirs, files in os.walk("/home/ubuntu"):
-            if specific_file in files:
-                found_at = os.path.join(root, specific_file)
-                break
-        
-        return {
-            "count": count,
-            "db_url": lead_with_file.custom_data.get('noc_for_retrofit_from_existing_financier', {}).get('url') if lead_with_file else None,
-            "disk_path": found_at,
-            "static_dir": static_dir,
-            "upload_dir": upload_dir,
-            "exists_in_upload_dir": os.path.exists(os.path.join(upload_dir, specific_file))
-        }
-    except Exception as e:
-        return {"error": str(e)}
-    finally:
-        db.close()
 
 @app.get("/")
 def root():
