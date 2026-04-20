@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
 import { Badge, Empty, Loader, Confirm } from './Shared';
@@ -14,6 +15,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
   const [deleting, setDeleting] = useState(null);
   const stages = useStages(module);
   const { items, total, loading, reload, stageCounts , page, setPage} = useList(endpoint);
+  const { user } = useAuth();
   const navigate = useNavigate();
   const timer = useRef(null);
 
@@ -83,9 +85,11 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
               DELETE {selected.length} SELECTED
             </button>
           )}
-          <button className="btn btn-ghost btn-sm" onClick={() => window.open(`${window.location.protocol}//${window.location.hostname}:8000/api${exportPath}`, '_blank')}>
-            <Download size={14} /> Export
-          </button>
+          {(user?.is_superadmin || user?.role === 'admin' || user?.role === 'manager') && (
+            <button className="btn btn-ghost btn-sm" onClick={() => window.open(`${window.location.protocol}//${window.location.hostname}:8000/api${exportPath}`, '_blank')}>
+              <Download size={14} /> Export
+            </button>
+          )}
           <button className="btn btn-primary" onClick={() => navigate(`${formPath}/new`)}><Plus size={15} /> New</button>
         </div>
       </div>

@@ -444,7 +444,7 @@ export default function CRMLeads() {
               DELETE {selected.length} SELECTED
             </button>
           )}
-          {user?.is_superadmin && (
+          {(user?.is_superadmin || user?.role === 'admin' || user?.role === 'manager') && (
             <button className="btn btn-ghost btn-sm" onClick={() => setShowImportExport(true)} style={{ gap:6 }}>
               <Download size={14} /> Import / Export
             </button>
