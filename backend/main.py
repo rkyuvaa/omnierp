@@ -40,10 +40,14 @@ app.include_router(konwertcare.router, prefix="/api/konwertcare", tags=["konwert
 
 
 # Ensure static/uploads exists
-if not os.path.exists("static/uploads"):
-    os.makedirs("static/uploads")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(BASE_DIR, "static")
+upload_dir = os.path.join(static_dir, "uploads")
 
-app.mount("/api/static", StaticFiles(directory="static"), name="static")
+if not os.path.exists(upload_dir):
+    os.makedirs(upload_dir)
+
+app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/")
 def root():
