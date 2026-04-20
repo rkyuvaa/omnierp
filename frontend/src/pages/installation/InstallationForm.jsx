@@ -393,7 +393,17 @@ export default function InstallationForm() {
                     );
 
                     if (f.field_type === 'file' && typeof val === 'object') {
-                      const fileUrl = val.url;
+                      let fileUrl = val.url;
+                      if (fileUrl) {
+                        try {
+                          const { BASE_URL } = require('../../utils/api');
+                          const baseUrl = BASE_URL.replace(/\/api$/, '');
+                          fileUrl = fileUrl.startsWith('http') ? fileUrl : `${baseUrl}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
+                        } catch (e) {
+                          fileUrl = fileUrl.startsWith('http') ? fileUrl : `${window.location.origin}${fileUrl.startsWith('/') ? '' : '/'}${fileUrl}`;
+                        }
+                      }
+                      
                       return (
                         <div key={f.id} style={{ gridColumn:colSpan[f.width]||'span 1' }}>
                           <label style={labelStyle}>{f.field_label}</label>
@@ -408,6 +418,7 @@ export default function InstallationForm() {
                         </div>
                       );
                     }
+
 
                     return (
                       <div key={f.id} style={{ gridColumn:colSpan[f.width]||'span 1' }}>
