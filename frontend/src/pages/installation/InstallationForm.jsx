@@ -7,7 +7,7 @@ import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Plus, Pencil, Trash2, Settings, Save, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Settings, Save, Check, ChevronLeft, ChevronRight, Eye, Download } from 'lucide-react';
 import SubFormSection from "../crm/SubFormSection";
 
 const emptyForm = { product_id: '', technician_id: '', notes: '', custom_data: {} };
@@ -48,6 +48,8 @@ export default function InstallationForm() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [recentlySaved, setRecentlySaved] = useState(false);
   const [stageRules, setStageRules] = useState([]);
+  const [relatedLead, setRelatedLead] = useState(null);
+  const [crmTabs, setCrmTabs] = useState([]);
 
   const loadTabs = useCallback(() => api.get('/studio/layout/installation/tabs').then(r => setTabs(r.data)), []);
   const loadStageRules = useCallback(() => api.get('/studio/layout/installation/stage-rules').then(r => setStageRules(r.data)), []);
@@ -59,6 +61,7 @@ export default function InstallationForm() {
     api.get('/installation/').then(r => setUsedProductIds((r.data.items || []).map(i => i.product_id).filter(Boolean))).catch(() => {});
     loadTabs();
     loadStageRules();
+    api.get('/studio/layout/crm/tabs').then(r => setCrmTabs(r.data)).catch(() => {});
   }, []);
 
   const [nav, setNav] = useState({ prev: null, next: null });
@@ -95,6 +98,21 @@ export default function InstallationForm() {
     }
   }, [form?.product_id]);
 
+
+  useEffect(() => {
+    if (!form) return;
+    const search = selectedProduct?.name || form.vehicle_number || form.customer_name;
+    if (!search) { setRelatedLead(null); return; }
+
+    const timer = setTimeout(() => {
+      api.get(`/crm/leads?search=${encodeURIComponent(search)}`).then(r => {
+        if (r.data.items && r.data.items.length > 0) setRelatedLead(r.data.items[0]);
+        else setRelatedLead(null);
+      }).catch(() => setRelatedLead(null));
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [form?.vehicle_number, form?.customer_name, selectedProduct?.name]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => {
@@ -214,6 +232,12 @@ export default function InstallationForm() {
   );
 
   const allTabs = [...visibleTabs];
+  if (relatedLead) {
+    const vdTab = crmTabs.find(t => t.name === 'Vehicle Documents');
+    if (vdTab) {
+      allTabs.push({ ...vdTab, isRelated: true, name: 'Vehicle Documents' });
+    }
+  }
 
   useEffect(() => {
     if (loading || !form) return;
@@ -349,7 +373,52 @@ export default function InstallationForm() {
               </div>
             )}
 
-            {currentTab && (
+            {currentTab?.isRelated ? (
+              <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
+                <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, paddingBottom:10, borderBottom:'1px solid var(--border)' }}>
+                  <Badge color="var(--accent-dim)" style={{ color:'var(--accent)' }}>MIRRORED FROM CRM: {relatedLead.reference}</Badge>
+                  <span className="size-12 fw-700">{relatedLead.title}</span>
+                </div>
+                
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:20 }}>
+                  {(currentTab.fields || []).map(f => {
+                    const val = relatedLead.custom_data?.[f.field_name];
+                    const labelStyle = { fontSize:11, fontWeight:700, color:'var(--text2)', marginBottom:6, display:'block', textTransform:'uppercase' };
+                    
+                    if (!val) return (
+                      <div key={f.id} style={{ gridColumn:colSpan[f.width]||'span 1' }}>
+                        <label style={labelStyle}>{f.field_label}</label>
+                        <div style={{ color:'var(--text3)', fontSize:13 }}>—</div>
+                      </div>
+                    );
+
+                    if (f.field_type === 'file' && typeof val === 'object') {
+                      const fileUrl = val.url;
+                      return (
+                        <div key={f.id} style={{ gridColumn:colSpan[f.width]||'span 1' }}>
+                          <label style={labelStyle}>{f.field_label}</label>
+                          <div style={{ display:'flex', alignItems:'center', justifyContent:'center', minHeight:38, background:'var(--bg2)', borderRadius:6, border:'1px solid var(--border)' }}>
+                            {fileUrl ? (
+                              <div style={{ display:'flex', gap:10 }}>
+                                <button className="btn btn-ghost btn-sm" style={{ padding:4 }} onClick={() => window.open(fileUrl, '_blank')} title="View Document"><Eye size={16}/></button>
+                                <a href={fileUrl} download={val.original_name} className="btn btn-ghost btn-sm" style={{ padding:4 }} title="Download"><Download size={16}/></a>
+                              </div>
+                            ) : '—'}
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div key={f.id} style={{ gridColumn:colSpan[f.width]||'span 1' }}>
+                        <label style={labelStyle}>{f.field_label}</label>
+                        <div style={{ fontSize:14, color:'var(--text1)', fontWeight:500 }}>{String(val)}</div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ) : currentTab && (
               <div className="card" style={{ borderTopLeftRadius: 0, borderTopRightRadius: 0, borderTop: 'none' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                   {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
