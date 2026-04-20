@@ -3,7 +3,6 @@ from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, func, Date, cast
 from pydantic import BaseModel
 from typing import Optional, List
-from .studio import get_stages
 from app.database import get_db
 from app.models import Lead, Activity, Customer, Stage, AuditLog
 from app.auth import get_current_user, require_admin, log_action, next_sequence
@@ -111,7 +110,7 @@ def get_lead(lid: int, db: Session = Depends(get_db), cu=Depends(get_current_use
     logs = db.query(AuditLog).filter(AuditLog.module == "crm", AuditLog.record_id == lid).order_by(AuditLog.id.desc()).all()
     res = serialize_lead(l)
     res["activities"] = [{"id": a.id, "activity_type": a.activity_type, "description": a.description, "due_date": str(a.due_date), "done": a.done, "created_at": str(a.created_at)} for a in activities]
-    res["change_logs"] = [{"id": g.id, "action": g.action, "changes": g.description, "user": g.user.name if g.user else "System", "created_at": str(g.created_at)} for g in logs]
+    res["change_logs"] = [{"id": g.id, "action": g.action, "changes": g.changes, "user": g.user.name if g.user else "System", "created_at": str(g.created_at)} for g in logs]
     return res
 
 @router.get("/leads/{lid}/navigation")
