@@ -22,26 +22,26 @@ def trigger_konwert_care_handoff(installation, db):
             return None
 
         # Check if a ticket already exists for THIS specific installation
-        # We check the JSON field 'custom_data' for the 'installation_id'
-        from sqlalchemy import cast, String
-        from sqlalchemy.dialects.postgresql import JSONB
-        
-        existing = db.query(KonwertCareTicket).filter(
-            KonwertCareTicket.custom_data['installation_id'].astext == str(installation.id)
-        ).first()
+        # Fetching all tickets and checking locally to be safe across DB types
+        # (Since there aren't thousands of tickets yet, this is very fast)
+        existing_tickets = db.query(KonwertCareTicket).all()
+        existing = None
+        for et in existing_tickets:
+            if et.custom_data and str(et.custom_data.get('installation_id')) == str(installation.id):
+                existing = et
+                break
         
         if existing:
             print(f"DEBUG: Ticket already exists for Installation ID {installation.id}. skipping.")
             return None
             
-        # Fallback check for Vehicle Number + Customer if ID check was missing
+        # Fallback check for Vehicle Number
         if installation.vehicle_number:
             existing_v = db.query(KonwertCareTicket).filter(
-                KonwertCareTicket.vehicle_number == installation.vehicle_number,
-                KonwertCareTicket.customer_name == installation.customer_name
+                KonwertCareTicket.vehicle_number == installation.vehicle_number
             ).first()
             if existing_v:
-                print(f"DEBUG: Record matching Vehicle {installation.vehicle_number} already exists. Skipping.")
+                print(f"DEBUG: Vehicle {installation.vehicle_number} already in Care+. skipping.")
                 return None
             
         # Generate Reference
