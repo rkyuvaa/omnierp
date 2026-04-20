@@ -99,16 +99,18 @@ export default function InstallationForm() {
   }, [form?.product_id]);
 
   useEffect(() => {
-    if (form && (form.vehicle_number || selectedProduct?.name || form.customer_name)) {
-      const search = selectedProduct?.name || form.vehicle_number || form.customer_name;
+    if (!form) return;
+    const search = selectedProduct?.name || form.vehicle_number || form.customer_name;
+    if (!search) { setRelatedLead(null); return; }
+
+    const timer = setTimeout(() => {
       api.get(`/crm/leads?search=${encodeURIComponent(search)}`).then(r => {
-        if (r.data.items && r.data.items.length > 0) {
-          setRelatedLead(r.data.items[0]);
-        } else {
-          setRelatedLead(null);
-        }
+        if (r.data.items && r.data.items.length > 0) setRelatedLead(r.data.items[0]);
+        else setRelatedLead(null);
       }).catch(() => setRelatedLead(null));
-    }
+    }, 500); // Wait 500ms after last keystroke
+
+    return () => clearTimeout(timer);
   }, [form?.vehicle_number, form?.customer_name, selectedProduct?.name]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
