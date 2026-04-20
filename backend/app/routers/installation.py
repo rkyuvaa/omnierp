@@ -88,10 +88,6 @@ def get_installation(id: int, db: Session = Depends(get_db)):
     ).filter(Installation.id == id).first()
     if not r: raise HTTPException(404, "Not found")
     data = serialize(r)
-    data["activities"] = [
-        {"id": a.id, "type": a.activity_type, "description": a.description, "done": a.done, "created_at": str(a.created_at)}
-        for a in sorted(r.activities, key=lambda x: x.created_at, reverse=True)
-    ]
     return data
 
 @router.get("/{id}/navigation")
