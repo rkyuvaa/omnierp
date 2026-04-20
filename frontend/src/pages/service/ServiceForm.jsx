@@ -8,7 +8,7 @@ import { useStages, useUsers } from '../../hooks/useData';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import SubFormSection from '../crm/SubFormSection';
 
 const empty = { customer_name:'', email:'', phone:'', vehicle_number:'', vehicle_make:'', vehicle_model:'', problem_description:'', notes:'', stage_id:'', staff_id:'', custom_data:{} };
@@ -115,29 +115,43 @@ export default function ServiceForm() {
   const colSpan = { full: '1/-1', half: 'span 2', quarter: 'span 1' };
   return (
     <Layout title={isNew ? 'New Service Request' : `Service — ${form.reference || ''}`}>
-      <div className="toolbar">
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button className="btn btn-ghost" onClick={() => navigate('/service')}><ArrowLeft size={15} /> Back</button>
-        {!isNew && form.reference && <span className="ref-text" style={{ fontSize: 14 }}>{form.reference}</span>}
-        {stages.length > 0 && (
-          <div className="hide-scrollbar" style={{ display: 'flex', gap: 6, marginLeft: 16, overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: '50%' }}>
-            {stages.map(s => (
-              <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => set('stage_id', s.id)}
-                style={form.stage_id === s.id ? { background: s.color, borderColor: s.color, color: 'white' } : { borderColor: s.color, color: s.color }}>
-                {s.name}
-              </button>
-            ))}
+        
+        <button className="btn btn-primary" onClick={save} disabled={saving} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 800 }}>
+          {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <><Save size={14} /> Save Changes</>}
+        </button>
+
+        {!isNew && (
+          <div style={{ display: 'flex', gap: 4, marginLeft: 12, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/service/${Math.max(1, parseInt(id) - 1)}`)}>
+              <ChevronLeft size={18} />
+            </button>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/service/${parseInt(id) + 1}`)}>
+              <ChevronRight size={18} />
+            </button>
           </div>
         )}
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
+
+        {!isNew && form.reference && <span className="ref-text" style={{ fontSize: 14, marginLeft: 12 }}>{form.reference}</span>}
+        
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+          {stages.length > 0 && (
+            <div className="hide-scrollbar" style={{ display: 'flex', gap: 6, marginRight: 16, overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: 300 }}>
+              {stages.map(s => (
+                <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => set('stage_id', s.id)}
+                  style={form.stage_id === s.id ? { background: s.color, borderColor: s.color, color: 'white' } : { borderColor: s.color, color: s.color }}>
+                  {s.name}
+                </button>
+              ))}
+            </div>
+          )}
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}
               style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
               <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
           )}
-          <button className="btn btn-primary" onClick={save} disabled={saving}>
-            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <Save size={14} />} Save
-          </button>
         </div>
       </div>
       <div className="detail-layout">

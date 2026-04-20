@@ -8,7 +8,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { useStages } from '../../hooks/useData';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Pencil, Trash2, Package, Settings, Check, User as UserIcon } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Check, Eye, Download, ChevronLeft, ChevronRight } from 'lucide-react';
 import SubFormSection from '../crm/SubFormSection';
 
 const emptyForm = { name:'', serial_number:'', bom_id:'', warranty_period:12, warranty_unit:'months', notes:'', stage_id:'', custom_data:{}, component_serials:[] };
@@ -131,22 +131,41 @@ export default function ProductDetail() {
   return (
     <Layout title={isNew ? 'New Registration' : `Vehicle: ${form.name}`}>
       {/* TOOLBAR */}
-      <div className="toolbar" style={{ marginBottom: 20 }}>
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button className="btn btn-ghost" onClick={() => navigate('/warranty/products')}><ArrowLeft size={16}/> Back</button>
-        <div style={{ flex: 1, display: 'flex', gap: 6, margin: '0 20px' }}>
+        
+        <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 800 }}>
+          {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : <>{recentlySaved ? <Check size={14}/> : <Save size={14}/>} {recentlySaved ? 'Saved' : 'Save Changes'}</>}
+        </button>
+
+        {!isNew && (
+          <div style={{ display: 'flex', gap: 4, marginLeft: 12, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${Math.max(1, parseInt(id) - 1)}`)}>
+              <ChevronLeft size={18} />
+            </button>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${parseInt(id) + 1}`)}>
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
+
+        <div style={{ flex: 1, display: 'flex', gap: 6, margin: '0 20px', justifyContent: 'center' }}>
           {stages.map(s => (
             <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)} style={{
-              flex: 1, padding: '8px 4px', borderRadius: 100, fontSize: 10, fontWeight: 800, textAlign: 'center', cursor: isAdmin ? 'pointer' : 'default',
+              padding: '6px 16px', borderRadius: 100, fontSize: 10, fontWeight: 800, textAlign: 'center', cursor: isAdmin ? 'pointer' : 'default', minWidth: 80,
               background: form.stage_id === s.id ? s.color : s.color + '15', color: form.stage_id === s.id ? '#fff' : s.color, transition: 'all 0.2s',
               border: `1px solid ${form.stage_id === s.id ? s.color : 'transparent'}`
             }}>{s.name}</div>
           ))}
         </div>
+
         <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
-          {isAdmin && <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(!editLayout)}><Settings size={14}/> {editLayout ? 'Done' : 'Layout'}</button>}
-          <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved}>
-            {recentlySaved ? <Check size={14}/> : <Save size={14}/>} {recentlySaved ? 'Saved' : 'Save'}
-          </button>
+          {isAdmin && (
+            <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e=>!e)}
+              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
+              <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
+            </button>
+          )}
         </div>
       </div>
 

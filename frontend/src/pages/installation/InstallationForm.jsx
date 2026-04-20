@@ -7,7 +7,7 @@ import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Bell, Check, Eye, Download } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Settings, Save, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import SubFormSection from "../crm/SubFormSection";
 
 const emptyForm = { product_id: '', technician_id: '', notes: '', custom_data: {} };
@@ -241,26 +241,42 @@ export default function InstallationForm() {
   return (
     <Layout title={isNew ? 'New Entry' : (form.reference || 'Installation')}>
       {/* Toolbar */}
-      <div className="toolbar">
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button className="btn btn-ghost" onClick={() => navigate('/installation')}><ArrowLeft size={15} /> Back</button>
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
+        
+        <button className="btn" 
+          onClick={save} 
+          disabled={saving || recentlySaved}
+          style={{ 
+            background: recentlySaved ? 'var(--green)' : 'var(--accent)',
+            color: 'white',
+            borderColor: recentlySaved ? 'var(--green)' : 'var(--accent)',
+            padding: '8px 20px',
+            borderRadius: 8,
+            fontWeight: 800
+          }}
+        >
+          {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14} /> Save Changes</>}
+        </button>
+
+        {!isNew && (
+          <div style={{ display: 'flex', gap: 4, marginLeft: 12, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/installation/${Math.max(1, parseInt(id) - 1)}`)}>
+              <ChevronLeft size={18} />
+            </button>
+            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/installation/${parseInt(id) + 1}`)}>
+              <ChevronRight size={18} />
+            </button>
+          </div>
+        )}
+
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e => !e)}
               style={editLayout ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
               <Settings size={14} /> {editLayout ? 'Exit Layout' : 'Edit Layout'}
             </button>
           )}
-          <button className="btn" 
-            onClick={save} 
-            disabled={saving || recentlySaved}
-            style={{ 
-              background: recentlySaved ? 'var(--green)' : 'var(--accent)',
-              color: 'white',
-              borderColor: recentlySaved ? 'var(--green)' : 'var(--accent)'
-            }}
-          >
-            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14} /> Save</>}
-          </button>
         </div>
       </div>
 
