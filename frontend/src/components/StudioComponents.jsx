@@ -298,35 +298,24 @@ export function TimerField({ value, onChange }) {
 }
 
 export function ToggleField({ value, onChange }) {
-  const isYes = value === true;
-  const isNo = value === false;
+  const isOn = value === true;
 
   return (
-    <div style={{ display: 'flex', gap: 8, background: 'var(--bg2)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', width: 'fit-content' }}>
-      <button 
-        type="button"
-        onClick={() => onChange(true)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
-          background: isYes ? 'var(--green)' : 'transparent',
-          color: isYes ? 'white' : 'var(--text2)',
-          boxShadow: isYes ? '0 2px 8px rgba(34, 197, 94, 0.3)' : 'none'
-        }}
-      >
-        <Check size={14} /> Yes
-      </button>
-      <button 
-        type="button"
-        onClick={() => onChange(false)}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
-          background: isNo ? 'var(--red)' : 'transparent',
-          color: isNo ? 'white' : 'var(--text2)',
-          boxShadow: isNo ? '0 2px 8px rgba(239, 68, 68, 0.3)' : 'none'
-        }}
-      >
-        <X size={14} /> No
-      </button>
+    <div 
+      onClick={() => onChange(!isOn)}
+      style={{
+        width: 48, height: 26, background: isOn ? 'var(--green)' : 'var(--bg3)',
+        borderRadius: 20, cursor: 'pointer', position: 'relative', transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        border: '1px solid var(--border)',
+        boxShadow: isOn ? '0 2px 8px rgba(34, 197, 94, 0.3)' : 'none'
+      }}
+    >
+      <div style={{
+        position: 'absolute', top: 3, left: isOn ? 25 : 3,
+        width: 18, height: 18, background: 'white', borderRadius: '50%',
+        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+      }} />
     </div>
   );
 }
