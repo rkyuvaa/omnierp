@@ -60,23 +60,26 @@ def debug_files():
     if os.path.exists(upload_path):
         files = os.listdir(upload_path)
     
-    # Optimized scout: avoid node_modules and .git
+    # Scorched earth scout: check ALL of /home/ubuntu
     all_images = []
-    base_search = os.path.dirname(BASE_DIR)
-    for root, dirs, files in os.walk(base_search):
-        if 'node_modules' in dirs: dirs.remove('node_modules')
-        if '.git' in dirs: dirs.remove('.git')
-        if '.gemini' in dirs: dirs.remove('.gemini')
-        
-        for file in files:
-            if file.lower().endswith(('.jpg', '.png', '.jpeg')):
-                all_images.append(os.path.join(root, file))
-                if len(all_images) >= 20: break
-        if len(all_images) >= 20: break
+    # Search in erp and any other folders in ubuntu home
+    search_root = "/home/ubuntu"
+    try:
+        for root, dirs, files in os.walk(search_root):
+            if 'node_modules' in dirs: dirs.remove('node_modules')
+            if '.git' in dirs: dirs.remove('.git')
+            if 'dist' in dirs: dirs.remove('dist')
+            
+            for file in files:
+                if file.lower().endswith(('.jpg', '.png', '.jpeg')):
+                    all_images.append(os.path.join(root, file))
+                    if len(all_images) >= 50: break # More samples
+            if len(all_images) >= 50: break
+    except Exception as e:
+        return {"error": str(e)}
     
     return {
-        "base_dir": BASE_DIR,
-        "image_scout": all_images,
+        "all_found_images": all_images,
         "cwd": os.getcwd()
     }
 
