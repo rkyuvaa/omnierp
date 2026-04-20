@@ -60,15 +60,22 @@ def debug_files():
     if os.path.exists(upload_path):
         files = os.listdir(upload_path)
     
-    # Final attempt: find ANY .jpg or .png file in ~/erp
+    # Optimized scout: avoid node_modules and .git
     all_images = []
-    import glob
-    search_pattern = os.path.join(os.path.dirname(BASE_DIR), "**", "*.jpg")
-    all_images = glob.glob(search_pattern, recursive=True)[:10] # first 10
+    base_search = os.path.dirname(BASE_DIR)
+    for root, dirs, files in os.walk(base_search):
+        if 'node_modules' in dirs: dirs.remove('node_modules')
+        if '.git' in dirs: dirs.remove('.git')
+        if '.gemini' in dirs: dirs.remove('.gemini')
+        
+        for file in files:
+            if file.lower().endswith(('.jpg', '.png', '.jpeg')):
+                all_images.append(os.path.join(root, file))
+                if len(all_images) >= 20: break
+        if len(all_images) >= 20: break
     
     return {
         "base_dir": BASE_DIR,
-        "found_uploads": found_uploads,
         "image_scout": all_images,
         "cwd": os.getcwd()
     }
