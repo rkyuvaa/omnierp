@@ -49,6 +49,26 @@ if not os.path.exists(upload_dir):
 
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
+@app.get("/api/debug-files")
+def debug_files():
+    import os
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    static_path = os.path.join(BASE_DIR, "static")
+    upload_path = os.path.join(static_path, "uploads")
+    
+    files = []
+    if os.path.exists(upload_path):
+        files = os.listdir(upload_path)
+    
+    return {
+        "base_dir": BASE_DIR,
+        "static_exists": os.path.exists(static_path),
+        "upload_exists": os.path.exists(upload_path),
+        "upload_path": upload_path,
+        "file_count": len(files),
+        "files_sample": files[:10]
+    }
+
 @app.get("/")
 def root():
     return {"message": "OmniERP API Running"}
