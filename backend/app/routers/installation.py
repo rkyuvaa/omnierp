@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from ..database import get_db
-from ..models import Installation, Stage, User
+from ..models import Installation, Stage, User, Activity
 from ..auth import get_current_user, require_admin
 from pydantic import BaseModel
 import datetime
@@ -34,6 +34,12 @@ class InstIn(BaseModel):
     schedule_date: Optional[str] = None
     notes: Optional[str] = None
     custom_data: dict = {}
+
+class ActivityIn(BaseModel):
+    installation_id: int
+    activity_type: str
+    description: str
+    due_date: Optional[str] = None
 
 def serialize(r):
     try:
@@ -88,6 +94,10 @@ def get_installation(id: int, db: Session = Depends(get_db)):
     ).filter(Installation.id == id).first()
     if not r: raise HTTPException(404, "Not found")
     data = serialize(r)
+    data["activities"] = [
+        {"id": a.id, "type": a.activity_type, "description": a.description, "done": a.done, "created_at": str(a.created_at)}
+        for a in sorted(r.activities, key=lambda x: x.created_at, reverse=True)
+    ]
     return data
 
 @router.get("/{id}/navigation")
@@ -132,6 +142,17 @@ def create_inst(data: InstIn, db: Session = Depends(get_db)):
     except Exception as e:
         db.rollback()
         raise HTTPException(500, f"Database Error: {str(e)}")
+
+@router.post("/activities")
+def create_activity(data: ActivityIn, db: Session = Depends(get_db), cu=Depends(get_current_user)):
+    a = Activity(**data.model_dump(), created_by=cu.id)
+    db.add(a); db.commit(); db.refresh(a); return a
+
+@router.put("/activities/{aid}/done")
+def mark_activity_done(aid: int, db: Session = Depends(get_db), cu=Depends(get_current_user)):
+    a = db.query(Activity).filter(Activity.id == aid).first()
+    if not a: raise HTTPException(404)
+    a.done = True; db.commit(); return {"message": "Done"}
 
 @router.put("/{id}")
 def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):

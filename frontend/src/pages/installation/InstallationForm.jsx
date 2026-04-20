@@ -7,7 +7,7 @@ import { FieldInput, isVisible } from '../../components/StudioComponents';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Plus, Pencil, Trash2, Settings, Save, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Plus, Pencil, Trash2, Settings, Save, Check, ChevronLeft, ChevronRight, Eye, Download } from 'lucide-react';
 import SubFormSection from "../crm/SubFormSection";
 
 const emptyForm = { product_id: '', technician_id: '', notes: '', custom_data: {} };

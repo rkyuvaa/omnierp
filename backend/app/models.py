@@ -134,7 +134,8 @@ class Lead(Base):
 class Activity(Base):
     __tablename__ = "activities"
     id = Column(Integer, primary_key=True, index=True)
-    lead_id = Column(Integer, ForeignKey("leads.id"))
+    lead_id = Column(Integer, ForeignKey("leads.id"), nullable=True)
+    installation_id = Column(Integer, ForeignKey("installations.id"), nullable=True)
     activity_type = Column(String(50))
     description = Column(Text)
     due_date = Column(DateTime, nullable=True)
@@ -142,6 +143,7 @@ class Activity(Base):
     created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     lead = relationship("Lead", back_populates="activities")
+    installation = relationship("Installation", back_populates="activities")
 
 class CRMActivityType(Base):
     __tablename__ = "crm_activity_types"
@@ -254,6 +256,7 @@ class Installation(Base):
     stage = relationship("Stage")
     technician = relationship("User")
     product = relationship("Product")
+    activities = relationship("Activity", back_populates="installation", cascade="all, delete-orphan")
 
 class InstallationTab(Base):
     __tablename__ = "installation_tabs"

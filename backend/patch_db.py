@@ -21,6 +21,7 @@ def patch_db():
             ("crm", "crm_fields", "module", "VARCHAR(50) DEFAULT 'crm'"),
             ("crm", "crm_fields", "form_template_id", "INTEGER"),
             ("crm", "crm_fields", "is_active", "BOOLEAN DEFAULT TRUE"),
+            ("crm", "activities", "installation_id", "INTEGER"),
             
             ("installation", "installation_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
             ("installation", "installation_fields", "form_template_id", "INTEGER"),
