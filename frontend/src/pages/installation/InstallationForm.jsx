@@ -107,7 +107,24 @@ export default function InstallationForm() {
   }, [form?.vehicle_number, form?.customer_name, selectedProduct?.name]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const setCustom = (k, v) => setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));
+  const setCustom = (k, v) => {
+    setForm(f => {
+      const newCustom = { ...f.custom_data, [k]: v };
+      const rule = stageRules.find(r => r.field_name === k);
+      if (rule) {
+        let isMatch = false;
+        if (rule.condition_operator === 'equals') {
+          const checkVal = Array.isArray(v) ? (v[0] || '') : (typeof v === 'object' && v !== null ? (v.elapsed || (v.startAt ? 'running' : '')) : v);
+          isMatch = String(checkVal ?? '') === String(rule.condition_value ?? '');
+        } else {
+          isMatch = v !== undefined && v !== '' && v !== false && v !== null && !(Array.isArray(v) && v.length === 0);
+        }
+        if (isMatch) return { ...f, custom_data: newCustom, stage_id: parseInt(rule.stage_id) };
+      }
+      return { ...f, custom_data: newCustom };
+    });
+  };
+
 
   const save = async () => {
     if (!form.product_id) return toast.error('Please select a Vehicle Number');
