@@ -308,7 +308,7 @@ export default function LeadForm() {
   const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
   return (
-    <Layout title={isNew?'New Lead':form.title||'Lead'}>
+    <Layout title={isNew ? 'New Lead' : (form.reference || 'Lead')}>
       {/* Toolbar */}
       <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button className="btn btn-ghost" onClick={() => navigate('/crm')}><ArrowLeft size={15}/> Back</button>
@@ -328,25 +328,25 @@ export default function LeadForm() {
           {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14}/> Save Changes</>}
         </button>
 
-        {!isNew && (
-          <div style={{ display: 'flex', gap: 4, marginLeft: 12, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/crm/${Math.max(1, parseInt(id) - 1)}`)}>
-              <ChevronLeft size={18} />
-            </button>
-            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/crm/${parseInt(id) + 1}`)}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        )}
-
         {!isNew&&form.reference&&<span className="ref-text" style={{ fontSize:14, marginLeft: 12 }}>{form.reference}</span>}
 
-        <div className="toolbar-right" style={{ display:'flex', gap:8, marginLeft: 'auto' }}>
+        <div className="toolbar-right" style={{ display:'flex', gap:8, marginLeft: 'auto', alignItems: 'center' }}>
           {isAdmin&&(
             <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e=>!e)}
               style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
               <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
+          )}
+
+          {!isNew && (
+            <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/crm/${Math.max(1, parseInt(id) - 1)}`)}>
+                <ChevronLeft size={18} />
+              </button>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/crm/${parseInt(id) + 1}`)}>
+                <ChevronRight size={18} />
+              </button>
+            </div>
           )}
         </div>
       </div>

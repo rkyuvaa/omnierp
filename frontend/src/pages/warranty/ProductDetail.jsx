@@ -138,33 +138,23 @@ export default function ProductDetail() {
           {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : <>{recentlySaved ? <Check size={14}/> : <Save size={14}/>} {recentlySaved ? 'Saved' : 'Save Changes'}</>}
         </button>
 
-        {!isNew && (
-          <div style={{ display: 'flex', gap: 4, marginLeft: 12, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${Math.max(1, parseInt(id) - 1)}`)}>
-              <ChevronLeft size={18} />
-            </button>
-            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${parseInt(id) + 1}`)}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        )}
-
-        <div style={{ flex: 1, display: 'flex', gap: 6, margin: '0 20px', justifyContent: 'center' }}>
-          {stages.map(s => (
-            <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)} style={{
-              padding: '6px 16px', borderRadius: 100, fontSize: 10, fontWeight: 800, textAlign: 'center', cursor: isAdmin ? 'pointer' : 'default', minWidth: 80,
-              background: form.stage_id === s.id ? s.color : s.color + '15', color: form.stage_id === s.id ? '#fff' : s.color, transition: 'all 0.2s',
-              border: `1px solid ${form.stage_id === s.id ? s.color : 'transparent'}`
-            }}>{s.name}</div>
-          ))}
-        </div>
-
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8 }}>
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e=>!e)}
               style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
               <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
+          )}
+
+          {!isNew && (
+            <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${Math.max(1, parseInt(id) - 1)}`)}>
+                <ChevronLeft size={18} />
+              </button>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${parseInt(id) + 1}`)}>
+                <ChevronRight size={18} />
+              </button>
+            </div>
           )}
         </div>
       </div>

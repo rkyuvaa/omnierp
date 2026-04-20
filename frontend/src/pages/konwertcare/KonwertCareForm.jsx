@@ -138,20 +138,7 @@ export default function KonwertCareForm() {
           {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <><Save size={14} /> Save Changes</>}
         </button>
 
-        {!isNew && (
-          <div style={{ display: 'flex', gap: 4, marginLeft: 12, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/konwertcare/${Math.max(1, parseInt(id) - 1)}`)}>
-              <ChevronLeft size={18} />
-            </button>
-            <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/konwertcare/${parseInt(id) + 1}`)}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-        )}
-
-        {!isNew && form.reference && <span className="ref-text" style={{ fontSize: 14, marginLeft: 12 }}>{form.reference}</span>}
-
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
           {stages.length > 0 && (
             <div className="hide-scrollbar" style={{ display: 'flex', gap: 6, marginRight: 16, overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: 300 }}>
               {stages.map(s => (
@@ -169,6 +156,17 @@ export default function KonwertCareForm() {
               style={editLayout ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
               <Settings size={14} /> {editLayout ? 'Exit Layout' : 'Edit Layout'}
             </button>
+          )}
+
+          {!isNew && (
+            <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/konwertcare/${Math.max(1, parseInt(id) - 1)}`)}>
+                <ChevronLeft size={18} />
+              </button>
+              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/konwertcare/${parseInt(id) + 1}`)}>
+                <ChevronRight size={18} />
+              </button>
+            </div>
           )}
         </div>
       </div>
