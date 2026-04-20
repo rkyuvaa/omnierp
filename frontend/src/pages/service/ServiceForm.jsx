@@ -79,7 +79,7 @@ export default function ServiceForm() {
       await api.post('/studio/layout/service/stage-rules', { field_name: payload.field_name, stage_id: parseInt(stageRule), condition_operator: stageRuleOp, condition_value: stageRuleOp === 'equals' ? stageRuleVal : null });
     } else {
       const existing = stageRules.find(r => r.field_name === payload.field_name);
-      if (existing) await api.delete(`/studio/layout/stage-rules/${existing.id}`);
+      if (existing) await api.delete(`/studio/layout/service/stage-rules/${existing.id}`);
     }
     toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
   };

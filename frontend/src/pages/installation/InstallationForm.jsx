@@ -174,9 +174,25 @@ export default function InstallationForm() {
   const saveField = async (f) => {
     const payload = { ...f };
     delete payload._new;
+    
+    // Save main field
     if (f.id) await api.put(`/studio/layout/installation/fields/${f.id}`, payload);
     else await api.post('/studio/layout/installation/fields', { ...payload, tab_id: fieldModal?.tabId });
-    toast.success('Field saved'); setFieldModal(null); loadTabs();
+
+    // Save stage rule if exists
+    if (f._stageRule) {
+      await api.post('/studio/layout/installation/stage-rules', {
+        field_name: f.field_name,
+        stage_id: parseInt(f._stageRule),
+        condition_operator: f._stageRuleOp || 'has_value',
+        condition_value: f._stageRuleVal || ''
+      });
+    } else if (f.id) {
+      const existing = stageRules.find(r => r.field_name === f.field_name);
+      if (existing) await api.delete(`/studio/layout/installation/stage-rules/${existing.id}`);
+    }
+
+    toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
   };
 
   const deleteField = async (fid) => {
