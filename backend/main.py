@@ -15,8 +15,8 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from patch_db import patch_db
-patch_db()
+# from patch_db import patch_db
+# patch_db()
 
 Base.metadata.create_all(bind=engine)
 
