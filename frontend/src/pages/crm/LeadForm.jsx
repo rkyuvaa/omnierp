@@ -347,36 +347,26 @@ export default function LeadForm() {
       </div>
 
       {!isNew && stages.length > 0 && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 20, width: "100%", boxSizing: "border-box" }}>
-          {stages.map((s) => {
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
+          {stages.map(s => {
             const isCurrent = form.stage_id === s.id;
             return (
-              <div 
-                key={s.id}
-                onClick={() => isAdmin && updateStage(s.id)}
+              <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  padding: "8px 12px", 
-                  borderRadius: "100px",
-                  cursor: isAdmin ? "pointer" : "default", transition: "all 0.2s",
-                  background: isCurrent ? s.color : s.color + "15",
-                  color: isCurrent ? "#fff" : s.color,
-                  fontSize: "12px", 
-                  fontFamily: "inherit", fontWeight: 800,
-                  textTransform: "uppercase", letterSpacing: "1px",
-                  boxShadow: isCurrent ? "0 8px 24px " + s.color + "60" : "none",
-                  opacity: isCurrent ? 1 : 0.6,
-                  border: "1px solid " + (isCurrent ? s.color : "transparent"),
-                  minWidth: 0,
-                  flex: 1,
-                  textAlign: "center"
-                }}
-              >
-                {s.name}
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '4px 6px', borderRadius: 18, cursor: isAdmin ? "pointer" : "default", 
+                  flex: 1, height: 35, transition: 'all 0.2s',
+                  border: `1.5px solid ${isCurrent ? s.color : (s.color + '30')}`,
+                  background: isCurrent ? s.color : 'transparent',
+                  color: isCurrent ? '#ffffff' : s.color,
+                  boxShadow: isCurrent ? `0 3px 8px ${s.color}40` : 'none',
+                  minWidth: 0, opacity: isCurrent ? 1 : 0.7,
+                  textAlign: 'center'
+                }}>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
               </div>
             );
           })}
-          {!isAdmin && <span style={{ fontSize: 10, color: "var(--text3)", flexShrink: 0, marginLeft: 10, opacity: 0.7 }}>[View Only]</span>}
         </div>
       )}
 
