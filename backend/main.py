@@ -60,13 +60,15 @@ def debug_files():
     if os.path.exists(upload_path):
         files = os.listdir(upload_path)
     
+    # Check parent dir too
+    parent_static = os.path.join(os.path.dirname(BASE_DIR), "static")
+    parent_upload = os.path.join(parent_static, "uploads")
+    
     return {
         "base_dir": BASE_DIR,
-        "static_exists": os.path.exists(static_path),
-        "upload_exists": os.path.exists(upload_path),
-        "upload_path": upload_path,
-        "file_count": len(files),
-        "files_sample": files[:10]
+        "backend_static": {"path": static_path, "exists": os.path.exists(static_path), "count": len(os.listdir(upload_path)) if os.path.exists(upload_path) else 0},
+        "parent_static": {"path": parent_static, "exists": os.path.exists(parent_static), "count": len(os.listdir(parent_upload)) if os.path.exists(parent_upload) else 0, "sample": os.listdir(parent_upload)[:5] if os.path.exists(parent_upload) else []},
+        "cwd": os.getcwd()
     }
 
 @app.get("/")
