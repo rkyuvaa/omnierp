@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Upload, Download, X, FileText, User, Eye } from 'lucide-react';
+import { Upload, Download, X, FileText, User, Eye, Play, Square, RotateCcw } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
