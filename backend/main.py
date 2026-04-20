@@ -51,6 +51,18 @@ app.mount("/api/static/uploads", StaticFiles(directory=upload_dir), name="upload
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
 
+@app.get("/api/debug-db")
+def debug_db():
+    from app.database import SessionLocal
+    from app.models import Lead
+    db = SessionLocal()
+    leads = db.query(Lead).filter(Lead.custom_data != {}).limit(10).all()
+    results = []
+    for lead in leads:
+        results.append({"id": lead.id, "ref": lead.reference, "data": lead.custom_data})
+    db.close()
+    return results
+
 @app.get("/")
 def root():
     return {"message": "OmniERP API Running"}
