@@ -16,6 +16,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
   const stages = useStages(module);
   const { items, total, loading, reload, stageCounts , page, setPage} = useList(endpoint);
   const { user } = useAuth();
+  const perms = user?.is_superadmin ? {can_read:true, can_create:true, can_edit:true, can_delete:true} : (user?.module_permissions?.[module] || {});
   const navigate = useNavigate();
   const timer = useRef(null);
 
@@ -34,6 +35,8 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
     toast.success('Deleted'); setDeleting(null);
     reload({ search, stage_id: stageFilter || undefined });
   };
+
+  if (!perms.can_read && !user?.is_superadmin) return <Layout title={title}><Empty message="Access Denied: You do not have permission to view this module." /></Layout>;
 
   return (
     <Layout title={title}>
@@ -90,7 +93,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
               <Download size={14} /> Export
             </button>
           )}
-          <button className="btn btn-primary" onClick={() => navigate(`${formPath}/new`)}><Plus size={15} /> New</button>
+          {perms.can_create && <button className="btn btn-primary" onClick={() => navigate(`${formPath}/new`)}><Plus size={15} /> New</button>}
         </div>
       </div>
 
@@ -119,7 +122,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
                     <td onClick={e => e.stopPropagation()}>
                       <div className="flex gap-2">
                         <button className="btn btn-ghost btn-sm" onClick={() => navigate(`${formPath}/${row.id}`)}><Eye size={13} /></button>
-                        <button className="btn btn-danger btn-sm" onClick={() => setDeleting(row.id)}><Trash2 size={13} /></button>
+                        {perms.can_delete && <button className="btn btn-danger btn-sm" onClick={() => setDeleting(row.id)}><Trash2 size={13} /></button>}
                       </div>
                     </td>
                   </tr>

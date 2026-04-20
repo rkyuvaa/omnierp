@@ -39,7 +39,11 @@ export default function Sidebar() {
         
         <div style={{marginBottom:24}}>
           <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Modules</div>
-          {moduleItems.map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} />)}
+          {moduleItems.filter(i => {
+            if (user?.is_superadmin) return true;
+            const p = user?.module_permissions?.[i.key];
+            return p && (p.can_read || p.can_create || p.can_edit || p.can_delete);
+          }).map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} />)}
         </div>
         
         {user?.is_superadmin && (
