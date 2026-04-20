@@ -58,20 +58,28 @@ def debug_db():
     db = SessionLocal()
     try:
         count = db.query(Lead).count()
-        # Find a lead that has an image/file
-        lead_with_file = None
-        import json
+        import json, os
         all_leads = db.query(Lead).filter(Lead.custom_data != None).all()
+        lead_with_file = None
         for l in all_leads:
-            data_str = json.dumps(l.custom_data)
-            if '"url":' in data_str:
+            if '"url":' in json.dumps(l.custom_data):
                 lead_with_file = l
+                break
+
+        specific_file = "cc3b8738b844041989c763384576cda.pdf"
+        found_at = "Not found anywhere"
+        for root, dirs, files in os.walk("/home/ubuntu"):
+            if specific_file in files:
+                found_at = os.path.join(root, specific_file)
                 break
         
         return {
             "count": count,
-            "sample_with_file": lead_with_file.custom_data if lead_with_file else "None found",
-            "ref": lead_with_file.reference if lead_with_file else "N/A"
+            "db_url": lead_with_file.custom_data.get('noc_for_retrofit_from_existing_financier', {}).get('url') if lead_with_file else None,
+            "disk_path": found_at,
+            "static_dir": static_dir,
+            "upload_dir": upload_dir,
+            "exists_in_upload_dir": os.path.exists(os.path.join(upload_dir, specific_file))
         }
     except Exception as e:
         return {"error": str(e)}
