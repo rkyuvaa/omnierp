@@ -49,39 +49,6 @@ if not os.path.exists(upload_dir):
 
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
-@app.get("/api/debug-files")
-def debug_files():
-    import os
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    static_path = os.path.join(BASE_DIR, "static")
-    upload_path = os.path.join(static_path, "uploads")
-    
-    files = []
-    if os.path.exists(upload_path):
-        files = os.listdir(upload_path)
-    
-    # Scorched earth scout: check ALL of /home/ubuntu
-    all_images = []
-    # Search in erp and any other folders in ubuntu home
-    search_root = "/home/ubuntu"
-    try:
-        for root, dirs, files in os.walk(search_root):
-            if 'node_modules' in dirs: dirs.remove('node_modules')
-            if '.git' in dirs: dirs.remove('.git')
-            if 'dist' in dirs: dirs.remove('dist')
-            
-            for file in files:
-                if file.lower().endswith(('.jpg', '.png', '.jpeg')):
-                    all_images.append(os.path.join(root, file))
-                    if len(all_images) >= 50: break # More samples
-            if len(all_images) >= 50: break
-    except Exception as e:
-        return {"error": str(e)}
-    
-    return {
-        "all_found_images": all_images,
-        "cwd": os.getcwd()
-    }
 
 @app.get("/")
 def root():
