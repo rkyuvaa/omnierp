@@ -142,10 +142,7 @@ def create_inst(data: InstIn, db: Session = Depends(get_db)):
         db.add(r); db.commit(); db.refresh(r)
         
         # Automation: Bridge to Konwert Care+
-        if r.stage_id:
-            stage = db.query(Stage).filter(Stage.id == r.stage_id).first()
-            if stage and stage.name.lower() == "fitment done":
-                trigger_konwert_care_handoff(r, db)
+        trigger_konwert_care_handoff(r, db)
                 
         return serialize(r)
     except Exception as e:
@@ -183,10 +180,7 @@ def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
         db.commit()
         
         # Automation: Bridge to Konwert Care+
-        if r.stage_id:
-            stage = db.query(Stage).filter(Stage.id == r.stage_id).first()
-            if stage and stage.name.lower() == "fitment done":
-                trigger_konwert_care_handoff(r, db)
+        trigger_konwert_care_handoff(r, db)
                 
         return serialize(r)
     except Exception as e:
