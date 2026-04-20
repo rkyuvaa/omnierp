@@ -67,11 +67,12 @@ export default function InstallationForm() {
   useEffect(() => {
     if (isNew) { setForm({ ...emptyForm }); setLoading(false); }
     else {
+      setLoading(true); // Force reload on ID change
       api.get(`/installation/${id}`).then(r => {
         setForm({ ...emptyForm, ...r.data });
         setActivities(r.data.activities || []);
         setLoading(false);
-      }).catch(() => { toast.error('Not found'); navigate('/installation'); });
+      }).catch(() => { setLoading(false); toast.error('Not found'); navigate('/installation'); });
     }
   }, [id, isNew]);
 

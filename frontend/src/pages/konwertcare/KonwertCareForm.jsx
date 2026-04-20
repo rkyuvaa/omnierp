@@ -49,10 +49,14 @@ export default function KonwertCareForm() {
     loadTabs();
     loadStageRules();
     if (!isNew) {
+      setLoading(true); // Force reload on ID change
       api.get(`/konwertcare/${id}`).then(r => {
         setForm({ ...empty, ...r.data, custom_data: r.data.custom_data || {} });
         setLoading(false);
-      });
+      }).catch(() => setLoading(false));
+    } else {
+      setForm({ ...empty });
+      setLoading(false);
     }
   }, [id, isNew, loadTabs, loadStageRules]);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));

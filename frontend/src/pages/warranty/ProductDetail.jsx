@@ -45,10 +45,14 @@ export default function ProductDetail() {
     loadTabs();
     loadStageRules();
     if (!isNew) {
+      setLoading(true); // Force reload on ID change
       api.get(`/warranty/products/${id}`).then(r => {
         setForm({ ...emptyForm, ...r.data, custom_data: r.data.custom_data || {}, component_serials: r.data.component_serials || [] });
         setLoading(false);
-      });
+      }).catch(() => setLoading(false));
+    } else {
+      setForm({ ...emptyForm });
+      setLoading(false);
     }
   }, [id, isNew, loadTabs, loadStageRules]);
 

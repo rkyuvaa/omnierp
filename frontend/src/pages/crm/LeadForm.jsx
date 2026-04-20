@@ -156,12 +156,13 @@ export default function LeadForm() {
       setForm({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to:user.id, custom_data:{} });
       setLoading(false);
     } else if (!isNew) {
+      setLoading(true); // Force reload state on ID change
       api.get(`/crm/leads/${id}`).then(r => {
         setForm({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to:'', custom_data:{}, ...r.data });
         setActivities(r.data.activities||[]);
         setChangeLogs(r.data.change_logs||[]);
         setLoading(false);
-      });
+      }).catch(() => setLoading(false));
     }
   }, [id, isNew, user]);
 
@@ -327,8 +328,6 @@ export default function LeadForm() {
         >
           {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14}/> Save Changes</>}
         </button>
-
-        {!isNew&&form.reference&&<span className="ref-text" style={{ fontSize:14, marginLeft: 12 }}>{form.reference}</span>}
 
         <div className="toolbar-right" style={{ display:'flex', gap:8, marginLeft: 'auto', alignItems: 'center' }}>
           {isAdmin&&(
