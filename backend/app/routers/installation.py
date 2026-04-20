@@ -4,6 +4,7 @@ from typing import List, Optional
 from ..database import get_db
 from ..models import Installation, Stage, User, Activity
 from ..auth import get_current_user, require_admin
+from ..utils.automation import trigger_konwert_care_handoff
 from pydantic import BaseModel
 import datetime
 
@@ -138,7 +139,15 @@ def create_inst(data: InstIn, db: Session = Depends(get_db)):
             r_data['schedule_date'] = None
 
         r = Installation(**r_data, reference=ref)
-        db.add(r); db.commit(); db.refresh(r); return serialize(r)
+        db.add(r); db.commit(); db.refresh(r)
+        
+        # Automation: Bridge to Konwert Care+
+        if r.stage_id:
+            stage = db.query(Stage).filter(Stage.id == r.stage_id).first()
+            if stage and stage.name.lower() == "fitment done":
+                trigger_konwert_care_handoff(r, db)
+                
+        return serialize(r)
     except Exception as e:
         db.rollback()
         raise HTTPException(500, f"Database Error: {str(e)}")
@@ -171,7 +180,15 @@ def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
             r_data['schedule_date'] = None
 
         for k, v in r_data.items(): setattr(r, k, v)
-        db.commit(); return serialize(r)
+        db.commit()
+        
+        # Automation: Bridge to Konwert Care+
+        if r.stage_id:
+            stage = db.query(Stage).filter(Stage.id == r.stage_id).first()
+            if stage and stage.name.lower() == "fitment done":
+                trigger_konwert_care_handoff(r, db)
+                
+        return serialize(r)
     except Exception as e:
         db.rollback()
         raise HTTPException(500, f"Database Error: {str(e)}")
