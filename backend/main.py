@@ -58,10 +58,21 @@ def debug_db():
     db = SessionLocal()
     try:
         count = db.query(Lead).count()
-        # Just get one sample to be safe
-        lead = db.query(Lead).filter(Lead.custom_data != None).first()
-        data = lead.custom_data if lead else "No data"
-        return {"count": count, "sample_data": data}
+        # Find a lead that has an image/file
+        lead_with_file = None
+        import json
+        all_leads = db.query(Lead).filter(Lead.custom_data != None).all()
+        for l in all_leads:
+            data_str = json.dumps(l.custom_data)
+            if '"url":' in data_str:
+                lead_with_file = l
+                break
+        
+        return {
+            "count": count,
+            "sample_with_file": lead_with_file.custom_data if lead_with_file else "None found",
+            "ref": lead_with_file.reference if lead_with_file else "N/A"
+        }
     except Exception as e:
         return {"error": str(e)}
     finally:
