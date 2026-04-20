@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 import uuid, os, shutil
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import text
 from typing import List, Optional
 from ..database import get_db
@@ -75,8 +75,9 @@ def get_stages(module: str = None, module_query: str = Query(None, alias="module
 # ── Layout (Tabs & Fields) ────────────────────────────────────
 @router.get("/layout/{module}/tabs")
 def get_tabs(module: str, db: Session = Depends(get_db)):
-    TabModel, _, _ = get_layout_models(module)
-    tabs = db.query(TabModel).filter(TabModel.is_active == True).order_by(TabModel.sort_order).all()
+    TabModel, FieldModel, _ = get_layout_models(module)
+    # Eagerly load fields to prevent N+1 queries
+    tabs = db.query(TabModel).options(joinedload(TabModel.fields)).filter(TabModel.is_active == True).order_by(TabModel.sort_order).all()
     res = []
     for t in tabs:
         res.append({

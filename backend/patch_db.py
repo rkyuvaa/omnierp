@@ -51,6 +51,25 @@ def patch_db():
             except Exception as e:
                 print(f"  [!] Error patching {table}.{col}: {e}")
 
+        # Add Trigram Indexes for performance
+        try:
+            print("  [+] Enabling pg_trgm extension and creating indexes...")
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+            
+            # GIN Indexes for CRM
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_leads_title_trgm ON leads USING gin (title gin_trgm_ops);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_leads_customer_name_trgm ON leads USING gin (customer_name gin_trgm_ops);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_leads_phone_trgm ON leads USING gin (phone gin_trgm_ops);"))
+            
+            # GIN Indexes for Installation
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_inst_customer_name_trgm ON installations USING gin (customer_name gin_trgm_ops);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_inst_vehicle_number_trgm ON installations USING gin (vehicle_number gin_trgm_ops);"))
+            
+            conn.commit()
+            print("  [✓] Trigram indexes created.")
+        except Exception as e:
+            print(f"  [!] Trigram index error: {e}")
+
     # Also trigger Base.metadata.create_all to ensure NEW tables are created
     print("Ensuring all new tables exist...")
     Base.metadata.create_all(bind=engine)

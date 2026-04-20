@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_, func
 from pydantic import BaseModel
 from typing import Optional
 from .studio import get_stages
@@ -38,11 +38,17 @@ def serialize(r: ServiceRequest):
 
 @router.get("/")
 def list_svc(search: Optional[str] = None, stage_id: Optional[int] = None, skip: int = 0, limit: int = 50, db: Session = Depends(get_db), cu=Depends(get_current_user)):
-    q = db.query(ServiceRequest)
-    if search: q = q.filter(or_(ServiceRequest.customer_name.ilike(f"%{search}%"), ServiceRequest.vehicle_number.ilike(f"%{search}%")))
+    q = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff))
+    if search: 
+        q = q.filter(or_(
+            ServiceRequest.customer_name.ilike(f"%{search}%"), 
+            ServiceRequest.vehicle_number.ilike(f"%{search}%"),
+            ServiceRequest.reference.ilike(f"%{search}%")
+        ))
 
-    from sqlalchemy import func
+    # Stage counts based on filtered query (before pagination)
     stage_counts = {s_id: count for s_id, count in q.with_entities(ServiceRequest.stage_id, func.count(ServiceRequest.id)).group_by(ServiceRequest.stage_id).all() if s_id}
+    
     if stage_id: q = q.filter(ServiceRequest.stage_id == stage_id)
     total = q.count()
     items = q.order_by(ServiceRequest.id.desc()).offset(skip).limit(limit).all()
@@ -58,9 +64,18 @@ def create_svc(data: SvcIn, db: Session = Depends(get_db), cu=Depends(get_curren
 
 @router.get("/{rid}")
 def get_svc(rid: int, db: Session = Depends(get_db), cu=Depends(get_current_user)):
-    r = db.query(ServiceRequest).filter(ServiceRequest.id == rid).first()
+    r = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff)).filter(ServiceRequest.id == rid).first()
     if not r: raise HTTPException(404, "Not found")
     return serialize(r)
+
+@router.get("/{rid}/navigation")
+def get_service_navigation(rid: int, db: Session = Depends(get_db)):
+    prev_id = db.query(ServiceRequest.id).filter(ServiceRequest.id < rid).order_by(ServiceRequest.id.desc()).first()
+    next_id = db.query(ServiceRequest.id).filter(ServiceRequest.id > rid).order_by(ServiceRequest.id.asc()).first()
+    return {
+        "prev": prev_id[0] if prev_id else None,
+        "next": next_id[0] if next_id else None
+    }
 
 @router.put("/{rid}")
 def update_svc(rid: int, data: SvcIn, db: Session = Depends(get_db), cu=Depends(get_current_user)):
@@ -79,7 +94,7 @@ def delete_svc(rid: int, db: Session = Depends(get_db), cu=Depends(get_current_u
 
 @router.get("/export/excel")
 def export(db: Session = Depends(get_db), cu=Depends(get_current_user)):
-    rows = db.query(ServiceRequest).all()
+    rows = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff)).all()
     wb = openpyxl.Workbook(); ws = wb.active
     ws.append(["Reference","Customer","Vehicle No","Make","Model","Problem","Stage","Staff","Created"])
     for r in rows:

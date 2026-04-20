@@ -35,11 +35,7 @@ export default function ProductDetail() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [recentlySaved, setRecentlySaved] = useState(false);
 
-  const stages = useStages('warranty');
-
-  const loadTabs = useCallback(() => api.get('/studio/layout/warranty/tabs').then(r => setTabs(r.data)), []);
-  const loadStageRules = useCallback(() => api.get('/studio/layout/warranty/stage-rules').then(r => setStageRules(r.data)), []);
-
+  const [nav, setNav] = useState({ prev: null, next: null });
   useEffect(() => {
     api.get('/warranty/boms').then(r=>setBoms(r.data));
     loadTabs();
@@ -50,6 +46,8 @@ export default function ProductDetail() {
         setForm({ ...emptyForm, ...r.data, custom_data: r.data.custom_data || {}, component_serials: r.data.component_serials || [] });
         setLoading(false);
       }).catch(() => setLoading(false));
+
+      api.get(`/warranty/products/${id}/navigation`).then(r => setNav(r.data)).catch(() => {});
     } else {
       setForm({ ...emptyForm });
       setLoading(false);
@@ -142,7 +140,7 @@ export default function ProductDetail() {
           {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : <>{recentlySaved ? <Check size={14}/> : <Save size={14}/>} {recentlySaved ? 'Saved' : 'Save Changes'}</>}
         </button>
 
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e=>!e)}
               style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
@@ -152,10 +150,20 @@ export default function ProductDetail() {
 
           {!isNew && (
             <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${Math.max(1, parseInt(id) - 1)}`)}>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                style={{ padding: '6px 10px', opacity: nav.prev ? 1 : 0.3 }} 
+                onClick={() => { if (nav.prev) { setLoading(true); navigate(`/warranty/products/${nav.prev}`); } }}
+                disabled={!nav.prev}
+              >
                 <ChevronLeft size={18} />
               </button>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/warranty/products/${parseInt(id) + 1}`)}>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                style={{ padding: '6px 10px', opacity: nav.next ? 1 : 0.3 }} 
+                onClick={() => { if (nav.next) { setLoading(true); navigate(`/warranty/products/${nav.next}`); } }}
+                disabled={!nav.next}
+              >
                 <ChevronRight size={18} />
               </button>
             </div>

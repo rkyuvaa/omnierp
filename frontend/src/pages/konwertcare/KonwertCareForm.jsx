@@ -45,6 +45,7 @@ export default function KonwertCareForm() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const loadTabs = useCallback(() => api.get('/studio/layout/konwertcare/tabs').then(r => setTabs(r.data)), []);
   const loadStageRules = useCallback(() => api.get('/studio/layout/konwertcare/stage-rules').then(r => setStageRules(r.data)), []);
+  const [nav, setNav] = useState({ prev: null, next: null });
   useEffect(() => {
     loadTabs();
     loadStageRules();
@@ -54,6 +55,8 @@ export default function KonwertCareForm() {
         setForm({ ...empty, ...r.data, custom_data: r.data.custom_data || {} });
         setLoading(false);
       }).catch(() => setLoading(false));
+
+      api.get(`/konwertcare/${id}/navigation`).then(r => setNav(r.data)).catch(() => {});
     } else {
       setForm({ ...empty });
       setLoading(false);
@@ -132,7 +135,7 @@ export default function KonwertCareForm() {
   const currentTab = visibleTabs[activeTab];
   const colSpan = { full: '1/-1', half: 'span 2', quarter: 'span 1' };
   return (
-    <Layout title={isNew ? 'New Care Request' : `Care — ${form.reference || ''}`}>
+    <Layout title={isNew ? 'New Care Request' : `Care — ${form.reference || `#${id}`}`}>
       <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
         <button className="btn btn-ghost" onClick={() => navigate('/konwertcare')}>
           <ArrowLeft size={15} /> Back
@@ -143,18 +146,6 @@ export default function KonwertCareForm() {
         </button>
 
         <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
-          {stages.length > 0 && (
-            <div className="hide-scrollbar" style={{ display: 'flex', gap: 6, marginRight: 16, overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: 300 }}>
-              {stages.map(s => (
-                <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => set('stage_id', s.id)}
-                  style={form.stage_id === s.id
-                    ? { background: s.color, borderColor: s.color, color: 'white' }
-                    : { borderColor: s.color, color: s.color }}>
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          )}
           {isAdmin && (
             <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e => !e)}
               style={editLayout ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
@@ -164,10 +155,20 @@ export default function KonwertCareForm() {
 
           {!isNew && (
             <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/konwertcare/${Math.max(1, parseInt(id) - 1)}`)}>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                style={{ padding: '6px 10px', opacity: nav.prev ? 1 : 0.3 }} 
+                onClick={() => { if (nav.prev) { setLoading(true); navigate(`/konwertcare/${nav.prev}`); } }}
+                disabled={!nav.prev}
+              >
                 <ChevronLeft size={18} />
               </button>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/konwertcare/${parseInt(id) + 1}`)}>
+              <button 
+                className="btn btn-ghost btn-sm" 
+                style={{ padding: '6px 10px', opacity: nav.next ? 1 : 0.3 }} 
+                onClick={() => { if (nav.next) { setLoading(true); navigate(`/konwertcare/${nav.next}`); } }}
+                disabled={!nav.next}
+              >
                 <ChevronRight size={18} />
               </button>
             </div>

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from fastapi.staticfiles import StaticFiles
 import os
-from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms
+from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare
 
 app = FastAPI(title="OmniERP API", version="1.0.0")
 
@@ -14,6 +14,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+from patch_db import patch_db
+patch_db()
 
 Base.metadata.create_all(bind=engine)
 
@@ -33,6 +36,7 @@ app.include_router(audit.router, prefix="/api/audit", tags=["audit"])
 app.include_router(warranty.router, prefix="/api/warranty", tags=["warranty"])
 app.include_router(crm_layout.router, prefix="/api/crm-layout", tags=["crm-layout"])
 app.include_router(forms.router, prefix="/api/forms", tags=["Forms"])
+app.include_router(konwertcare.router, prefix="/api/konwertcare", tags=["konwertcare"])
 
 
 # Ensure static/uploads exists

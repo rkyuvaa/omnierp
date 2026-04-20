@@ -64,6 +64,8 @@ export default function InstallationForm() {
     api.get('/studio/layout/crm/tabs').then(r => setCrmTabs(r.data)).catch(() => {});
   }, []);
 
+  const [nav, setNav] = useState({ prev: null, next: null });
+
   useEffect(() => {
     if (isNew) { setForm({ ...emptyForm }); setLoading(false); }
     else {
@@ -73,6 +75,8 @@ export default function InstallationForm() {
         setActivities(r.data.activities || []);
         setLoading(false);
       }).catch(() => { setLoading(false); toast.error('Not found'); navigate('/installation'); });
+      
+      api.get(`/installation/${id}/navigation`).then(r => setNav(r.data)).catch(() => {});
     }
   }, [id, isNew]);
 
@@ -240,41 +244,43 @@ export default function InstallationForm() {
   const currentTab = allTabs[activeTab];
 
   return (
-    <Layout title={isNew ? 'New Entry' : (form.reference || 'Installation')}>
-      {/* Toolbar */}
-      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button className="btn btn-ghost" onClick={() => navigate('/installation')}><ArrowLeft size={15} /> Back</button>
+    <Layout title={isNew ? 'New Entry' : `Installation — ${form.reference || `#${id}`}`}>
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card-bg)', border: '1px solid var(--border)', padding: '12px 16px', borderRadius: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-ghost" onClick={() => navigate('/installation')}><ArrowLeft size={16} /> Back</button>
+          <div style={{ height: 20, width: 1, background: 'var(--border)' }}></div>
+          <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 700 }}>
+            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : recentlySaved ? <><Check size={16}/> Saved</> : <><Save size={16} /> Save Changes</>}
+          </button>
+        </div>
         
-        <button className="btn" 
-          onClick={save} 
-          disabled={saving || recentlySaved}
-          style={{ 
-            background: recentlySaved ? 'var(--green)' : 'var(--accent)',
-            color: 'white',
-            borderColor: recentlySaved ? 'var(--green)' : 'var(--accent)',
-            padding: '8px 20px',
-            borderRadius: 8,
-            fontWeight: 800
-          }}
-        >
-          {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14} /> Save Changes</>}
-        </button>
-
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {isAdmin && (
-            <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e => !e)}
-              style={editLayout ? { background: 'var(--accent-dim)', color: 'var(--accent)', border: '1px solid var(--accent)' } : {}}>
-              <Settings size={14} /> {editLayout ? 'Exit Layout' : 'Edit Layout'}
+            <button className="btn btn-ghost" onClick={()=>setEditLayout(e=>!e)}
+              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)', padding: '8px 16px', borderRadius: 8}:{ padding: '8px 16px', borderRadius: 8 }}>
+              <Settings size={16} style={{ marginRight: 6 }}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
           )}
-
-          {!isNew && (
-            <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/installation/${Math.max(1, parseInt(id) - 1)}`)}>
-                <ChevronLeft size={18} />
+          
+           {!isNew && (
+            <div style={{ display: 'flex', gap: 4, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.prev ? 1 : 0.3 }} 
+                onClick={() => { if (nav.prev) { setLoading(true); navigate(`/installation/${nav.prev}`); } }}
+                disabled={!nav.prev}
+                title="Previous Record"
+              >
+                <ChevronLeft size={20} />
               </button>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/installation/${parseInt(id) + 1}`)}>
-                <ChevronRight size={18} />
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.next ? 1 : 0.3 }} 
+                onClick={() => { if (nav.next) { setLoading(true); navigate(`/installation/${nav.next}`); } }}
+                disabled={!nav.next}
+                title="Next Record"
+              >
+                <ChevronRight size={20} />
               </button>
             </div>
           )}

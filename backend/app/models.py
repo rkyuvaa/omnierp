@@ -115,11 +115,11 @@ class Lead(Base):
     __tablename__ = "leads"
     id = Column(Integer, primary_key=True, index=True)
     reference = Column(String(50), unique=True)
-    title = Column(String(200))
+    title = Column(String(200), index=True)
     customer_id = Column(Integer, ForeignKey("customers.id"), nullable=True)
-    customer_name = Column(String(100), nullable=True)
-    email = Column(String(100), nullable=True)
-    phone = Column(String(50), nullable=True)
+    customer_name = Column(String(100), nullable=True, index=True)
+    email = Column(String(100), nullable=True, index=True)
+    phone = Column(String(50), nullable=True, index=True)
     stage_id = Column(Integer, ForeignKey("stages.id"))
     assigned_to = Column(Integer, ForeignKey("users.id"))
     expected_revenue = Column(Float, default=0)
@@ -210,8 +210,8 @@ class BOMComponent(Base):
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True, index=True)
-    title = Column(String(200))
-    name = Column(String(100))
+    title = Column(String(200), index=True)
+    name = Column(String(100), index=True)
     serial_number = Column(String(50), unique=True)
     bom_id = Column(Integer, ForeignKey("boms.id"), nullable=True)
     stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
@@ -240,8 +240,8 @@ class Installation(Base):
     __tablename__ = "installations"
     id = Column(Integer, primary_key=True, index=True)
     reference = Column(String(50), unique=True)
-    customer_name = Column(String(100))
-    vehicle_number = Column(String(50), nullable=True)
+    customer_name = Column(String(100), index=True)
+    vehicle_number = Column(String(50), nullable=True, index=True)
     vehicle_make = Column(String(100), nullable=True)
     vehicle_model = Column(String(100), nullable=True)
     stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
@@ -392,12 +392,13 @@ class KonwertCareStageRule(Base):
     condition_operator = Column(String(20), default="has_value")
     condition_value = Column(String(100), nullable=True)
     stage = relationship("Stage")
+
 class ServiceRequest(Base):
     __tablename__ = "service_requests"
     id = Column(Integer, primary_key=True, index=True)
     reference = Column(String(50), unique=True)
-    customer_name = Column(String(100))
-    vehicle_number = Column(String(50), nullable=True)
+    customer_name = Column(String(100), index=True)
+    vehicle_number = Column(String(50), nullable=True, index=True)
     vehicle_make = Column(String(100), nullable=True)
     vehicle_model = Column(String(100), nullable=True)
     problem_description = Column(Text, nullable=True)
@@ -414,10 +415,10 @@ class KonwertCareTicket(Base):
     __tablename__ = "konwert_care_tickets"
     id = Column(Integer, primary_key=True, index=True)
     reference = Column(String(50), unique=True)
-    customer_name = Column(String(100))
-    phone = Column(String(50), nullable=True)
-    email = Column(String(100), nullable=True)
-    vehicle_number = Column(String(50), nullable=True)
+    customer_name = Column(String(100), index=True)
+    phone = Column(String(50), nullable=True, index=True)
+    email = Column(String(100), nullable=True, index=True)
+    vehicle_number = Column(String(50), nullable=True, index=True)
     product_serial = Column(String(50), nullable=True)
     vehicle_make = Column(String(100), nullable=True)
     vehicle_model = Column(String(100), nullable=True)
@@ -431,6 +432,7 @@ class KonwertCareTicket(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     stage = relationship("Stage")
     staff = relationship("User", foreign_keys=[staff_id])
+
 class FormDefinition(Base):
     __tablename__ = "form_definitions"
     id = Column(Integer, primary_key=True, index=True)

@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session, joinedload
 from ..database import get_db
 from ..models import Product, BOM, BOMComponent, ProductComponentSerial
 from ..auth import get_current_user
+from typing import Optional, List
+from sqlalchemy import or_
 
 router = APIRouter()
 
@@ -35,19 +37,55 @@ def serialize_product(p: Product):
         return {"id": getattr(p, 'id', 0), "name": "Error loading product"}
 
 @router.get("/products")
-def get_products(db: Session = Depends(get_db)):
+def get_products(
+    search: Optional[str] = None, 
+    stage_id: Optional[int] = None, 
+    skip: int = 0, 
+    limit: int = 50, 
+    db: Session = Depends(get_db)
+):
     try:
-        products = db.query(Product).all()
-        return [serialize_product(p) for p in products]
+        q = db.query(Product).options(
+            joinedload(Product.stage),
+            joinedload(Product.bom),
+            joinedload(Product.component_serials).joinedload(ProductComponentSerial.bom_component)
+        )
+        
+        if search:
+            q = q.filter(or_(
+                Product.title.ilike(f"%{search}%"),
+                Product.name.ilike(f"%{search}%"),
+                Product.serial_number.ilike(f"%{search}%")
+            ))
+        
+        if stage_id:
+            q = q.filter(Product.stage_id == stage_id)
+            
+        total = q.count()
+        products = q.order_by(Product.id.desc()).offset(skip).limit(limit).all()
+        return {"total": total, "items": [serialize_product(p) for p in products]}
     except Exception as e:
         print(f"Error in get_products: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/products/{id}")
 def get_product(id: int, db: Session = Depends(get_db)):
-    p = db.query(Product).filter(Product.id == id).first()
+    p = db.query(Product).options(
+        joinedload(Product.stage),
+        joinedload(Product.bom),
+        joinedload(Product.component_serials).joinedload(ProductComponentSerial.bom_component)
+    ).filter(Product.id == id).first()
     if not p: raise HTTPException(404)
     return serialize_product(p)
+
+@router.get("/products/{id}/navigation")
+def get_product_navigation(id: int, db: Session = Depends(get_db)):
+    prev_id = db.query(Product.id).filter(Product.id < id).order_by(Product.id.desc()).first()
+    next_id = db.query(Product.id).filter(Product.id > id).order_by(Product.id.asc()).first()
+    return {
+        "prev": prev_id[0] if prev_id else None,
+        "next": next_id[0] if next_id else None
+    }
 
 @router.post("/products")
 def create_product(data: dict, db: Session = Depends(get_db)):
@@ -136,12 +174,12 @@ def serialize_bom(b: BOM):
 
 @router.get("/boms")
 def get_boms(db: Session = Depends(get_db)):
-    boms = db.query(BOM).all()
+    boms = db.query(BOM).options(joinedload(BOM.components)).all()
     return [serialize_bom(b) for b in boms]
 
 @router.get("/boms/{id}")
 def get_bom(id: int, db: Session = Depends(get_db)):
-    b = db.query(BOM).filter(BOM.id == id).first()
+    b = db.query(BOM).options(joinedload(BOM.components)).filter(BOM.id == id).first()
     if not b: raise HTTPException(404)
     return serialize_bom(b)
 

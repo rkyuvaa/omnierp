@@ -1,0 +1,84 @@
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy.orm import Session, joinedload
+from ..database import get_db
+from ..models import KonwertCareTicket
+from ..auth import get_current_user
+from typing import Optional, List
+from sqlalchemy import or_
+
+router = APIRouter()
+
+def serialize(r: KonwertCareTicket):
+    return {
+        "id": r.id,
+        "reference": r.reference,
+        "customer_name": r.customer_name,
+        "phone": r.phone,
+        "email": r.email,
+        "vehicle_number": r.vehicle_number,
+        "vehicle_make": r.vehicle_make,
+        "vehicle_model": r.vehicle_model,
+        "product_serial": r.product_serial,
+        "issue_type": r.issue_type,
+        "issue_description": r.issue_description,
+        "stage_id": r.stage_id,
+        "stage_name": r.stage.name if r.stage else None,
+        "stage_color": r.stage.color if r.stage else None,
+        "notes": r.notes,
+        "custom_data": r.custom_data or {},
+        "created_at": str(r.created_at)
+    }
+
+@router.get("/")
+def list_tickets(
+    search: Optional[str] = None, 
+    skip: int = 0, 
+    limit: int = 50, 
+    db: Session = Depends(get_db)
+):
+    q = db.query(KonwertCareTicket).options(joinedload(KonwertCareTicket.stage))
+    
+    if search:
+        q = q.filter(or_(
+            KonwertCareTicket.customer_name.ilike(f"%{search}%"),
+            KonwertCareTicket.reference.ilike(f"%{search}%"),
+            KonwertCareTicket.vehicle_number.ilike(f"%{search}%"),
+            KonwertCareTicket.phone.ilike(f"%{search}%")
+        ))
+    
+    total = q.count()
+    tickets = q.order_by(KonwertCareTicket.id.desc()).offset(skip).limit(limit).all()
+    return {"total": total, "items": [serialize(t) for t in tickets]}
+
+@router.get("/{id}")
+def get_ticket(id: int, db: Session = Depends(get_db)):
+    t = db.query(KonwertCareTicket).options(joinedload(KonwertCareTicket.stage)).filter(KonwertCareTicket.id == id).first()
+    if not t: raise HTTPException(404)
+    return serialize(t)
+
+@router.get("/{id}/navigation")
+def get_ticket_navigation(id: int, db: Session = Depends(get_db)):
+    prev_id = db.query(KonwertCareTicket.id).filter(KonwertCareTicket.id < id).order_by(KonwertCareTicket.id.desc()).first()
+    next_id = db.query(KonwertCareTicket.id).filter(KonwertCareTicket.id > id).order_by(KonwertCareTicket.id.asc()).first()
+    return {
+        "prev": prev_id[0] if prev_id else None,
+        "next": next_id[0] if next_id else None
+    }
+
+@router.post("/")
+def create_ticket(data: dict, db: Session = Depends(get_db)):
+    import datetime
+    last = db.query(KonwertCareTicket).order_by(KonwertCareTicket.id.desc()).first()
+    next_id = (last.id + 1) if last else 1
+    ref = f"CARE/{datetime.datetime.now().year}/{next_id:04d}"
+    t = KonwertCareTicket(**data, reference=ref)
+    db.add(t); db.commit(); db.refresh(t)
+    return serialize(t)
+
+@router.put("/{id}")
+def update_ticket(id: int, data: dict, db: Session = Depends(get_db)):
+    t = db.query(KonwertCareTicket).filter(KonwertCareTicket.id == id).first()
+    if not t: raise HTTPException(404)
+    for k, v in data.items(): setattr(t, k, v)
+    db.commit(); db.refresh(t)
+    return serialize(t)

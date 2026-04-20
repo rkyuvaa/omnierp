@@ -22,10 +22,6 @@ const WIDTH_OPTIONS = [
 ];
 const WIDTH_COLS = { full:'1/-1', half:'span 1', quarter:'span 1' };
 
-
-
-
-
 // ── Activity Type Manager ─────────────────────────────────────
 function ActivityTypeModal({ onClose, onSaved }) {
   const { user } = useAuth();
@@ -151,18 +147,22 @@ export default function LeadForm() {
 
   useEffect(() => { loadTabs(); loadStageRules(); loadActivityTypes(); }, []);
 
+  const [nav, setNav] = useState({ prev: null, next: null });
+
   useEffect(() => {
     if (isNew && user) {
       setForm({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to:user.id, custom_data:{} });
       setLoading(false);
     } else if (!isNew) {
-      setLoading(true); // Force reload state on ID change
+      setLoading(true); 
       api.get(`/crm/leads/${id}`).then(r => {
         setForm({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to:'', custom_data:{}, ...r.data });
         setActivities(r.data.activities||[]);
         setChangeLogs(r.data.change_logs||[]);
         setLoading(false);
       }).catch(() => setLoading(false));
+
+      api.get(`/crm/leads/${id}/navigation`).then(r => setNav(r.data)).catch(() => {});
     }
   }, [id, isNew, user]);
 
@@ -188,10 +188,9 @@ export default function LeadForm() {
   };
 
   const save = async () => {
-    // Validate title
     if (!form.title?.trim()) {
       setTitleError(true);
-      toast.error('Lead title is required');
+      toast.error('Record Title is required');
       return;
     }
     setTitleError(false);
@@ -200,18 +199,16 @@ export default function LeadForm() {
       const payload = { ...form, stage_id:form.stage_id||null, assigned_to:form.assigned_to||null, expected_revenue:0, notes:'' };
       if (isNew) {
         const r = await api.post('/crm/leads', payload);
-        toast.success('✓ Lead created successfully!', { duration: 4000 }); 
+        toast.success('✓ Created successfully!', { duration: 4000 }); 
         navigate(`/crm/${r.data.id}`);
       } else {
-        const response = await api.put(`/crm/leads/${id}`, payload);
-        console.log('Save response:', response.status);
+        await api.put(`/crm/leads/${id}`, payload);
         api.get(`/crm/leads/${id}`).then(r => setChangeLogs(r.data.change_logs||[]));
         toast.success('✓ Saved successfully!', { duration: 4000 });
         setRecentlySaved(true);
         setTimeout(() => setRecentlySaved(false), 3000);
       }
     } catch(e) { 
-      console.error('Save error:', e);
       toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); 
     }
     finally { setSaving(false); }
@@ -303,47 +300,46 @@ export default function LeadForm() {
 
   const currentTab = (visibleTabs || [])[activeTab];
   const actTypeMap = Object.fromEntries((activityTypes || []).map(t => [t.name, t]));
-
-  // Grid layout: full=4cols, half=2cols, quarter=1col out of 4
   const gridStyle = { display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 };
-  const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
   return (
-    <Layout title={isNew ? 'New Lead' : (form.reference || 'Lead')}>
-      {/* Toolbar */}
-      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button className="btn btn-ghost" onClick={() => navigate('/crm')}><ArrowLeft size={15}/> Back</button>
-
-        <button className="btn" 
-          onClick={save} 
-          disabled={saving || recentlySaved}
-          style={{ 
-            background: recentlySaved ? 'var(--green)' : 'var(--accent)',
-            color: 'white',
-            borderColor: recentlySaved ? 'var(--green)' : 'var(--accent)',
-            padding: '8px 20px',
-            borderRadius: 8,
-            fontWeight: 800
-          }}
-        >
-          {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : recentlySaved ? <><Check size={14}/> Saved</> : <><Save size={14}/> Save Changes</>}
-        </button>
-
-        <div className="toolbar-right" style={{ display:'flex', gap:8, marginLeft: 'auto', alignItems: 'center' }}>
-          {isAdmin&&(
-            <button className="btn btn-ghost btn-sm" onClick={() => setEditLayout(e=>!e)}
-              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
-              <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
+    <Layout title={isNew ? 'New Record' : `Lead — ${form.reference || `#${id}`}`}>
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card-bg)', border: '1px solid var(--border)', padding: '12px 16px', borderRadius: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-ghost" onClick={() => navigate('/crm')}><ArrowLeft size={16} /> Back</button>
+          <div style={{ height: 20, width: 1, background: 'var(--border)' }}></div>
+          <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 700 }}>
+            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : recentlySaved ? <><Check size={16}/> Saved</> : <><Save size={16} /> Save Changes</>}
+          </button>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {isAdmin && (
+            <button className="btn btn-ghost" onClick={()=>setEditLayout(e=>!e)}
+              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)', padding: '8px 16px', borderRadius: 8}:{ padding: '8px 16px', borderRadius: 8 }}>
+              <Settings size={16} style={{ marginRight: 6 }}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
           )}
-
-          {!isNew && (
-            <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/crm/${Math.max(1, parseInt(id) - 1)}`)}>
-                <ChevronLeft size={18} />
+          
+           {!isNew && (
+            <div style={{ display: 'flex', gap: 4, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.prev ? 1 : 0.3 }} 
+                onClick={() => { if (nav.prev) { navigate(`/crm/${nav.prev}`); } }}
+                disabled={!nav.prev}
+                title="Previous Record"
+              >
+                <ChevronLeft size={20} />
               </button>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/crm/${parseInt(id) + 1}`)}>
-                <ChevronRight size={18} />
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.next ? 1 : 0.3 }} 
+                onClick={() => { if (nav.next) { navigate(`/crm/${nav.next}`); } }}
+                disabled={!nav.next}
+                title="Next Record"
+              >
+                <ChevronRight size={20} />
               </button>
             </div>
           )}
@@ -352,7 +348,6 @@ export default function LeadForm() {
 
       {!isNew && stages.length > 0 && (
         <div style={{ display: "flex", gap: 6, marginBottom: 20, width: "100%", boxSizing: "border-box" }}>
-          
           {stages.map((s) => {
             const isCurrent = form.stage_id === s.id;
             return (
@@ -391,20 +386,12 @@ export default function LeadForm() {
           {/* Core fields */}
           <div className="card mb-4">
             <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
-              <div className="form-group" style={{ gridColumn:'1/-1' }}>
-                <label className="form-label">
-                  Title <span style={{ color:'var(--red)' }}>*</span>
-                </label>
-                <input className="form-input" value={form.title}
-                  style={titleError?{borderColor:'var(--red)',boxShadow:'0 0 0 2px rgba(239,68,68,0.15)'}:{}}
-                  onChange={e => { set('title',e.target.value); if(e.target.value.trim()) setTitleError(false); }}
-                  placeholder="Lead title (required)"/>
-                {titleError&&<span style={{ fontSize:11, color:'var(--red)', marginTop:4, display:'block' }}>Title is required</span>}
-              </div>
-              <div className="form-group" style={{ gridColumn:'span 2' }}>
-                <label className="form-label">Customer Name</label>
-                <input className="form-input" value={form.customer_name||''} onChange={e => set('customer_name',e.target.value)}/>
-              </div>
+              {!isNew && (
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label" style={{ color: 'var(--accent)', fontWeight: 600 }}>Record Number</label>
+                  <input className="form-input" value={form.reference || ''} readOnly style={{ background: 'var(--bg)', fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent-dim)' }} />
+                </div>
+              )}
               <div className="form-group" style={{ gridColumn:'span 2' }}>
                 <label className="form-label">Assigned To</label>
                 <select className="form-select" value={form.assigned_to||''} onChange={e => set('assigned_to',parseInt(e.target.value)||null)}>
@@ -412,11 +399,25 @@ export default function LeadForm() {
                   {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
                 </select>
               </div>
+              <div className="form-group" style={{ gridColumn:'1/-1' }}>
+                <label className="form-label">
+                  Record Title / Lead Name <span style={{ color:'var(--red)' }}>*</span>
+                </label>
+                <input className="form-input" value={form.title}
+                  style={titleError?{borderColor:'var(--red)',boxShadow:'0 0 0 2px rgba(239,68,68,0.15)'}:{}}
+                  onChange={e => { set('title',e.target.value); if(e.target.value.trim()) setTitleError(false); }}
+                  placeholder="e.g. Sales Inquiry / Customer Name"/>
+                {titleError&&<span style={{ fontSize:11, color:'var(--red)', marginTop:4, display:'block' }}>Title is required</span>}
+              </div>
               <div className="form-group" style={{ gridColumn:'span 2' }}>
+                <label className="form-label">Customer Name</label>
+                <input className="form-input" value={form.customer_name||''} onChange={e => set('customer_name',e.target.value)}/>
+              </div>
+              <div className="form-group" style={{ gridColumn:'span 1' }}>
                 <label className="form-label">Email</label>
                 <input className="form-input" type="email" value={form.email||''} onChange={e => set('email',e.target.value)}/>
               </div>
-              <div className="form-group" style={{ gridColumn:'span 2' }}>
+              <div className="form-group" style={{ gridColumn:'span 1' }}>
                 <label className="form-label">Phone</label>
                 <input className="form-input" value={form.phone||''} onChange={e => set('phone',e.target.value)}/>
               </div>
@@ -449,7 +450,6 @@ export default function LeadForm() {
           )}
           </div>
 
-          {/* Tab content */}
           {currentTab && (
             <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
               <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 }}>
@@ -548,7 +548,6 @@ export default function LeadForm() {
                   })}
                 </div>
               )}
-              
           </div>
           )}
 
@@ -569,20 +568,6 @@ export default function LeadForm() {
                   </div>
                 ))}
               </div>
-              
-          </div>
-          )}
-
-          {/* Admin stage */}
-          {isAdmin&&(
-            <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }}>
-              <div className="detail-section-title">Stage (Admin)</div>
-              <select className="form-select" value={form.stage_id||''}
-                onChange={e => isNew?set('stage_id',parseInt(e.target.value)||null):updateStage(parseInt(e.target.value)||null)}>
-                <option value="">— Select —</option>
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-              
           </div>
           )}
         </div>

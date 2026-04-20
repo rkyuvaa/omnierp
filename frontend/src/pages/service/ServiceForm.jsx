@@ -35,6 +35,8 @@ export default function ServiceForm() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const loadTabs = useCallback(() => api.get('/studio/layout/service/tabs').then(r => setTabs(r.data)), []);
   const loadStageRules = useCallback(() => api.get('/studio/layout/service/stage-rules').then(r => setStageRules(r.data)), []);
+  const [nav, setNav] = useState({ prev: null, next: null });
+
   useEffect(() => {
     loadTabs();
     loadStageRules();
@@ -44,6 +46,8 @@ export default function ServiceForm() {
         setForm({ ...empty, ...r.data, custom_data: r.data.custom_data || {} });
         setLoading(false);
       }).catch(() => setLoading(false));
+
+      api.get(`/service/${id}/navigation`).then(r => setNav(r.data)).catch(() => {});
     } else {
       setForm({ ...empty });
       setLoading(false);
@@ -118,48 +122,60 @@ export default function ServiceForm() {
   const currentTab = visibleTabs[activeTab];
   const colSpan = { full: '1/-1', half: 'span 2', quarter: 'span 1' };
   return (
-    <Layout title={isNew ? 'New Service Request' : `Service — ${form.reference || ''}`}>
-      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <button className="btn btn-ghost" onClick={() => navigate('/service')}><ArrowLeft size={15} /> Back</button>
+    <Layout title={isNew ? 'New Service Request' : `Service Request — ${form.reference || `#${id}`}`}>
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card-bg)', border: '1px solid var(--border)', padding: '12px 16px', borderRadius: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-ghost" onClick={() => navigate('/service')}><ArrowLeft size={16} /> Back</button>
+          <div style={{ height: 20, width: 1, background: 'var(--border)' }}></div>
+          <button className="btn btn-primary" onClick={save} disabled={saving} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 700 }}>
+            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <><Save size={16} /> Save Changes</>}
+          </button>
+        </div>
         
-        <button className="btn btn-primary" onClick={save} disabled={saving} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 800 }}>
-          {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <><Save size={14} /> Save Changes</>}
-        </button>
-
-        <div className="toolbar-right" style={{ display: 'flex', gap: 8, marginLeft: 'auto', alignItems: 'center' }}>
-          {stages.length > 0 && (
-            <div className="hide-scrollbar" style={{ display: 'flex', gap: 6, marginRight: 16, overflowX: 'auto', whiteSpace: 'nowrap', maxWidth: 300 }}>
-              {stages.map(s => (
-                <button key={s.id} className="btn btn-ghost btn-sm" onClick={() => set('stage_id', s.id)}
-                  style={form.stage_id === s.id ? { background: s.color, borderColor: s.color, color: 'white' } : { borderColor: s.color, color: s.color }}>
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          )}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           {isAdmin && (
-            <button className="btn btn-ghost btn-sm" onClick={()=>setEditLayout(e=>!e)}
-              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)'}:{}}>
-              <Settings size={14}/> {editLayout?'Exit Layout':'Edit Layout'}
+            <button className="btn btn-ghost" onClick={()=>setEditLayout(e=>!e)}
+              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)', padding: '8px 16px', borderRadius: 8}:{ padding: '8px 16px', borderRadius: 8 }}>
+              <Settings size={16} style={{ marginRight: 6 }}/> {editLayout?'Exit Layout':'Edit Layout'}
             </button>
           )}
-
-          {!isNew && (
-            <div style={{ display: 'flex', gap: 4, marginLeft: 8, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/service/${Math.max(1, parseInt(id) - 1)}`)}>
-                <ChevronLeft size={18} />
+          
+           {!isNew && (
+            <div style={{ display: 'flex', gap: 4, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.prev ? 1 : 0.3 }} 
+                onClick={() => { if (nav.prev) { setLoading(true); navigate(`/service/${nav.prev}`); } }}
+                disabled={!nav.prev}
+                title="Previous Record"
+              >
+                <ChevronLeft size={20} />
               </button>
-              <button className="btn btn-ghost btn-sm" style={{ padding: '6px 10px' }} onClick={() => navigate(`/service/${parseInt(id) + 1}`)}>
-                <ChevronRight size={18} />
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.next ? 1 : 0.3 }} 
+                onClick={() => { if (nav.next) { setLoading(true); navigate(`/service/${nav.next}`); } }}
+                disabled={!nav.next}
+                title="Next Record"
+              >
+                <ChevronRight size={20} />
               </button>
             </div>
           )}
         </div>
       </div>
+
       <div className="detail-layout">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card">
-            <div className="form-grid">
+            <div className="detail-section-title">Record Details</div>
+            <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px 24px' }}>
+              {!isNew && (
+                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                  <label className="form-label" style={{ color: 'var(--accent)', fontWeight: 600 }}>Record Number</label>
+                  <input className="form-input" value={form.reference || ''} readOnly style={{ background: 'var(--bg)', fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent-dim)' }} />
+                </div>
+              )}
               <div className="form-group">
                 <label className="form-label">Customer Name *</label>
                 <input className="form-input" value={form.customer_name || ''} onChange={e => set('customer_name', e.target.value)} />

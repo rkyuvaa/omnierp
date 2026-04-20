@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from typing import List, Optional
 from ..database import get_db
 from ..models import Installation, Stage, User
@@ -7,7 +7,7 @@ from ..auth import get_current_user, require_admin
 from pydantic import BaseModel
 import datetime
 
-from sqlalchemy import func
+from sqlalchemy import func, or_
 router = APIRouter()
 
 @router.get("/summary")
@@ -59,9 +59,17 @@ def serialize(r):
 
 @router.get("/")
 def get_inst(search: str = "", stage_id: str = "", page: int = 1, db: Session = Depends(get_db)):
-    q = db.query(Installation)
+    q = db.query(Installation).options(
+        joinedload(Installation.stage),
+        joinedload(Installation.technician),
+        joinedload(Installation.product)
+    )
     if search:
-        q = q.filter(Installation.customer_name.ilike(f"%{search}%") | Installation.reference.ilike(f"%{search}%"))
+        q = q.filter(or_(
+            Installation.customer_name.ilike(f"%{search}%"),
+            Installation.reference.ilike(f"%{search}%"),
+            Installation.vehicle_number.ilike(f"%{search}%")
+        ))
     if stage_id and stage_id != "":
         q = q.filter(Installation.stage_id == int(stage_id))
     
@@ -72,10 +80,28 @@ def get_inst(search: str = "", stage_id: str = "", page: int = 1, db: Session = 
     return {"items": [serialize(i) for i in items], "total": total, "pages": (total // limit) + 1}
 
 @router.get("/{id}")
-def get_one(id: int, db: Session = Depends(get_db)):
-    r = db.query(Installation).filter(Installation.id == id).first()
+def get_installation(id: int, db: Session = Depends(get_db)):
+    r = db.query(Installation).options(
+        joinedload(Installation.stage),
+        joinedload(Installation.technician),
+        joinedload(Installation.product)
+    ).filter(Installation.id == id).first()
     if not r: raise HTTPException(404, "Not found")
-    return serialize(r)
+    data = serialize(r)
+    data["activities"] = [
+        {"id": a.id, "type": a.activity_type, "description": a.description, "done": a.done, "created_at": str(a.created_at)}
+        for a in sorted(r.activities, key=lambda x: x.created_at, reverse=True)
+    ]
+    return data
+
+@router.get("/{id}/navigation")
+def get_installation_navigation(id: int, db: Session = Depends(get_db)):
+    prev_id = db.query(Installation.id).filter(Installation.id < id).order_by(Installation.id.desc()).first()
+    next_id = db.query(Installation.id).filter(Installation.id > id).order_by(Installation.id.asc()).first()
+    return {
+        "prev": prev_id[0] if prev_id else None,
+        "next": next_id[0] if next_id else None
+    }
 
 @router.post("/")
 def create_inst(data: InstIn, db: Session = Depends(get_db)):
