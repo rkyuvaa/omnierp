@@ -297,8 +297,42 @@ export function TimerField({ value, onChange }) {
   );
 }
 
+export function ToggleField({ value, onChange }) {
+  const isYes = value === true;
+  const isNo = value === false;
+
+  return (
+    <div style={{ display: 'flex', gap: 8, background: 'var(--bg2)', padding: 4, borderRadius: 10, border: '1px solid var(--border)', width: 'fit-content' }}>
+      <button 
+        type="button"
+        onClick={() => onChange(true)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
+          background: isYes ? 'var(--green)' : 'transparent',
+          color: isYes ? 'white' : 'var(--text2)',
+          boxShadow: isYes ? '0 2px 8px rgba(34, 197, 94, 0.3)' : 'none'
+        }}
+      >
+        <Check size={14} /> Yes
+      </button>
+      <button 
+        type="button"
+        onClick={() => onChange(false)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6, padding: '6px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 700, transition: 'all 0.2s',
+          background: isNo ? 'var(--red)' : 'transparent',
+          color: isNo ? 'white' : 'var(--text2)',
+          boxShadow: isNo ? '0 2px 8px rgba(239, 68, 68, 0.3)' : 'none'
+        }}
+      >
+        <X size={14} /> No
+      </button>
+    </div>
+  );
+}
+
 export function FieldInput({ field, value, onChange }) {
-  const v = value ?? (field.field_type==='boolean' ? false : field.field_type==='checkbox' ? [] : '');
+  const v = value ?? (field.field_type==='boolean' || field.field_type==='toggle' ? null : field.field_type==='checkbox' ? [] : '');
   switch(field.field_type) {
     case 'textarea': return <textarea className="form-textarea" placeholder={field.placeholder} value={v} onChange={e=>onChange(e.target.value)}/>;
     case 'number': return <input className="form-input" type="number" placeholder={field.placeholder} value={v} onChange={e=>onChange(parseFloat(e.target.value)||0)}/>;
@@ -307,6 +341,7 @@ export function FieldInput({ field, value, onChange }) {
     case 'checkbox': return <CheckboxField field={field} value={v} onChange={onChange}/>;
     case 'file': return <FileField field={field} value={v} onChange={onChange}/>;
     case 'timer': return <TimerField value={v} onChange={onChange}/>;
+    case 'toggle': return <ToggleField value={v} onChange={onChange}/>;
     case 'selection': return <select className="form-select" value={v} onChange={e=>onChange(e.target.value)}><option value="">— Select —</option>{(field.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>;
     case 'user': return <UserSelect field={field} value={v} onChange={onChange}/>;
     case 'branch': return <BranchSelect field={field} value={v} onChange={onChange}/>;
