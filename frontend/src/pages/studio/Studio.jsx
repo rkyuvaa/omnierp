@@ -127,7 +127,7 @@ export default function Studio() {
         }
       } else {
         const existing = stageRules.find(r => r.field_name === savedF.field_name);
-        if (existing) await api.delete(`/studio/layout/${module}/stage-rules/${existing.id}`);
+        if (existing && module) await api.delete(`/studio/layout/${module}/stage-rules/${existing.id}`);
       }
       toast.success('Field saved'); 
       setFieldModal(null); 
