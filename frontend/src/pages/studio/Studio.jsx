@@ -101,15 +101,16 @@ export default function Studio() {
 
   const saveTab = async (form) => {
     try {
-      if (form.id) await api.put(`/studio/layout/${module}/tabs/${form.id}`, form);
-      else await api.post(`/studio/layout/${module}/tabs`, form);
+      const payload = { ...form, module };
+      if (form.id) await api.put(`/studio/layout/${module}/tabs/${form.id}`, payload);
+      else await api.post(`/studio/layout/${module}/tabs`, payload);
       toast.success('Tab updated'); setTabModal(null); loadData();
     } catch { toast.error('Check server logs'); }
   };
 
   const saveField = async (f) => {
     const sr = f._stageRule; const sro = f._stageRuleOp; const srv = f._stageRuleVal;
-    const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
+    const payload = { ...f, module }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
     try {
       let savedF;
       if (f.id) savedF = (await api.put(`/studio/layout/${module}/fields/${f.id}`, payload)).data;

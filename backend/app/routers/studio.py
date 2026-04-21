@@ -76,9 +76,10 @@ def get_stages(module: str = None, module_query: str = Query(None, alias="module
 # ── Layout (Tabs & Fields) ────────────────────────────────────
 @router.get("/layout/{module}/tabs")
 def get_tabs(module: str, db: Session = Depends(get_db)):
+    print(f"DEBUG: Fetching tabs for module: {module}")
     TabModel, FieldModel, _ = get_layout_models(module)
-    # Eagerly load fields to prevent N+1 queries
     tabs = db.query(TabModel).options(joinedload(TabModel.fields)).filter(TabModel.is_active == True).order_by(TabModel.sort_order).all()
+    print(f"DEBUG: Found {len(tabs)} tabs in {TabModel.__tablename__}")
     res = []
     for t in tabs:
         res.append({
