@@ -12,7 +12,7 @@ import { ArrowLeft, Save, Plus, Settings, Pencil, Trash2, Check, Eye, Download, 
 import SubFormSection from '../crm/SubFormSection';
 
 const emptyForm = { name:'', serial_number:'', bom_id:'', warranty_period:12, warranty_unit:'months', notes:'', stage_id:'', custom_data:{}, component_serials:[] };
-const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
+const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0, module: 'warranty' };
 const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
 export default function ProductDetail() {
@@ -35,7 +35,10 @@ export default function ProductDetail() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [recentlySaved, setRecentlySaved] = useState(false);
 
-  const loadTabs = useCallback(() => api.get('/studio/layout/warranty/tabs').then(r => setTabs(r.data)), []);
+  const loadTabs = useCallback(() => api.get('/studio/layout/warranty/tabs').then(r => {
+    console.log("Warranty Tabs loaded:", r.data);
+    setTabs(r.data);
+  }), []);
   const loadStageRules = useCallback(() => api.get('/studio/layout/warranty/stage-rules').then(r => setStageRules(r.data)), []);
 
   const [nav, setNav] = useState({ prev: null, next: null });
@@ -113,8 +116,9 @@ export default function ProductDetail() {
   };
 
   const saveTab = async (t) => {
-    if (t.id) await api.put(`/studio/layout/warranty/tabs/${t.id}`, t);
-    else await api.post('/studio/layout/warranty/tabs', { ...t, sort_order: tabs.length });
+    const payload = { ...t, module: 'warranty' };
+    if (t.id) await api.put(`/studio/layout/warranty/tabs/${t.id}`, payload);
+    else await api.post('/studio/layout/warranty/tabs', { ...payload, sort_order: tabs.length });
     loadTabs(); setTabModal(null);
   };
   const deleteTab = async (id) => {
@@ -283,7 +287,7 @@ export default function ProductDetail() {
                   </>}
                 </div>
               ))}
-              {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Tab</button>}
+              {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({ module: 'warranty' })}><Plus size={13}/> Tab</button>}
             </div>
 
             {currentTab && (
@@ -307,7 +311,7 @@ export default function ProductDetail() {
                       )}
                       {editLayout && (
                         <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
-                          <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:f, tabId: currentTab.id})}><Pencil size={11}/></button>
+                          <button className="btn btn-ghost btn-sm" onClick={()=>setFieldModal({field:{...f, module: 'warranty'}, tabId: currentTab.id})}><Pencil size={11}/></button>
                           <button className="btn btn-danger btn-sm" onClick={()=>setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
                         </div>
                       )}
@@ -315,7 +319,7 @@ export default function ProductDetail() {
                   ))}
                   {editLayout && (
                     <div style={{ gridColumn: '1/-1', marginTop: 10 }}>
-                       <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({ field: { ...emptyField, sort_order: (currentTab.fields||[]).length }, tabId: currentTab.id })}>
+                       <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({ field: { ...emptyField, module: 'warranty', sort_order: (currentTab.fields||[]).length }, tabId: currentTab.id })}>
                          <Plus size={14}/> Add Field
                        </button>
                     </div>
