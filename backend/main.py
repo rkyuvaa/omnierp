@@ -49,6 +49,8 @@ if not os.path.exists(upload_dir):
 
 # Mount /api/uploads directly (Short and unique)
 app.mount("/api/uploads", StaticFiles(directory=upload_dir), name="uploads")
+# Keep the OLD mount path for backward compatibility with existing records
+app.mount("/api/static/uploads", StaticFiles(directory=upload_dir), name="uploads_old")
 # Mount the rest of static if needed
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 # Keep legacy mount for safety
