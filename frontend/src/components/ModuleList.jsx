@@ -8,7 +8,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
@@ -49,16 +49,19 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
         </div>
         <div className="toolbar-right">
           {selected.length > 0 && (
-            <button className="btn btn-danger btn-sm" style={{ fontWeight: 600, letterSpacing: '0.5px' }} onClick={async () => {
-              if(!window.confirm(`Permanently wipe ${selected.length} records off the Global Database?`)) return;
-              try {
-                const results = await Promise.all(selected.map(id => api.delete(`${endpoint}/${id}`)));
-                toast.success('Batch Deletion Process Completed.');
-                setSelected([]); reload();
-              } catch { toast.error('Partial Error: Access Restrictions Hit.'); }
-            }}>
-              DELETE {selected.length} SELECTED
-            </button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {batchActions && batchActions(selected, () => { setSelected([]); reload(); })}
+              <button className="btn btn-danger btn-sm" style={{ fontWeight: 600, letterSpacing: '0.5px' }} onClick={async () => {
+                if(!window.confirm(`Permanently wipe ${selected.length} records off the Global Database?`)) return;
+                try {
+                  const results = await Promise.all(selected.map(id => api.delete(`${endpoint}/${id}`)));
+                  toast.success('Batch Deletion Process Completed.');
+                  setSelected([]); reload();
+                } catch { toast.error('Partial Error: Access Restrictions Hit.'); }
+              }}>
+                DELETE {selected.length} SELECTED
+              </button>
+            </div>
           )}
           {(user?.is_superadmin || user?.role === 'admin' || user?.role === 'manager') && (
             <button className="btn btn-ghost btn-sm" onClick={() => window.open(`${window.location.protocol}//${window.location.hostname}:8000/api${exportPath}`, '_blank')}>
