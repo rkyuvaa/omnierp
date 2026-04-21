@@ -63,6 +63,7 @@ export default function KonwertCareList() {
       exportPath={isVehicleDelivery ? "/installation/export/excel" : "/konwertcare/export/excel"}
       extraFilters={isVehicleDelivery ? {} : { issue_type: issueType || undefined }}
       topContent={Dashboard}
+      stageLimit={isVehicleDelivery ? -4 : undefined}
       columns={isVehicleDelivery ? [
         { key: 'customer_name', label: 'Customer', bold: true },
         { key: 'vehicle_number', label: 'Vehicle Number' },

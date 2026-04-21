@@ -8,7 +8,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
@@ -78,7 +78,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
 
           {stages && stages.length > 0 && (
             <div className="stage-ribbon" style={{ display: 'flex', gap: 6, paddingBottom: 10, width: '100%', marginTop: 8, flexWrap: 'wrap' }}>
-              {stages.map(s => { const sc = stageCounts ? (stageCounts[s.id] || 0) : s.count; return (
+              {(stageLimit ? stages.slice(stageLimit) : stages).map(s => { const sc = stageCounts ? (stageCounts[s.id] || 0) : s.count; return (
                 <div key={s.id} onClick={() => handleStage(s.id)}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
