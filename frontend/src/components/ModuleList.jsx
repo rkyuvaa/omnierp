@@ -8,7 +8,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {} }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
@@ -98,9 +98,12 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
       </div>
 
       <div className="card">
-        <div className="card-header">
-          <span className="card-title">{title}</span>
-          <span className="text-muted text-sm">{total} total</span>
+        <div className="card-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+            <span className="card-title" style={{ fontSize: 18, fontWeight: 700 }}>{title}</span>
+            <span className="text-muted text-sm" style={{ fontWeight: 600, opacity: 0.7 }}>{total} records</span>
+          </div>
+          {headerContent && <div style={{ width: '100%' }}>{headerContent}</div>}
         </div>
         {loading ? <Loader /> : items.length === 0 ? <Empty /> : (<>
           <div className="table-wrap">
