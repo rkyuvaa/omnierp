@@ -45,13 +45,23 @@ static_dir = os.path.join(BASE_DIR, "static")
 upload_dir = os.path.join(static_dir, "uploads")
 
 if not os.path.exists(upload_dir):
-    os.makedirs(upload_dir)
+    os.makedirs(upload_dir, exist_ok=True)
 
+# Mount /api/static/uploads first
 app.mount("/api/static/uploads", StaticFiles(directory=upload_dir), name="uploads")
-app.mount("/uploads", StaticFiles(directory=upload_dir), name="legacy_uploads")
+# Then mount the rest of /api/static
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
+# Legacy mount for compatibility
+app.mount("/uploads", StaticFiles(directory=upload_dir), name="legacy_uploads")
 
 
 @app.get("/")
 def root():
     return {"message": "OmniERP API Running"}
+
+@app.get("/api/debug/uploads")
+def debug_uploads():
+    if not os.path.exists(upload_dir):
+        return {"error": "Upload directory does not exist", "path": upload_dir}
+    files = os.listdir(upload_dir)
+    return {"path": upload_dir, "files": files}
