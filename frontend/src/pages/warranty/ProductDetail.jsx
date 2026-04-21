@@ -158,12 +158,16 @@ export default function ProductDetail() {
     loadTabs(); setDeleteConfirm(null);
   };
 
-  const visibleTabs = useMemo(() => (tabs || []).filter(t => {
-    if (!t || !Array.isArray(t.visibility_stages) || t.visibility_stages.length === 0) return true;
-    const sId = Number(form?.stage_id);
-    if (!sId) return false;
-    return (t.visibility_stages || []).map(Number).includes(sId);
-  }), [tabs, form?.stage_id]);
+  const visibleTabs = useMemo(() => {
+    console.log("Filtering tabs. Count:", (tabs||[]).length, "Stages:", (stages||[]).length, "Current Stage:", form?.stage_id);
+    return (tabs || []).filter(t => {
+      if (!t || !Array.isArray(t.visibility_stages) || t.visibility_stages.length === 0) return true;
+      if (!stages || stages.length === 0) return true; 
+      const sId = Number(form?.stage_id);
+      if (!sId) return false;
+      return (t.visibility_stages || []).map(Number).includes(sId);
+    });
+  }, [tabs, form?.stage_id, stages]);
 
   const currentTab = (visibleTabs || [])[activeTab];
 
