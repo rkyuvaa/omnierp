@@ -50,15 +50,21 @@ def trigger_konwert_care_handoff(installation, db):
         ref = f"CARE/{datetime.now().year}/{next_id:04d}"
         
         # Create Ticket
+        # Try to get phone/email from custom_data if not on the object
+        cd = installation.custom_data or {}
+        phone = getattr(installation, 'phone', cd.get('phone', cd.get('customer_phone')))
+        email = getattr(installation, 'email', cd.get('email', cd.get('customer_email')))
+        product_serial = getattr(installation, 'product_serial', cd.get('product_serial'))
+
         ticket = KonwertCareTicket(
             reference=ref,
             customer_name=installation.customer_name or "Unknown",
-            phone=installation.phone,
-            email=installation.email,
+            phone=phone,
+            email=email,
             vehicle_number=installation.vehicle_number,
             vehicle_make=installation.vehicle_make,
             vehicle_model=installation.vehicle_model,
-            product_serial=installation.product_serial,
+            product_serial=product_serial,
             issue_type="Vehicle Delivery",
             issue_description=f"Auto-generated from successful installation {installation.reference}.",
             notes=f"Installation: {installation.reference}\nTechnician: {getattr(installation, 'technician_name', 'N/A')}",
