@@ -265,6 +265,7 @@ class InstallationTab(Base):
     name = Column(String(100))
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
+    visibility_stages = Column(JSON, default=[])
     fields = relationship("InstallationField", back_populates="tab", cascade="all, delete-orphan", order_by="InstallationField.sort_order")
 
 class InstallationField(Base):
@@ -279,6 +280,7 @@ class InstallationField(Base):
     required = Column(Boolean, default=False)
     width = Column(String(20), default="full")
     visibility_rule = Column(JSON, nullable=True)
+    form_template_id = Column(Integer, nullable=True)
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     tab = relationship("InstallationTab", back_populates="fields")
