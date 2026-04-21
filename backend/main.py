@@ -39,6 +39,8 @@ app.include_router(forms.router, prefix="/api/forms", tags=["Forms"])
 app.include_router(konwertcare.router, prefix="/api/konwertcare", tags=["konwertcare"])
 
 
+from fastapi.responses import FileResponse
+
 # Ensure static/uploads exists
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 static_dir = os.path.join(BASE_DIR, "static")
@@ -47,14 +49,19 @@ upload_dir = os.path.join(static_dir, "uploads")
 if not os.path.exists(upload_dir):
     os.makedirs(upload_dir, exist_ok=True)
 
-# Mount /api/uploads directly (Short and unique)
-app.mount("/api/uploads", StaticFiles(directory=upload_dir), name="uploads")
-# Keep the OLD mount path for backward compatibility with existing records
-app.mount("/api/static/uploads", StaticFiles(directory=upload_dir), name="uploads_old")
-# Mount the rest of static if needed
+@app.get("/api/uploads/{filename}")
+@app.get("/api/static/uploads/{filename}")
+@app.get("/uploads/{filename}")
+def serve_upload(filename: str):
+    file_path = os.path.join(upload_dir, filename)
+    print(f"DEBUG: Serving file from {file_path}")
+    if not os.path.isfile(file_path):
+        print(f"DEBUG: File NOT FOUND at {file_path}")
+        raise HTTPException(status_code=404, detail="File not found on disk")
+    return FileResponse(file_path)
+
+# Keep the general static mount for other things
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
-# Keep legacy mount for safety
-app.mount("/uploads", StaticFiles(directory=upload_dir), name="legacy_uploads")
 
 
 @app.get("/")
