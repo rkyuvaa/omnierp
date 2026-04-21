@@ -33,14 +33,20 @@ def serialize(r: KonwertCareTicket):
 @router.get("/summary")
 def get_summary(db: Session = Depends(get_db)):
     from sqlalchemy import func
+    from ..models import Installation
+    
+    # Care Ticket counts
     results = db.query(KonwertCareTicket.issue_type, func.count(KonwertCareTicket.id)).group_by(KonwertCareTicket.issue_type).all()
-    # Map into a cleaner dictionary
     counts = {r[0]: r[1] for r in results}
+    
+    # Installation count (for Vehicle Delivery tile)
+    inst_count = db.query(Installation).count()
+    
     return {
         "service": counts.get("Service", 0),
         "maintenance": counts.get("Maintenance", 0),
-        "vehicle_delivery": counts.get("Vehicle Delivery", 0),
-        "total": sum(counts.values())
+        "vehicle_delivery": inst_count,
+        "total": sum(counts.values()) + inst_count
     }
 
 @router.get("/")

@@ -17,6 +17,8 @@ export default function KonwertCareList() {
     { key: 'Vehicle Delivery', label: 'Vehicle Delivery', count: summary.vehicle_delivery, icon: Truck, color: '#6366F1' }
   ];
 
+  const isVehicleDelivery = issueType === 'Vehicle Delivery';
+
   return (
     <div className="konwert-care-dashboard">
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginBottom: 24, padding: '0 4px' }}>
@@ -64,13 +66,19 @@ export default function KonwertCareList() {
       </div>
 
       <ModuleList
+        key={isVehicleDelivery ? 'inst' : 'care'}
         title={issueType ? `Konwert Care+: ${issueType}` : "All Care Requests"}
-        module="konwertcare"
-        endpoint="/konwertcare"
-        formPath="/konwertcare"
-        exportPath="/konwertcare/export/excel"
-        extraFilters={{ issue_type: issueType || undefined }}
-        columns={[
+        module={isVehicleDelivery ? "installation" : "konwertcare"}
+        endpoint={isVehicleDelivery ? "/installation" : "/konwertcare"}
+        formPath={isVehicleDelivery ? "/installation" : "/konwertcare"}
+        exportPath={isVehicleDelivery ? "/installation/export/excel" : "/konwertcare/export/excel"}
+        extraFilters={isVehicleDelivery ? {} : { issue_type: issueType || undefined }}
+        columns={isVehicleDelivery ? [
+          { key: 'customer_name', label: 'Customer', bold: true },
+          { key: 'vehicle_number', label: 'Vehicle Number' },
+          { key: 'vehicle_model', label: 'Model', muted: true },
+          { key: 'technician_name', label: 'Technician' }
+        ] : [
           { key: 'customer_name', label: 'Customer', bold: true },
           { key: 'vehicle_number', label: 'Vehicle' },
           { key: 'issue_type', label: 'Type', muted: true },
