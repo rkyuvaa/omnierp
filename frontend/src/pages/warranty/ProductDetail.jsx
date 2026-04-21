@@ -103,6 +103,15 @@ export default function ProductDetail() {
     finally { setSaving(false); }
   };
 
+  const updateStage = async (stageId) => {
+    if (!isAdmin) return;
+    try {
+      await api.put(`/warranty/products/${id}/stage`, { stage_id: stageId });
+      set('stage_id', stageId);
+      toast.success('Stage updated');
+    } catch { toast.error('Failed to update stage'); }
+  };
+
   const saveTab = async (t) => {
     if (t.id) await api.put(`/studio/layout/warranty/tabs/${t.id}`, t);
     else await api.post('/studio/layout/warranty/tabs', { ...t, sort_order: tabs.length });
@@ -144,6 +153,7 @@ export default function ProductDetail() {
     loadTabs(); setDeleteConfirm(null);
   };
 
+  const stages = useStages('warranty');
   const visibleTabs = useMemo(() => (tabs || []).filter(t => {
     if (!t || !Array.isArray(t.visibility_stages) || t.visibility_stages.length === 0) return true;
     const sId = Number(form?.stage_id);
@@ -195,6 +205,31 @@ export default function ProductDetail() {
           )}
         </div>
       </div>
+
+      {/* STAGE BAR */}
+      {!isNew && stages.length > 0 && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
+          {stages.map(s => {
+            const isCurrent = form.stage_id === s.id;
+            return (
+              <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '4px 6px', borderRadius: 18, cursor: isAdmin ? "pointer" : "default", 
+                  flex: 1, height: 35, transition: 'all 0.2s',
+                  border: `1.5px solid ${isCurrent ? s.color : (s.color + '30')}`,
+                  background: isCurrent ? s.color : 'transparent',
+                  color: isCurrent ? '#ffffff' : s.color,
+                  boxShadow: isCurrent ? `0 3px 8px ${s.color}40` : 'none',
+                  minWidth: 0, opacity: isCurrent ? 1 : 0.7,
+                  textAlign: 'center'
+                }}>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 400px', gap: 24 }}>
         {/* LEFT COLUMN: PRIMARY FORMS */}
