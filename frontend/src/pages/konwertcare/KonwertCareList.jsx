@@ -27,37 +27,69 @@ function WarrantyPreviewModal({ ids, onClose }) {
     fetchData();
   }, [ids]);
 
+  const handleActivate = async (productId) => {
+    if (!window.confirm("Are you sure you want to START the warranty for this product? This will set the start date to today and calculate expiry based on BOM settings.")) return;
+    
+    try {
+      const r = await api.post(`/warranty/products/${productId}/activate`);
+      setData(prev => prev.map(p => p.id === productId ? r.data : p));
+      toast.success("Warranty started successfully!");
+    } catch (err) {
+      toast.error("Failed to start warranty");
+    }
+  };
+
   return (
     <Modal title="Warranty & Components Preview" onClose={onClose} width={800}>
       {loading ? <Loader /> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {data.length === 0 && <div className="text-muted">No product links found for selected records.</div>}
-          {data.map(p => (
-            <div key={p.id} className="card" style={{ border: '1px solid var(--border)', background: 'var(--bg3)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8, marginBottom: 12 }}>
-                <div>
-                  <div className="fw-800 size-14 color-text1">{p.title}</div>
-                  <div className="text-muted size-11">S/N: <b>{p.serial_number}</b></div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="size-11 fw-700 text-muted uppercase">Warranty</div>
-                  <div className="size-14 fw-800 color-accent">{p.warranty_period} {p.warranty_unit}</div>
-                </div>
-              </div>
-              
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
-                {(p.component_serials || []).map((c, i) => (
-                  <div key={i} style={{ padding: 8, background: 'var(--bg1)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <div className="size-11 fw-700 color-text2">{c.name}</div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
-                      <span className="size-10 text-muted">S/N: <b>{c.serial_number || '—'}</b></span>
-                      <span className="size-10 fw-800 color-success">{c.warranty_period}{c.warranty_unit?.substring(0,1)}</span>
-                    </div>
+          {data.map(p => {
+            const isStarted = !!p.warranty_start_date;
+            return (
+              <div key={p.id} className="card" style={{ border: '1px solid var(--border)', background: 'var(--bg3)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: 8, marginBottom: 12 }}>
+                  <div>
+                    <div className="fw-800 size-14 color-text1">{p.title}</div>
+                    <div className="text-muted size-11">S/N: <b>{p.serial_number}</b></div>
                   </div>
-                ))}
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="size-11 fw-700 text-muted uppercase">Warranty</div>
+                    <div className="size-14 fw-800 color-accent">{p.warranty_period} {p.warranty_unit}</div>
+                    {isStarted && <div className="size-10 fw-700 text-success uppercase">Active until {p.warranty_end_date}</div>}
+                  </div>
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {(p.component_serials || []).map((c, i) => (
+                    <div key={i} style={{ padding: 8, background: 'var(--bg1)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                      <div className="size-11 fw-700 color-text2">{c.name}</div>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 4 }}>
+                        <span className="size-10 text-muted">S/N: <b>{c.serial_number || '—'}</b></span>
+                        <div style={{ textAlign: 'right' }}>
+                          <div className="size-10 fw-800 color-success">{c.warranty_period}{c.warranty_unit?.substring(0,1)}</div>
+                          {c.warranty_end_date && <div className="size-8 text-muted uppercase">{c.warranty_end_date}</div>}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {!isStarted && (
+                  <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                    <button className="btn btn-primary" style={{ padding: '8px 24px', borderRadius: 8, fontWeight: 800, background: 'var(--green)', border: 'none' }} onClick={() => handleActivate(p.id)}>
+                      <ShieldCheck size={16} style={{ marginRight: 8 }} /> START WARRANTY
+                    </button>
+                  </div>
+                )}
+                {isStarted && (
+                  <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'flex-end', color: 'var(--green)', fontWeight: 800, fontSize: 11 }}>
+                    <ShieldCheck size={14} style={{ marginRight: 6 }} /> WARRANTY ACTIVE
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </Modal>

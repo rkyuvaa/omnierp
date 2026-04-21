@@ -4,9 +4,37 @@ from ..database import get_db
 from ..models import Product, BOM, BOMComponent, ProductComponentSerial
 from ..auth import get_current_user
 from typing import Optional, List
+import datetime
 from sqlalchemy import or_
 
 router = APIRouter()
+
+def calculate_expiry(start_date: datetime.date, period: int, unit: str):
+    if not start_date or not period: return None
+    # Simple logic for months/years/days
+    days = 0
+    u = unit.lower()
+    if 'year' in u: days = period * 365
+    elif 'month' in u: days = period * 30
+    else: days = period # default days
+    return start_date + datetime.timedelta(days=days)
+
+@router.post("/products/{id}/activate")
+def activate_warranty(id: int, db: Session = Depends(get_db)):
+    p = db.query(Product).filter(Product.id == id).first()
+    if not p: raise HTTPException(404)
+    
+    now = datetime.date.today()
+    p.warranty_start_date = now
+    p.warranty_end_date = calculate_expiry(now, p.warranty_period, p.warranty_unit or "months")
+    
+    for cs in p.component_serials:
+        cs.warranty_start_date = now
+        cs.warranty_end_date = calculate_expiry(now, cs.warranty_period, cs.warranty_unit or "months")
+        
+    db.commit()
+    db.refresh(p)
+    return serialize_product(p)
 
 def serialize_product(p: Product):
     try:
@@ -17,6 +45,8 @@ def serialize_product(p: Product):
             "serial_number": p.serial_number or "",
             "warranty_period": p.warranty_period or 0,
             "warranty_unit": p.warranty_unit or "months",
+            "warranty_start_date": str(p.warranty_start_date) if p.warranty_start_date else None,
+            "warranty_end_date": str(p.warranty_end_date) if p.warranty_end_date else None,
             "notes": p.notes or "",
             "custom_data": p.custom_data or {},
             "created_at": str(p.created_at) if p.created_at else "",
@@ -29,7 +59,9 @@ def serialize_product(p: Product):
                 "name": c.bom_component.name if c.bom_component else "",
                 "serial_number": c.serial_number or "",
                 "warranty_period": c.warranty_period,
-                "warranty_unit": c.warranty_unit
+                "warranty_unit": c.warranty_unit,
+                "warranty_start_date": str(c.warranty_start_date) if c.warranty_start_date else None,
+                "warranty_end_date": str(c.warranty_end_date) if c.warranty_end_date else None
             } for c in p.component_serials]
         }
     except Exception as e:

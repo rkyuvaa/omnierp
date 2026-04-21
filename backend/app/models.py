@@ -237,7 +237,8 @@ class ProductComponentSerial(Base):
     serial_number = Column(String(50))
     warranty_period = Column(Integer, default=0)
     warranty_unit = Column(String(20), default="months")
-    warranty_status = Column(String(20), default="not_started")
+    warranty_start_date = Column(Date, nullable=True)
+    warranty_end_date = Column(Date, nullable=True)
     product = relationship("Product", back_populates="component_serials")
     bom_component = relationship("BOMComponent")
 
