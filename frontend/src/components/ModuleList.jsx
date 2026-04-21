@@ -110,17 +110,25 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
         {loading ? <Loader /> : items.length === 0 ? <Empty /> : (<>
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Reference</th><th style={{ width: 40, textAlign: "center" }}>
-<input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} onChange={e => setSelected(e.target.checked ? items.map(i => i.id) : [])} checked={items.length > 0 && selected.length === items.length} />
-</th>
+              <thead><tr><th>Reference</th><th style={{ width: 40, textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                <input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} onChange={e => setSelected(e.target.checked ? items.map(i => i.id) : [])} checked={items.length > 0 && selected.length === items.length} />
+              </th>
 {columns.map(c => <th key={c.key}>{c.label}</th>)}<th>Stage</th><th>Created</th><th></th></tr></thead>
               <tbody>
                 {items.map(row => (
                   <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
                     <td><span className="ref-text">{row.reference}</span></td>
-                    <td style={{ width: 40, textAlign: "center" }}>
-<input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} checked={selected.includes(row.id)} onChange={e => { if (e.target.checked) setSelected([...selected, row.id]); else setSelected(selected.filter(id => id !== row.id)); }} />
-</td>
+                    <td style={{ width: 40, textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                      <input 
+                        type="checkbox" 
+                        style={{ transform:"scale(1.2)", cursor:"pointer" }} 
+                        checked={selected.includes(row.id)} 
+                        onChange={e => { 
+                          if (e.target.checked) setSelected([...selected, row.id]); 
+                          else setSelected(selected.filter(id => id !== row.id)); 
+                        }} 
+                      />
+                    </td>
 {columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
                     <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>
                     <td className="text-muted text-sm">{row.created_at?.slice(0,10)}</td>
