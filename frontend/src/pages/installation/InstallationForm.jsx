@@ -319,14 +319,15 @@ export default function InstallationForm() {
       {!isNew && stages.length > 0 && (
         <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
           {stages.map(s => {
-            const isCurrent = form.stage_id === s.id;
+            const isCurrent = String(form.stage_id) === String(s.id);
+            if (isCurrent) console.log(`[UI] Highlighting Stage: ${s.name} (ID: ${s.id})`);
             return (
               <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   padding: '4px 6px', borderRadius: 18, cursor: isAdmin ? "pointer" : "default", 
                   flex: 1, height: 35, transition: 'all 0.2s',
-                  border: `1.5px solid ${isCurrent ? s.color : (s.color + '30')}`,
+                  border: `1.5px solid ${isCurrent ? s.color : (s.color + '40')}`,
                   background: isCurrent ? s.color : 'transparent',
                   color: isCurrent ? '#ffffff' : s.color,
                   boxShadow: isCurrent ? `0 3px 8px ${s.color}40` : 'none',
