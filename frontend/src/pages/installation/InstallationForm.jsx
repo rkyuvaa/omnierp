@@ -67,9 +67,9 @@ export default function InstallationForm() {
   const [nav, setNav] = useState({ prev: null, next: null });
 
   useEffect(() => {
-    if (isNew) { setForm({ ...emptyForm }); setLoading(false); }
-    else {
-      setLoading(true); // Force reload on ID change
+    if (id && id !== 'new') {
+      setLoading(true);
+      setForm(null); // Reset form to prevent old highlights
       api.get(`/installation/${id}`).then(r => {
         setForm({ ...emptyForm, ...r.data });
         setActivities(r.data.activities || []);
@@ -77,8 +77,11 @@ export default function InstallationForm() {
       }).catch(() => { setLoading(false); toast.error('Not found'); navigate('/installation'); });
       
       api.get(`/installation/${id}/navigation`).then(r => setNav(r.data)).catch(() => {});
+    } else {
+      setForm(emptyForm);
+      setLoading(false);
     }
-  }, [id, isNew]);
+  }, [id]);
 
   useEffect(() => {
     if (form?.product_id) {
@@ -322,8 +325,7 @@ export default function InstallationForm() {
       {!isNew && stages.length > 0 && (
         <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
           {stages.map(s => {
-            const isCurrent = String(form.stage_id) === String(s.id);
-            if (isCurrent) console.log(`[UI] Highlighting Stage: ${s.name} (ID: ${s.id})`);
+            const isCurrent = form && String(form.stage_id) === String(s.id);
             return (
               <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
                 style={{
