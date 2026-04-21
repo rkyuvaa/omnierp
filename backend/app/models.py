@@ -110,6 +110,7 @@ class CRMStageRule(Base):
     stage_id = Column(Integer, ForeignKey("stages.id"))
     condition_operator = Column(String(20), default="has_value")
     condition_value = Column(String(100), nullable=True)
+    stage = relationship("Stage")
 
 class Lead(Base):
     __tablename__ = "leads"

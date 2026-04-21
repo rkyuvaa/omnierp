@@ -146,11 +146,19 @@ def get_rules(module: str, db: Session = Depends(get_db)):
 
 @router.post("/layout/{module}/stage-rules")
 def create_rule(module: str, data: StageRuleIn, db: Session = Depends(get_db), _=Depends(require_admin)):
-    _, _, RuleModel = get_layout_models(module)
-    db.query(RuleModel).filter(RuleModel.field_name == data.field_name).delete()
-    rule = RuleModel(**data.model_dump())
-    db.add(rule); db.commit(); db.refresh(rule)
-    return rule
+    try:
+        _, _, RuleModel = get_layout_models(module)
+        # Remove existing rules for this field to prevent duplicates
+        db.query(RuleModel).filter(RuleModel.field_name == data.field_name).delete()
+        
+        rule = RuleModel(**data.model_dump())
+        db.add(rule)
+        db.commit()
+        db.refresh(rule)
+        return rule
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to save stage rule: {str(e)}")
 
 @router.delete("/layout/{module}/stage-rules/{rid}")
 def delete_rule(module: str, rid: int, db: Session = Depends(get_db), _=Depends(require_admin)):

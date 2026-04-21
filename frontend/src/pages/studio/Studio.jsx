@@ -59,7 +59,7 @@ function StageModal({ initial, onSave, onClose }) {
 // ── Main Page ────────────────────────────────────────────────
 
 export default function Studio() {
-  const [tab, setTab] = useState('layout'); 
+  const [tab, setTab] = useState('layout');
   const [module, setModule] = useState('crm');
   const [tabs, setTabs] = useState([]);
   const [stages, setStages] = useState([]);
@@ -67,7 +67,7 @@ export default function Studio() {
   const [sequence, setSequence] = useState(null);
   const [documentTemplates, setDocumentTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   const [activeTabIdx, setActiveTabIdx] = useState(0);
   const [tabModal, setTabModal] = useState(null);
   const [fieldModal, setFieldModal] = useState(null);
@@ -114,7 +114,7 @@ export default function Studio() {
       let savedF;
       if (f.id) savedF = (await api.put(`/studio/layout/${module}/fields/${f.id}`, payload)).data;
       else savedF = (await api.post(`/studio/layout/${module}/fields`, payload)).data;
-      
+
       if (sr) {
         await api.post(`/studio/layout/${module}/stage-rules`, {
           field_name: savedF.field_name, stage_id: parseInt(sr),
@@ -159,7 +159,7 @@ export default function Studio() {
   return (
     <Layout title="Studio — Layout & Workflow">
       <div className="flex gap-2 mb-6 items-center bg-white p-2 rounded-xl shadow-sm border border-gray-100">
-        <div style={{ display:'flex', gap:4, background:'var(--bg3)', padding:4, borderRadius:10 }}>
+        <div style={{ display: 'flex', gap: 4, background: 'var(--bg3)', padding: 4, borderRadius: 10 }}>
           {MODULES.map(m => (
             <button key={m} className={`btn btn-sm ${module === m ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setModule(m)}>
               {m.toUpperCase()}
@@ -173,32 +173,32 @@ export default function Studio() {
               {t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
-          <button className="btn btn-ghost btn-sm" onClick={loadData}><RotateCw size={14}/></button>
+          <button className="btn btn-ghost btn-sm" onClick={loadData}><RotateCw size={14} /></button>
         </div>
       </div>
 
-      {loading ? <div className="card p-12 text-center"><Loader/></div> : (
+      {loading ? <div className="card p-12 text-center"><Loader /></div> : (
         <>
           {tab === 'layout' && (
             <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr', gap: 24 }}>
               {/* Tabs sidebar */}
               <div>
                 <div className="detail-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  Tabs <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={12}/></button>
+                  Tabs <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={12} /></button>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {(tabs || []).map((t, i) => (
-                    <div key={t.id} className={`nav-item ${activeTabIdx === i ? 'active' : ''}`} 
-                      style={{ 
+                    <div key={t.id} className={`nav-item ${activeTabIdx === i ? 'active' : ''}`}
+                      style={{
                         cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                         padding: '10px 12px', borderRadius: 8, fontSize: 13, fontWeight: 600,
                         background: activeTabIdx === i ? 'var(--accent-dim)' : 'transparent',
                         color: activeTabIdx === i ? 'var(--accent)' : 'var(--text2)'
                       }} onClick={() => setActiveTabIdx(i)}>
-                      <span className="flex items-center gap-2"><Layers size={14}/> {t.name}</span>
+                      <span className="flex items-center gap-2"><Layers size={14} /> {t.name}</span>
                       <div className="flex gap-1">
-                        <button className="btn btn-ghost btn-sm" style={{ padding: 2 }} onClick={e => { e.stopPropagation(); setTabModal(t); }}><Pencil size={11}/></button>
-                        <button className="btn btn-danger btn-sm" style={{ padding: 2 }} onClick={e => { e.stopPropagation(); setDeleting({ type: 'tab', id: t.id, name: t.name }); }}><Trash2 size={11}/></button>
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 2 }} onClick={e => { e.stopPropagation(); setTabModal(t); }}><Pencil size={11} /></button>
+                        <button className="btn btn-danger btn-sm" style={{ padding: 2 }} onClick={e => { e.stopPropagation(); setDeleting({ type: 'tab', id: t.id, name: t.name }); }}><Trash2 size={11} /></button>
                       </div>
                     </div>
                   ))}
@@ -210,7 +210,7 @@ export default function Studio() {
               <div className="card">
                 <div className="card-header">
                   <span className="card-title">{currentTab ? `Fields in "${currentTab.name}"` : 'Select a tab'}</span>
-                  {currentTab && <button className="btn btn-primary btn-sm" onClick={() => setFieldModal({ tab_id: currentTab.id })}><Plus size={14}/> Add Field</button>}
+                  {currentTab && <button className="btn btn-primary btn-sm" onClick={() => setFieldModal({ tab_id: currentTab.id })}><Plus size={14} /> Add Field</button>}
                 </div>
                 {!currentTab ? <div className="p-8 text-center text-muted">Create or select a tab to manage fields.</div> : (
                   <div className="table-wrap">
@@ -219,15 +219,15 @@ export default function Studio() {
                       <tbody>
                         {currentTab.fields.map(f => (
                           <tr key={f.id}>
-                            <td className="fw-600">{f.field_label} {f.required && <span style={{color:'var(--red)'}}>*</span>}</td>
+                            <td className="fw-600">{f.field_label} {f.required && <span style={{ color: 'var(--red)' }}>*</span>}</td>
                             <td><code>{f.field_name}</code></td>
-                            <td><Badge color="var(--accent-dim)" style={{color:'var(--accent)'}}>{f.field_type}</Badge></td>
-                            <td><span style={{fontSize:11}}>{f.width}</span></td>
-                            <td>{f.visibility_rule ? <Badge color="var(--amber-dim)" style={{color:'var(--amber)'}}>Visible If</Badge> : '—'}</td>
+                            <td><Badge color="var(--accent-dim)" style={{ color: 'var(--accent)' }}>{f.field_type}</Badge></td>
+                            <td><span style={{ fontSize: 11 }}>{f.width}</span></td>
+                            <td>{f.visibility_rule ? <Badge color="var(--amber-dim)" style={{ color: 'var(--amber)' }}>Visible If</Badge> : '—'}</td>
                             <td>
                               <div className="flex gap-2">
-                                <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal(f)}><Pencil size={12}/></button>
-                                <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'field', id: f.id, name: f.field_label })}><Trash2 size={12}/></button>
+                                <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal(f)}><Pencil size={12} /></button>
+                                <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'field', id: f.id, name: f.field_label })}><Trash2 size={12} /></button>
                               </div>
                             </td>
                           </tr>
@@ -245,7 +245,7 @@ export default function Studio() {
             <div className="card">
               <div className="card-header">
                 <span className="card-title">Workflow Stages — {module.toUpperCase()}</span>
-                <button className="btn btn-primary btn-sm" onClick={() => setStageModal({ module })}><Plus size={14}/> Add Stage</button>
+                <button className="btn btn-primary btn-sm" onClick={() => setStageModal({ module })}><Plus size={14} /> Add Stage</button>
               </div>
               <div className="table-wrap">
                 <table>
@@ -262,8 +262,8 @@ export default function Studio() {
                         </td>
                         <td>
                           <div className="flex gap-2">
-                            <button className="btn btn-ghost btn-sm" onClick={() => setStageModal(s)}><Pencil size={12}/></button>
-                            <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'stage', id: s.id, name: s.name })}><Trash2 size={12}/></button>
+                            <button className="btn btn-ghost btn-sm" onClick={() => setStageModal(s)}><Pencil size={12} /></button>
+                            <button className="btn btn-danger btn-sm" onClick={() => setDeleting({ type: 'stage', id: s.id, name: s.name })}><Trash2 size={12} /></button>
                           </div>
                         </td>
                       </tr>
@@ -305,9 +305,9 @@ export default function Studio() {
           )}
 
           {tab === 'documents' && (
-            <DocumentManagement 
-              module={module} 
-              templates={documentTemplates} 
+            <DocumentManagement
+              module={module}
+              templates={documentTemplates}
               onDataChange={loadData}
               onDelete={(id, name) => setDeleting({ type: 'document', id, name })}
               parentFields={tabs.flatMap(t => t.fields)}
