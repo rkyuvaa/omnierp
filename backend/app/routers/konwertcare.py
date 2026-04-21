@@ -173,18 +173,39 @@ def activate_warranty(id: int, db: Session = Depends(get_db)):
     if custom.get('warranty_status') == 'Active':
         return serialize(t)
         
-    # 1. Update Warranty Module (ProductComponentSerial)
-    serial = db.query(ProductComponentSerial).filter(ProductComponentSerial.serial_number == t.product_serial).first()
-    if serial:
-        serial.warranty_status = 'active'
-        # Record activation date in serial's custom_data if needed
-        scustom = serial.custom_data or {}
-        scustom['warranty_start_date'] = datetime.now().isoformat()
-        serial.custom_data = scustom
+    from ..models import Product
+    import datetime
     
-    # 2. Update Care Ticket
+    # 1. Update Warranty Module (Component Serials)
+    serials = db.query(ProductComponentSerial).filter(ProductComponentSerial.serial_number == t.product_serial).all()
+    now = datetime.datetime.now()
+    for s in serials:
+        s.warranty_status = 'active'
+        sc = s.custom_data or {}
+        sc['warranty_start_date'] = now.isoformat()
+        s.custom_data = sc
+    
+    # 2. Update Product (Vehicle) Root Record
+    prod = db.query(Product).filter(Product.serial_number == t.product_serial).first()
+    if prod:
+        prod.warranty_start_date = now.date()
+        # Calculate end date
+        if prod.warranty_unit == 'years':
+            try:
+                prod.warranty_end_date = now.date().replace(year=now.year + (prod.warranty_period or 0))
+            except ValueError: # Handle Feb 29
+                prod.warranty_end_date = now.date().replace(year=now.year + (prod.warranty_period or 0), day=28)
+        else:
+            # Advance months
+            month = now.month - 1 + (prod.warranty_period or 0)
+            year = now.year + month // 12
+            month = month % 12 + 1
+            day = min(now.day, [31, 29 if year % 4 == 0 and (year % 100 != 0 or year % 400 == 0) else 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month-1])
+            prod.warranty_end_date = datetime.date(year, month, day)
+
+    # 3. Update Care Ticket
     custom['warranty_status'] = 'Active'
-    custom['warranty_activated_at'] = datetime.now().isoformat()
+    custom['warranty_activated_at'] = now.isoformat()
     t.custom_data = custom
     
     db.commit(); db.refresh(t)
