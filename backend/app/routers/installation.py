@@ -81,8 +81,8 @@ def get_inst(search: str = "", stage_id: str = "", stage_names: Optional[str] = 
         q = q.filter(Installation.stage_id == int(stage_id))
         
     if stage_names:
-        names = [n.strip() for n in stage_names.split(",")]
-        q = q.filter(Stage.name.in_(names))
+        names = [n.strip().upper() for n in stage_names.split(",")]
+        q = q.filter(func.upper(func.trim(Stage.name)).in_(names))
     
     total = q.count()
     limit = 50

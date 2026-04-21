@@ -41,7 +41,7 @@ def get_summary(db: Session = Depends(get_db)):
     
     # Installation count (for Vehicle Delivery tile - filtered to only delivery stages)
     delivery_stages = ["FITMENT DONE", "CUSTOMER DELIVERY", "RTO PROCESS", "HSRP"]
-    inst_count = db.query(Installation).join(Stage).filter(Stage.name.in_(delivery_stages)).count()
+    inst_count = db.query(Installation).join(Stage).filter(func.upper(func.trim(Stage.name)).in_(delivery_stages)).count()
     
     return {
         "service": counts.get("Service", 0),
