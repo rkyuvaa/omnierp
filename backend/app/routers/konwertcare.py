@@ -30,9 +30,23 @@ def serialize(r: KonwertCareTicket):
         "created_at": str(r.created_at)
     }
 
+@router.get("/summary")
+def get_summary(db: Session = Depends(get_db)):
+    from sqlalchemy import func
+    results = db.query(KonwertCareTicket.issue_type, func.count(KonwertCareTicket.id)).group_by(KonwertCareTicket.issue_type).all()
+    # Map into a cleaner dictionary
+    counts = {r[0]: r[1] for r in results}
+    return {
+        "service": counts.get("Service", 0),
+        "maintenance": counts.get("Maintenance", 0),
+        "vehicle_delivery": counts.get("Vehicle Delivery", 0),
+        "total": sum(counts.values())
+    }
+
 @router.get("/")
 def list_tickets(
     search: Optional[str] = None, 
+    issue_type: Optional[str] = None,
     skip: int = 0, 
     limit: int = 50, 
     db: Session = Depends(get_db)
@@ -46,6 +60,9 @@ def list_tickets(
             KonwertCareTicket.vehicle_number.ilike(f"%{search}%"),
             KonwertCareTicket.phone.ilike(f"%{search}%")
         ))
+    
+    if issue_type:
+        q = q.filter(KonwertCareTicket.issue_type == issue_type)
     
     total = q.count()
     tickets = q.order_by(KonwertCareTicket.id.desc()).offset(skip).limit(limit).all()

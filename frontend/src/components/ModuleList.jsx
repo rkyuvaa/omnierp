@@ -8,13 +8,13 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {} }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
   const [deleting, setDeleting] = useState(null);
   const stages = useStages(module);
-  const { items, total, loading, reload, stageCounts , page, setPage} = useList(endpoint);
+  const { items, total, loading, reload, stageCounts, page, setPage } = useList(endpoint, { ...extraFilters });
   const { user } = useAuth();
   const perms = user?.is_superadmin ? {can_read:true, can_create:true, can_edit:true, can_delete:true} : (user?.module_permissions?.[module] || {});
   const navigate = useNavigate();
@@ -28,7 +28,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
   const handleStage = id => {
     const v = id === stageFilter ? '' : id;
     setStageFilter(v);
-    reload({ search, stage_id: v || undefined });
+    reload({ search, stage_id: v || undefined, ...extraFilters });
   };
   const confirmDelete = async () => {
     await api.delete(`${endpoint}/${deleting}`);
