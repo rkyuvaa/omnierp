@@ -84,11 +84,30 @@ def get_inst(search: str = "", stage_id: str = "", stage_names: Optional[str] = 
         names = [n.strip().upper() for n in stage_names.split(",")]
         q = q.filter(func.upper(func.trim(Stage.name)).in_(names))
     
+    # Calculate stage counts for the ribbon
+    count_q = db.query(Installation.stage_id, func.count(Installation.id)).group_by(Installation.stage_id)
+    if search:
+        count_q = count_q.filter(or_(
+            Installation.customer_name.ilike(f"%{search}%"),
+            Installation.reference.ilike(f"%{search}%"),
+            Installation.vehicle_number.ilike(f"%{search}%")
+        ))
+    if stage_names:
+        count_q = count_q.join(Stage).filter(func.upper(func.trim(Stage.name)).in_(names))
+    
+    counts_res = count_q.all()
+    stage_counts = {r[0]: r[1] for r in counts_res if r[0] is not None}
+
     total = q.count()
     limit = 50
     skip = (page - 1) * limit
     items = q.order_by(Installation.id.desc()).offset(skip).limit(limit).all()
-    return {"items": [serialize(i) for i in items], "total": total, "pages": (total // limit) + 1}
+    return {
+        "items": [serialize(i) for i in items], 
+        "total": total, 
+        "pages": (total // limit) + 1,
+        "stage_counts": stage_counts
+    }
 
 @router.get("/{id}")
 def get_installation(id: int, db: Session = Depends(get_db)):

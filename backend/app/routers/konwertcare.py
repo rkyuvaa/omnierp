@@ -71,9 +71,28 @@ def list_tickets(
     if issue_type:
         q = q.filter(KonwertCareTicket.issue_type == issue_type)
     
+    # Calculate stage counts for the ribbon
+    count_q = db.query(KonwertCareTicket.stage_id, func.count(KonwertCareTicket.id)).group_by(KonwertCareTicket.stage_id)
+    if search:
+        count_q = count_q.filter(or_(
+            KonwertCareTicket.customer_name.ilike(f"%{search}%"),
+            KonwertCareTicket.reference.ilike(f"%{search}%"),
+            KonwertCareTicket.vehicle_number.ilike(f"%{search}%"),
+            KonwertCareTicket.phone.ilike(f"%{search}%")
+        ))
+    if issue_type:
+        count_q = count_q.filter(KonwertCareTicket.issue_type == issue_type)
+    
+    counts_res = count_q.all()
+    stage_counts = {r[0]: r[1] for r in counts_res if r[0] is not None}
+
     total = q.count()
     tickets = q.order_by(KonwertCareTicket.id.desc()).offset(skip).limit(limit).all()
-    return {"total": total, "items": [serialize(t) for t in tickets]}
+    return {
+        "total": total, 
+        "items": [serialize(t) for t in tickets],
+        "stage_counts": stage_counts
+    }
 
 @router.get("/{id}")
 def get_ticket(id: int, db: Session = Depends(get_db)):
