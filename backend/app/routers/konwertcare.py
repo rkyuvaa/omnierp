@@ -169,3 +169,11 @@ def activate_warranty(id: int, db: Session = Depends(get_db)):
     
     db.commit(); db.refresh(t)
     return serialize(t)
+
+@router.delete("/{id}")
+def delete_ticket(id: int, db: Session = Depends(get_db)):
+    t = db.query(KonwertCareTicket).filter(KonwertCareTicket.id == id).first()
+    if not t: raise HTTPException(404)
+    db.delete(t)
+    db.commit()
+    return {"message": "Deleted"}
