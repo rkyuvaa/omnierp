@@ -66,12 +66,38 @@ def ser_field(f):
             "sort_order":f.sort_order, "form_template_id": getattr(f, 'form_template_id', None)}
 
 # ── Stages ────────────────────────────────────────────────────
+class StageIn(BaseModel):
+    name: str
+    color: str = "#64748b"
+    sort_order: int = 0
+    is_final_win: bool = False
+    is_final_lost: bool = False
+    module: Optional[str] = None
+
 @router.get("/stages/{module}")
 @router.get("/stages")
 def get_stages(module: str = None, module_query: str = Query(None, alias="module"), db: Session = Depends(get_db)):
     m = module or module_query
     if not m: return []
     return db.query(Stage).filter(Stage.module == m).order_by(Stage.sort_order).all()
+
+@router.post("/stages")
+def create_stage(data: StageIn, db: Session = Depends(get_db), _=Depends(require_admin)):
+    s = Stage(**data.model_dump())
+    db.add(s); db.commit(); db.refresh(s); return s
+
+@router.put("/stages/{sid}")
+def update_stage(sid: int, data: StageIn, db: Session = Depends(get_db), _=Depends(require_admin)):
+    s = db.query(Stage).filter(Stage.id == sid).first()
+    if not s: raise HTTPException(404)
+    for k, v in data.model_dump(exclude_unset=True).items(): setattr(s, k, v)
+    db.commit(); return s
+
+@router.delete("/stages/{sid}")
+def delete_stage(sid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
+    s = db.query(Stage).filter(Stage.id == sid).first()
+    if not s: raise HTTPException(404)
+    db.delete(s); db.commit(); return {"status": "ok"}
 
 # ── Layout (Tabs & Fields) ────────────────────────────────────
 @router.get("/layout/{module}/tabs")
