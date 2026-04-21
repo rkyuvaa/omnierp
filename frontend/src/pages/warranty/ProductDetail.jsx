@@ -271,6 +271,27 @@ export default function ProductDetail() {
                      <option value="years">Years</option>
                    </select>
                 </div>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Warranty Start Date</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="date" className="form-input" value={form.warranty_start_date || ''} onChange={e => set('warranty_start_date', e.target.value)} />
+                    {!form.warranty_start_date && (
+                      <button className="btn btn-sm btn-success" onClick={() => {
+                        const today = new Date().toISOString().split('T')[0];
+                        set('warranty_start_date', today);
+                        // Auto-calculate end date
+                        const end = new Date();
+                        if (form.warranty_unit === 'years') end.setFullYear(end.getFullYear() + (form.warranty_period || 0));
+                        else end.setMonth(end.getMonth() + (form.warranty_period || 0));
+                        set('warranty_end_date', end.toISOString().split('T')[0]);
+                      }}>START</button>
+                    )}
+                  </div>
+                </div>
+                <div className="form-group" style={{ gridColumn: 'span 2' }}>
+                  <label className="form-label">Warranty End Date</label>
+                  <input type="date" className="form-input" value={form.warranty_end_date || ''} onChange={e => set('warranty_end_date', e.target.value)} />
+                </div>
              </div>
           </div>
 

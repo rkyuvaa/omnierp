@@ -27,6 +27,8 @@ try:
     # Apply changes
     add_column("installation_tabs", "visibility_stages", "JSONB DEFAULT '[]'")
     add_column("installation_fields", "form_template_id", "INTEGER")
+    add_column("products", "warranty_start_date", "DATE")
+    add_column("products", "warranty_end_date", "DATE")
 
     conn.commit()
     cursor.close()

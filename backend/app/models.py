@@ -220,6 +220,8 @@ class Product(Base):
     stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
     warranty_period = Column(Integer, default=0)
     warranty_unit = Column(String(20), default="months")
+    warranty_start_date = Column(Date, nullable=True)
+    warranty_end_date = Column(Date, nullable=True)
     notes = Column(Text, nullable=True)
     custom_data = Column(JSON, default={})
     created_at = Column(DateTime, default=datetime.utcnow)
