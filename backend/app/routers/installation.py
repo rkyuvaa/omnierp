@@ -65,8 +65,8 @@ def serialize(r):
         return {"id": r.id, "reference": r.reference, "error": str(e)}
 
 @router.get("/")
-def get_inst(search: str = "", stage_id: str = "", page: int = 1, db: Session = Depends(get_db)):
-    q = db.query(Installation).options(
+def get_inst(search: str = "", stage_id: str = "", stage_names: Optional[str] = None, page: int = 1, db: Session = Depends(get_db)):
+    q = db.query(Installation).join(Installation.stage, isouter=True).options(
         joinedload(Installation.stage),
         joinedload(Installation.technician),
         joinedload(Installation.product)
@@ -79,6 +79,10 @@ def get_inst(search: str = "", stage_id: str = "", page: int = 1, db: Session = 
         ))
     if stage_id and stage_id != "":
         q = q.filter(Installation.stage_id == int(stage_id))
+        
+    if stage_names:
+        names = [n.strip() for n in stage_names.split(",")]
+        q = q.filter(Stage.name.in_(names))
     
     total = q.count()
     limit = 50

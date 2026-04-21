@@ -39,8 +39,9 @@ def get_summary(db: Session = Depends(get_db)):
     results = db.query(KonwertCareTicket.issue_type, func.count(KonwertCareTicket.id)).group_by(KonwertCareTicket.issue_type).all()
     counts = {r[0]: r[1] for r in results}
     
-    # Installation count (for Vehicle Delivery tile)
-    inst_count = db.query(Installation).count()
+    # Installation count (for Vehicle Delivery tile - filtered to only delivery stages)
+    delivery_stages = ["FITMENT DONE", "CUSTOMER DELIVERY", "RTO PROCESS", "HSRP"]
+    inst_count = db.query(Installation).join(Stage).filter(Stage.name.in_(delivery_stages)).count()
     
     return {
         "service": counts.get("Service", 0),
