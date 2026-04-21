@@ -206,6 +206,9 @@ def activate_warranty(id: int, db: Session = Depends(get_db)):
     # 3. Update Care Ticket
     custom['warranty_status'] = 'Active'
     custom['warranty_activated_at'] = now.isoformat()
+    if prod:
+        custom['warranty_expires_at'] = prod.warranty_end_date.isoformat() if prod.warranty_end_date else None
+    
     t.custom_data = custom
     
     db.commit(); db.refresh(t)

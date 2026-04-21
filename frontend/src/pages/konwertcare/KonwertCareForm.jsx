@@ -364,8 +364,11 @@ export default function KonwertCareForm() {
                   <div style={{ display:'inline-flex', alignItems:'center', gap:6, padding:'6px 12px', background:'rgba(34,197,94,0.1)', color:'var(--green)', borderRadius:20, fontWeight:700, fontSize:12, marginBottom:10 }}>
                     <Check size={14}/> WARRANTY ACTIVE
                   </div>
-                  <div style={{ fontSize:11, color:'var(--text3)', lineHeight:1.5 }}>
+                   <div style={{ fontSize:11, color:'var(--text3)', lineHeight:1.5 }}>
                     Activated on: <b>{new Date(form.custom_data.warranty_activated_at).toLocaleDateString()}</b><br/>
+                    {form.custom_data.warranty_expires_at && (
+                      <>Expires on: <b style={{ color:'var(--accent)' }}>{new Date(form.custom_data.warranty_expires_at).toLocaleDateString()}</b><br/></>
+                    )}
                     Status: Verified
                   </div>
                   <button className="btn btn-primary btn-sm" style={{ marginTop:12, width:'100%', gap:6 }} onClick={() => toast('Certificate PDF generation coming soon!')}>
