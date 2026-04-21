@@ -60,6 +60,27 @@ def list_tickets(
 ):
     try:
         from sqlalchemy import func
+        from ..models import Product, Stage
+        import datetime
+        
+        # 1. Background Check for Expiry (Automatic Stage Transition)
+        now = datetime.date.today()
+        expired_stage = db.query(Stage).filter(Stage.module == 'konwertcare', Stage.name.ilike('%warranty expire%')).first()
+        if expired_stage:
+            # Find tickets with products that have expired
+            # We join with Product to check the date
+            tickets_to_update = db.query(KonwertCareTicket).join(
+                Product, KonwertCareTicket.product_serial == Product.serial_number
+            ).filter(
+                Product.warranty_end_date < now,
+                KonwertCareTicket.stage_id != expired_stage.id
+            ).all()
+            
+            for t in tickets_to_update:
+                t.stage_id = expired_stage.id
+            if tickets_to_update:
+                db.commit()
+
         q = db.query(KonwertCareTicket).options(joinedload(KonwertCareTicket.stage))
         
         if search:
@@ -137,6 +158,13 @@ def create_ticket(data: dict, db: Session = Depends(get_db), cu=Depends(get_curr
         creation_data = {k: v for k, v in data.items() if k in valid_fields}
         
         t = KonwertCareTicket(**creation_data, reference=ref, created_by=cu.id)
+        
+        # Default stage to 'New' if not set
+        if not t.stage_id:
+            new_stage = db.query(Stage).filter(Stage.module == 'konwertcare', Stage.name.ilike('%new%')).first()
+            if new_stage:
+                t.stage_id = new_stage.id
+                
         db.add(t)
         db.commit()
         db.refresh(t)
@@ -217,6 +245,11 @@ def activate_warranty(id: int, db: Session = Depends(get_db)):
         custom['warranty_expires_at'] = prod.warranty_end_date.isoformat() if prod.warranty_end_date else None
     
     t.custom_data = custom
+    
+    # 4. Set Stage to 'On Warranty' (Dynamic Name Match)
+    target_stage = db.query(Stage).filter(Stage.module == 'konwertcare', Stage.name.ilike('%on warranty%')).first()
+    if target_stage:
+        t.stage_id = target_stage.id
     
     db.commit(); db.refresh(t)
     return serialize(t)
