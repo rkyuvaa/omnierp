@@ -128,8 +128,13 @@ export default function InstallationForm() {
           isMatch = v !== undefined && v !== '' && v !== false && v !== null && !(Array.isArray(v) && v.length === 0);
         }
         if (isMatch) {
-          console.log(`[StageRule] Field "${k}" matched! Moving to Stage ID: ${rule.stage_id}`);
-          return { ...f, custom_data: newCustom, stage_id: parseInt(rule.stage_id) };
+          const targetStage = stages.find(s => s.id === parseInt(rule.stage_id));
+          const currentStage = stages.find(s => s.id === f.stage_id);
+          // Only trigger rule if it moves the stage forward or if no stage is set
+          if (!currentStage || (targetStage && targetStage.sort_order > currentStage.sort_order)) {
+            console.log(`[StageRule] Field "${k}" matched! Fast-Forwarding to Stage: ${targetStage?.name}`);
+            return { ...f, custom_data: newCustom, stage_id: parseInt(rule.stage_id) };
+          }
         }
       }
       return { ...f, custom_data: newCustom };
@@ -166,9 +171,13 @@ export default function InstallationForm() {
 
   const updateStage = async (stageId) => {
     if (!isAdmin) return;
-    await api.put(`/installation/${id}`, { ...form, stage_id: stageId });
-    set('stage_id', stageId);
-    toast.success('Stage updated');
+    try {
+      const r = await api.put(`/installation/${id}`, { ...form, stage_id: stageId });
+      setForm(f => ({ ...f, ...r.data }));
+      toast.success('Stage updated');
+    } catch (e) {
+      toast.error('Failed to update stage');
+    }
   };
 
   const addActivity = async () => {
