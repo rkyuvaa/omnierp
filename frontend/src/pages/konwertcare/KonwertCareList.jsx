@@ -61,9 +61,9 @@ export default function KonwertCareList() {
       endpoint={isVehicleDelivery ? "/installation" : "/konwertcare"}
       formPath={isVehicleDelivery ? "/installation" : "/konwertcare"}
       exportPath={isVehicleDelivery ? "/installation/export/excel" : "/konwertcare/export/excel"}
-      extraFilters={isVehicleDelivery ? { stage_names: "FITMENT DONE,CUSTOMER DELIVERY,RTO PROCESS,HSRP" } : { issue_type: issueType || undefined }}
+      extraFilters={isVehicleDelivery ? { stage_names: "Fitment Done,Customer Delivery,RTO Process,HSRP" } : { issue_type: issueType || undefined }}
       topContent={Dashboard}
-      allowedStages={isVehicleDelivery ? ["FITMENT DONE", "CUSTOMER DELIVERY", "RTO PROCESS", "HSRP"] : undefined}
+      allowedStages={isVehicleDelivery ? ["Fitment Done", "Customer Delivery", "RTO Process", "HSRP"] : undefined}
       columns={isVehicleDelivery ? [
         { key: 'customer_name', label: 'Customer', bold: true },
         { key: 'vehicle_number', label: 'Vehicle Number' },
