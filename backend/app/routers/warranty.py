@@ -76,12 +76,13 @@ def get_products(
     limit: int = 50, 
     db: Session = Depends(get_db)
 ):
+    try:
         # Background Check: Sync stages with warranty dates
         now = datetime.date.today()
         stages = db.query(Stage).filter(Stage.module == 'warranty').all()
-        s_new = next((s for s in stages if 'new' in s.name.lower()), None)
-        s_live = next((s for s in stages if 'on warranty' in s.name.lower()), None)
-        s_expired = next((s for s in stages if 'expired' in s.name.lower()), None)
+        s_new = next((s for s in stages if s.name and 'new' in s.name.lower()), None)
+        s_live = next((s for s in stages if s.name and 'on warranty' in s.name.lower()), None)
+        s_expired = next((s for s in stages if s.name and 'expired' in s.name.lower()), None)
         
         # Check all products for date-based stage transitions
         prods_to_sync = db.query(Product).all()
