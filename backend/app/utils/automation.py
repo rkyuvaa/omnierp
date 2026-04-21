@@ -70,13 +70,13 @@ def trigger_konwert_care_handoff(installation, db):
         )
         
         db.add(ticket)
-        db.commit()
-        db.refresh(ticket)
-        print(f"[Automation] >>> SUCCESS! Created Ticket: {ref}")
+        # db.commit()  <-- REMOVE: Let the calling router handle the commit
+        # db.refresh(ticket)
+        print(f"[Automation] >>> SUCCESS! Prepared Ticket: {ref}")
         return ticket
     except Exception as e:
         import traceback
         print(f"[Automation] !!! ERROR: {str(e)}")
         traceback.print_exc()
-        db.rollback()
+        # db.rollback() <-- REMOVE: Don't kill the whole session if automation fails
         return None
