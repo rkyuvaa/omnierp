@@ -203,14 +203,20 @@ def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
         else:
             r_data['schedule_date'] = None
 
+        print(f"DEBUG: Updating Installation {id}. Current Stage: {r.stage_id}, Target Stage: {r_data.get('stage_id')}")
+
         for k, v in r_data.items(): setattr(r, k, v)
         
+        db.flush()
+        print(f"DEBUG: Post-Settr Stage: {r.stage_id}")
+
         # Automation: Bridge to Konwert Care+ (Before commit for atomicity)
         from ..utils.automation import trigger_konwert_care_handoff
         trigger_konwert_care_handoff(r, db)
         
         db.commit()
         db.refresh(r)
+        print(f"DEBUG: After Refresh Stage: {r.stage_id}")
                 
         return serialize(r)
     except Exception as e:

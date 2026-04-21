@@ -170,13 +170,16 @@ export default function InstallationForm() {
   };
 
   const updateStage = async (stageId) => {
-    if (!isAdmin) return;
+    if (!isAdmin || saving) return;
+    setSaving(true);
     try {
       const r = await api.put(`/installation/${id}`, { ...form, stage_id: stageId });
       setForm(f => ({ ...f, ...r.data }));
       toast.success('Stage updated');
     } catch (e) {
       toast.error('Failed to update stage');
+    } finally {
+      setSaving(false);
     }
   };
 
