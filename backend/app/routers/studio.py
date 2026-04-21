@@ -232,6 +232,10 @@ def upload_file(file: UploadFile = File(...), current_user=Depends(get_current_u
     # Create directory if not exists
     BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))) # back to backend root
     upload_dir = os.path.join(BASE_DIR, "static", "uploads")
+    
+    print(f"UPLOAD REQUEST: {file.filename}")
+    print(f"TARGET DIR: {upload_dir}")
+    
     if not os.path.exists(upload_dir):
         os.makedirs(upload_dir)
         
@@ -239,8 +243,12 @@ def upload_file(file: UploadFile = File(...), current_user=Depends(get_current_u
     unique_name = f"{uuid.uuid4()}{ext}"
     file_path = os.path.join(upload_dir, unique_name)
     
+    print(f"SAVING TO: {file_path}")
+    
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
+        buffer.flush()
+        os.fsync(buffer.fileno())
         
     return {
         "filename": unique_name,
