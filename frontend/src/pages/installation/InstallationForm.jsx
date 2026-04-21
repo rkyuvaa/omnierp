@@ -127,7 +127,10 @@ export default function InstallationForm() {
         } else {
           isMatch = v !== undefined && v !== '' && v !== false && v !== null && !(Array.isArray(v) && v.length === 0);
         }
-        if (isMatch) return { ...f, custom_data: newCustom, stage_id: parseInt(rule.stage_id) };
+        if (isMatch) {
+          console.log(`[StageRule] Field "${k}" matched! Moving to Stage ID: ${rule.stage_id}`);
+          return { ...f, custom_data: newCustom, stage_id: parseInt(rule.stage_id) };
+        }
       }
       return { ...f, custom_data: newCustom };
     });
