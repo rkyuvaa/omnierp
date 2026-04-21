@@ -58,41 +58,48 @@ def list_tickets(
     limit: int = 50, 
     db: Session = Depends(get_db)
 ):
-    q = db.query(KonwertCareTicket).options(joinedload(KonwertCareTicket.stage))
-    
-    if search:
-        q = q.filter(or_(
-            KonwertCareTicket.customer_name.ilike(f"%{search}%"),
-            KonwertCareTicket.reference.ilike(f"%{search}%"),
-            KonwertCareTicket.vehicle_number.ilike(f"%{search}%"),
-            KonwertCareTicket.phone.ilike(f"%{search}%")
-        ))
-    
-    if issue_type:
-        q = q.filter(KonwertCareTicket.issue_type == issue_type)
-    
-    # Calculate stage counts for the ribbon
-    count_q = db.query(KonwertCareTicket.stage_id, func.count(KonwertCareTicket.id)).group_by(KonwertCareTicket.stage_id)
-    if search:
-        count_q = count_q.filter(or_(
-            KonwertCareTicket.customer_name.ilike(f"%{search}%"),
-            KonwertCareTicket.reference.ilike(f"%{search}%"),
-            KonwertCareTicket.vehicle_number.ilike(f"%{search}%"),
-            KonwertCareTicket.phone.ilike(f"%{search}%")
-        ))
-    if issue_type:
-        count_q = count_q.filter(KonwertCareTicket.issue_type == issue_type)
-    
-    counts_res = count_q.all()
-    stage_counts = {r[0]: r[1] for r in counts_res if r[0] is not None}
+    try:
+        from sqlalchemy import func
+        q = db.query(KonwertCareTicket).options(joinedload(KonwertCareTicket.stage))
+        
+        if search:
+            q = q.filter(or_(
+                KonwertCareTicket.customer_name.ilike(f"%{search}%"),
+                KonwertCareTicket.reference.ilike(f"%{search}%"),
+                KonwertCareTicket.vehicle_number.ilike(f"%{search}%"),
+                KonwertCareTicket.phone.ilike(f"%{search}%")
+            ))
+        
+        if issue_type:
+            q = q.filter(KonwertCareTicket.issue_type == issue_type)
+        
+        # Calculate stage counts for the ribbon
+        count_q = db.query(KonwertCareTicket.stage_id, func.count(KonwertCareTicket.id)).group_by(KonwertCareTicket.stage_id)
+        if search:
+            count_q = count_q.filter(or_(
+                KonwertCareTicket.customer_name.ilike(f"%{search}%"),
+                KonwertCareTicket.reference.ilike(f"%{search}%"),
+                KonwertCareTicket.vehicle_number.ilike(f"%{search}%"),
+                KonwertCareTicket.phone.ilike(f"%{search}%")
+            ))
+        if issue_type:
+            count_q = count_q.filter(KonwertCareTicket.issue_type == issue_type)
+        
+        counts_res = count_q.all()
+        stage_counts = {r[0]: r[1] for r in counts_res if r[0] is not None}
 
-    total = q.count()
-    tickets = q.order_by(KonwertCareTicket.id.desc()).offset(skip).limit(limit).all()
-    return {
-        "total": total, 
-        "items": [serialize(t) for t in tickets],
-        "stage_counts": stage_counts
-    }
+        total = q.count()
+        tickets = q.order_by(KonwertCareTicket.id.desc()).offset(skip).limit(limit).all()
+        return {
+            "total": total, 
+            "items": [serialize(t) for t in tickets],
+            "stage_counts": stage_counts
+        }
+    except Exception as e:
+        import traceback
+        print(f"DEBUG: list_tickets ERROR: {str(e)}")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
 @router.get("/{id}")
 def get_ticket(id: int, db: Session = Depends(get_db)):
