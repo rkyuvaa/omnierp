@@ -170,10 +170,19 @@ def create_rule(module: str, data: StageRuleIn, db: Session = Depends(get_db), _
         raise HTTPException(status_code=500, detail=f"Failed to save stage rule: {str(e)}")
 
 @router.delete("/layout/{module}/stage-rules/{rid}")
-def delete_rule(module: str, rid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
-    _, _, RuleModel = get_layout_models(module)
-    db.query(RuleModel).filter(RuleModel.id == rid).delete()
-    db.commit(); return {"status": "ok"}
+@router.delete("/layout/stage-rules/{rid}")
+def delete_rule(rid: int, module: str = None, db: Session = Depends(get_db), _=Depends(require_admin)):
+    # If module is unknown, try all possible models
+    if not module:
+        for m in ["crm", "installation", "service", "warranty", "konwertcare"]:
+            _, _, RuleModel = get_layout_models(m)
+            db.query(RuleModel).filter(RuleModel.id == rid).delete()
+    else:
+        _, _, RuleModel = get_layout_models(module)
+        db.query(RuleModel).filter(RuleModel.id == rid).delete()
+        
+    db.commit()
+    return {"status": "ok"}
 
 # ── Sequence ──────────────────────────────────────────────────
 @router.get("/sequence/{module}")

@@ -206,15 +206,25 @@ export default function InstallationForm() {
 
     // Save stage rule if exists
     if (f._stageRule) {
-      await api.post('/studio/layout/installation/stage-rules', {
-        field_name: f.field_name,
-        stage_id: parseInt(f._stageRule),
-        condition_operator: f._stageRuleOp || 'has_value',
-        condition_value: f._stageRuleVal || ''
-      });
+      try {
+        await api.post('/studio/layout/installation/stage-rules', {
+          field_name: f.field_name,
+          stage_id: parseInt(f._stageRule),
+          condition_operator: f._stageRuleOp || 'has_value',
+          condition_value: f._stageRuleVal || ''
+        });
+      } catch (err) {
+        console.error("Failed to save stage rule", err);
+      }
     } else if (f.id) {
       const existing = stageRules.find(r => r.field_name === f.field_name);
-      if (existing) await api.delete(`/studio/layout/installation/stage-rules/${existing.id}`);
+      if (existing) {
+        try {
+          await api.delete(`/studio/layout/installation/stage-rules/${existing.id}`);
+        } catch (err) {
+          console.error("Failed to delete stage rule", err);
+        }
+      }
     }
 
     toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();

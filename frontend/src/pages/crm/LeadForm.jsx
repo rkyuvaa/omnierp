@@ -264,18 +264,29 @@ export default function LeadForm() {
     if (f.id) await api.put(`/studio/layout/crm/fields/${f.id}`, payload);
     else await api.post('/studio/layout/crm/fields', payload);
     if (stageRule) {
-      await api.post('/studio/layout/crm/stage-rules', {
-        field_name: payload.field_name,
-        stage_id: parseInt(stageRule),
-        condition_operator: stageRuleOp,
-        condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
-      });
+      try {
+        await api.post('/studio/layout/crm/stage-rules', {
+          field_name: payload.field_name,
+          stage_id: parseInt(stageRule),
+          condition_operator: stageRuleOp,
+          condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
+        });
+      } catch (err) {
+        console.error("Failed to save stage rule", err);
+      }
     } else {
       const existing = stageRules.find(r => r.field_name === payload.field_name);
-      if (existing) await api.delete(`/studio/layout/stage-rules/${existing.id}`);
+      if (existing) {
+        try {
+          await api.delete(`/studio/layout/crm/stage-rules/${existing.id}`);
+        } catch (err) {
+          console.error("Failed to delete existing stage rule", err);
+        }
+      }
     }
     toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
   };
+
 
   const deleteField = async (fid) => {
     await api.delete(`/studio/layout/crm/fields/${fid}`);
