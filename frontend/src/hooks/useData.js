@@ -26,7 +26,7 @@ export function useList(endpoint, params = {}) {
         setStageCounts(null);
       }
     } finally { setLoading(false); }
-  }, [endpoint, page]);
+  }, [endpoint, page, JSON.stringify(params)]);
 
   useEffect(() => { load(); }, [load]);
 
