@@ -369,6 +369,12 @@ export default function ProductDetail() {
                 <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                   <div className="fw-700 size-11 uppercase text-muted">S/N: <span className="text-normal color-text1">{form.serial_number || '—'}</span></div>
                   <div className="fw-700 size-11 uppercase text-muted">WTY: <span className="text-normal color-text1">{form.warranty_period} {form.warranty_unit?.toUpperCase()}</span></div>
+                  {form.warranty_start_date && (
+                    <div className="fw-700 size-11 uppercase text-muted" style={{ color: 'var(--green)' }}>ACTIVE: <span className="text-normal">{new Date(form.warranty_start_date).toLocaleDateString()}</span></div>
+                  )}
+                  {form.warranty_end_date && (
+                    <div className="fw-700 size-11 uppercase text-muted" style={{ color: 'var(--accent)' }}>EXPIRES: <span className="text-normal">{new Date(form.warranty_end_date).toLocaleDateString()}</span></div>
+                  )}
                 </div>
               </div>
 
