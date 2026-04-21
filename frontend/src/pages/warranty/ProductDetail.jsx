@@ -21,6 +21,7 @@ export default function ProductDetail() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const isAdmin = user?.is_superadmin;
+  const stages = useStages('warranty');
   
   const [form, setForm] = useState(emptyForm);
   const [loading, setLoading] = useState(!isNew);
@@ -157,7 +158,6 @@ export default function ProductDetail() {
     loadTabs(); setDeleteConfirm(null);
   };
 
-  const stages = useStages('warranty');
   const visibleTabs = useMemo(() => (tabs || []).filter(t => {
     if (!t || !Array.isArray(t.visibility_stages) || t.visibility_stages.length === 0) return true;
     const sId = Number(form?.stage_id);
