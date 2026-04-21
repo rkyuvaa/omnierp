@@ -154,8 +154,11 @@ def get_rules(module: str, db: Session = Depends(get_db)):
 def create_rule(module: str, data: StageRuleIn, db: Session = Depends(get_db), _=Depends(require_admin)):
     try:
         _, _, RuleModel = get_layout_models(module)
-        # Remove existing rules for this field to prevent duplicates
-        db.query(RuleModel).filter(RuleModel.field_name == data.field_name).delete()
+        # Find and remove existing rule for this field
+        existing = db.query(RuleModel).filter(RuleModel.field_name == data.field_name).first()
+        if existing:
+            db.delete(existing)
+            db.flush() 
         
         rule = RuleModel(**data.model_dump())
         db.add(rule)

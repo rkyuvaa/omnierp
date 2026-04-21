@@ -116,16 +116,27 @@ export default function Studio() {
       else savedF = (await api.post(`/studio/layout/${module}/fields`, payload)).data;
 
       if (sr) {
-        await api.post(`/studio/layout/${module}/stage-rules`, {
-          field_name: savedF.field_name, stage_id: parseInt(sr),
-          condition_operator: sro, condition_value: sro === 'equals' ? srv : null
-        });
+        try {
+          await api.post(`/studio/layout/${module}/stage-rules`, {
+            field_name: savedF.field_name, stage_id: parseInt(sr),
+            condition_operator: sro, condition_value: sro === 'equals' ? srv : null
+          });
+        } catch (ruleErr) {
+          console.error("Rule save failed", ruleErr);
+          toast.error("Field saved, but automation rule failed");
+        }
       } else {
         const existing = stageRules.find(r => r.field_name === savedF.field_name);
         if (existing) await api.delete(`/studio/layout/${module}/stage-rules/${existing.id}`);
       }
-      toast.success('Field saved'); setFieldModal(null); loadData();
-    } catch { toast.error('Error saving field'); }
+      toast.success('Field saved'); 
+      setFieldModal(null); 
+      loadData();
+    } catch (e) { 
+      const msg = e.response?.data?.detail || 'Error saving field';
+      toast.error(msg); 
+      console.error(e);
+    }
   };
 
   const saveStage = async (form) => {
