@@ -35,6 +35,9 @@ export default function ProductDetail() {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [recentlySaved, setRecentlySaved] = useState(false);
 
+  const loadTabs = useCallback(() => api.get('/studio/layout/warranty/tabs').then(r => setTabs(r.data)), []);
+  const loadStageRules = useCallback(() => api.get('/studio/layout/warranty/stage-rules').then(r => setStageRules(r.data)), []);
+
   const [nav, setNav] = useState({ prev: null, next: null });
   useEffect(() => {
     api.get('/warranty/boms').then(r=>setBoms(r.data));
@@ -110,9 +113,31 @@ export default function ProductDetail() {
     loadTabs(); setDeleteConfirm(null); setActiveTab(0);
   };
   const saveField = async (f) => {
-    if (f.id) await api.put(`/studio/layout/warranty/fields/${f.id}`, f);
-    else await api.post('/studio/layout/warranty/fields', { ...f, tab_id: fieldModal.tabId });
-    loadTabs(); setFieldModal(null);
+    const stageRule = f._stageRule;
+    const stageRuleOp = f._stageRuleOp || 'has_value';
+    const stageRuleVal = f._stageRuleVal || '';
+    const payload = { ...f }; delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
+    
+    if (f.id) await api.put(`/studio/layout/warranty/fields/${f.id}`, payload);
+    else await api.post('/studio/layout/warranty/fields', { ...payload, tab_id: fieldModal.tabId });
+
+    if (stageRule) {
+      try {
+        await api.post('/studio/layout/warranty/stage-rules', { field_name: payload.field_name, stage_id: parseInt(stageRule), condition_operator: stageRuleOp, condition_value: stageRuleOp === 'equals' ? stageRuleVal : null });
+      } catch (err) {
+        console.error("Failed to save stage rule", err);
+      }
+    } else {
+      const existing = stageRules.find(r => r.field_name === payload.field_name);
+      if (existing) {
+        try {
+          await api.delete(`/studio/layout/warranty/stage-rules/${existing.id}`);
+        } catch (err) {
+          console.error("Failed to delete stage rule", err);
+        }
+      }
+    }
+    loadTabs(); loadStageRules(); setFieldModal(null);
   };
   const deleteField = async (id) => {
     await api.delete(`/studio/layout/warranty/fields/${id}`);
