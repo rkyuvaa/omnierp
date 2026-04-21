@@ -295,7 +295,7 @@ export default function ProductDetail() {
             </div>
 
             {currentTab && (
-              <div className="card shadow-none" style={{ borderTop: 'none', background: 'transparent', padding: 0 }}>
+              <div className="card" style={{ padding: 20, background: 'var(--bg2)' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                   {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
                     <div key={f.id} style={{ gridColumn: colSpan[f.width]||'1/-1', position:'relative' }}>
