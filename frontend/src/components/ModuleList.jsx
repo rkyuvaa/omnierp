@@ -8,7 +8,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
@@ -40,35 +40,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
 
   return (
     <Layout title={title}>
-      
-      {stages && stages.length > 0 && (
-        <div className="stage-ribbon" style={{ display: 'flex', gap: 6, paddingBottom: 10, width: '100%', marginBottom: 12, flexWrap: 'wrap' }}>
-          {stages.map(s => { const sc = stageCounts ? (stageCounts[s.id] || 0) : s.count; return (
-            <div key={s.id} onClick={() => handleStage(s.id)}
-              style={{
-                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
-                padding: '10px 12px', borderRadius: 20, cursor: 'pointer', flex: 1, minWidth: '95px',
-                height: 72, textAlign: 'center', transition: 'all 0.2s',
-                border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
-                background: stageFilter === s.id ? s.color : (s.color + '15'),
-                color: stageFilter === s.id ? '#ffffff' : s.color,
-                boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
-              }}>
-              <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
-              <span style={{ 
-                fontSize: 14, fontWeight: 900,
-                background: '#ffffff', color: s.color,
-                minWidth: 26, height: 26, borderRadius: 13,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0 4px',
-                marginTop: 'auto'
-              }}>
-                {sc}
-              </span>
-            </div>
-          );})}
-        </div>
-      )}
+      {topContent && <div style={{ marginBottom: 16 }}>{topContent}</div>}
       
       <div className="toolbar" style={{ marginBottom: 16 }}>
         <div className="search-bar">
@@ -103,6 +75,33 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
             <span className="card-title" style={{ fontSize: 18, fontWeight: 700 }}>{title}</span>
             <span className="text-muted text-sm" style={{ fontWeight: 600, opacity: 0.7 }}>{total} records</span>
           </div>
+
+          {stages && stages.length > 0 && (
+            <div className="stage-ribbon" style={{ display: 'flex', gap: 6, width: '100%', flexWrap: 'wrap', marginTop: 4 }}>
+              {stages.map(s => { const sc = stageCounts ? (stageCounts[s.id] || 0) : s.count; return (
+                <div key={s.id} onClick={() => handleStage(s.id)}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: 10,
+                    padding: '8px 16px', borderRadius: 12, cursor: 'pointer', flex: 1, minWidth: '120px',
+                    transition: 'all 0.2s',
+                    border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '25')}`,
+                    background: stageFilter === s.id ? s.color : (s.color + '05'),
+                    color: stageFilter === s.id ? '#ffffff' : 'var(--text2)',
+                    boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}40` : 'none',
+                  }}>
+                  <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{s.name}</span>
+                  <span style={{ 
+                    fontSize: 12, fontWeight: 800, marginLeft: 'auto',
+                    background: stageFilter === s.id ? '#ffffff' : s.color, 
+                    color: stageFilter === s.id ? s.color : '#ffffff',
+                    minWidth: 22, height: 22, borderRadius: 11,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center'
+                  }}>{sc}</span>
+                </div>
+              );})}
+            </div>
+          )}
+          
           {headerContent && <div style={{ width: '100%' }}>{headerContent}</div>}
         </div>
         {loading ? <Loader /> : items.length === 0 ? <Empty /> : (<>

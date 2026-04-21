@@ -14,7 +14,7 @@ export default function KonwertCareList() {
   const isVehicleDelivery = issueType === 'Vehicle Delivery';
 
   const Dashboard = (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, width: '100%', marginBottom: 8 }}>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, width: '100%' }}>
       {[
         { key: 'Service', label: 'Service', count: summary.service, icon: LifeBuoy, color: '#3B82F6' },
         { key: 'Maintenance', label: 'Maintenance', count: summary.maintenance, icon: Wrench, color: '#F59E0B' },
@@ -24,30 +24,29 @@ export default function KonwertCareList() {
           key={t.key}
           onClick={(e) => { e.stopPropagation(); setIssueType(issueType === t.key ? null : t.key); }}
           style={{
-            background: issueType === t.key ? `${t.color}10` : 'var(--bg3)',
-            border: `1.5px solid ${issueType === t.key ? t.color : 'var(--border)'}`,
-            borderRadius: 16,
-            padding: '16px 20px',
+            background: 'var(--bg2)',
+            border: `2px solid ${issueType === t.key ? t.color : 'transparent'}`,
+            borderRadius: 24,
+            padding: 24,
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            transition: 'all 0.2s ease',
-            boxShadow: issueType === t.key ? `0 4px 12px ${t.color}20` : 'none'
+            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            boxShadow: issueType === t.key ? `0 12px 24px ${t.color}25` : '0 4px 12px rgba(0,0,0,0.03)',
+            transform: issueType === t.key ? 'translateY(-4px)' : 'none'
           }}
         >
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 4 }}>{t.label}</div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)' }}>{t.count}</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t.label}</div>
+            <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)' }}>{t.count}</div>
           </div>
           <div style={{ 
-            width: 42, height: 42, borderRadius: 12, 
-            background: issueType === t.key ? t.color : `${t.color}15`, 
-            color: issueType === t.key ? 'white' : t.color,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            transition: 'all 0.2s'
+            width: 52, height: 52, borderRadius: 16, 
+            background: `${t.color}15`, color: t.color,
+            display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}>
-            <t.icon size={20} />
+            <t.icon size={24} />
           </div>
         </div>
       ))}
@@ -63,7 +62,7 @@ export default function KonwertCareList() {
       formPath={isVehicleDelivery ? "/installation" : "/konwertcare"}
       exportPath={isVehicleDelivery ? "/installation/export/excel" : "/konwertcare/export/excel"}
       extraFilters={isVehicleDelivery ? {} : { issue_type: issueType || undefined }}
-      headerContent={Dashboard}
+      topContent={Dashboard}
       columns={isVehicleDelivery ? [
         { key: 'customer_name', label: 'Customer', bold: true },
         { key: 'vehicle_number', label: 'Vehicle Number' },
