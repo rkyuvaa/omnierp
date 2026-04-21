@@ -253,6 +253,6 @@ def upload_file(file: UploadFile = File(...), current_user=Depends(get_current_u
     return {
         "filename": unique_name,
         "original_name": file.filename,
-        "url": f"/api/static/uploads/{unique_name}",
+        "url": f"/api/uploads/{unique_name}",
         "content_type": file.content_type
     }

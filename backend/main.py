@@ -47,11 +47,11 @@ upload_dir = os.path.join(static_dir, "uploads")
 if not os.path.exists(upload_dir):
     os.makedirs(upload_dir, exist_ok=True)
 
-# Mount /api/static/uploads first
-app.mount("/api/static/uploads", StaticFiles(directory=upload_dir), name="uploads")
-# Then mount the rest of /api/static
+# Mount /api/uploads directly (Short and unique)
+app.mount("/api/uploads", StaticFiles(directory=upload_dir), name="uploads")
+# Mount the rest of static if needed
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
-# Legacy mount for compatibility
+# Keep legacy mount for safety
 app.mount("/uploads", StaticFiles(directory=upload_dir), name="legacy_uploads")
 
 
