@@ -33,6 +33,7 @@ class FieldIn(BaseModel):
     width: str = "full"
     visibility_rule: Optional[dict] = None
     sort_order: int = 0
+    form_template_id: Optional[int] = None
 
 class StageRuleIn(BaseModel):
     field_name: str
@@ -128,8 +129,13 @@ def update_field(module: str, fid: int, data: FieldIn, db: Session = Depends(get
     _, FieldModel, _ = get_layout_models(module)
     f = db.query(FieldModel).filter(FieldModel.id == fid).first()
     if not f: raise HTTPException(404)
-    for k, v in data.model_dump().items(): setattr(f, k, v)
-    db.commit(); return ser_field(f)
+    
+    update_data = data.model_dump(exclude_unset=True)
+    for k, v in update_data.items():
+        if k != "id": setattr(f, k, v)
+        
+    db.commit()
+    return ser_field(f)
 
 @router.delete("/layout/{module}/fields/{fid}")
 def delete_field(module: str, fid: int, db: Session = Depends(get_db), _=Depends(require_admin)):
