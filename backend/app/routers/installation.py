@@ -139,11 +139,14 @@ def create_inst(data: InstIn, db: Session = Depends(get_db)):
             r_data['schedule_date'] = None
 
         r = Installation(**r_data, reference=ref)
-        db.add(r); db.commit(); db.refresh(r)
+        db.add(r)
         
-        # Automation: Bridge to Konwert Care+
+        # Automation: Bridge to Konwert Care+ (Before commit for atomicity)
         from ..utils.automation import trigger_konwert_care_handoff
         trigger_konwert_care_handoff(r, db)
+        
+        db.commit()
+        db.refresh(r)
                 
         return serialize(r)
     except Exception as e:
@@ -178,11 +181,13 @@ def update_inst(id: int, data: InstIn, db: Session = Depends(get_db)):
             r_data['schedule_date'] = None
 
         for k, v in r_data.items(): setattr(r, k, v)
-        db.commit()
         
-        # Automation: Bridge to Konwert Care+
+        # Automation: Bridge to Konwert Care+ (Before commit for atomicity)
         from ..utils.automation import trigger_konwert_care_handoff
         trigger_konwert_care_handoff(r, db)
+        
+        db.commit()
+        db.refresh(r)
                 
         return serialize(r)
     except Exception as e:
