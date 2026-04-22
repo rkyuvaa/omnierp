@@ -236,17 +236,39 @@ export default function ServiceForm() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
                   <div className="form-group">
                     <label className="form-label text-xs uppercase fw-800">KIT Number</label>
-                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} />
+                    <input 
+                      className="form-input" 
+                      style={{ background: 'var(--bg2)' }} 
+                      value={form.product_serial || ''} 
+                      onChange={e => set('product_serial', e.target.value)} 
+                      readOnly={!!form.product_id}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label text-xs uppercase fw-800">Vehicle Number</label>
+                    <input 
+                      className="form-input" 
+                      style={{ background: 'var(--bg2)' }} 
+                      value={form.vehicle_number || ''} 
+                      onChange={e => set('vehicle_number', e.target.value)} 
+                      readOnly={!!form.product_id}
+                    />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
                   <div className="form-group">
                     <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
-                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} />
+                    <input 
+                      className="form-input" 
+                      style={{ background: 'var(--bg2)' }} 
+                      value={form.vehicle_model || ''} 
+                      onChange={e => set('vehicle_model', e.target.value)} 
+                      readOnly={!!form.product_id}
+                    />
                   </div>
                 </div>
               </div>
