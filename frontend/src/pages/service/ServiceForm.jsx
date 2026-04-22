@@ -40,6 +40,7 @@ export default function ServiceForm() {
   const [vehicleSearch, setVehicleSearch] = useState('');
   const [products, setProducts] = useState([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [kitDetail, setKitDetail] = useState(null);
 
   useEffect(() => {
     loadTabs();
@@ -236,26 +237,28 @@ export default function ServiceForm() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
                   <div className="form-group">
                     <label className="form-label text-xs uppercase fw-800">KIT Number</label>
-                    <input 
-                      className="form-input" 
-                      style={{ background: 'var(--bg2)' }} 
-                      value={form.product_serial || ''} 
-                      onChange={e => set('product_serial', e.target.value)} 
-                      readOnly={!!form.product_id}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label text-xs uppercase fw-800">Vehicle Number</label>
-                    <input 
-                      className="form-input" 
-                      style={{ background: 'var(--bg2)' }} 
-                      value={form.vehicle_number || ''} 
-                      onChange={e => set('vehicle_number', e.target.value)} 
-                      readOnly={!!form.product_id}
-                    />
+                    <div style={{ position: 'relative' }}>
+                      <input 
+                        className="form-input" 
+                        style={{ background: 'var(--bg2)', cursor: form.product_id ? 'pointer' : 'text' }} 
+                        value={form.product_serial || ''} 
+                        onChange={e => set('product_serial', e.target.value)} 
+                        readOnly={!!form.product_id}
+                        onClick={() => {
+                          if (form.product_id && form.linked_product) {
+                            setKitDetail(form.linked_product);
+                          }
+                        }}
+                      />
+                      {form.product_id && (
+                        <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--accent)', fontWeight: 700 }}>
+                          DETAILS →
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
 
@@ -504,6 +507,7 @@ export default function ServiceForm() {
                         setForm(f => ({ 
                           ...f, 
                           product_id: p.id, 
+                          linked_product: p, // Save the whole object for detail modal
                           product_serial: p.serial_number,
                           vehicle_number: p.name,
                           vehicle_make: p.name, 
@@ -529,6 +533,37 @@ export default function ServiceForm() {
                 </div>
               )}
             </div>
+          </div>
+        </Modal>
+      )}
+      {kitDetail && (
+        <Modal 
+          title={`${kitDetail.title} — ${kitDetail.serial_number} — ${kitDetail.name}`} 
+          onClose={() => setKitDetail(null)}
+        >
+          <div style={{ padding: 20 }}>
+             <div style={{ marginBottom: 20, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Installed Components</div>
+             </div>
+             
+             {kitDetail.component_serials && kitDetail.component_serials.length > 0 ? (
+               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                 {kitDetail.component_serials.map((c, idx) => (
+                   <div key={idx} style={{ 
+                     display: 'flex', justifyContent: 'space-between', alignItems: 'center', 
+                     padding: '12px 16px', background: 'var(--bg2)', borderRadius: 10,
+                     border: '1px solid var(--border)'
+                   }}>
+                     <span style={{ fontWeight: 600 }}>{c.name}</span>
+                     <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{c.serial_number || '— No Serial —'}</span>
+                   </div>
+                 ))}
+               </div>
+             ) : (
+               <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
+                 No components registered for this KIT.
+               </div>
+             )}
           </div>
         </Modal>
       )}
