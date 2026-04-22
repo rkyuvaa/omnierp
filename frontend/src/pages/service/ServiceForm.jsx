@@ -163,14 +163,37 @@ export default function ServiceForm() {
   }, [vehicleSearch]);
 
   const selectVehicle = async (v) => {
+    // Extract from product custom_data with fuzzy matching if needed
+    const cd = v.custom_data || {};
+    const find = (keys) => {
+      for (let k of keys) {
+        if (cd[k]) return cd[k];
+        const found = Object.keys(cd).find(x => {
+           const normalizedX = x.toLowerCase().replace(/[^a-z0-9]/g, '');
+           const normalizedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+           return normalizedX === normalizedK || normalizedX.includes(normalizedK) || normalizedK.includes(normalizedX);
+        });
+        if (found) return cd[found];
+      }
+      return '';
+    };
+
+    const vNum = v.vehicle_number || v.name || '';
+    const vModel = v.model || v.vehicle_model || v.title || '';
+    const vYear = v.year || v.vehicle_year || find(['year', 'vehicle_year', 'model_year', 'mfg_year']) || '';
+    const cName = v.customer_name || find(['customer_name', 'name', 'client']) || '';
+    const cPhone = v.phone || find(['phone', 'mobile', 'contact']) || '';
+    const vInv = v.invoice_number || find(['invoice', 'bill']) || '';
+
     setForm(f => ({ 
       ...f, 
       product_id: v.id, 
-      vehicle_number: v.vehicle_number, 
-      vehicle_model: v.model || v.vehicle_model || '',
-      vehicle_year: v.year || v.vehicle_year || '',
-      customer_name: v.customer_name || f.customer_name,
-      phone: v.phone || f.phone,
+      vehicle_number: vNum, 
+      vehicle_model: vModel,
+      vehicle_year: vYear,
+      customer_name: cName || f.customer_name,
+      phone: cPhone || f.phone,
+      invoice_number: vInv || f.invoice_number,
       linked_product: v
     }));
     setVehicleSearch('');
@@ -331,12 +354,17 @@ export default function ServiceForm() {
                  {showResults && (vehicleResults.length > 0 || isSearching) && (
                    <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, marginTop: 4, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 250, overflowY: 'auto' }}>
                      {isSearching && <div style={{ padding: 12, fontSize: 12, color: 'var(--text2)' }}>Searching...</div>}
-                     {vehicleResults.map(v => (
-                       <div key={v.id} onClick={() => selectVehicle(v)} style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} className="search-result-item">
-                         <div style={{ fontWeight: 700, fontSize: 13 }}>{v.vehicle_number}</div>
-                         <div style={{ fontSize: 11, color: 'var(--text2)' }}>{v.customer_name} • {v.model || v.vehicle_model}</div>
-                       </div>
-                     ))}
+                     {vehicleResults.map(v => {
+                       const vNum = v.vehicle_number || v.name || 'Unknown';
+                       const vModel = v.model || v.vehicle_model || v.title || 'No Model';
+                       const cName = v.customer_name || 'No Customer';
+                       return (
+                         <div key={v.id} onClick={() => selectVehicle(v)} style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} className="search-result-item">
+                           <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>{vNum}</div>
+                           <div style={{ fontSize: 11, color: 'var(--text2)' }}>{cName} • {vModel}</div>
+                         </div>
+                       );
+                     })}
                    </div>
                  )}
                </div>
