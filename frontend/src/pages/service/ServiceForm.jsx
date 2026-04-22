@@ -179,19 +179,18 @@ export default function ServiceForm() {
     };
 
     const vNum = v.vehicle_number || v.name || '';
-    const vModel = v.model || v.vehicle_model || v.title || '';
-    const vYear = v.year || v.vehicle_year || find(['year', 'vehicle_year', 'model_year', 'mfg_year']) || '';
     const cName = v.customer_name || find(['customer_name', 'name', 'client']) || '';
     const cPhone = v.phone || find(['phone', 'mobile', 'contact']) || '';
     const vInv = v.invoice_number || find(['invoice', 'bill']) || '';
 
+    // Initial set with what we have
     setForm(f => ({ 
       ...f, 
       product_id: v.id, 
       product_serial: v.serial_number || '',
-      vehicle_number: vNum, 
-      vehicle_model: vModel,
-      vehicle_year: vYear,
+      vehicle_number: vNum,
+      vehicle_model: '',
+      vehicle_year: '',
       customer_name: cName || f.customer_name,
       phone: cPhone || f.phone,
       invoice_number: vInv || f.invoice_number,
@@ -199,6 +198,39 @@ export default function ServiceForm() {
     }));
     setVehicleSearch('');
     setShowResults(false);
+
+    // Strictly fetch Vehicle Model and Vehicle Year from CRM Vehicle Documents tab
+    try {
+      // Step 1: Get CRM layout tabs to find Vehicle Documents tab fields
+      const tabsRes = await api.get('/studio/layout/crm/tabs');
+      const vdTab = (tabsRes.data || []).find(t => t.name === 'Vehicle Documents');
+      if (!vdTab) return;
+
+      // Step 2: Find the field_name keys for Vehicle Model and Vehicle Year by matching labels
+      const fields = vdTab.fields || [];
+      const modelField = fields.find(f => f.field_label?.toLowerCase().includes('vehicle model') || f.field_label?.toLowerCase().includes('model'));
+      const yearField  = fields.find(f => f.field_label?.toLowerCase().includes('vehicle year') || f.field_label?.toLowerCase().includes('year'));
+      if (!modelField && !yearField) return;
+
+      // Step 3: Find the related CRM lead by vehicle number
+      const leadRes = await api.get(`/crm/leads?search=${encodeURIComponent(vNum)}`);
+      const leads = leadRes.data?.items || [];
+      if (leads.length === 0) return;
+      const lead = leads[0];
+      const lcd = lead.custom_data || {};
+
+      // Step 4: Extract the values using the exact field_name keys from Vehicle Documents tab
+      const fromModel = modelField ? (lcd[modelField.field_name] || '') : '';
+      const fromYear  = yearField  ? (lcd[yearField.field_name]  || '') : '';
+
+      setForm(f => ({
+        ...f,
+        vehicle_model: fromModel,
+        vehicle_year: fromYear
+      }));
+    } catch (err) {
+      console.error('Could not fetch Vehicle Documents tab data from CRM', err);
+    }
   };
 
   const save = async () => {
@@ -327,7 +359,7 @@ export default function ServiceForm() {
           <div className="card">
             <div className="detail-section-title">Record Details</div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 16 }}>
                <div className="form-group" ref={searchRef} style={{ position: 'relative' }}>
                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Last 4 Digits)</label>
                  <div style={{ display: 'flex', gap: 8 }}>
