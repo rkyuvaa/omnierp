@@ -34,21 +34,36 @@ def migrate():
                 else:
                     print(f"ERROR: {name}: {e}")
 
-    # 2. Add Indexes
+    # 2. Add High-Performance Trigram Indexes (Postgres)
     idx_cmds = [
-        "CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)",
-        "CREATE INDEX IF NOT EXISTS idx_products_serial ON products(serial_number)",
-        "CREATE INDEX IF NOT EXISTS idx_products_title ON products(title)"
+        "CREATE EXTENSION IF NOT EXISTS pg_trgm",
+        "CREATE INDEX IF NOT EXISTS idx_products_name_trgm ON products USING GIN (name gin_trgm_ops)",
+        "CREATE INDEX IF NOT EXISTS idx_products_serial_trgm ON products USING GIN (serial_number gin_trgm_ops)",
+        "CREATE INDEX IF NOT EXISTS idx_products_title_trgm ON products USING GIN (title gin_trgm_ops)"
     ]
     for cmd in idx_cmds:
         with engine.connect() as conn:
             try:
-                print(f"Running: {cmd}")
+                print(f"Running Performance Index: {cmd}")
                 conn.execute(text(cmd))
                 conn.commit()
-                print(f"SUCCESS: Index applied.")
+                print(f"SUCCESS: Performance Index applied.")
             except Exception as e:
-                print(f"Index error/skip: {e}")
+                # Fallback to standard B-Tree if GIN fails (non-postgres)
+                print(f"Postgres index failed, skipping GIN: {e}")
+                
+    # Standard B-Tree for safe measures
+    btree_cmds = [
+        "CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)",
+        "CREATE INDEX IF NOT EXISTS idx_products_serial ON products(serial_number)",
+        "CREATE INDEX IF NOT EXISTS idx_products_title ON products(title)"
+    ]
+    for cmd in btree_cmds:
+        with engine.connect() as conn:
+            try:
+                conn.execute(text(cmd))
+                conn.commit()
+            except: pass
         
     print("Migration complete!")
 
