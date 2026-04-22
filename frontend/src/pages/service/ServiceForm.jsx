@@ -210,21 +210,21 @@ export default function ServiceForm() {
           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text2)', marginBottom: 12, opacity: 0.5, letterSpacing: '1px', paddingLeft: 4, textTransform: 'uppercase' }}>
             Service Process Tracking
           </div>
-          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
+          <div style={{ display: 'flex', gap: 10, width: '100%', padding: '4px 0' }}>
             {stages.map(s => {
               const isCurrent = form && String(form.stage_id) === String(s.id);
-              const stageColor = s.color || 'var(--accent)';
+              const stageColor = s.color || '#6366f1';
               return (
                 <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
                   style={{
-                    flex: 1, padding: '12px 4px', borderRadius: 12, textAlign: 'center', fontSize: 10, fontWeight: 700,
-                    cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.6px',
-                    background: isCurrent ? stageColor : 'var(--bg2)',
+                    flex: 1, padding: '10px 4px', borderRadius: 50, textAlign: 'center', fontSize: 9.5, fontWeight: 800,
+                    cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.5px',
+                    background: isCurrent ? stageColor : 'rgba(0,0,0,0.03)',
                     color: isCurrent ? '#fff' : stageColor,
-                    border: isCurrent ? `2px solid ${stageColor}` : `1px solid ${stageColor}44`,
-                    opacity: isCurrent ? 1 : 0.6, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: isCurrent ? `0 6px 16px ${stageColor}44` : 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 38
+                    border: `1.5px solid ${isCurrent ? 'transparent' : (s.color ? s.color + '33' : 'var(--border)')}`,
+                    opacity: isCurrent ? 1 : 0.7, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: isCurrent ? `0 4px 15px ${stageColor}55` : 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 34
                   }}>
                   {s.name}
                 </div>
