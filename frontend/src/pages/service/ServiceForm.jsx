@@ -207,9 +207,6 @@ export default function ServiceForm() {
       
       {!isNew && stages.length > 0 && (
         <div style={{ marginBottom: 20, width: '100%', marginTop: -4 }}>
-          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text2)', marginBottom: 12, opacity: 0.5, letterSpacing: '1px', paddingLeft: 4, textTransform: 'uppercase' }}>
-            Service Process Tracking
-          </div>
           <div style={{ display: 'flex', gap: 10, width: '100%', padding: '4px 0' }}>
             {stages.map(s => {
               const isCurrent = form && String(form.stage_id) === String(s.id);
@@ -288,9 +285,20 @@ export default function ServiceForm() {
                       {form.product_id && (
                         <button 
                           type="button"
-                          onClick={(e) => {
+                          onClick={async (e) => {
                             e.stopPropagation();
-                            if (form.linked_product) setKitDetail(form.linked_product);
+                            if (form.linked_product) {
+                              setKitDetail(form.linked_product);
+                            } else {
+                              try {
+                                const res = await api.get(`/warranty/${form.product_id}`);
+                                setKitDetail(res.data);
+                                setForm(f => ({ ...f, linked_product: res.data }));
+                              } catch (err) {
+                                console.error("Could not load kit details", err);
+                                toast.error("Failed to load component details");
+                              }
+                            }
                           }}
                           style={{ 
                             position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', 
