@@ -207,6 +207,9 @@ export default function ServiceForm() {
       
       {!isNew && stages.length > 0 && (
         <div style={{ marginBottom: 16, width: '100%', marginTop: -4 }}>
+          <div style={{ padding: '4px 12px', background: '#22c55e', color: '#fff', fontSize: 10, fontWeight: 900, borderRadius: '4px 4px 0 0', display: 'inline-block' }}>
+            VERIFIED BUILD: v3.0 - PREMIUM UI ACTIVE
+          </div>
           <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text2)', marginBottom: 10, opacity: 0.6, letterSpacing: '1px', paddingLeft: 4, textTransform: 'uppercase' }}>
             Service Process Tracking
           </div>
