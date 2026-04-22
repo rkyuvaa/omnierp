@@ -53,7 +53,7 @@ export default function ServiceForm() {
         // Fetch linked product if ID exists
         if (data.product_id) {
           try {
-            const pRes = await api.get(`/warranty/${data.product_id}`);
+            const pRes = await api.get(`/warranty/products/${data.product_id}`);
             data.linked_product = pRes.data;
           } catch (e) { console.error("Could not load linked product details", e); }
         }
