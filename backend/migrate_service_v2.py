@@ -13,6 +13,7 @@ def migrate():
     # 1. Add Columns
     cols = [
         ("product_id", "INTEGER REFERENCES products(id)"),
+        ("customer_id", "INTEGER"),
         ("phone", "VARCHAR(50)"),
         ("invoice_number", "VARCHAR(50)"),
         ("vehicle_year", "VARCHAR(10)"),

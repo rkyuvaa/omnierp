@@ -407,6 +407,7 @@ class ServiceRequest(Base):
     id = Column(Integer, primary_key=True, index=True)
     reference = Column(String(50), unique=True)
     customer_name = Column(String(100), index=True)
+    customer_id = Column(Integer, nullable=True)
     vehicle_number = Column(String(50), nullable=True, index=True)
     phone = Column(String(50), nullable=True, index=True)
     invoice_number = Column(String(100), nullable=True)
