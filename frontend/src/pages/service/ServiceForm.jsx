@@ -327,7 +327,7 @@ export default function ServiceForm() {
           <div className="card">
             <div className="detail-section-title">Record Details</div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
                <div className="form-group" ref={searchRef} style={{ position: 'relative' }}>
                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Last 4 Digits)</label>
                  <div style={{ display: 'flex', gap: 8 }}>
@@ -335,7 +335,7 @@ export default function ServiceForm() {
                      <Car size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
                      <input 
                         className="form-input" 
-                        style={{ paddingLeft: 36, background: 'var(--bg2)' }} 
+                        style={{ paddingLeft: 36, background: 'var(--bg2)', color: '#000', fontWeight: 600, border: '1px solid var(--border)' }} 
                         placeholder={form.vehicle_number || "Search vehicle..."} 
                         value={vehicleSearch} 
                         onChange={e => { setVehicleSearch(e.target.value); setShowResults(true); }} 
@@ -368,16 +368,6 @@ export default function ServiceForm() {
                      })}
                    </div>
                  )}
-               </div>
-
-               <div className="form-group">
-                 <label className="form-label text-xs uppercase fw-800">Vehicle Year</label>
-                  <input 
-                    className="form-input" 
-                    style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }} 
-                    value={form.vehicle_year || ''} 
-                    onChange={e => set('vehicle_year', e.target.value)}
-                  />
                </div>
 
                 <div className="form-group">
@@ -431,7 +421,7 @@ export default function ServiceForm() {
                   </div>
 
                 <div className="form-group">
-                  <label className="form-label text-xs uppercase fw-800">Vehicle Model</label>
+                  <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
                     <input 
                       className="form-input" 
                       style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }} 
@@ -547,18 +537,10 @@ export default function ServiceForm() {
                   </div>
                 </div>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 10 }}>Vehicle Model</label>
-                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
-                    {form.vehicle_model || '—'}
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 10 }}>Vehicle Year</label>
-                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
-                    {form.vehicle_year || '—'}
-                  </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Installed KIT</label>
+                <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700 }}>
+                  {form.vehicle_model || '—'}
                 </div>
               </div>
               <div className="form-group">
