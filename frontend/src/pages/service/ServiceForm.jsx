@@ -470,15 +470,19 @@ export default function ServiceForm() {
                           for (let k of keys) {
                             if (cd[k]) return cd[k];
                             // Also try lowercase/trimmed match
-                            const found = Object.keys(cd).find(x => x.toLowerCase().replace(/[^a-z0-9]/g, '') === k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                            const found = Object.keys(cd).find(x => {
+                               const normalizedX = x.toLowerCase().replace(/[^a-z0-9]/g, '');
+                               const normalizedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+                               return normalizedX === normalizedK || normalizedX.includes(normalizedK) || normalizedK.includes(normalizedX);
+                            });
                             if (found) return cd[found];
                           }
                           return '';
                         };
 
-                        const pName = find(['customer_name', 'customername', 'name', 'Customer']) || p.title || '';
-                        const pPhone = find(['phone', 'mobile', 'contact', 'phonenumber', 'mobilenumber', 'customer_phone', 'customer_mobile']) || '';
-                        const pInv = find(['invoice', 'invoicenumber', 'invoiceno', 'invoice_no', 'bill', 'billnumber', 'billno']) || '';
+                        const pName = find(['customer_name', 'customername', 'name', 'Customer', 'client']) || p.title || '';
+                        const pPhone = find(['phone', 'mobile', 'contact', 'phonenumber', 'mobilenumber', 'customer_phone', 'customer_mobile', 'ph']) || '';
+                        const pInv = find(['invoice', 'invoicenumber', 'invoiceno', 'invoice_no', 'bill', 'billnumber', 'billno', 'inv']) || '';
 
                         setForm(f => ({ 
                           ...f, 
