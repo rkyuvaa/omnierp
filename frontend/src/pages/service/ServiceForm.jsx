@@ -202,13 +202,14 @@ export default function ServiceForm() {
             return (
               <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
                 style={{
-                  flex: 1, padding: '10px 4px', borderRadius: 8, textAlign: 'center', fontSize: 10, fontWeight: 800,
-                  cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.5px',
-                  background: isCurrent ? (s.color || 'var(--accent)') : 'transparent',
+                  flex: 1, padding: '8px 4px', borderRadius: 6, textAlign: 'center', fontSize: 10, fontWeight: 700,
+                  cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.6px',
+                  background: isCurrent ? (s.color || 'var(--accent)') : 'rgba(0,0,0,0.02)',
                   color: isCurrent ? '#fff' : (s.color || 'var(--text2)'),
-                  border: `1px solid ${isCurrent ? 'transparent' : (s.color || 'var(--border)')}`,
-                  opacity: isCurrent ? 1 : 0.6, transition: 'all 0.2s',
-                  boxShadow: isCurrent ? `0 4px 12px ${s.color}44` : 'none'
+                  border: isCurrent ? `1.5px solid ${s.color || 'var(--accent)'}` : `1.5px solid ${s.color ? s.color + '44' : 'var(--border)'}`,
+                  opacity: isCurrent ? 1 : 0.7, transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: isCurrent ? `0 4px 12px ${s.color || 'var(--accent)'}33` : 'none',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center'
                 }}>
                 {s.name}
               </div>
