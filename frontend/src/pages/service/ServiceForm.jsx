@@ -207,50 +207,45 @@ export default function ServiceForm() {
             <div className="detail-section-title">Record Details</div>
             
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 40px' }}>
-              {/* LEFT COLUMN: VEHICLE INFO */}
+              {/* LEFT COLUMN: VEHICLE DETAILS */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Search Serial Number/Name)</label>
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Search Vehicle Number)</label>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                      <Car size={16} style={{ position: 'absolute', left: 12, top: 11, color: 'var(--text3)' }} />
+                    <div className="search-input-wrapper" style={{ flex: 1, position: 'relative' }}>
+                      <Car size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
                       <input 
-                        className="form-input" 
-                        style={{ paddingLeft: 38, background: 'var(--bg2)', border: '1px solid var(--border)' }}
-                        placeholder="KIMO1011234"
-                        value={form.product_serial || (form.product_id ? `Linked [ID: ${form.product_id}]` : '')}
-                        readOnly
-                        onClick={() => setVehicleModal(true)}
+                         className="form-input" 
+                         style={{ paddingLeft: 36, background: 'var(--bg2)' }} 
+                         placeholder="Select vehicle..." 
+                         value={form.vehicle_number || ''} 
+                         readOnly 
                       />
                       {form.product_id && (
                         <button 
-                          onClick={(e) => { e.stopPropagation(); set('product_id', null); set('product_serial', ''); }}
-                          style={{ position: 'absolute', right: 8, top: 8, padding: 4, background: 'var(--bg2)', borderRadius: 4, border: 'none', cursor: 'pointer' }}
+                          onClick={() => setForm(f => ({ ...f, product_id: null, vehicle_number: '', vehicle_model: '', customer_name: '', phone: '', invoice_number: '', warranty_info: '', product_stage_name: null }))}
+                          style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.5 }}
                         >
                           <X size={14} />
                         </button>
                       )}
                     </div>
-                    <button className="btn btn-ghost" onClick={() => setVehicleModal(true)} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', fontWeight: 600 }}>
-                      <SearchIcon size={14} style={{ marginRight: 6 }} /> Search
+                    <button className="btn btn-ghost" onClick={() => setVehicleModal(true)} style={{ whiteSpace: 'nowrap', border: '1px solid var(--border)' }}>
+                      <SearchIcon size={16} style={{ marginRight: 8 }} /> Search
                     </button>
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-                  <div className="form-group">
-                    <label className="form-label text-xs uppercase fw-800">Vehicle Number</label>
-                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label text-xs uppercase fw-800">Vehicle Make</label>
-                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_make || ''} onChange={e => set('vehicle_make', e.target.value)} />
                   </div>
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
                   <div className="form-group">
-                    <label className="form-label text-xs uppercase fw-800">Vehicle Model</label>
+                    <label className="form-label text-xs uppercase fw-800">KIT Number</label>
+                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
+                  <div className="form-group">
+                    <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
                     <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} />
                   </div>
                 </div>
