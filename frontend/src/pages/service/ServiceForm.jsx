@@ -46,9 +46,19 @@ export default function ServiceForm() {
     loadTabs();
     loadStageRules();
     if (!isNew) {
-      setLoading(true); // Force reload on ID change
-      api.get(`/service/${id}`).then(r => {
-        setForm({ ...empty, ...r.data, custom_data: r.data.custom_data || {} });
+      setLoading(true);
+      api.get(`/service/${id}`).then(async r => {
+        const data = { ...empty, ...r.data, custom_data: r.data.custom_data || {} };
+        
+        // Fetch linked product if ID exists
+        if (data.product_id) {
+          try {
+            const pRes = await api.get(`/warranty/${data.product_id}`);
+            data.linked_product = pRes.data;
+          } catch (e) { console.error("Could not load linked product details", e); }
+        }
+        
+        setForm(data);
         setLoading(false);
       }).catch(() => setLoading(false));
 
