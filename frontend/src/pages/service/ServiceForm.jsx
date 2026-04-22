@@ -195,6 +195,9 @@ export default function ServiceForm() {
           <button className="btn btn-primary" onClick={save} disabled={saving} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 700 }}>
             {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <><Save size={16} /> Save Changes</>}
           </button>
+          <button className="btn btn-ghost" style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 700, border: '1px solid var(--border)' }}>
+            <FileText size={16} /> Job Card
+          </button>
         </div>
         
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -357,57 +360,9 @@ export default function ServiceForm() {
                 </div>
               </div>
 
-              {/* RIGHT COLUMN: CUSTOMER & ADDITIONAL */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Name *</label>
-                  <input 
-                    className="form-input" 
-                    style={{ background: 'var(--bg2)' }} 
-                    value={form.customer_name || ''} 
-                    onChange={e => set('customer_name', e.target.value)} 
-                    readOnly={!!form.product_id}
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', marginTop: 10 }}>
-                   <div className="form-group">
-                      <label className="form-label text-xs uppercase fw-800">Phone number</label>
-                      <input 
-                        className="form-input" 
-                        placeholder="Enter contact..." 
-                        value={form.phone || ''} 
-                        onChange={e => set('phone', e.target.value)} 
-                        style={{ background: 'var(--bg2)' }} 
-                        readOnly={!!form.product_id}
-                      />
-                   </div>
-                   <div className="form-group">
-                      <label className="form-label text-xs uppercase fw-800">Invoice number</label>
-                      <input 
-                        className="form-input" 
-                        placeholder="INV-001" 
-                        value={form.invoice_number || ''} 
-                        onChange={e => set('invoice_number', e.target.value)} 
-                        style={{ background: 'var(--bg2)' }} 
-                        readOnly={!!form.product_id}
-                      />
-                   </div>
-
-                   <div className="form-group">
-                      <label className="form-label text-xs uppercase fw-800">Warranty details</label>
-                      <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontWeight: 600, color: 'var(--accent)', fontSize: 13 }}>{form.warranty_info || '— No Data —'}</div>
-                   </div>
-                   <div className="form-group">
-                      <label className="form-label text-xs uppercase fw-800">Warranty Stage</label>
-                      <div style={{ padding: '6px 0' }}>
-                         {form.product_stage_name ? <Badge color={form.product_stage_color}>{form.product_stage_name}</Badge> : <span className="text-muted">—</span>}
-                      </div>
-                   </div>
-
-                </div>
               </div>
             </div>
+          </div>
 
           </div>
           <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
@@ -487,8 +442,50 @@ export default function ServiceForm() {
           )}
         </div>
 
+        </div>
+
         {/* RIGHT SIDEBAR */}
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          <div className="card" style={{ padding: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
+              Customer & Warranty
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Customer Name</label>
+                <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12, fontWeight: 700 }}>
+                  {form.customer_name || '—'}
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10 }}>Phone</label>
+                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
+                    {form.phone || '—'}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10 }}>Invoice</label>
+                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
+                    {form.invoice_number || '—'}
+                  </div>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Warranty</label>
+                <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>
+                  {form.warranty_info || '—'}
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label" style={{ fontSize: 10 }}>Warranty Stage</label>
+                <div>
+                  {form.product_stage_name ? <Badge color={form.product_stage_color}>{form.product_stage_name}</Badge> : <span className="text-muted">—</span>}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {!isNew && (
             <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
