@@ -8,8 +8,14 @@ from app.auth import require_admin
 router = APIRouter()
 
 @router.get("/")
-def list_logs(module: Optional[str] = None, record_id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _=Depends(require_admin)):
+def list_logs(search: Optional[str] = None, module: Optional[str] = None, record_id: Optional[int] = None, skip: int = 0, limit: int = 100, db: Session = Depends(get_db), _=Depends(require_admin)):
     q = db.query(AuditLog)
+    if search:
+        from sqlalchemy import or_
+        q = q.filter(or_(
+            AuditLog.record_ref.ilike(f"%{search}%"),
+            AuditLog.user_name.ilike(f"%{search}%")
+        ))
     if module: q = q.filter(AuditLog.module == module)
     if record_id: q = q.filter(AuditLog.record_id == record_id)
     total = q.count()

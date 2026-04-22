@@ -84,15 +84,24 @@ function ActivityTypeModal({ onClose, onSaved }) {
 // ── Helpers ───────────────────────────────────────────────────
 function formatChangeLog(log) {
   const changes = log.changes || {};
-  if (log.action==='CREATE') return [`Created by ${log.user_name}`];
-  if (log.action==='ACTIVITY') return [`${log.user_name} added ${changes.type||'activity'}: ${changes.description||''}`];
+  const userName = log.user || log.user_name || 'System';
+  if (log.action==='CREATE') return [`Created by ${userName}`];
+  if (log.action==='ACTIVITY') return [`${userName} added ${changes.type||'activity'}: ${changes.description||''}`];
   const lines = [];
+  
+  const formatVal = (v) => {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  };
+
   for (const [key, val] of Object.entries(changes)) {
     const label = key.startsWith('custom:') ? key.replace('custom:','') : key;
-    if (val && typeof val==='object' && 'from' in val)
-      lines.push(`${log.user_name} changed ${label}: ${val.from??'—'} → ${val.to??'—'}`);
+    if (val && typeof val==='object' && 'from' in val) {
+      lines.push(`${userName} changed ${label}: ${formatVal(val.from)} → ${formatVal(val.to)}`);
+    }
   }
-  return lines.length ? lines : [`${log.user_name} updated record`];
+  return lines.length ? lines : [`${userName} updated record`];
 }
 
 function timeAgo(dateStr) {

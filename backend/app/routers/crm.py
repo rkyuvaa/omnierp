@@ -89,8 +89,7 @@ def list_leads(
         q = q.filter(or_(
             Lead.title.ilike(f"%{search}%"), 
             Lead.customer_name.ilike(f"%{search}%"), 
-            Lead.reference.ilike(f"%{search}%"),
-            cast(Lead.custom_data, String).ilike(f"%{search}%")
+            Lead.reference.ilike(f"%{search}%")
         ))
     if stage_id: q = q.filter(Lead.stage_id == stage_id)
     if assigned_to: q = q.filter(Lead.assigned_to == assigned_to)

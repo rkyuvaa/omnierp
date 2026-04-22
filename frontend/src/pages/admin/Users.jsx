@@ -399,11 +399,14 @@ export default function AdminUsers() {
                           <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>Modified by {log.user_name}</div>
                           {log.changes && (
                             <div style={{ marginTop: 6, padding: 6, background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
-                               {Object.entries(log.changes || {}).map(([key, val]) => (
-                                 <div key={key} style={{ fontSize: 9, marginBottom: 2 }}>
-                                   <b style={{ color: 'var(--accent)' }}>{key}:</b> {String(val.new)}
-                                 </div>
-                               ))}
+                               {Object.entries(log.changes || {}).map(([key, val]) => {
+                                 const displayVal = val && typeof val.new === 'object' ? JSON.stringify(val.new) : String(val.new ?? '—');
+                                 return (
+                                   <div key={key} style={{ fontSize: 9, marginBottom: 2 }}>
+                                     <b style={{ color: 'var(--accent)' }}>{key}:</b> {displayVal}
+                                   </div>
+                                 );
+                               })}
                             </div>
                           )}
                         </div>
