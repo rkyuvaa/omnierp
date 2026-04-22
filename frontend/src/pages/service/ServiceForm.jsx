@@ -206,27 +206,25 @@ export default function ServiceForm() {
       </div>
       
       {!isNew && stages.length > 0 && (
-        <div style={{ marginBottom: 16, width: '100%', marginTop: -4 }}>
-          <div style={{ padding: '4px 12px', background: '#22c55e', color: '#fff', fontSize: 10, fontWeight: 900, borderRadius: '4px 4px 0 0', display: 'inline-block' }}>
-            VERIFIED BUILD: v3.0 - PREMIUM UI ACTIVE
-          </div>
-          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text2)', marginBottom: 10, opacity: 0.6, letterSpacing: '1px', paddingLeft: 4, textTransform: 'uppercase' }}>
+        <div style={{ marginBottom: 20, width: '100%', marginTop: -4 }}>
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text2)', marginBottom: 12, opacity: 0.5, letterSpacing: '1px', paddingLeft: 4, textTransform: 'uppercase' }}>
             Service Process Tracking
           </div>
-          <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+          <div style={{ display: 'flex', gap: 8, width: '100%' }}>
             {stages.map(s => {
               const isCurrent = form && String(form.stage_id) === String(s.id);
+              const stageColor = s.color || 'var(--accent)';
               return (
                 <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
                   style={{
-                    flex: 1, padding: '12px 4px', borderRadius: 10, textAlign: 'center', fontSize: 10, fontWeight: 700,
+                    flex: 1, padding: '12px 4px', borderRadius: 12, textAlign: 'center', fontSize: 10, fontWeight: 700,
                     cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.6px',
-                    background: isCurrent ? (s.color || 'var(--accent)') : 'rgba(0,0,0,0.02)',
-                    color: isCurrent ? '#fff' : (s.color || 'var(--text2)'),
-                    border: isCurrent ? `1.5px solid ${s.color || 'var(--accent)'}` : `1.5px solid ${s.color ? s.color + '33' : 'var(--border)'}`,
-                    opacity: isCurrent ? 1 : 0.8, transition: 'all 0.3s ease',
-                    boxShadow: isCurrent ? `0 4px 12px ${s.color || 'var(--accent)'}33` : 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36
+                    background: isCurrent ? stageColor : 'var(--bg2)',
+                    color: isCurrent ? '#fff' : stageColor,
+                    border: isCurrent ? `2px solid ${stageColor}` : `1px solid ${stageColor}44`,
+                    opacity: isCurrent ? 1 : 0.6, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    boxShadow: isCurrent ? `0 6px 16px ${stageColor}44` : 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 38
                   }}>
                   {s.name}
                 </div>
