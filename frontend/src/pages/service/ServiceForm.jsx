@@ -197,6 +197,41 @@ export default function ServiceForm() {
       invoice_number: vInv || f.invoice_number,
       linked_product: v
     }));
+
+    // Fetch from installation module for extra fields
+    try {
+      const res = await api.get(`/installation?search=${vNum}`);
+      if (res.data.items && res.data.items.length > 0) {
+        const inst = res.data.items.find(i => i.product_id === v.id) || res.data.items[0];
+        const icd = inst.custom_data || {};
+        const findInst = (keys) => {
+          for (let k of keys) {
+            if (icd[k]) return icd[k];
+            const found = Object.keys(icd).find(x => {
+               const normalizedX = x.toLowerCase().replace(/[^a-z0-9]/g, '');
+               const normalizedK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
+               return normalizedX === normalizedK || normalizedX.includes(normalizedK) || normalizedK.includes(normalizedX);
+            });
+            if (found) return icd[found];
+          }
+          return '';
+        };
+
+        const instModel = findInst(['vehicle_model', 'model', 'installed_kit']);
+        const instYear = findInst(['vehicle_year', 'year', 'model_year', 'mfg_year']);
+        
+        if (instModel || instYear) {
+          setForm(f => ({
+            ...f,
+            vehicle_model: instModel || f.vehicle_model,
+            vehicle_year: instYear || f.vehicle_year
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Could not fetch installation data", err);
+    }
+
     setVehicleSearch('');
     setShowResults(false);
   };
@@ -327,7 +362,7 @@ export default function ServiceForm() {
           <div className="card">
             <div className="detail-section-title">Record Details</div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
                <div className="form-group" ref={searchRef} style={{ position: 'relative' }}>
                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Last 4 Digits)</label>
                  <div style={{ display: 'flex', gap: 8 }}>
@@ -368,6 +403,26 @@ export default function ServiceForm() {
                      })}
                    </div>
                  )}
+               </div>
+
+               <div className="form-group">
+                 <label className="form-label text-xs uppercase fw-800">Vehicle Model</label>
+                 <input 
+                   className="form-input" 
+                   style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }} 
+                   value={form.vehicle_model || ''} 
+                   onChange={e => set('vehicle_model', e.target.value)}
+                 />
+               </div>
+
+               <div className="form-group">
+                 <label className="form-label text-xs uppercase fw-800">Vehicle Year</label>
+                 <input 
+                   className="form-input" 
+                   style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }} 
+                   value={form.vehicle_year || ''} 
+                   onChange={e => set('vehicle_year', e.target.value)}
+                 />
                </div>
 
                 <div className="form-group">
@@ -419,17 +474,6 @@ export default function ServiceForm() {
                       )}
                     </div>
                   </div>
-
-                <div className="form-group">
-                  <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
-                    <input 
-                      className="form-input" 
-                      style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }} 
-                      value={form.vehicle_model || ''} 
-                      onChange={e => set('vehicle_model', e.target.value)} 
-                      readOnly={!!form.product_id}
-                    />
-                </div>
               </div>
             </div>
 
@@ -537,10 +581,18 @@ export default function ServiceForm() {
                   </div>
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10 }}>Installed KIT</label>
-                <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 700 }}>
-                  {form.vehicle_model || '—'}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10 }}>Vehicle Model</label>
+                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
+                    {form.vehicle_model || '—'}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10 }}>Vehicle Year</label>
+                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
+                    {form.vehicle_year || '—'}
+                  </div>
                 </div>
               </div>
               <div className="form-group">
