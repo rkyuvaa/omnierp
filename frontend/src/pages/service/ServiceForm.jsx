@@ -30,11 +30,19 @@ export default function ServiceForm() {
   const [stageRules, setStageRules] = useState([]);
   const [activeTab, setActiveTab] = useState(0);
   const [editLayout, setEditLayout] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const [changeLogs, setChangeLogs] = useState([]);
+  const [activityTypes, setActivityTypes] = useState([]);
+  const [actType, setActType] = useState('');
+  const [actDesc, setActDesc] = useState('');
+  const [actDue, setActDue] = useState('');
+  const [actTypeModal, setActTypeModal] = useState(false);
   const [fieldModal, setFieldModal] = useState(null);
   const [tabModal, setTabModal] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const loadTabs = useCallback(() => api.get('/studio/layout/service/tabs').then(r => setTabs(r.data)), []);
   const loadStageRules = useCallback(() => api.get('/studio/layout/service/stage-rules').then(r => setStageRules(r.data)), []);
+  const loadActivityTypes = useCallback(() => api.get('/crm/activity-types').then(r => { setActivityTypes(r.data); setActType(t => t || (r.data[0]?.name || '')); }).catch(()=>{}), []);
   const [nav, setNav] = useState({ prev: null, next: null });
   const [vehicleModal, setVehicleModal] = useState(false);
   const [vehicleSearch, setVehicleSearch] = useState('');
@@ -45,6 +53,7 @@ export default function ServiceForm() {
   useEffect(() => {
     loadTabs();
     loadStageRules();
+    loadActivityTypes();
     if (!isNew) {
       setLoading(true);
       api.get(`/service/${id}`).then(async r => {
@@ -59,6 +68,8 @@ export default function ServiceForm() {
         }
         
         setForm(data);
+        setActivities(r.data.activities || []);
+        setChangeLogs(r.data.change_logs || []);
         setLoading(false);
       }).catch(() => setLoading(false));
 
@@ -158,6 +169,20 @@ export default function ServiceForm() {
     return t.visibility_stages.map(Number).includes(sId);
   }), [tabs, form?.stage_id]);
 
+  const actTypeMap = useMemo(() => activityTypes.reduce((acc, t) => ({ ...acc, [t.name]: t }), {}), [activityTypes]);
+  const addActivity = async () => {
+    if (!actDesc.trim()) return;
+    try {
+      await api.post('/crm/activities', { module:'service', record_id:id, type:actType, description:actDesc, due_date:actDue||null });
+      setActDesc(''); setActDue('');
+      api.get(`/service/${id}`).then(r => { setActivities(r.data.activities||[]); setChangeLogs(r.data.change_logs||[]); });
+    } catch(e) { toast.error("Failed to add activity"); }
+  };
+  const markDone = async (aid) => {
+    await api.put(`/crm/activities/${aid}`, { done: true });
+    setActivities(a => a.map(x => x.id===aid ? {...x, done:true} : x));
+  };
+
   if (loading) return <Layout title="Service"><Loader /></Layout>;
   const currentTab = visibleTabs[activeTab];
   const colSpan = { full: '1/-1', half: 'span 2', quarter: 'span 1' };
@@ -231,7 +256,7 @@ export default function ServiceForm() {
         </div>
       )}
 
-      <div className="detail-layout" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20, alignItems: 'start' }}>
+      <div className="detail-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card">
             <div className="detail-section-title">Record Details</div>
@@ -458,6 +483,79 @@ export default function ServiceForm() {
                   </div>
                 </div>
               ) : 'No additional fields configured.'}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT SIDEBAR */}
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          {!isNew && (
+            <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                <span className="card-title" style={{ display:'flex', alignItems:'center', gap:6, fontSize:12 }}><Bell size={14}/> Activity</span>
+                {isAdmin && <button className="btn btn-ghost btn-sm" style={{ fontSize:10 }} onClick={() => setActTypeModal(true)}><Settings size={11}/> Types</button>}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <div style={{ display:'flex', gap:8 }}>
+                  <select className="form-select" style={{ width:100, fontSize:11 }} value={actType} onChange={e => setActType(e.target.value)}>
+                    {activityTypes.map(t => <option key={t.name} value={t.name}>{t.icon} {t.name}</option>)}
+                  </select>
+                  <input className="form-input" style={{ fontSize:11 }} placeholder="Description..." value={actDesc} onChange={e => setActDesc(e.target.value)} onKeyDown={e => e.key==='Enter'&&addActivity()}/>
+                </div>
+                <div style={{ display:"flex", gap:8, alignItems:"center" }}>
+                   <input className="form-input" type="datetime-local" style={{ fontSize:11, flex:1 }} value={actDue} onChange={e => setActDue(e.target.value)}/>
+                   <button className="btn btn-primary btn-sm" onClick={addActivity}><Plus size={13}/></button>
+                </div>
+              </div>
+              {activities.length > 0 && (
+                <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
+                  {activities.map(a => {
+                    const at = actTypeMap[a.type] || {color:'var(--accent)', icon:'📝'};
+                    return (
+                      <div key={a.id} style={{ display:'flex', gap:8, padding:'8px 10px', background:'var(--bg3)', borderRadius:8, opacity:a.done?0.45:1, alignItems:'flex-start' }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                            <Badge color={at.color}>{at.icon} {a.type}</Badge>
+                            {a.due_date && !a.done && <span style={{ fontSize:9, color:'var(--amber)' }}>{new Date(a.due_date).toLocaleDateString()}</span>}
+                          </div>
+                          <div style={{ fontSize:11 }}>{a.description}</div>
+                        </div>
+                        {!a.done && <button className="btn btn-ghost btn-sm" style={{ padding:4 }} onClick={() => markDone(a.id)}><Check size={11}/></button>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+
+          {!isNew && (
+            <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }}>
+              <div className="card-header" style={{ marginBottom:8 }}>
+                <span className="card-title" style={{ fontSize:12 }}>Change Log</span>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                {changeLogs.length === 0 && <p className="text-muted text-sm">No changes yet.</p>}
+                {changeLogs.map(log => {
+                   const userName = log.user || log.user_name || 'System';
+                   const formatVal = (v) => { if (v === null || v === undefined) return '—'; if (typeof v === 'object') return JSON.stringify(v); return String(v); };
+                   const renderChanges = () => {
+                     if (log.action==='CREATE') return <div>Created by {userName}</div>;
+                     const lines = [];
+                     for (const [key, val] of Object.entries(log.changes || {})) {
+                       if (val && typeof val==='object' && 'from' in val)
+                         lines.push(<div key={key}>{userName} changed {key}: {formatVal(val.from)} → {formatVal(val.to)}</div>);
+                     }
+                     return lines.length ? lines : <div>{userName} updated record</div>;
+                   };
+                   return (
+                    <div key={log.id} style={{ padding:'6px 0', borderBottom:'1px solid var(--border)', fontSize:10, color:'var(--text2)' }}>
+                       {renderChanges()}
+                       <div style={{ fontSize:9, color:'var(--text3)', marginTop:2 }}>{log.created_at?.slice(0,16).replace('T',' ')}</div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
