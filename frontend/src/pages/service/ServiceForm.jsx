@@ -273,42 +273,42 @@ export default function ServiceForm() {
                   />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 32px', marginTop: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px 24px', marginTop: 10 }}>
                    <div className="form-group">
-                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Phone number</div>
+                      <label className="form-label text-xs uppercase fw-800">Phone number</label>
                       <input 
                         className="form-input" 
                         placeholder="Enter contact..." 
                         value={form.phone || ''} 
                         onChange={e => set('phone', e.target.value)} 
-                        style={{ border: 'none', borderBottom: '1px solid var(--border)', borderRadius: 0, padding: '4px 0', background: 'transparent' }} 
+                        style={{ background: 'var(--bg2)' }} 
                         readOnly={!!form.product_id}
                       />
                    </div>
                    <div className="form-group">
-                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Invoice number</div>
+                      <label className="form-label text-xs uppercase fw-800">Invoice number</label>
                       <input 
                         className="form-input" 
                         placeholder="INV-001" 
                         value={form.invoice_number || ''} 
                         onChange={e => set('invoice_number', e.target.value)} 
-                        style={{ border: 'none', borderBottom: '1px solid var(--border)', borderRadius: 0, padding: '4px 0', background: 'transparent' }} 
+                        style={{ background: 'var(--bg2)' }} 
                         readOnly={!!form.product_id}
                       />
                    </div>
 
                    <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Vehicle Delivery Date</div>
-                      <input type="date" className="form-input" value={form.delivery_date || ''} onChange={e => set('delivery_date', e.target.value)} style={{ border: 'none', borderBottom: '1px solid var(--border)', borderRadius: 0, padding: '4px 0', background: 'transparent', width: '200px' }} />
+                      <label className="form-label text-xs uppercase fw-800">Vehicle Delivery Date</label>
+                      <input type="date" className="form-input" value={form.delivery_date || ''} onChange={e => set('delivery_date', e.target.value)} style={{ background: 'var(--bg2)', width: '200px' }} />
                    </div>
 
                    <div className="form-group">
-                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Warranty details</div>
-                      <div style={{ padding: '4px 0', fontWeight: 600, color: 'var(--accent)' }}>{form.warranty_info || '— No Data —'}</div>
+                      <label className="form-label text-xs uppercase fw-800">Warranty details</label>
+                      <div style={{ padding: '8px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontWeight: 600, color: 'var(--accent)', fontSize: 13 }}>{form.warranty_info || '— No Data —'}</div>
                    </div>
                    <div className="form-group">
-                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Warranty Stage</div>
-                      <div style={{ padding: '8px 0' }}>
+                      <label className="form-label text-xs uppercase fw-800">Warranty Stage</label>
+                      <div style={{ padding: '6px 0' }}>
                          {form.product_stage_name ? <Badge color={form.product_stage_color}>{form.product_stage_name}</Badge> : <span className="text-muted">—</span>}
                       </div>
                    </div>
