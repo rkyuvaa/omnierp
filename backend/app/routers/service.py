@@ -15,6 +15,10 @@ router = APIRouter()
 class SvcIn(BaseModel):
     customer_id: Optional[int] = None
     customer_name: Optional[str] = None
+    phone: Optional[str] = None
+    invoice_number: Optional[str] = None
+    vehicle_year: Optional[str] = None
+    delivery_date: Optional[str] = None
     vehicle_number: Optional[str] = None
     vehicle_make: Optional[str] = None
     vehicle_model: Optional[str] = None
@@ -26,15 +30,29 @@ class SvcIn(BaseModel):
     custom_data: dict = {}
 
 def serialize(r: ServiceRequest):
+    warranty_info = "— No Data —"
+    if r.product:
+        if r.product.warranty_start_date and r.product.warranty_end_date:
+            warranty_info = f"{r.product.warranty_start_date} to {r.product.warranty_end_date}"
+        elif r.product.warranty_period:
+            warranty_info = f"{r.product.warranty_period} {r.product.warranty_unit or 'months'}"
+
     return {
         "id": r.id, 
         "reference": r.reference, 
         "customer_name": r.customer_name,
+        "phone": r.phone,
+        "invoice_number": r.invoice_number,
+        "vehicle_year": r.vehicle_year,
+        "delivery_date": str(r.delivery_date) if r.delivery_date else None,
         "vehicle_number": r.vehicle_number, 
         "vehicle_make": r.vehicle_make,
         "vehicle_model": r.vehicle_model, 
         "product_id": r.product_id,
         "product_serial": r.product.serial_number if r.product else None,
+        "product_stage_name": r.product.stage.name if (r.product and r.product.stage) else None,
+        "product_stage_color": r.product.stage.color if (r.product and r.product.stage) else None,
+        "warranty_info": warranty_info,
         "problem_description": r.problem_description,
         "stage_id": r.stage_id, 
         "staff_id": r.staff_id, 

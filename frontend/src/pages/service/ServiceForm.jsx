@@ -201,70 +201,125 @@ export default function ServiceForm() {
         </div>
       )}
 
-      <div className="detail-layout">
+      <div className="detail-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card">
             <div className="detail-section-title">Record Details</div>
-            <div className="form-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px 24px' }}>
-              {!isNew && (
-                <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                  <label className="form-label" style={{ color: 'var(--accent)', fontWeight: 600 }}>Record Number</label>
-                  <input className="form-input" value={form.reference || ''} readOnly style={{ background: 'var(--bg)', fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent-dim)' }} />
-                </div>
-              )}
-              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                <label className="form-label">Linked Vehicle (Search Serial Number/Name)</label>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <div style={{ position: 'relative', flex: 1 }}>
-                    <Car size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--text3)' }} />
-                    <input 
-                      className="form-input" 
-                      style={{ paddingLeft: 38 }}
-                      placeholder="Click to link a vehicle from database..."
-                      value={form.product_serial || (form.product_id ? `Linked [ID: ${form.product_id}]` : '')}
-                      readOnly
-                      onClick={() => setVehicleModal(true)}
-                    />
-                    {form.product_id && (
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); set('product_id', null); set('product_serial', ''); }}
-                        style={{ position: 'absolute', right: 8, top: 8, padding: 4, background: 'var(--bg2)', borderRadius: 4, border: 'none', cursor: 'pointer' }}
-                      >
-                        <X size={14} />
-                      </button>
-                    )}
+            
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 40px' }}>
+              {/* LEFT COLUMN: VEHICLE INFO */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Search Serial Number/Name)</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Car size={16} style={{ position: 'absolute', left: 12, top: 11, color: 'var(--text3)' }} />
+                      <input 
+                        className="form-input" 
+                        style={{ paddingLeft: 38, background: 'var(--bg2)', border: '1px solid var(--border)' }}
+                        placeholder="KIMO1011234"
+                        value={form.product_serial || (form.product_id ? `Linked [ID: ${form.product_id}]` : '')}
+                        readOnly
+                        onClick={() => setVehicleModal(true)}
+                      />
+                      {form.product_id && (
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); set('product_id', null); set('product_serial', ''); }}
+                          style={{ position: 'absolute', right: 8, top: 8, padding: 4, background: 'var(--bg2)', borderRadius: 4, border: 'none', cursor: 'pointer' }}
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                    <button className="btn btn-ghost" onClick={() => setVehicleModal(true)} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', fontWeight: 600 }}>
+                      <SearchIcon size={14} style={{ marginRight: 6 }} /> Search
+                    </button>
                   </div>
-                  <button className="btn btn-ghost" onClick={() => setVehicleModal(true)}>
-                    <SearchIcon size={16} /> Search
-                  </button>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+                  <div className="form-group">
+                    <label className="form-label text-xs uppercase fw-800">Vehicle Number</label>
+                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label text-xs uppercase fw-800">Vehicle Make</label>
+                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_make || ''} onChange={e => set('vehicle_make', e.target.value)} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+                  <div className="form-group">
+                    <label className="form-label text-xs uppercase fw-800">Vehicle Model</label>
+                    <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label text-xs uppercase fw-800" style={{ fontSize: 16, marginTop: 10 }}>Vehicle Year</label>
+                    <input className="form-input" placeholder="2023" value={form.vehicle_year || ''} onChange={e => set('vehicle_year', e.target.value)} style={{ border: 'none', borderBottom: '1.5px solid var(--border)', borderRadius: 0, paddingLeft: 0, background: 'transparent', fontSize: 18, fontWeight: 600 }} />
+                  </div>
                 </div>
               </div>
 
-              <div className="form-group">
-                <label className="form-label">Customer Name *</label>
-                <input className="form-input" value={form.customer_name || ''} onChange={e => set('customer_name', e.target.value)} />
-              </div>
-              <div className="form-grid form-grid-2">
+              {/* RIGHT COLUMN: CUSTOMER & ADDITIONAL */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div className="form-group">
-                  <label className="form-label">Vehicle Number</label>
-                  <input className="form-input" value={form.vehicle_number || ''} onChange={e => set('vehicle_number', e.target.value)} />
+                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Customer Name *</label>
+                  <input 
+                    className="form-input" 
+                    style={{ background: 'var(--bg2)' }} 
+                    value={form.customer_name || ''} 
+                    onChange={e => set('customer_name', e.target.value)} 
+                    readOnly={!!form.product_id}
+                  />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Vehicle Make</label>
-                  <input className="form-input" value={form.vehicle_make || ''} onChange={e => set('vehicle_make', e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Vehicle Model</label>
-                  <input className="form-input" value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} />
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 32px', marginTop: 10 }}>
+                   <div className="form-group">
+                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Phone number</div>
+                      <input 
+                        className="form-input" 
+                        placeholder="Enter contact..." 
+                        value={form.phone || ''} 
+                        onChange={e => set('phone', e.target.value)} 
+                        style={{ border: 'none', borderBottom: '1px solid var(--border)', borderRadius: 0, padding: '4px 0', background: 'transparent' }} 
+                        readOnly={!!form.product_id}
+                      />
+                   </div>
+                   <div className="form-group">
+                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Invoice number</div>
+                      <input 
+                        className="form-input" 
+                        placeholder="INV-001" 
+                        value={form.invoice_number || ''} 
+                        onChange={e => set('invoice_number', e.target.value)} 
+                        style={{ border: 'none', borderBottom: '1px solid var(--border)', borderRadius: 0, padding: '4px 0', background: 'transparent' }} 
+                        readOnly={!!form.product_id}
+                      />
+                   </div>
+
+                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Vehicle Delivery Date</div>
+                      <input type="date" className="form-input" value={form.delivery_date || ''} onChange={e => set('delivery_date', e.target.value)} style={{ border: 'none', borderBottom: '1px solid var(--border)', borderRadius: 0, padding: '4px 0', background: 'transparent', width: '200px' }} />
+                   </div>
+
+                   <div className="form-group">
+                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Warranty details</div>
+                      <div style={{ padding: '4px 0', fontWeight: 600, color: 'var(--accent)' }}>{form.warranty_info || '— No Data —'}</div>
+                   </div>
+                   <div className="form-group">
+                      <div style={{ fontSize: 22, fontWeight: 500, color: 'var(--text1)' }}>Warranty Stage</div>
+                      <div style={{ padding: '8px 0' }}>
+                         {form.product_stage_name ? <Badge color={form.product_stage_color}>{form.product_stage_name}</Badge> : <span className="text-muted">—</span>}
+                      </div>
+                   </div>
                 </div>
               </div>
-              <div className="form-group">
-                <label className="form-label">Problem Description</label>
-                <textarea className="form-textarea" value={form.problem_description || ''} onChange={e => set('problem_description', e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Notes</label>
-                <textarea className="form-textarea" value={form.notes || ''} onChange={e => set('notes', e.target.value)} />
+            </div>
+
+            <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
+               <div className="form-group">
+                <label className="form-label text-xs uppercase fw-800">Problem Description</label>
+                <textarea className="form-textarea" placeholder="Describe the issues reported by customer..." value={form.problem_description || ''} onChange={e => set('problem_description', e.target.value)} style={{ minHeight: 80 }} />
               </div>
             </div>
           </div>
@@ -414,13 +469,29 @@ export default function ServiceForm() {
                       key={p.id} 
                       className="list-item" 
                       onClick={() => {
+                        let winfo = "— No Data —";
+                        if (p.warranty_start_date && p.warranty_end_date) winfo = `${p.warranty_start_date} to ${p.warranty_end_date}`;
+                        else if (p.warranty_period) winfo = `${p.warranty_period} ${p.warranty_unit || 'months'}`;
+
+                        // Extract from product custom_data
+                        const cd = p.custom_data || {};
+                        const pName = cd['customer_name'] || cd['Customer Name'] || '';
+                        const pPhone = cd['phone'] || cd['Phone Number'] || '';
+                        const pInv = cd['invoice_number'] || cd['Invoice Number'] || cd['invoice_no'] || '';
+
                         setForm(f => ({ 
                           ...f, 
                           product_id: p.id, 
                           product_serial: p.serial_number,
-                          vehicle_number: p.serial_number, // Chassis as default vehicle no
-                          vehicle_make: p.name, // Usually make or model name
-                          vehicle_model: p.title
+                          vehicle_number: p.serial_number,
+                          vehicle_make: p.name, 
+                          vehicle_model: p.title,
+                          customer_name: pName || f.customer_name,
+                          phone: pPhone || f.phone,
+                          invoice_number: pInv || f.invoice_number,
+                          warranty_info: winfo,
+                          product_stage_name: p.stage_name,
+                          product_stage_color: p.stage_color
                         }));
                         setVehicleModal(false);
                       }}
