@@ -4,7 +4,7 @@ export default function ServiceList() {
   return (
     <ModuleList
       title="Vehicle Service"
-      endpoint="/service"
+      endpoint="/service/"
       module="service"
       formPath="/service"
       exportPath="/service/export/excel"
