@@ -430,7 +430,7 @@ export default function ServiceForm() {
                   </div>
 
                 <div className="form-group">
-                  <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
+                  <label className="form-label text-xs uppercase fw-800">Vehicle Model</label>
                     <input 
                       className="form-input" 
                       style={{ background: 'var(--bg2)' }} 
@@ -543,6 +543,20 @@ export default function ServiceForm() {
                   <label className="form-label" style={{ fontSize: 10 }}>Invoice</label>
                   <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
                     {form.invoice_number || '—'}
+                  </div>
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10 }}>Vehicle Model</label>
+                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
+                    {form.vehicle_model || '—'}
+                  </div>
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10 }}>Vehicle Year</label>
+                  <div style={{ padding: '6px 10px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', fontSize: 11, fontWeight: 600 }}>
+                    {form.vehicle_year || '—'}
                   </div>
                 </div>
               </div>
