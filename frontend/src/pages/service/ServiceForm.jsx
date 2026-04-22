@@ -289,15 +289,19 @@ export default function ServiceForm() {
                             e.stopPropagation();
                             if (form.linked_product) {
                               setKitDetail(form.linked_product);
-                            } else {
+                            } else if (form.product_id) {
                               try {
-                                const res = await api.get(`/warranty/${form.product_id}`);
-                                setKitDetail(res.data);
-                                setForm(f => ({ ...f, linked_product: res.data }));
+                                const res = await api.get(`/warranty/products/${form.product_id}`);
+                                if (res.data) {
+                                  setKitDetail(res.data);
+                                  setForm(f => ({ ...f, linked_product: res.data }));
+                                }
                               } catch (err) {
                                 console.error("Could not load kit details", err);
                                 toast.error("Failed to load component details");
                               }
+                            } else {
+                              toast.warning("No product linked to this record");
                             }
                           }}
                           style={{ 
