@@ -464,11 +464,21 @@ export default function ServiceForm() {
                         if (p.warranty_start_date && p.warranty_end_date) winfo = `${p.warranty_start_date} to ${p.warranty_end_date}`;
                         else if (p.warranty_period) winfo = `${p.warranty_period} ${p.warranty_unit || 'months'}`;
 
-                        // Extract from product custom_data
+                        // Extract from product custom_data with fuzzy matching
                         const cd = p.custom_data || {};
-                        const pName = cd['customer_name'] || cd['Customer Name'] || cd['name'] || '';
-                        const pPhone = cd['phone'] || cd['Phone Number'] || cd['mobile'] || cd['Mobile'] || cd['Contact'] || cd['Phone'] || '';
-                        const pInv = cd['invoice_number'] || cd['Invoice Number'] || cd['invoice_no'] || cd['Invoice No'] || cd['Bill No'] || cd['invoice'] || '';
+                        const find = (keys) => {
+                          for (let k of keys) {
+                            if (cd[k]) return cd[k];
+                            // Also try lowercase/trimmed match
+                            const found = Object.keys(cd).find(x => x.toLowerCase().replace(/[^a-z0-9]/g, '') === k.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                            if (found) return cd[found];
+                          }
+                          return '';
+                        };
+
+                        const pName = find(['customer_name', 'customername', 'name', 'Customer']) || p.title || '';
+                        const pPhone = find(['phone', 'mobile', 'contact', 'phonenumber', 'mobilenumber', 'customer_phone', 'customer_mobile']) || '';
+                        const pInv = find(['invoice', 'invoicenumber', 'invoiceno', 'invoice_no', 'bill', 'billnumber', 'billno']) || '';
 
                         setForm(f => ({ 
                           ...f, 
