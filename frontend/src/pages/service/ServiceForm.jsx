@@ -380,30 +380,10 @@ export default function ServiceForm() {
                       </div>
                    </div>
 
-                   <div className="form-group">
-                     <label className="form-label text-xs uppercase fw-800">Current Stage</label>
-                     <select className="form-select" style={{ background: 'var(--bg2)' }} value={form.stage_id || ''} onChange={e => set('stage_id', parseInt(e.target.value) || null)}>
-                       <option value="">— Select —</option>
-                       {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                     </select>
-                   </div>
-                   <div className="form-group">
-                     <label className="form-label text-xs uppercase fw-800">Assigned Staff</label>
-                     <select className="form-select" style={{ background: 'var(--bg2)' }} value={form.staff_id || ''} onChange={e => set('staff_id', parseInt(e.target.value) || null)}>
-                       <option value="">— Unassigned —</option>
-                       {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                     </select>
-                   </div>
                 </div>
               </div>
             </div>
 
-            <div style={{ marginTop: 32, paddingTop: 24, borderTop: '1px solid var(--border)' }}>
-               <div className="form-group">
-                <label className="form-label text-xs uppercase fw-800">Problem Description</label>
-                <textarea className="form-textarea" placeholder="Describe the issues reported by customer..." value={form.problem_description || ''} onChange={e => set('problem_description', e.target.value)} style={{ minHeight: 80 }} />
-              </div>
-            </div>
           </div>
           <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
