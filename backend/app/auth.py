@@ -61,8 +61,8 @@ def next_sequence(db: Session, module: str) -> str:
     db.commit()
     year = datetime.now().year
     num = str(seq.current_number).zfill(seq.padding)
-    prefix = seq.prefix
-    suffix = seq.suffix
+    prefix = seq.prefix or ""
+    suffix = seq.suffix or ""
     if prefix:
         return f"{prefix}/{year}/{num}{suffix}"
     return f"{year}/{num}{suffix}"

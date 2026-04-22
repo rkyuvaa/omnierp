@@ -65,6 +65,15 @@ def migrate():
                 conn.commit()
             except: pass
         
+    # 3. Reset Service Sequence
+    with engine.connect() as conn:
+        try:
+            print("Resetting Service Sequence to 1...")
+            conn.execute(text("UPDATE sequences SET current_number = 0 WHERE module = 'service'"))
+            conn.commit()
+            print("SUCCESS: Sequence reset.")
+        except: pass
+        
     print("Migration complete!")
 
 if __name__ == "__main__":
