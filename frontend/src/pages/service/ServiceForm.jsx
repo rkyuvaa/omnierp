@@ -254,9 +254,21 @@ export default function ServiceForm() {
                         }}
                       />
                       {form.product_id && (
-                        <div style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', fontSize: 10, color: 'var(--accent)', fontWeight: 700 }}>
-                          DETAILS →
-                        </div>
+                        <button 
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (form.linked_product) setKitDetail(form.linked_product);
+                          }}
+                          style={{ 
+                            position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', 
+                            fontSize: 10, color: '#fff', fontWeight: 800, background: 'var(--accent)',
+                            border: 'none', padding: '4px 8px', borderRadius: 6, cursor: 'pointer',
+                            display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                          }}
+                        >
+                          DETAILS <ChevronRight size={10} />
+                        </button>
                       )}
                     </div>
                   </div>
