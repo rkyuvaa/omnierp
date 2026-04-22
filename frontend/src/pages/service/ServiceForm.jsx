@@ -248,14 +248,10 @@ export default function ServiceForm() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
                   <div className="form-group">
                     <label className="form-label text-xs uppercase fw-800">Vehicle Model</label>
                     <input className="form-input" style={{ background: 'var(--bg2)' }} value={form.vehicle_model || ''} onChange={e => set('vehicle_model', e.target.value)} />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label text-xs uppercase fw-800" style={{ fontSize: 16, marginTop: 10 }}>Vehicle Year</label>
-                    <input className="form-input" placeholder="2023" value={form.vehicle_year || ''} onChange={e => set('vehicle_year', e.target.value)} style={{ border: 'none', borderBottom: '1.5px solid var(--border)', borderRadius: 0, paddingLeft: 0, background: 'transparent', fontSize: 18, fontWeight: 600 }} />
                   </div>
                 </div>
               </div>
@@ -295,11 +291,6 @@ export default function ServiceForm() {
                         style={{ background: 'var(--bg2)' }} 
                         readOnly={!!form.product_id}
                       />
-                   </div>
-
-                   <div className="form-group" style={{ gridColumn: '1 / -1' }}>
-                      <label className="form-label text-xs uppercase fw-800">Vehicle Delivery Date</label>
-                      <input type="date" className="form-input" value={form.delivery_date || ''} onChange={e => set('delivery_date', e.target.value)} style={{ background: 'var(--bg2)', width: '200px' }} />
                    </div>
 
                    <div className="form-group">
