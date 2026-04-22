@@ -196,25 +196,30 @@ export default function ServiceForm() {
       </div>
       
       {!isNew && stages.length > 0 && (
-        <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
-          {stages.map(s => {
-            const isCurrent = form && String(form.stage_id) === String(s.id);
-            return (
-              <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
-                style={{
-                  flex: 1, padding: '8px 4px', borderRadius: 6, textAlign: 'center', fontSize: 10, fontWeight: 700,
-                  cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.6px',
-                  background: isCurrent ? (s.color || 'var(--accent)') : 'rgba(0,0,0,0.02)',
-                  color: isCurrent ? '#fff' : (s.color || 'var(--text2)'),
-                  border: isCurrent ? `1.5px solid ${s.color || 'var(--accent)'}` : `1.5px solid ${s.color ? s.color + '44' : 'var(--border)'}`,
-                  opacity: isCurrent ? 1 : 0.7, transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: isCurrent ? `0 4px 12px ${s.color || 'var(--accent)'}33` : 'none',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center'
-                }}>
-                {s.name}
-              </div>
-            );
-          })}
+        <div style={{ marginBottom: 16, width: '100%', marginTop: -4 }}>
+          <div style={{ fontSize: 11, fontWeight: 900, color: '#ff0000', marginBottom: 10, letterSpacing: '1px', paddingLeft: 4 }}>
+            SERVICE PROCESS TRACKING (VER: 2.1)
+          </div>
+          <div style={{ display: 'flex', gap: 6, width: '100%' }}>
+            {stages.map(s => {
+              const isCurrent = form && String(form.stage_id) === String(s.id);
+              return (
+                <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
+                  style={{
+                    flex: 1, padding: '12px 4px', borderRadius: 10, textAlign: 'center', fontSize: 10, fontWeight: 800,
+                    cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.6px',
+                    background: isCurrent ? (s.color || 'var(--accent)') : 'rgba(255, 0, 0, 0.05)',
+                    color: isCurrent ? '#fff' : (s.color || 'var(--text2)'),
+                    border: isCurrent ? `1.5px solid ${s.color || 'var(--accent)'}` : `1.5px solid ${s.color ? s.color + '44' : 'var(--border)'}`,
+                    opacity: isCurrent ? 1 : 0.8, transition: 'all 0.3s ease',
+                    boxShadow: isCurrent ? `0 4px 12px ${s.color || 'var(--accent)'}33` : 'none',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36
+                  }}>
+                  {s.name}
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
