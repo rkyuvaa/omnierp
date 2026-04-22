@@ -420,7 +420,7 @@ class ServiceRequest(Base):
     staff_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     notes = Column(Text, nullable=True)
     custom_data = Column(JSON, default={})
-    created_by = Column(Integer, ForeignKey("users.id"))
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     stage = relationship("Stage")
