@@ -197,8 +197,8 @@ export default function ServiceForm() {
       
       {!isNew && stages.length > 0 && (
         <div style={{ marginBottom: 16, width: '100%', marginTop: -4 }}>
-          <div style={{ fontSize: 11, fontWeight: 900, color: '#ff0000', marginBottom: 10, letterSpacing: '1px', paddingLeft: 4 }}>
-            SERVICE PROCESS TRACKING (VER: 2.1)
+          <div style={{ fontSize: 10, fontWeight: 800, color: 'var(--text2)', marginBottom: 10, opacity: 0.6, letterSpacing: '1px', paddingLeft: 4, textTransform: 'uppercase' }}>
+            Service Process Tracking
           </div>
           <div style={{ display: 'flex', gap: 6, width: '100%' }}>
             {stages.map(s => {
@@ -206,11 +206,11 @@ export default function ServiceForm() {
               return (
                 <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
                   style={{
-                    flex: 1, padding: '12px 4px', borderRadius: 10, textAlign: 'center', fontSize: 10, fontWeight: 800,
+                    flex: 1, padding: '12px 4px', borderRadius: 10, textAlign: 'center', fontSize: 10, fontWeight: 700,
                     cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.6px',
-                    background: isCurrent ? (s.color || 'var(--accent)') : 'rgba(255, 0, 0, 0.05)',
+                    background: isCurrent ? (s.color || 'var(--accent)') : 'rgba(0,0,0,0.02)',
                     color: isCurrent ? '#fff' : (s.color || 'var(--text2)'),
-                    border: isCurrent ? `1.5px solid ${s.color || 'var(--accent)'}` : `1.5px solid ${s.color ? s.color + '44' : 'var(--border)'}`,
+                    border: isCurrent ? `1.5px solid ${s.color || 'var(--accent)'}` : `1.5px solid ${s.color ? s.color + '33' : 'var(--border)'}`,
                     opacity: isCurrent ? 1 : 0.8, transition: 'all 0.3s ease',
                     boxShadow: isCurrent ? `0 4px 12px ${s.color || 'var(--accent)'}33` : 'none',
                     display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 36
