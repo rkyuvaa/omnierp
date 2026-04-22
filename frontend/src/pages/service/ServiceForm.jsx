@@ -264,9 +264,7 @@ export default function ServiceForm() {
           <div className="card">
             <div className="detail-section-title">Record Details</div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px 40px' }}>
-              {/* LEFT COLUMN: VEHICLE DETAILS */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
                 <div className="form-group">
                   <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Search Vehicle Number)</label>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -294,9 +292,8 @@ export default function ServiceForm() {
                   </div>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-                  <div className="form-group">
-                    <label className="form-label text-xs uppercase fw-800">KIT Number</label>
+                <div className="form-group">
+                  <label className="form-label text-xs uppercase fw-800">KIT Number</label>
                     <div style={{ position: 'relative' }}>
                       <input 
                         className="form-input" 
@@ -344,11 +341,9 @@ export default function ServiceForm() {
                       )}
                     </div>
                   </div>
-                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 16 }}>
-                  <div className="form-group">
-                    <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
+                <div className="form-group">
+                  <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
                     <input 
                       className="form-input" 
                       style={{ background: 'var(--bg2)' }} 
@@ -356,11 +351,9 @@ export default function ServiceForm() {
                       onChange={e => set('vehicle_model', e.target.value)} 
                       readOnly={!!form.product_id}
                     />
-                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
           <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
@@ -485,37 +478,24 @@ export default function ServiceForm() {
             <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }}>
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
                 <span className="card-title" style={{ display:'flex', alignItems:'center', gap:6, fontSize:12 }}><Bell size={14}/> Activity</span>
-                {isAdmin && <button className="btn btn-ghost btn-sm" style={{ fontSize:10 }} onClick={() => setActTypeModal(true)}><Settings size={11}/> Types</button>}
               </div>
               <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
-                <div style={{ display:'flex', gap:8 }}>
-                  <select className="form-select" style={{ width:100, fontSize:11 }} value={actType} onChange={e => setActType(e.target.value)}>
-                    {activityTypes.map(t => <option key={t.name} value={t.name}>{t.icon} {t.name}</option>)}
-                  </select>
-                  <input className="form-input" style={{ fontSize:11 }} placeholder="Description..." value={actDesc} onChange={e => setActDesc(e.target.value)} onKeyDown={e => e.key==='Enter'&&addActivity()}/>
-                </div>
                 <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-                   <input className="form-input" type="datetime-local" style={{ fontSize:11, flex:1 }} value={actDue} onChange={e => setActDue(e.target.value)}/>
+                   <input className="form-input" style={{ fontSize:11, flex:1 }} placeholder="Write a note..." value={actDesc} onChange={e => setActDesc(e.target.value)} onKeyDown={e => e.key==='Enter'&&addActivity()}/>
                    <button className="btn btn-primary btn-sm" onClick={addActivity}><Plus size={13}/></button>
                 </div>
               </div>
               {activities.length > 0 && (
                 <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
-                  {activities.map(a => {
-                    const at = actTypeMap[a.type] || {color:'var(--accent)', icon:'📝'};
-                    return (
-                      <div key={a.id} style={{ display:'flex', gap:8, padding:'8px 10px', background:'var(--bg3)', borderRadius:8, opacity:a.done?0.45:1, alignItems:'flex-start' }}>
-                        <div style={{ flex:1 }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
-                            <Badge color={at.color}>{at.icon} {a.type}</Badge>
-                            {a.due_date && !a.done && <span style={{ fontSize:9, color:'var(--amber)' }}>{new Date(a.due_date).toLocaleDateString()}</span>}
-                          </div>
-                          <div style={{ fontSize:11 }}>{a.description}</div>
-                        </div>
-                        {!a.done && <button className="btn btn-ghost btn-sm" style={{ padding:4 }} onClick={() => markDone(a.id)}><Check size={11}/></button>}
+                  {activities.map(a => (
+                    <div key={a.id} style={{ display:'flex', gap:8, padding:'8px 10px', background:'var(--bg3)', borderRadius:8, opacity:a.done?0.45:1, alignItems:'flex-start' }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:11, fontWeight:500 }}>{a.description}</div>
+                        {a.due_date && !a.done && <div style={{ fontSize:9, color:'var(--amber)', marginTop:2 }}>Due: {new Date(a.due_date).toLocaleDateString()}</div>}
                       </div>
-                    );
-                  })}
+                      {!a.done && <button className="btn btn-ghost btn-sm" style={{ padding:4 }} onClick={() => markDone(a.id)}><Check size={11}/></button>}
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
