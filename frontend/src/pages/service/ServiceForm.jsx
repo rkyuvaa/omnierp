@@ -11,7 +11,7 @@ import toast from 'react-hot-toast';
 import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check, ChevronLeft, ChevronRight, Car, Search as SearchIcon, Bell } from 'lucide-react';
 import SubFormSection from '../crm/SubFormSection';
 
-const empty = { customer_name:'', email:'', phone:'', vehicle_number:'', vehicle_make:'', vehicle_model:'', product_id:null, problem_description:'', notes:'', stage_id:'', staff_id:'', custom_data:{} };
+const empty = { customer_name:'', email:'', phone:'', vehicle_number:'', vehicle_make:'', vehicle_model:'', vehicle_year: '', product_id:null, problem_description:'', notes:'', stage_id:'', staff_id:'', custom_data:{} };
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
 const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
@@ -44,10 +44,11 @@ export default function ServiceForm() {
   const loadStageRules = useCallback(() => api.get('/studio/layout/service/stage-rules').then(r => setStageRules(r.data)), []);
   const loadActivityTypes = useCallback(() => api.get('/crm/activity-types').then(r => { setActivityTypes(r.data); setActType(t => t || (r.data[0]?.name || '')); }).catch(()=>{}), []);
   const [nav, setNav] = useState({ prev: null, next: null });
-  const [vehicleModal, setVehicleModal] = useState(false);
   const [vehicleSearch, setVehicleSearch] = useState('');
-  const [products, setProducts] = useState([]);
-  const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [vehicleResults, setVehicleResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef(null);
   const [kitDetail, setKitDetail] = useState(null);
 
   useEffect(() => {
@@ -138,6 +139,44 @@ export default function ServiceForm() {
     await api.delete(`/studio/layout/service/fields/${fid}`);
     toast.success('Deleted'); setDeleteConfirm(null); loadTabs(); loadStageRules();
   };
+  useEffect(() => {
+    const handleClickOutside = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowResults(false); };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  useEffect(() => {
+    if (vehicleSearch.length >= 4) {
+      setIsSearching(true);
+      const timer = setTimeout(() => {
+        api.get(`/warranty/products?q=${vehicleSearch}`).then(r => {
+          setVehicleResults(r.data.items || r.data || []);
+          setIsSearching(false);
+          setShowResults(true);
+        }).catch(() => setIsSearching(false));
+      }, 300);
+      return () => clearTimeout(timer);
+    } else {
+      setVehicleResults([]);
+      setShowResults(false);
+    }
+  }, [vehicleSearch]);
+
+  const selectVehicle = async (v) => {
+    setForm(f => ({ 
+      ...f, 
+      product_id: v.id, 
+      vehicle_number: v.vehicle_number, 
+      vehicle_model: v.model || v.vehicle_model || '',
+      vehicle_year: v.year || v.vehicle_year || '',
+      customer_name: v.customer_name || f.customer_name,
+      phone: v.phone || f.phone,
+      linked_product: v
+    }));
+    setVehicleSearch('');
+    setShowResults(false);
+  };
+
   const save = async () => {
     setSaving(true);
     try {
@@ -264,33 +303,53 @@ export default function ServiceForm() {
           <div className="card">
             <div className="detail-section-title">Record Details</div>
             
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
-                <div className="form-group">
-                  <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Search Vehicle Number)</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <div className="search-input-wrapper" style={{ flex: 1, position: 'relative' }}>
-                      <Car size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
-                      <input 
-                         className="form-input" 
-                         style={{ paddingLeft: 36, background: 'var(--bg2)' }} 
-                         placeholder="Select vehicle..." 
-                         value={form.vehicle_number || ''} 
-                         readOnly 
-                      />
-                      {form.product_id && (
-                        <button 
-                          onClick={() => setForm(f => ({ ...f, product_id: null, vehicle_number: '', vehicle_model: '', customer_name: '', phone: '', invoice_number: '', warranty_info: '', product_stage_name: null }))}
-                          style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.5 }}
-                        >
-                          <X size={14} />
-                        </button>
-                      )}
-                    </div>
-                    <button className="btn btn-ghost" onClick={() => setVehicleModal(true)} style={{ whiteSpace: 'nowrap', border: '1px solid var(--border)' }}>
-                      <SearchIcon size={16} style={{ marginRight: 8 }} /> Search
-                    </button>
-                  </div>
-                </div>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}>
+               <div className="form-group" ref={searchRef} style={{ position: 'relative' }}>
+                 <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Last 4 Digits)</label>
+                 <div style={{ display: 'flex', gap: 8 }}>
+                   <div className="search-input-wrapper" style={{ flex: 1, position: 'relative' }}>
+                     <Car size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
+                     <input 
+                        className="form-input" 
+                        style={{ paddingLeft: 36, background: 'var(--bg2)' }} 
+                        placeholder={form.vehicle_number || "Search vehicle..."} 
+                        value={vehicleSearch} 
+                        onChange={e => { setVehicleSearch(e.target.value); setShowResults(true); }} 
+                        onFocus={() => setShowResults(true)}
+                     />
+                     {form.product_id && (
+                       <button 
+                         onClick={() => setForm(f => ({ ...f, product_id: null, vehicle_number: '', vehicle_model: '', vehicle_year: '', customer_name: '', phone: '', invoice_number: '', warranty_info: '', product_stage_name: null }))}
+                         style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', cursor: 'pointer', opacity: 0.5 }}
+                       >
+                         <X size={14} />
+                       </button>
+                     )}
+                   </div>
+                 </div>
+
+                 {showResults && (vehicleResults.length > 0 || isSearching) && (
+                   <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, marginTop: 4, boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 100, maxHeight: 250, overflowY: 'auto' }}>
+                     {isSearching && <div style={{ padding: 12, fontSize: 12, color: 'var(--text2)' }}>Searching...</div>}
+                     {vehicleResults.map(v => (
+                       <div key={v.id} onClick={() => selectVehicle(v)} style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', cursor: 'pointer' }} className="search-result-item">
+                         <div style={{ fontWeight: 700, fontSize: 13 }}>{v.vehicle_number}</div>
+                         <div style={{ fontSize: 11, color: 'var(--text2)' }}>{v.customer_name} • {v.model || v.vehicle_model}</div>
+                       </div>
+                     ))}
+                   </div>
+                 )}
+               </div>
+
+               <div className="form-group">
+                 <label className="form-label text-xs uppercase fw-800">Vehicle Year</label>
+                 <input 
+                   className="form-input" 
+                   style={{ background: 'var(--bg2)' }} 
+                   value={form.vehicle_year || ''} 
+                   onChange={e => set('vehicle_year', e.target.value)}
+                 />
+               </div>
 
                 <div className="form-group">
                   <label className="form-label text-xs uppercase fw-800">KIT Number</label>
