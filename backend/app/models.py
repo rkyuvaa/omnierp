@@ -408,8 +408,13 @@ class ServiceRequest(Base):
     reference = Column(String(50), unique=True)
     customer_name = Column(String(100), index=True)
     vehicle_number = Column(String(50), nullable=True, index=True)
+    phone = Column(String(50), nullable=True, index=True)
+    invoice_number = Column(String(100), nullable=True)
+    vehicle_year = Column(String(10), nullable=True)
+    delivery_date = Column(Date, nullable=True)
     vehicle_make = Column(String(100), nullable=True)
     vehicle_model = Column(String(100), nullable=True)
+    product_id = Column(Integer, ForeignKey("products.id"), nullable=True)
     problem_description = Column(Text, nullable=True)
     stage_id = Column(Integer, ForeignKey("stages.id"), nullable=True)
     staff_id = Column(Integer, ForeignKey("users.id"), nullable=True)
@@ -417,8 +422,10 @@ class ServiceRequest(Base):
     custom_data = Column(JSON, default={})
     created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
+    
     stage = relationship("Stage")
     staff = relationship("User", foreign_keys=[staff_id])
+    product = relationship("Product")
 
 class KonwertCareTicket(Base):
     __tablename__ = "konwert_care_tickets"

@@ -85,7 +85,16 @@ def list_svc(search: Optional[str] = None, stage_id: Optional[int] = None, skip:
 @router.post("/")
 def create_svc(data: SvcIn, db: Session = Depends(get_db), cu=Depends(get_current_user)):
     ref = next_sequence(db, "service")
-    r = ServiceRequest(**data.model_dump(), reference=ref, created_by=cu.id)
+    payload = data.model_dump()
+    
+    # Handle date conversion for SQLAlchemy
+    if payload.get("delivery_date") and isinstance(payload["delivery_date"], str):
+        try:
+            payload["delivery_date"] = datetime.datetime.strptime(payload["delivery_date"], "%Y-%m-%d").date()
+        except:
+            payload["delivery_date"] = None
+            
+    r = ServiceRequest(**payload, reference=ref, created_by=cu.id)
     db.add(r); db.commit(); db.refresh(r)
     log_action(db, cu, "CREATE", "service", r.id, ref)
     return serialize(r)

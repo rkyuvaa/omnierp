@@ -18,16 +18,28 @@ def migrate():
             ("delivery_date", "DATE")
         ]
         
+        # Add columns
         for name, type_ in cols:
             try:
                 print(f"Adding column {name}...")
                 conn.execute(text(f"ALTER TABLE service_requests ADD COLUMN {name} {type_}"))
                 conn.commit()
             except Exception as e:
-                if "duplicate" in str(e).lower() or "already exists" in str(e).lower():
-                    print(f"Column {name} already exists.")
-                else:
-                    print(f"Error adding {name}: {e}")
+                print(f"Column {name} check: {e}")
+
+        # Add indexes to speed up searches
+        idx_cmds = [
+            "CREATE INDEX IF NOT EXISTS idx_products_name ON products(name)",
+            "CREATE INDEX IF NOT EXISTS idx_products_serial ON products(serial_number)",
+            "CREATE INDEX IF NOT EXISTS idx_products_title ON products(title)"
+        ]
+        for cmd in idx_cmds:
+            try:
+                print(f"Running: {cmd}")
+                conn.execute(text(cmd))
+                conn.commit()
+            except Exception as e:
+                print(f"Index error: {e}")
         
     print("Migration complete!")
 
