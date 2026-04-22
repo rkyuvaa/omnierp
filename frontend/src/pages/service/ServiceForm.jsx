@@ -120,9 +120,22 @@ export default function ServiceForm() {
   const save = async () => {
     setSaving(true);
     try {
-      const payload = { ...form, stage_id: form.stage_id || null, staff_id: form.staff_id || null };
-      delete payload.linked_product; // Prevent 500 error from extra data
+      // Strictly define allowed fields to prevent 500 error from extra frontend data
+      const allowed = [
+        'customer_id', 'customer_name', 'phone', 'invoice_number', 
+        'vehicle_year', 'delivery_date', 'vehicle_number', 
+        'vehicle_make', 'vehicle_model', 'product_id', 
+        'problem_description', 'stage_id', 'staff_id', 'notes', 'custom_data'
+      ];
       
+      const payload = {};
+      allowed.forEach(k => { if (form[k] !== undefined) payload[k] = form[k]; });
+      
+      // Ensure IDs are null if empty
+      payload.stage_id = payload.stage_id || null;
+      payload.staff_id = payload.staff_id || null;
+      payload.product_id = payload.product_id || null;
+
       if (isNew) { const r = await api.post('/service/', payload); toast.success('✓ Created successfully!', { duration: 4000 }); navigate(`/service/${r.data.id}`); }
       else { const response = await api.put(`/service/${id}`, payload); console.log('Save response:', response.status); toast.success('✓ Saved successfully!', { duration: 4000 }); }
     } catch(e) { console.error('Save error:', e); toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); }
