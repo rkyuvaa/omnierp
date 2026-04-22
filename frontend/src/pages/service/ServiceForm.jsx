@@ -231,7 +231,7 @@ export default function ServiceForm() {
         </div>
       )}
 
-      <div className="detail-layout" style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 300px', gap: 20, alignItems: 'start' }}>
+      <div className="detail-layout" style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 20, alignItems: 'start' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           <div className="card">
             <div className="detail-section-title">Record Details</div>
@@ -379,6 +379,21 @@ export default function ServiceForm() {
                          {form.product_stage_name ? <Badge color={form.product_stage_color}>{form.product_stage_name}</Badge> : <span className="text-muted">—</span>}
                       </div>
                    </div>
+
+                   <div className="form-group">
+                     <label className="form-label text-xs uppercase fw-800">Current Stage</label>
+                     <select className="form-select" style={{ background: 'var(--bg2)' }} value={form.stage_id || ''} onChange={e => set('stage_id', parseInt(e.target.value) || null)}>
+                       <option value="">— Select —</option>
+                       {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                     </select>
+                   </div>
+                   <div className="form-group">
+                     <label className="form-label text-xs uppercase fw-800">Assigned Staff</label>
+                     <select className="form-select" style={{ background: 'var(--bg2)' }} value={form.staff_id || ''} onChange={e => set('staff_id', parseInt(e.target.value) || null)}>
+                       <option value="">— Unassigned —</option>
+                       {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                     </select>
+                   </div>
                 </div>
               </div>
             </div>
@@ -465,25 +480,6 @@ export default function ServiceForm() {
               ) : 'No additional fields configured.'}
             </div>
           )}
-        </div>
-        <div className="card" style={{ alignSelf: 'start' }}>
-          <div className="detail-section-title">Assignment</div>
-          <div className="form-grid">
-            <div className="form-group">
-              <label className="form-label">Stage</label>
-              <select className="form-select" value={form.stage_id || ''} onChange={e => set('stage_id', parseInt(e.target.value) || null)}>
-                <option value="">— Select —</option>
-                {stages.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Assigned Staff</label>
-              <select className="form-select" value={form.staff_id || ''} onChange={e => set('staff_id', parseInt(e.target.value) || null)}>
-                <option value="">— Unassigned —</option>
-                {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-              </select>
-            </div>
-          </div>
         </div>
       </div>
       {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
