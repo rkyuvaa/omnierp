@@ -356,16 +356,12 @@ export default function ServiceForm() {
                       onChange={e => set('vehicle_model', e.target.value)} 
                       readOnly={!!form.product_id}
                     />
-                  </div>
+                   </div>
                 </div>
               </div>
-
-              </div>
             </div>
-          </div>
 
-          </div>
-          <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
+            <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                <div style={{ display:'flex', gap:8 }}>
                   {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
@@ -440,8 +436,6 @@ export default function ServiceForm() {
               ) : 'No additional fields configured.'}
             </div>
           )}
-        </div>
-
         </div>
 
         {/* RIGHT SIDEBAR */}
