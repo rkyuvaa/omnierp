@@ -18,6 +18,7 @@ class SvcIn(BaseModel):
     vehicle_number: Optional[str] = None
     vehicle_make: Optional[str] = None
     vehicle_model: Optional[str] = None
+    product_id: Optional[int] = None
     problem_description: Optional[str] = None
     stage_id: Optional[int] = None
     staff_id: Optional[int] = None
@@ -26,11 +27,20 @@ class SvcIn(BaseModel):
 
 def serialize(r: ServiceRequest):
     return {
-        "id": r.id, "reference": r.reference, "customer_name": r.customer_name,
-        "vehicle_number": r.vehicle_number, "vehicle_make": r.vehicle_make,
-        "vehicle_model": r.vehicle_model, "problem_description": r.problem_description,
-        "stage_id": r.stage_id, "staff_id": r.staff_id, "notes": r.notes,
-        "custom_data": r.custom_data or {}, "created_at": str(r.created_at),
+        "id": r.id, 
+        "reference": r.reference, 
+        "customer_name": r.customer_name,
+        "vehicle_number": r.vehicle_number, 
+        "vehicle_make": r.vehicle_make,
+        "vehicle_model": r.vehicle_model, 
+        "product_id": r.product_id,
+        "product_serial": r.product.serial_number if r.product else None,
+        "problem_description": r.problem_description,
+        "stage_id": r.stage_id, 
+        "staff_id": r.staff_id, 
+        "notes": r.notes,
+        "custom_data": r.custom_data or {}, 
+        "created_at": str(r.created_at),
         "stage_name": r.stage.name if r.stage else None,
         "stage_color": r.stage.color if r.stage else None,
         "staff_name": r.staff.name if r.staff else None,
@@ -38,7 +48,7 @@ def serialize(r: ServiceRequest):
 
 @router.get("/")
 def list_svc(search: Optional[str] = None, stage_id: Optional[int] = None, skip: int = 0, limit: int = 50, db: Session = Depends(get_db), cu=Depends(get_current_user)):
-    q = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff))
+    q = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff), joinedload(ServiceRequest.product))
     if search: 
         q = q.filter(or_(
             ServiceRequest.customer_name.ilike(f"%{search}%"), 

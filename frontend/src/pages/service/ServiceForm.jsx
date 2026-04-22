@@ -8,10 +8,10 @@ import { useStages, useUsers } from '../../hooks/useData';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Save, Plus, Pencil, Trash2, Settings, Upload, Download, Eye, X, FileText, Check, ChevronLeft, ChevronRight, Car, Search as SearchIcon } from 'lucide-react';
 import SubFormSection from '../crm/SubFormSection';
 
-const empty = { customer_name:'', email:'', phone:'', vehicle_number:'', vehicle_make:'', vehicle_model:'', problem_description:'', notes:'', stage_id:'', staff_id:'', custom_data:{} };
+const empty = { customer_name:'', email:'', phone:'', vehicle_number:'', vehicle_make:'', vehicle_model:'', product_id:null, problem_description:'', notes:'', stage_id:'', staff_id:'', custom_data:{} };
 const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
 const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
 
@@ -36,6 +36,10 @@ export default function ServiceForm() {
   const loadTabs = useCallback(() => api.get('/studio/layout/service/tabs').then(r => setTabs(r.data)), []);
   const loadStageRules = useCallback(() => api.get('/studio/layout/service/stage-rules').then(r => setStageRules(r.data)), []);
   const [nav, setNav] = useState({ prev: null, next: null });
+  const [vehicleModal, setVehicleModal] = useState(false);
+  const [vehicleSearch, setVehicleSearch] = useState('');
+  const [products, setProducts] = useState([]);
+  const [loadingVehicles, setLoadingVehicles] = useState(false);
 
   useEffect(() => {
     loadTabs();
@@ -174,6 +178,28 @@ export default function ServiceForm() {
           )}
         </div>
       </div>
+      
+      {!isNew && stages.length > 0 && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
+          {stages.map(s => {
+            const isCurrent = form && String(form.stage_id) === String(s.id);
+            return (
+              <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
+                style={{
+                  flex: 1, padding: '10px 4px', borderRadius: 8, textAlign: 'center', fontSize: 10, fontWeight: 800,
+                  cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.5px',
+                  background: isCurrent ? (s.color || 'var(--accent)') : 'transparent',
+                  color: isCurrent ? '#fff' : (s.color || 'var(--text2)'),
+                  border: `1px solid ${isCurrent ? 'transparent' : (s.color || 'var(--border)')}`,
+                  opacity: isCurrent ? 1 : 0.6, transition: 'all 0.2s',
+                  boxShadow: isCurrent ? `0 4px 12px ${s.color}44` : 'none'
+                }}>
+                {s.name}
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       <div className="detail-layout">
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -186,6 +212,34 @@ export default function ServiceForm() {
                   <input className="form-input" value={form.reference || ''} readOnly style={{ background: 'var(--bg)', fontWeight: 700, color: 'var(--accent)', border: '1px solid var(--accent-dim)' }} />
                 </div>
               )}
+              <div className="form-group" style={{ gridColumn: '1 / -1' }}>
+                <label className="form-label">Linked Vehicle (Search Serial Number/Name)</label>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ position: 'relative', flex: 1 }}>
+                    <Car size={16} style={{ position: 'absolute', left: 12, top: 12, color: 'var(--text3)' }} />
+                    <input 
+                      className="form-input" 
+                      style={{ paddingLeft: 38 }}
+                      placeholder="Click to link a vehicle from database..."
+                      value={form.product_serial || (form.product_id ? `Linked [ID: ${form.product_id}]` : '')}
+                      readOnly
+                      onClick={() => setVehicleModal(true)}
+                    />
+                    {form.product_id && (
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); set('product_id', null); set('product_serial', ''); }}
+                        style={{ position: 'absolute', right: 8, top: 8, padding: 4, background: 'var(--bg2)', borderRadius: 4, border: 'none', cursor: 'pointer' }}
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                  <button className="btn btn-ghost" onClick={() => setVehicleModal(true)}>
+                    <SearchIcon size={16} /> Search
+                  </button>
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Customer Name *</label>
                 <input className="form-input" value={form.customer_name || ''} onChange={e => set('customer_name', e.target.value)} />
@@ -324,6 +378,66 @@ export default function ServiceForm() {
             </div>
           </div>
         </div>
+      )}
+      {vehicleModal && (
+        <Modal title="Search Vehicle Database" onClose={() => setVehicleModal(false)}>
+          <div style={{ padding: 20 }}>
+            <div className="search-bar" style={{ marginBottom: 20 }}>
+              <SearchIcon size={15} />
+              <input 
+                placeholder="Search by serial number (Chassis), ID, or Name..." 
+                autoFocus
+                value={vehicleSearch} 
+                onChange={e => {
+                  setVehicleSearch(e.target.value);
+                  if (e.target.value.length > 2) {
+                    setLoadingVehicles(true);
+                    api.get(`/warranty/products?search=${e.target.value}`).then(r => {
+                      setProducts(r.data.items || []);
+                      setLoadingVehicles(false);
+                    }).catch(() => setLoadingVehicles(false));
+                  }
+                }} 
+              />
+            </div>
+
+            <div className="vehicle-list" style={{ maxHeight: 400, overflow: 'auto' }}>
+              {loadingVehicles ? <Loader /> : products.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
+                   <Car size={40} style={{ marginBottom: 12, opacity: 0.2 }} />
+                   <p>Start typing to search vehicles...</p>
+                </div>
+              ) : (
+                <div style={{ display: 'grid', gap: 10 }}>
+                  {products.map(p => (
+                    <div 
+                      key={p.id} 
+                      className="list-item" 
+                      onClick={() => {
+                        setForm(f => ({ 
+                          ...f, 
+                          product_id: p.id, 
+                          product_serial: p.serial_number,
+                          vehicle_number: p.serial_number, // Chassis as default vehicle no
+                          vehicle_make: p.name, // Usually make or model name
+                          vehicle_model: p.title
+                        }));
+                        setVehicleModal(false);
+                      }}
+                      style={{ 
+                        padding: 12, borderRadius: 10, background: 'var(--bg2)', cursor: 'pointer',
+                        border: '1px solid var(--border)', transition: 'all 0.2s'
+                      }}
+                    >
+                      <div style={{ fontWeight: 700, color: 'var(--accent)' }}>{p.serial_number}</div>
+                      <div className="text-sm" style={{ fontWeight: 600 }}>{p.name} — {p.title}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </Modal>
       )}
     </Layout>
   );
