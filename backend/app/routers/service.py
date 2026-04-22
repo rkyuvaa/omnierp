@@ -88,11 +88,14 @@ def create_svc(data: SvcIn, db: Session = Depends(get_db), cu=Depends(get_curren
     payload = data.model_dump()
     
     # Handle date conversion for SQLAlchemy
-    if payload.get("delivery_date") and isinstance(payload["delivery_date"], str):
+    dev_date = payload.get("delivery_date")
+    if dev_date and isinstance(dev_date, str) and dev_date.strip():
         try:
-            payload["delivery_date"] = datetime.datetime.strptime(payload["delivery_date"], "%Y-%m-%d").date()
+            payload["delivery_date"] = datetime.datetime.strptime(dev_date.strip(), "%Y-%m-%d").date()
         except:
             payload["delivery_date"] = None
+    else:
+        payload["delivery_date"] = None
             
     r = ServiceRequest(**payload, reference=ref, created_by=cu.id)
     db.add(r); db.commit(); db.refresh(r)

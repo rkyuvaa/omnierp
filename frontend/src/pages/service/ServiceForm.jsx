@@ -121,6 +121,8 @@ export default function ServiceForm() {
     setSaving(true);
     try {
       const payload = { ...form, stage_id: form.stage_id || null, staff_id: form.staff_id || null };
+      delete payload.linked_product; // Prevent 500 error from extra data
+      
       if (isNew) { const r = await api.post('/service/', payload); toast.success('✓ Created successfully!', { duration: 4000 }); navigate(`/service/${r.data.id}`); }
       else { const response = await api.put(`/service/${id}`, payload); console.log('Save response:', response.status); toast.success('✓ Saved successfully!', { duration: 4000 }); }
     } catch(e) { console.error('Save error:', e); toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); }
