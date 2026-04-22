@@ -431,7 +431,7 @@ export default function ServiceForm() {
             <div className="search-bar" style={{ marginBottom: 20 }}>
               <SearchIcon size={15} />
               <input 
-                placeholder="Search by serial number (Chassis), ID, or Name..." 
+                placeholder="Strictly Search by Vehicle Number (e.g. TN...)" 
                 autoFocus
                 value={vehicleSearch} 
                 onChange={e => {
@@ -451,7 +451,7 @@ export default function ServiceForm() {
               {loadingVehicles ? <Loader /> : products.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', opacity: 0.5 }}>
                    <Car size={40} style={{ marginBottom: 12, opacity: 0.2 }} />
-                   <p>Start typing to search vehicles...</p>
+                   <p>Enter Vehicle Number to search...</p>
                 </div>
               ) : (
                 <div style={{ display: 'grid', gap: 10 }}>
@@ -466,15 +466,15 @@ export default function ServiceForm() {
 
                         // Extract from product custom_data
                         const cd = p.custom_data || {};
-                        const pName = cd['customer_name'] || cd['Customer Name'] || '';
-                        const pPhone = cd['phone'] || cd['Phone Number'] || '';
-                        const pInv = cd['invoice_number'] || cd['Invoice Number'] || cd['invoice_no'] || '';
+                        const pName = cd['customer_name'] || cd['Customer Name'] || cd['name'] || '';
+                        const pPhone = cd['phone'] || cd['Phone Number'] || cd['mobile'] || cd['Mobile'] || cd['Contact'] || cd['Phone'] || '';
+                        const pInv = cd['invoice_number'] || cd['Invoice Number'] || cd['invoice_no'] || cd['Invoice No'] || cd['Bill No'] || cd['invoice'] || '';
 
                         setForm(f => ({ 
                           ...f, 
                           product_id: p.id, 
                           product_serial: p.serial_number,
-                          vehicle_number: p.serial_number,
+                          vehicle_number: p.name,
                           vehicle_make: p.name, 
                           vehicle_model: p.title,
                           customer_name: pName || f.customer_name,
@@ -491,8 +491,8 @@ export default function ServiceForm() {
                         border: '1px solid var(--border)', transition: 'all 0.2s'
                       }}
                     >
-                      <div style={{ fontWeight: 700, color: 'var(--accent)' }}>{p.serial_number}</div>
-                      <div className="text-sm" style={{ fontWeight: 600 }}>{p.name} — {p.title}</div>
+                      <div style={{ fontWeight: 700, color: 'var(--accent)' }}>{p.name}</div>
+                      <div className="text-xs" style={{ opacity: 0.7 }}>Chassis: {p.serial_number} — {p.title}</div>
                     </div>
                   ))}
                 </div>
