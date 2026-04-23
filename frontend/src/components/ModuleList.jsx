@@ -48,7 +48,7 @@ export default function ModuleList({
     <Layout title={title} headerTabs={headerTabs}>
       {topContent && <div style={{ marginBottom: 16 }}>{topContent}</div>}
       
-      <div className="toolbar" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+      <div className="toolbar" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-start', position: 'relative', zIndex: 1000 }}>
         <div style={{ flex: 1 }}>
           <SmartSearch 
             onSearch={handleSmartSearch} 

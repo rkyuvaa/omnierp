@@ -131,15 +131,16 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
           right: 0,
           left: 0,
           marginTop: 4,
-          background: 'var(--bg1)',
+          background: '#ffffff', // Force solid white background
           border: '1px solid var(--border)',
           borderRadius: 4,
-          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
-          zIndex: 1000,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.25)', // Stronger shadow for depth
+          zIndex: 99999, // Ensure it's above everything
           display: 'grid',
           gridTemplateColumns: '1fr 1fr 1fr',
-          padding: 16,
-          gap: 24
+          padding: '20px 24px',
+          gap: 24,
+          minWidth: 600
         }}>
           {/* Column 1: Filters */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
