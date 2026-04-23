@@ -241,6 +241,26 @@ def get_boms(db: Session = Depends(get_db)):
     boms = db.query(BOM).options(joinedload(BOM.components)).all()
     return [serialize_bom(b) for b in boms]
 
+@router.get("/components")
+def get_components(search: Optional[str] = None, db: Session = Depends(get_db)):
+    q = db.query(BOMComponent).options(joinedload(BOMComponent.bom))
+    if search:
+        q = q.filter(or_(
+            BOMComponent.name.ilike(f"%{search}%"),
+            BOMComponent.part_number.ilike(f"%{search}%")
+        ))
+    comps = q.all()
+    return [{
+        "id": c.id,
+        "name": c.name,
+        "part_number": c.part_number,
+        "quantity": c.quantity,
+        "warranty_period": c.warranty_period,
+        "warranty_unit": c.warranty_unit,
+        "bom_id": c.bom_id,
+        "bom_name": c.bom.name if c.bom else "—"
+    } for c in comps]
+
 @router.get("/boms/{id}")
 def get_bom(id: int, db: Session = Depends(get_db)):
     b = db.query(BOM).options(joinedload(BOM.components)).filter(BOM.id == id).first()
