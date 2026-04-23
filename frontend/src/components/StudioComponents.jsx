@@ -151,6 +151,99 @@ export function UserSelect({ field, value, onChange }) {
   );
 }
 
+export function MultiSelectField({ field, value, onChange }) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  const wrapperRef = useRef();
+  const options = field.options || [];
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const selectedArr = Array.isArray(value) ? value : (value ? [String(value)] : []);
+
+  const toggle = (opt) => {
+    if (selectedArr.includes(opt)) onChange(selectedArr.filter(x => x !== opt));
+    else onChange([...selectedArr, opt]);
+    setSearch('');
+  };
+
+  const filteredOptions = options.filter(o => 
+    String(o).toLowerCase().includes(search.toLowerCase()) && 
+    !selectedArr.includes(String(o))
+  );
+
+  return (
+    <div ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+      <div 
+        className="form-input" 
+        style={{ 
+          display: 'flex', flexWrap: 'wrap', gap: 6, alignItems: 'center', minHeight: 40, 
+          cursor: 'text', padding: '4px 10px', background: '#fff' 
+        }}
+        onClick={() => setOpen(true)}
+      >
+        {selectedArr.map(opt => (
+          <div key={opt} style={{ 
+            display:'flex', alignItems:'center', gap:4, padding:'2px 8px', 
+            background:'var(--accent-dim)', border:'1px solid var(--accent)', 
+            borderRadius:4, fontSize:11, fontWeight:700, color:'var(--accent)' 
+          }}>
+            <span>{opt}</span>
+            <button 
+              onClick={(e) => { e.stopPropagation(); toggle(opt); }}
+              style={{ background:'none', border:'none', color:'var(--accent)', cursor:'pointer', padding:0, display:'flex' }}
+            >
+              <X size={11} />
+            </button>
+          </div>
+        ))}
+        <input 
+          style={{ flex: 1, border: 'none', outline: 'none', minWidth: 60, fontSize: 13, background: 'transparent' }}
+          placeholder={selectedArr.length === 0 ? (field.placeholder || 'Select multiple...') : ''}
+          value={search}
+          onChange={e => { setSearch(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+        />
+      </div>
+
+      {open && (
+        <div style={{ 
+          position: 'absolute', top: '105%', left: 0, right: 0, zIndex: 100,
+          background: '#fff', border: '1px solid var(--border)', borderRadius: 8, 
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)', maxHeight: 200, overflowY: 'auto'
+        }}>
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map(o => (
+              <div 
+                key={o}
+                onClick={() => toggle(o)}
+                style={{ 
+                  padding: '10px 14px', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                  borderBottom: '1px solid var(--bg3)', transition: 'all 0.15s'
+                }}
+                onMouseEnter={e => e.target.style.background = 'var(--bg2)'}
+                onMouseLeave={e => e.target.style.background = 'transparent'}
+              >
+                {o}
+              </div>
+            ))
+          ) : (
+            <div style={{ padding: 15, textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>
+              {options.length === 0 ? 'No options configured' : 'No results found'}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function FileField({ value, onChange }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef();
@@ -332,6 +425,7 @@ export function FieldInput({ field, value, onChange }) {
     case 'timer': return <TimerField value={v} onChange={onChange}/>;
     case 'toggle': return <ToggleField value={v} onChange={onChange}/>;
     case 'selection': return <select className="form-select" value={v} onChange={e=>onChange(e.target.value)}><option value="">— Select —</option>{(field.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>;
+    case 'multi-select': return <MultiSelectField field={field} value={v} onChange={onChange}/>;
     case 'user': return <UserSelect field={field} value={v} onChange={onChange}/>;
     case 'branch': return <BranchSelect field={field} value={v} onChange={onChange}/>;
     default: return <input className="form-input" type="text" placeholder={field.placeholder} value={v} onChange={e=>onChange(e.target.value)}/>;
