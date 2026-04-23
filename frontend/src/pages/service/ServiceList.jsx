@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { LayoutGrid, List } from 'lucide-react';
 import ModuleList from '../../components/ModuleList';
 import Layout from '../../components/Layout';

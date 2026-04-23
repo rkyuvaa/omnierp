@@ -1,10 +1,14 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Filter, LayoutGrid, ChevronDown, Check, Star, Plus } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, ChevronDown, Check, Star, Plus, Wand2 } from 'lucide-react';
+import api from '../utils/api';
+import toast from 'react-hot-toast';
 
 export default function SmartSearch({ module = 'default', onSearch, filters = [], groupBys = [], placeholder = "Search..." }) {
   const [inputValue, setInputValue] = useState('');
   const [activeTags, setActiveTags] = useState([]); // { type: 'filter|group|search', label, key, value }
   const [showPanel, setShowPanel] = useState(false);
+  const [isAiMode, setIsAiMode] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const panelRef = useRef(null);
   
   const favKey = `omnierp_search_favs_${module}`;
@@ -36,14 +40,62 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
     onSearch(params);
   };
 
+  const handleAiSearch = async () => {
+    if (!inputValue.trim()) return;
+    setIsSearching(true);
+    try {
+      const response = await api.post(`/${module}/ai-search`, { query: inputValue });
+      const parsed = response.data;
+      
+      let nextTags = [...activeTags];
+      
+      // Add Active Filters from AI
+      (parsed.active_filters || []).forEach(f => {
+        const filterDef = filters.find(flt => flt.label === f || flt.key === f);
+        if (filterDef) {
+          nextTags.push({ type: 'filter', label: filterDef.label, key: filterDef.key, value: filterDef.value });
+        } else {
+           nextTags.push({ type: 'filter', label: `Filter: ${f}`, key: f, value: 'true' });
+        }
+      });
+      
+      // Add Group Bys from AI
+      if (parsed.group_by && parsed.group_by.length > 0) {
+        nextTags = nextTags.filter(t => t.type !== 'group'); // clear existing groups
+        const g = parsed.group_by[0];
+        const groupDef = groupBys.find(gb => gb.label === g || gb.key === g);
+        if (groupDef) {
+           nextTags.push({ type: 'group', label: groupDef.label, key: groupDef.key });
+        } else {
+           nextTags.push({ type: 'group', label: `Group By: ${g}`, key: g });
+        }
+      }
+      
+      setActiveTags(nextTags);
+      triggerSearch(nextTags);
+      setInputValue('');
+      setIsAiMode(false);
+      if (parsed.explanation) toast.success(`AI: ${parsed.explanation}`);
+    } catch (error) {
+      toast.error("AI couldn't process the query. Ensure the backend endpoint is configured.");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const addSearchTag = () => {
     if (!inputValue.trim()) return;
+    if (isAiMode) {
+      handleAiSearch();
+      return;
+    }
     const newTag = { type: 'search', label: `"${inputValue}"`, value: inputValue };
     const nextTags = [...activeTags, newTag];
     setActiveTags(nextTags);
     setInputValue('');
     triggerSearch(nextTags);
   };
+
 
   const toggleTag = (tag) => {
     const exists = activeTags.find(t => t.key === tag.key && t.type === tag.type);
@@ -142,7 +194,7 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
           value={inputValue}
           onChange={e => setInputValue(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && addSearchTag()}
-          placeholder={activeTags.length === 0 ? placeholder : ''}
+          placeholder={activeTags.length === 0 ? (isAiMode ? "Ask AI to search..." : placeholder) : ''}
           style={{
             flex: 1,
             border: 'none',
@@ -150,9 +202,29 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
             background: 'transparent',
             padding: '6px 0',
             fontSize: 13,
-            minWidth: 100
+            minWidth: 100,
+            color: isAiMode ? '#8e44ad' : 'inherit'
           }}
         />
+
+        {isSearching && <div className="spinner" style={{ width: 14, height: 14, marginRight: 8 }}></div>}
+
+        <button 
+          onClick={() => { setIsAiMode(!isAiMode); if(!isAiMode) setInputValue(''); }}
+          title="AI Search"
+          style={{
+            border: 'none',
+            background: isAiMode ? '#8e44ad22' : 'transparent',
+            borderRadius: 4,
+            padding: '4px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            color: isAiMode ? '#8e44ad' : 'var(--text3)'
+          }}
+        >
+          <Wand2 size={16} />
+        </button>
 
         <button 
           onClick={() => setShowPanel(!showPanel)}

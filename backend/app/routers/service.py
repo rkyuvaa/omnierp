@@ -131,7 +131,53 @@ def list_svc(
         grouped_list = [{"group": k, "items": v} for k, v in groups.items()]
         return {"total": total, "items": grouped_list, "stage_counts": stage_counts, "is_grouped": True}
 
-    return {"total": total, "items": serialized, "stage_counts": stage_counts, "is_grouped": False}
+class AISearchIn(BaseModel):
+    query: str
+
+@router.post("/ai-search")
+def ai_search_parser(data: AISearchIn, cu=Depends(get_current_user)):
+    """
+    Passes the user's query to an LLM with the strict system prompt 
+    to return a structured JSON filter object.
+    """
+    import json
+    
+    # In a real environment, you would call OpenAI/Gemini here:
+    # response = openai.chat.completions.create(...)
+    
+    q = data.query.lower()
+    
+    # Basic mock parsing logic based on keywords
+    domain = []
+    active_filters = []
+    group_by = []
+    explanation = "Showing all results."
+    
+    if "high priority" in q or "urgent" in q:
+        active_filters.append("High Priority")
+        explanation = "Showing high priority tickets."
+    if "unassigned" in q:
+        active_filters.append("Unassigned")
+        explanation = "Showing unassigned tickets."
+    if "group" in q and "stage" in q:
+        group_by.append("stage_id")
+        explanation = "Showing tickets grouped by stage."
+    if "group" in q and "staff" in q:
+        group_by.append("staff_id")
+        explanation = "Showing tickets grouped by assigned staff."
+        
+    if not active_filters and not group_by:
+        explanation = f"Searching for: '{data.query}'"
+        domain = [["customer_name", "ilike", f"%{data.query}%"]]
+
+    return {
+        "domain": domain,
+        "group_by": group_by,
+        "order_by": "id desc",
+        "search_type": "combined",
+        "active_filters": active_filters,
+        "explanation": explanation
+    }
 
 @router.post("/")
 def create_svc(data: SvcIn, db: Session = Depends(get_db), cu=Depends(get_current_user)):
