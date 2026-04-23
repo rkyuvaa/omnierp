@@ -1,8 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session, joinedload
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, cast, Date
 from pydantic import BaseModel
 from typing import Optional
+import datetime
 from .studio import get_stages
 import io, openpyxl
 from fastapi.responses import StreamingResponse
@@ -69,14 +70,42 @@ def serialize(r: ServiceRequest):
     }
 
 @router.get("/")
-def list_svc(search: Optional[str] = None, stage_id: Optional[int] = None, skip: int = 0, limit: int = 50, db: Session = Depends(get_db), cu=Depends(get_current_user)):
+def list_svc(
+    request: Request,
+    search: Optional[str] = None, stage_id: Optional[int] = None, 
+    skip: int = 0, limit: int = 50, group_by: Optional[str] = None,
+    db: Session = Depends(get_db), cu=Depends(get_current_user)
+):
+    # Extract extra filters from query params
+    all_params = dict(request.query_params)
+    reserved = ['search', 'stage_id', 'skip', 'limit', 'group_by']
+    extra_filters = {k: v for k, v in all_params.items() if k not in reserved}
+
     q = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff), joinedload(ServiceRequest.product))
+    
+    # Apply extra filters
+    for k, v in extra_filters.items():
+        if hasattr(ServiceRequest, k):
+            attr = getattr(ServiceRequest, k)
+            if v == 'null':
+                q = q.filter(attr == None)
+            else:
+                q = q.filter(attr == v)
+
     if search: 
         q = q.filter(or_(
             ServiceRequest.customer_name.ilike(f"%{search}%"), 
             ServiceRequest.vehicle_number.ilike(f"%{search}%"),
             ServiceRequest.reference.ilike(f"%{search}%")
         ))
+    
+    # Handle staff_id filter
+    staff_id_filter = db.query(ServiceRequest).filter(False) # Empty by default
+    staff_id_val = None
+    
+    # Check if staff_id is in params via extra logic
+    # In list_svc, we should iterate over kwargs or handle explicitly
+    # But for now I'll check if any other filters were passed
 
     # Stage counts based on filtered query (before pagination)
     stage_counts = {str(s_id): count for s_id, count in q.with_entities(ServiceRequest.stage_id, func.count(ServiceRequest.id)).group_by(ServiceRequest.stage_id).all() if s_id}
@@ -84,7 +113,25 @@ def list_svc(search: Optional[str] = None, stage_id: Optional[int] = None, skip:
     if stage_id: q = q.filter(ServiceRequest.stage_id == stage_id)
     total = q.count()
     items = q.order_by(ServiceRequest.id.desc()).offset(skip).limit(limit).all()
-    return {"total": total, "items": [serialize(r) for r in items], "stage_counts": stage_counts}
+    
+    serialized = [serialize(r) for r in items]
+    
+    if group_by:
+        # Simple grouping logic: returns a list of { group: "Name", items: [...] }
+        groups = {}
+        for item in serialized:
+            g_key = item.get(group_by)
+            # Try to get a prettier name for the group key if it's an ID
+            if group_by == 'stage_id': g_key = item.get('stage_name') or 'No Stage'
+            elif group_by == 'staff_id': g_key = item.get('staff_name') or 'Unassigned'
+            
+            if g_key not in groups: groups[g_key] = []
+            groups[g_key].append(item)
+        
+        grouped_list = [{"group": k, "items": v} for k, v in groups.items()]
+        return {"total": total, "items": grouped_list, "stage_counts": stage_counts, "is_grouped": True}
+
+    return {"total": total, "items": serialized, "stage_counts": stage_counts, "is_grouped": False}
 
 @router.post("/")
 def create_svc(data: SvcIn, db: Session = Depends(get_db), cu=Depends(get_current_user)):

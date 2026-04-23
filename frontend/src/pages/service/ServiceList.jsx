@@ -33,6 +33,16 @@ export default function ServiceList() {
     </>
   );
 
+  const filters = [
+    { label: 'Unassigned', key: 'staff_id', value: 'null' },
+    { label: 'High Priority', key: 'priority', value: 'High' }
+  ];
+
+  const groupBys = [
+    { label: 'Stage', key: 'stage_id' },
+    { label: 'Staff', key: 'staff_id' }
+  ];
+
   if (view === 'matrix') {
     return (
       <Layout title="Vehicle Service" headerTabs={headerTabs}>
@@ -49,6 +59,8 @@ export default function ServiceList() {
       formPath="/service"
       exportPath="/service/export/excel"
       headerTabs={headerTabs}
+      filters={filters}
+      groupBys={groupBys}
       columns={[
         { key: 'customer_name', label: 'Customer', bold: true },
         { key: 'vehicle_number', label: 'Vehicle No' },

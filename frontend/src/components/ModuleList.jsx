@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import Layout from './Layout';
@@ -7,33 +7,39 @@ import { useList, useStages } from '../hooks/useData';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
+import SmartSearch from './SmartSearch';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions, showStages = true, toolbarActions, headerTabs }) {
-  const [search, setSearch] = useState('');
+export default function ModuleList({ 
+  title, endpoint, module, formPath, exportPath, columns, 
+  extraFilters = {}, headerContent, topContent, stageLimit, 
+  allowedStages, batchActions, showStages = true, toolbarActions, 
+  headerTabs, filters = [], groupBys = [] 
+}) {
+  const [searchParams, setSearchParams] = useState({ search: '', filters: {}, group_by: null });
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
   const [deleting, setDeleting] = useState(null);
   const stages = useStages(module);
-  const { items, total, loading, reload, stageCounts, page, setPage } = useList(endpoint, { ...extraFilters });
+  const { items, total, loading, reload, stageCounts, page, setPage } = useList(endpoint, { ...extraFilters, ...searchParams.filters, search: searchParams.search, group_by: searchParams.group_by });
   const { user } = useAuth();
   const perms = user?.is_superadmin ? {can_read:true, can_create:true, can_edit:true, can_delete:true} : (user?.module_permissions?.[module] || {});
   const navigate = useNavigate();
   const timer = useRef(null);
 
-  const doSearch = v => {
-    clearTimeout(timer.current);
-    timer.current = setTimeout(() => reload({ search: v, stage_id: stageFilter || undefined }), 600);
+  const handleSmartSearch = (params) => {
+    setSearchParams(params);
+    reload({ ...extraFilters, ...params.filters, search: params.search, group_by: params.group_by, stage_id: stageFilter || undefined });
   };
-  const handleSearch = e => { setSearch(e.target.value); doSearch(e.target.value); };
+
   const handleStage = id => {
     const v = id === stageFilter ? '' : id;
     setStageFilter(v);
-    reload({ search, stage_id: v || undefined, ...extraFilters });
+    reload({ ...extraFilters, ...searchParams.filters, search: searchParams.search, group_by: searchParams.group_by, stage_id: v || undefined });
   };
   const confirmDelete = async () => {
     await api.delete(`${endpoint}/${deleting}`);
     toast.success('Deleted'); setDeleting(null);
-    reload({ search, stage_id: stageFilter || undefined });
+    reload({ ...extraFilters, ...searchParams.filters, search: searchParams.search, group_by: searchParams.group_by, stage_id: stageFilter || undefined });
   };
 
   if (!perms.can_read && !user?.is_superadmin) return <Layout title={title}><Empty message="Access Denied: You do not have permission to view this module." /></Layout>;
@@ -42,12 +48,16 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
     <Layout title={title} headerTabs={headerTabs}>
       {topContent && <div style={{ marginBottom: 16 }}>{topContent}</div>}
       
-      <div className="toolbar" style={{ marginBottom: 16 }}>
-        <div className="search-bar">
-          <Search size={15} />
-          <input placeholder="Search..." value={search} onChange={handleSearch} />
+      <div className="toolbar" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1 }}>
+          <SmartSearch 
+            onSearch={handleSmartSearch} 
+            filters={filters} 
+            groupBys={groupBys} 
+            placeholder={`Search ${title}...`} 
+          />
         </div>
-        <div className="toolbar-right">
+        <div className="toolbar-right" style={{ paddingTop: 2 }}>
           {selected.length > 0 && (
             <div style={{ display: 'flex', gap: 8 }}>
               {batchActions && batchActions(selected, () => { setSelected([]); reload(); })}
@@ -115,38 +125,65 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
           <div className="table-wrap">
             <table>
               <thead><tr><th>Reference</th><th style={{ width: 40, textAlign: "center" }} onClick={e => e.stopPropagation()}>
-                <input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} onChange={e => setSelected(e.target.checked ? items.map(i => i.id) : [])} checked={items.length > 0 && selected.length === items.length} />
+                {!searchParams.group_by && <input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} onChange={e => setSelected(e.target.checked ? items.map(i => i.id) : [])} checked={items.length > 0 && selected.length === items.length} />}
               </th>
 {columns.map(c => <th key={c.key}>{c.label}</th>)}{showStages && <th>Stage</th>}<th>Created</th><th></th></tr></thead>
               <tbody>
-                {items.map(row => (
-                  <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
-                    <td><span className="ref-text">{row.reference}</span></td>
-                    <td style={{ width: 40, textAlign: "center" }} onClick={e => e.stopPropagation()}>
-                      <input 
-                        type="checkbox" 
-                        style={{ transform:"scale(1.2)", cursor:"pointer" }} 
-                        checked={selected.includes(row.id)} 
-                        onChange={e => { 
-                          if (e.target.checked) setSelected([...selected, row.id]); 
-                          else setSelected(selected.filter(id => id !== row.id)); 
-                        }} 
-                      />
-                    </td>
-{columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
-                    {showStages && <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>}
-                    <td className="text-muted text-sm">{row.created_at?.slice(0,10)}</td>
-                    <td onClick={e => e.stopPropagation()}>
-                      <div className="flex gap-2">
-                        <button className="btn btn-ghost btn-sm" onClick={() => navigate(`${formPath}/${row.id}`)}><Eye size={13} /></button>
-                        {perms.can_delete && <button className="btn btn-danger btn-sm" onClick={() => setDeleting(row.id)}><Trash2 size={13} /></button>}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {searchParams.group_by ? (
+                  items.map((group, gIdx) => (
+                    <React.Fragment key={gIdx}>
+                      <tr style={{ background: 'var(--bg3)', borderBottom: '2px solid var(--border)' }}>
+                        <td colSpan={columns.length + 5} style={{ padding: '8px 12px', fontWeight: 800, color: 'var(--accent)', fontSize: 13 }}>
+                          {group.group} ({group.items.length})
+                        </td>
+                      </tr>
+                      {group.items.map(row => (
+                        <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
+                          <td><span className="ref-text">{row.reference}</span></td>
+                          <td></td>
+                          {columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
+                          {showStages && <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>}
+                          <td className="text-muted text-sm">{row.created_at?.slice(0,10)}</td>
+                          <td onClick={e => e.stopPropagation()}>
+                            <div className="flex gap-2">
+                              <button className="btn btn-ghost btn-sm" onClick={() => navigate(`${formPath}/${row.id}`)}><Eye size={13} /></button>
+                              {perms.can_delete && <button className="btn btn-danger btn-sm" onClick={() => setDeleting(row.id)}><Trash2 size={13} /></button>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </React.Fragment>
+                  ))
+                ) : (
+                  items.map(row => (
+                    <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
+                      <td><span className="ref-text">{row.reference}</span></td>
+                      <td style={{ width: 40, textAlign: "center" }} onClick={e => e.stopPropagation()}>
+                        <input 
+                          type="checkbox" 
+                          style={{ transform:"scale(1.2)", cursor:"pointer" }} 
+                          checked={selected.includes(row.id)} 
+                          onChange={e => { 
+                            if (e.target.checked) setSelected([...selected, row.id]); 
+                            else setSelected(selected.filter(id => id !== row.id)); 
+                          }} 
+                        />
+                      </td>
+                      {columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
+                      {showStages && <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>}
+                      <td className="text-muted text-sm">{row.created_at?.slice(0,10)}</td>
+                      <td onClick={e => e.stopPropagation()}>
+                        <div className="flex gap-2">
+                          <button className="btn btn-ghost btn-sm" onClick={() => navigate(`${formPath}/${row.id}`)}><Eye size={13} /></button>
+                          {perms.can_delete && <button className="btn btn-danger btn-sm" onClick={() => setDeleting(row.id)}><Trash2 size={13} /></button>}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
-      </div>
+          </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '12px 20px', background: 'var(--bg2)', borderRadius: 16, border: '1px solid var(--border)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
         <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>
