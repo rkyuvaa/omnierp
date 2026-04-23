@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import ModuleList from '../../components/ModuleList';
 import Layout from '../../components/Layout';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Plus, Trash2, Pencil, X, Check } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Check, Upload, Download, FileSpreadsheet } from 'lucide-react';
 
 // ─── Inline Config Manager ──────────────────────────────────────────────────
 function ConfigSection({ title, items, onAdd, onUpdate, onDelete, fields }) {
@@ -146,6 +146,31 @@ function ConfigurationTab() {
 // ─── Main Component ──────────────────────────────────────────────────────────
 export default function BOMList() {
   const [activeTab, setActiveTab] = useState('components');
+  const [importing, setImporting] = useState(false);
+  const fileRef = useRef(null);
+
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setImporting(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    try {
+      const res = await api.post('/warranty/components/import/excel', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      const d = res.data;
+      toast.success(`${d.message}`);
+      if (d.errors?.length) d.errors.forEach(err => toast.error(err, { duration: 5000 }));
+    } catch (err) {
+      toast.error('Import failed: ' + (err.response?.data?.detail || 'Unknown error'));
+    } finally {
+      setImporting(false);
+      e.target.value = '';
+    }
+  };
+
+  const apiBase = `${window.location.protocol}//${window.location.hostname}:8000/api`;
 
   const tabStyle = (active) => ({
     padding: '12px 24px',
@@ -184,8 +209,43 @@ export default function BOMList() {
       showStages={false}
       endpoint={activeTab === 'sales' ? '/warranty/boms' : '/warranty/components'}
       formPath={activeTab === 'sales' ? '/warranty/bom' : '/warranty/components'}
-      exportPath={activeTab === 'sales' ? '/warranty/boms/export/excel' : '/warranty/components/export/excel'}
+      exportPath={activeTab === 'sales' ? '/warranty/boms/export/excel' : null}
       topContent={tabs}
+      toolbarActions={activeTab === 'components' ? (
+        <>
+          {/* Hidden file input for import */}
+          <input ref={fileRef} type="file" accept=".xlsx,.xls" style={{ display: 'none' }} onChange={handleImport} />
+
+          {/* Template Download */}
+          <button
+            className="btn btn-ghost btn-sm"
+            title="Download blank import template"
+            onClick={() => window.open(`${apiBase}/warranty/components/template/excel`, '_blank')}
+            style={{ gap: 6 }}
+          >
+            <FileSpreadsheet size={14} /> Template
+          </button>
+
+          {/* Import */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => fileRef.current?.click()}
+            disabled={importing}
+            style={{ gap: 6 }}
+          >
+            <Upload size={14} /> {importing ? 'Importing...' : 'Import'}
+          </button>
+
+          {/* Export */}
+          <button
+            className="btn btn-ghost btn-sm"
+            onClick={() => window.open(`${apiBase}/warranty/components/export/excel`, '_blank')}
+            style={{ gap: 6 }}
+          >
+            <Download size={14} /> Export
+          </button>
+        </>
+      ) : null}
       columns={activeTab === 'sales' ? [
         { key: 'name', label: 'BOM Name', bold: true },
         { key: 'description', label: 'Description' }

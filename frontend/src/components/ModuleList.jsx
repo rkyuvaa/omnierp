@@ -8,7 +8,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions, showStages = true }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions, showStages = true, toolbarActions }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
@@ -63,7 +63,8 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
               </button>
             </div>
           )}
-          {(user?.is_superadmin || user?.role === 'admin' || user?.role === 'manager') && (
+          {toolbarActions && toolbarActions}
+          {(user?.is_superadmin || user?.role === 'admin' || user?.role === 'manager') && exportPath && (
             <button className="btn btn-ghost btn-sm" onClick={() => window.open(`${window.location.protocol}//${window.location.hostname}:8000/api${exportPath}`, '_blank')}>
               <Download size={14} /> Export
             </button>

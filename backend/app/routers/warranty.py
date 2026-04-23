@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, func
 from ..database import get_db
 from ..models import Product, BOM, BOMComponent, ProductComponentSerial, Stage, Component, ProductCategory, TaxConfig
 from ..auth import get_current_user
 from typing import Optional, List
-import datetime
+import datetime, io, openpyxl
+from fastapi.responses import StreamingResponse
 
 router = APIRouter()
 
@@ -290,6 +291,120 @@ def delete_master_component(id: int, db: Session = Depends(get_db)):
     c = db.query(Component).filter(Component.id == id).first()
     if not c: raise HTTPException(404)
     db.delete(c); db.commit(); return {"message": "Deleted"}
+
+@router.get("/components/export/excel")
+def export_components(db: Session = Depends(get_db)):
+    """Export all master components to Excel."""
+    comps = db.query(Component).order_by(Component.name).all()
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Components"
+
+    headers = ["ID", "Product Name", "Category", "Part Number", "Product Type",
+               "Sales Price", "Sales Taxes (%)", "On Hand Qty", "Image URL"]
+    ws.append(headers)
+
+    # Style header row
+    from openpyxl.styles import Font, PatternFill, Alignment
+    header_fill = PatternFill("solid", fgColor="1a5402")
+    for col, cell in enumerate(ws[1], 1):
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+        ws.column_dimensions[cell.column_letter].width = [5,25,20,18,16,14,16,14,40][col-1]
+
+    for c in comps:
+        ws.append([
+            c.id, c.name or "", c.category or "", c.part_number or "",
+            c.product_type or "Storable", c.sales_price or 0,
+            c.sales_taxes or 0, c.on_hand_qty or 0, c.image_url or ""
+        ])
+
+    buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+    return StreamingResponse(buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=components.xlsx"})
+
+@router.get("/components/template/excel")
+def download_import_template():
+    """Download blank import template."""
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Components"
+    headers = ["Product Name", "Category", "Part Number", "Product Type",
+               "Sales Price", "Sales Taxes (%)", "On Hand Qty", "Image URL"]
+    ws.append(headers)
+
+    from openpyxl.styles import Font, PatternFill, Alignment
+    header_fill = PatternFill("solid", fgColor="1a5402")
+    for col, cell in enumerate(ws[1], 1):
+        cell.font = Font(bold=True, color="FFFFFF")
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center")
+        ws.column_dimensions[cell.column_letter].width = [25,20,18,16,14,16,14,40][col-1]
+
+    # Add one example row
+    ws.append(["Battery 60V", "Electronics", "BAT-60V-001", "Storable", 2500, 18, 50, ""])
+
+    buf = io.BytesIO(); wb.save(buf); buf.seek(0)
+    return StreamingResponse(buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=components_template.xlsx"})
+
+@router.post("/components/import/excel")
+async def import_components(file: UploadFile = File(...), db: Session = Depends(get_db)):
+    """Bulk import components from Excel. Updates existing if Part Number matches, else creates."""
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(400, "Only .xlsx or .xls files are accepted")
+    try:
+        content = await file.read()
+        wb = openpyxl.load_workbook(io.BytesIO(content))
+        ws = wb.active
+
+        created = updated = skipped = 0
+        errors = []
+
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+            if not any(row): continue  # skip empty rows
+            try:
+                name       = str(row[0]).strip() if row[0] else None
+                category   = str(row[1]).strip() if row[1] else ""
+                part_no    = str(row[2]).strip() if row[2] else None
+                prod_type  = str(row[3]).strip() if row[3] else "Storable"
+                price      = float(row[4]) if row[4] is not None else 0.0
+                taxes      = float(row[5]) if row[5] is not None else 0.0
+                qty        = float(row[6]) if row[6] is not None else 0.0
+                image      = str(row[7]).strip() if row[7] else ""
+
+                if not name:
+                    errors.append(f"Row {row_idx}: Product Name is required — skipped"); skipped += 1; continue
+
+                # Upsert by Part Number if provided
+                existing = db.query(Component).filter(Component.part_number == part_no).first() if part_no else None
+                if existing:
+                    existing.name = name; existing.category = category
+                    existing.product_type = prod_type; existing.sales_price = price
+                    existing.sales_taxes = taxes; existing.on_hand_qty = qty
+                    existing.image_url = image
+                    updated += 1
+                else:
+                    c = Component(name=name, category=category, part_number=part_no,
+                                  product_type=prod_type, sales_price=price,
+                                  sales_taxes=taxes, on_hand_qty=qty, image_url=image)
+                    db.add(c); created += 1
+            except Exception as e:
+                errors.append(f"Row {row_idx}: {str(e)}"); skipped += 1
+
+        db.commit()
+        return {
+            "success": True,
+            "created": created, "updated": updated, "skipped": skipped,
+            "errors": errors,
+            "message": f"Import complete: {created} created, {updated} updated, {skipped} skipped."
+        }
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(500, f"Import failed: {str(e)}")
 
 @router.get("/boms/{id}")
 def get_bom(id: int, db: Session = Depends(get_db)):
