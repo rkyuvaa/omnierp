@@ -8,7 +8,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions, showStages = true, toolbarActions }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions, showStages = true, toolbarActions, headerTabs }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
@@ -39,7 +39,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
   if (!perms.can_read && !user?.is_superadmin) return <Layout title={title}><Empty message="Access Denied: You do not have permission to view this module." /></Layout>;
 
   return (
-    <Layout title={title}>
+    <Layout title={title} headerTabs={headerTabs}>
       {topContent && <div style={{ marginBottom: 16 }}>{topContent}</div>}
       
       <div className="toolbar" style={{ marginBottom: 16 }}>
