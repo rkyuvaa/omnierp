@@ -233,7 +233,12 @@ export default function ServiceForm() {
 
       if (isNew) { const r = await api.post('/service/', payload); toast.success('✓ Created successfully!', { duration: 4000 }); navigate(`/service/${r.data.id}`); }
       else { const response = await api.put(`/service/${id}`, payload); console.log('Save response:', response.status); toast.success('✓ Saved successfully!', { duration: 4000 }); }
-    } catch(e) { console.error('Save error:', e); toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); }
+    } catch(e) { 
+      console.error('Save error:', e); 
+      const detail = e.response?.data?.detail;
+      const msg = typeof detail === 'string' ? detail : (Array.isArray(detail) ? detail[0]?.msg : 'Failed to save');
+      toast.error(msg || 'Failed to save', { duration: 4000 }); 
+    }
     finally { setSaving(false); }
   };
   const visibleTabs = useMemo(() => (tabs || []).filter(t => {

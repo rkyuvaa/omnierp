@@ -110,19 +110,15 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
   return (
     <div className="smart-search-container" ref={panelRef} style={{ position: 'relative', width: '100%', marginBottom: 16 }}>
       {/* Search Bar */}
-      <div className="smart-search-bar" style={{
+      <div className="search-bar" style={{
         display: 'flex',
         alignItems: 'center',
-        background: 'var(--bg1)',
-        border: '1px solid var(--border)',
-        borderRadius: 8,
-        padding: '2px 8px',
-        minHeight: 40,
         gap: 6,
         flexWrap: 'wrap',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
+        minHeight: 40,
+        padding: '4px 12px'
       }}>
-        <Search size={16} color="var(--text3)" style={{ marginLeft: 4 }} />
+        <Search size={16} color="var(--text3)" />
         
         {activeTags.map((tag, i) => (
           <div key={i} style={{
