@@ -151,6 +151,50 @@ export function UserSelect({ field, value, onChange }) {
   );
 }
 
+export function ButtonField({ field, onClick }) {
+  const variant = field.options?.[0] || 'primary';
+  const colorMap = {
+    primary:  { bg: 'var(--accent)',   text: '#fff' },
+    success:  { bg: '#16a34a',          text: '#fff' },
+    danger:   { bg: 'var(--red)',       text: '#fff' },
+    warning:  { bg: '#d97706',          text: '#fff' },
+    ghost:    { bg: 'var(--bg3)',       text: 'var(--text1)', border: '1px solid var(--border)' },
+  };
+  const style = colorMap[variant] || colorMap.primary;
+  const handleClick = () => {
+    if (field.placeholder?.startsWith('http')) {
+      window.open(field.placeholder, '_blank');
+    } else if (onClick) {
+      onClick(field);
+    }
+  };
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      style={{
+        padding: '8px 20px',
+        borderRadius: 8,
+        border: style.border || 'none',
+        background: style.bg,
+        color: style.text,
+        fontWeight: 700,
+        fontSize: 13,
+        cursor: 'pointer',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: 6,
+        transition: 'opacity 0.15s',
+        width: 'auto',
+      }}
+      onMouseEnter={e => e.currentTarget.style.opacity = '0.85'}
+      onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+    >
+      {field.field_label}
+    </button>
+  );
+}
+
 export function MultipleSelectionField({ field, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
@@ -425,6 +469,7 @@ export function FieldInput({ field, value, onChange }) {
     case 'timer': return <TimerField value={v} onChange={onChange}/>;
     case 'toggle': return <ToggleField value={v} onChange={onChange}/>;
     case 'selection': return <select className="form-select" value={v} onChange={e=>onChange(e.target.value)}><option value="">— Select —</option>{(field.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>;
+    case 'button': return <ButtonField field={field} />;
     case 'multiple-selection': return <MultipleSelectionField field={field} value={v} onChange={onChange}/>;
     case 'user': return <UserSelect field={field} value={v} onChange={onChange}/>;
     case 'branch': return <BranchSelect field={field} value={v} onChange={onChange}/>;
