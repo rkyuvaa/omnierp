@@ -69,7 +69,7 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
           <div className="form-group">
             <label className="form-label">Type</label>
             <select className="form-select" value={f.field_type} onChange={e => set('field_type', e.target.value)}>
-              {FIELD_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+              {FIELD_TYPES.map(t => <option key={t} value={t}>{t.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}</option>)}
             </select>
           </div>
           <div className="form-group">

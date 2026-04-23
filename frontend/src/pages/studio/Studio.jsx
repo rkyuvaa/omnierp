@@ -233,7 +233,11 @@ export default function Studio() {
                           <tr key={f.id}>
                             <td className="fw-600">{f.field_label} {f.required && <span style={{ color: 'var(--red)' }}>*</span>}</td>
                             <td><code>{f.field_name}</code></td>
-                            <td><Badge color="var(--accent-dim)" style={{ color: 'var(--accent)' }}>{f.field_type}</Badge></td>
+                            <td>
+                              <Badge color="var(--accent-dim)" style={{ color: 'var(--accent)', textTransform: 'capitalize' }}>
+                                {f.field_type.replace('-', ' ')}
+                              </Badge>
+                            </td>
                             <td><span style={{ fontSize: 11 }}>{f.width}</span></td>
                             <td>{f.visibility_rule ? <Badge color="var(--amber-dim)" style={{ color: 'var(--amber)' }}>Visible If</Badge> : '—'}</td>
                             <td>
