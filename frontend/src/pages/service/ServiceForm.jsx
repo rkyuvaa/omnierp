@@ -139,6 +139,17 @@ export default function ServiceForm() {
     await api.delete(`/studio/layout/service/fields/${fid}`);
     toast.success('Deleted'); setDeleteConfirm(null); loadTabs(); loadStageRules();
   };
+
+  // Auto-select tab based on stage
+  useEffect(() => {
+    if (form.stage_id && tabs.length > 0 && activeTab === 0) {
+      const targetIdx = tabs.findIndex(t => t.default_on_stage === form.stage_id);
+      if (targetIdx !== -1) {
+        setActiveTab(targetIdx);
+      }
+    }
+  }, [form.stage_id, tabs, activeTab]);
+
   useEffect(() => {
     const handleClickOutside = (e) => { if (searchRef.current && !searchRef.current.contains(e.target)) setShowResults(false); };
     document.addEventListener('mousedown', handleClickOutside);

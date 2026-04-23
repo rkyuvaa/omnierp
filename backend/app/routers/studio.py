@@ -21,6 +21,7 @@ class TabIn(BaseModel):
     name: str
     sort_order: int = 0
     visibility_stages: List[int] = []
+    default_on_stage: Optional[int] = None
 
 class FieldIn(BaseModel):
     tab_id: Optional[int] = None
@@ -113,6 +114,7 @@ def get_tabs(module: str, db: Session = Depends(get_db)):
             "name": t.name,
             "sort_order": t.sort_order,
             "visibility_stages": getattr(t, 'visibility_stages', []) or [],
+            "default_on_stage": getattr(t, 'default_on_stage', None),
             "fields": [ser_field(f) for f in t.fields if getattr(f, 'is_active', True)]
         })
     return res
@@ -120,10 +122,11 @@ def get_tabs(module: str, db: Session = Depends(get_db)):
 @router.post("/layout/{module}/tabs")
 def create_tab(module: str, data: TabIn, db: Session = Depends(get_db), _=Depends(require_admin)):
     TabModel, _, _ = get_layout_models(module)
-    tab = TabModel(**data.model_dump(exclude={'visibility_stages'}))
+    tab = TabModel(**data.model_dump(exclude={'visibility_stages', 'default_on_stage'}))
     # Some tables might not have module column if they are specific
     if hasattr(tab, 'module'): tab.module = module
     if hasattr(tab, 'visibility_stages'): tab.visibility_stages = data.visibility_stages
+    if hasattr(tab, 'default_on_stage'): tab.default_on_stage = data.default_on_stage
     db.add(tab); db.commit(); db.refresh(tab)
     return {"id": tab.id, "name": tab.name, "sort_order": tab.sort_order, "fields": []}
 
@@ -134,6 +137,7 @@ def update_tab(module: str, tid: int, data: TabIn, db: Session = Depends(get_db)
     if not tab: raise HTTPException(404)
     tab.name = data.name; tab.sort_order = data.sort_order
     if hasattr(tab, 'visibility_stages'): tab.visibility_stages = data.visibility_stages
+    if hasattr(tab, 'default_on_stage'): tab.default_on_stage = data.default_on_stage
     db.commit(); return {"id":tab.id, "name":tab.name}
 
 @router.delete("/layout/{module}/tabs/{tid}")

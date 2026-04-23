@@ -62,6 +62,14 @@ export default function KonwertCareForm() {
       setLoading(false);
     }
   }, [id, isNew, loadTabs, loadStageRules]);
+
+  // Auto-select tab based on stage
+  useEffect(() => {
+    if (form?.stage_id && tabs.length > 0 && activeTab === 0) {
+      const targetIdx = tabs.findIndex(t => t.default_on_stage === form.stage_id);
+      if (targetIdx !== -1) setActiveTab(targetIdx);
+    }
+  }, [form?.stage_id, tabs, activeTab]);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => {
     setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));

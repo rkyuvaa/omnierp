@@ -83,6 +83,7 @@ class CRMTab(Base):
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     visibility_stages = Column(JSON, default=[]) # List of stage IDs where this tab is visible
+    default_on_stage = Column(Integer, nullable=True)
     fields = relationship("CRMField", back_populates="tab", cascade="all, delete-orphan", order_by="CRMField.sort_order")
 
 class CRMField(Base):
@@ -300,6 +301,7 @@ class InstallationTab(Base):
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     visibility_stages = Column(JSON, default=[])
+    default_on_stage = Column(Integer, nullable=True)
     fields = relationship("InstallationField", back_populates="tab", cascade="all, delete-orphan", order_by="InstallationField.sort_order")
 
 class InstallationField(Base):
@@ -335,6 +337,7 @@ class ServiceTab(Base):
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     visibility_stages = Column(JSON, default=[])
+    default_on_stage = Column(Integer, nullable=True)
     fields = relationship("ServiceField", back_populates="tab", cascade="all, delete-orphan", order_by="ServiceField.sort_order")
 
 class ServiceField(Base):
@@ -370,6 +373,7 @@ class WarrantyTab(Base):
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     visibility_stages = Column(JSON, default=[])
+    default_on_stage = Column(Integer, nullable=True)
     fields = relationship("WarrantyField", back_populates="tab", cascade="all, delete-orphan", order_by="WarrantyField.sort_order")
 
 class WarrantyField(Base):
@@ -405,6 +409,7 @@ class KonwertCareTab(Base):
     sort_order = Column(Integer, default=0)
     is_active = Column(Boolean, default=True)
     visibility_stages = Column(JSON, default=[])
+    default_on_stage = Column(Integer, nullable=True)
     fields = relationship("KonwertCareField", back_populates="tab", cascade="all, delete-orphan", order_by="KonwertCareField.sort_order")
 
 class KonwertCareField(Base):

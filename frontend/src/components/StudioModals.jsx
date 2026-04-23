@@ -248,12 +248,13 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
 export function TabModal({ initial, stages, onSave, onClose }) {
   const [name, setName] = useState(initial?.name || '');
   const [viz, setViz] = useState(initial?.visibility_stages || []);
+  const [defStage, setDefStage] = useState(initial?.default_on_stage || '');
 
   const toggle = (id) => setViz(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
 
   const handleSave = () => {
     if (!name.trim()) return toast.error('Name is required');
-    onSave({ ...initial, name, visibility_stages: viz });
+    onSave({ ...initial, name, visibility_stages: viz, default_on_stage: defStage ? parseInt(defStage) : null });
   };
   
   return (
@@ -262,6 +263,15 @@ export function TabModal({ initial, stages, onSave, onClose }) {
       <div className="form-group mb-4">
         <label className="form-label">Tab Name *</label>
         <input className="form-input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Technical Specs" autoFocus />
+      </div>
+
+      <div className="form-group mb-4">
+        <label className="form-label">Default View Stage</label>
+        <select className="form-select" value={defStage} onChange={e => setDefStage(e.target.value)}>
+          <option value="">— No Default (Manual) —</option>
+          {(stages || []).map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+        </select>
+        <div className="text-muted text-xs mt-1">If the record is in this stage, this tab will be selected by default when opened.</div>
       </div>
       
       <div className="form-group border-t pt-4">

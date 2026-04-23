@@ -83,6 +83,14 @@ export default function InstallationForm() {
     }
   }, [id]);
 
+  // Auto-select tab based on stage
+  useEffect(() => {
+    if (form?.stage_id && tabs.length > 0 && activeTab === 0) {
+      const targetIdx = tabs.findIndex(t => t.default_on_stage === form.stage_id);
+      if (targetIdx !== -1) setActiveTab(targetIdx);
+    }
+  }, [form?.stage_id, tabs, activeTab]);
+
   useEffect(() => {
     if (form?.product_id) {
       api.get(`/warranty/products/${form.product_id}`).then(r => {
