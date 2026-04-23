@@ -1,22 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Filter, LayoutGrid, ChevronDown, Check } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, ChevronDown, Check, Star, Plus } from 'lucide-react';
 
-/**
- * props:
- * - onSearch: (params) => void
- * - filters: [{ label: 'My Leads', key: 'assigned_to', value: currentUserId }, ...]
- * - groupBys: [{ label: 'Stage', key: 'stage_id' }, ...]
- * - placeholder: string
- */
 export default function SmartSearch({ onSearch, filters = [], groupBys = [], placeholder = "Search..." }) {
   const [inputValue, setInputValue] = useState('');
-  const [activeTags, setActiveTags] = useState([]); // { type: 'search|filter|group', label, key, value }
-  const [showDropdown, setShowDropdown] = useState(null); // 'filter' | 'group' | null
-  const dropdownRef = useRef(null);
+  const [activeTags, setActiveTags] = useState([]); // { type: 'filter|group|search', label, key, value }
+  const [showPanel, setShowPanel] = useState(false);
+  const panelRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setShowDropdown(null);
+      if (panelRef.current && !panelRef.current.contains(e.target)) setShowPanel(false);
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -46,12 +39,8 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
     if (exists) {
       nextTags = activeTags.filter(t => !(t.key === tag.key && t.type === tag.type));
     } else {
-      // If group by, remove other group bys
-      if (tag.type === 'group') {
-        nextTags = activeTags.filter(t => t.type !== 'group');
-      } else {
-        nextTags = [...activeTags];
-      }
+      if (tag.type === 'group') nextTags = activeTags.filter(t => t.type !== 'group'); // Only one group by
+      else nextTags = [...activeTags];
       nextTags.push(tag);
     }
     setActiveTags(nextTags);
@@ -67,37 +56,37 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
   const isSelected = (tag) => activeTags.some(t => t.key === tag.key && t.type === tag.type);
 
   return (
-    <div className="smart-search-container" style={{ position: 'relative', width: '100%', marginBottom: 16 }}>
+    <div className="smart-search-container" ref={panelRef} style={{ position: 'relative', width: '100%', marginBottom: 16 }}>
+      {/* Search Bar */}
       <div className="smart-search-bar" style={{
         display: 'flex',
         alignItems: 'center',
         background: 'var(--bg1)',
         border: '1px solid var(--border)',
-        borderRadius: 12,
-        padding: '4px 12px',
-        minHeight: 46,
-        gap: 8,
+        borderRadius: 8,
+        padding: '2px 8px',
+        minHeight: 40,
+        gap: 6,
         flexWrap: 'wrap',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.04)'
+        boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
       }}>
-        <Search size={18} color="var(--text3)" />
+        <Search size={16} color="var(--text3)" style={{ marginLeft: 4 }} />
         
         {activeTags.map((tag, i) => (
           <div key={i} style={{
             display: 'flex',
             alignItems: 'center',
-            gap: 6,
-            background: tag.type === 'filter' ? 'var(--accent-dim)' : tag.type === 'group' ? '#f59e0b22' : 'var(--bg3)',
-            color: tag.type === 'filter' ? 'var(--accent)' : tag.type === 'group' ? '#d97706' : 'var(--text1)',
-            padding: '2px 10px',
-            borderRadius: 20,
-            fontSize: 13,
+            gap: 4,
+            background: tag.type === 'filter' ? '#714b6722' : tag.type === 'group' ? '#00a09d22' : 'var(--bg3)',
+            color: tag.type === 'filter' ? '#714b67' : tag.type === 'group' ? '#00a09d' : 'var(--text1)',
+            padding: '1px 8px',
+            borderRadius: 4,
+            fontSize: 12,
             fontWeight: 600,
-            border: `1px solid ${tag.type === 'filter' ? 'var(--accent)33' : 'transparent'}`
+            border: `1px solid ${tag.type === 'filter' ? '#714b6744' : tag.type === 'group' ? '#00a09d44' : 'transparent'}`
           }}>
-            <span style={{ opacity: 0.7, fontSize: 11, textTransform: 'uppercase' }}>{tag.type}:</span>
             {tag.label}
-            <X size={14} style={{ cursor: 'pointer' }} onClick={() => removeTag(i)} />
+            <X size={12} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => removeTag(i)} />
           </div>
         ))}
 
@@ -111,65 +100,113 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
             border: 'none',
             outline: 'none',
             background: 'transparent',
-            padding: '8px 0',
-            fontSize: 14,
-            minWidth: 120
+            padding: '6px 0',
+            fontSize: 13,
+            minWidth: 100
           }}
         />
 
-        <div style={{ display: 'flex', gap: 4, borderLeft: '1px solid var(--border)', paddingLeft: 8 }}>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowDropdown(showDropdown === 'filter' ? null : 'filter')} style={{ gap: 6 }}>
-            <Filter size={15} /> Filters <ChevronDown size={14} />
-          </button>
-          <button className="btn btn-ghost btn-sm" onClick={() => setShowDropdown(showDropdown === 'group' ? null : 'group')} style={{ gap: 6 }}>
-            <LayoutGrid size={15} /> Group By <ChevronDown size={14} />
-          </button>
-        </div>
+        <button 
+          onClick={() => setShowPanel(!showPanel)}
+          style={{
+            border: 'none',
+            background: showPanel ? 'var(--bg3)' : 'transparent',
+            borderRadius: 4,
+            padding: '4px 8px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            color: 'var(--text2)'
+          }}
+        >
+          <ChevronDown size={16} style={{ transform: showPanel ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+        </button>
       </div>
 
-      {showDropdown && (
-        <div ref={dropdownRef} style={{
+      {/* Odoo-style Dropdown Panel */}
+      {showPanel && (
+        <div style={{
           position: 'absolute',
           top: '100%',
           right: 0,
-          marginTop: 8,
+          left: 0,
+          marginTop: 4,
           background: 'var(--bg1)',
           border: '1px solid var(--border)',
-          borderRadius: 12,
-          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-          zIndex: 100,
-          width: 240,
-          padding: 8
+          borderRadius: 4,
+          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+          zIndex: 1000,
+          display: 'grid',
+          gridTemplateColumns: '1fr 1fr 1fr',
+          padding: 16,
+          gap: 24
         }}>
-          <div style={{ padding: '8px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase' }}>
-            {showDropdown === 'filter' ? 'Custom Filters' : 'Group By'}
-          </div>
-          {(showDropdown === 'filter' ? filters : groupBys).map((opt, i) => {
-            const tag = { type: showDropdown, ...opt };
-            const selected = isSelected(tag);
-            return (
-              <div
-                key={i}
-                onClick={() => toggleTag(tag)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '10px 12px',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  background: selected ? 'var(--bg3)' : 'transparent',
-                  transition: 'background 0.15s'
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
-                onMouseLeave={e => e.currentTarget.style.background = selected ? 'var(--bg3)' : 'transparent'}
-              >
-                {opt.label}
-                {selected && <Check size={16} color="var(--accent)" />}
+          {/* Column 1: Filters */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#714b67', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+              <Filter size={16} fill="#714b67" /> Filters
+            </div>
+            {filters.map((f, i) => {
+              const tag = { type: 'filter', ...f };
+              const active = isSelected(tag);
+              return (
+                <div key={i} onClick={() => toggleTag(tag)} style={{
+                  padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13,
+                  background: active ? 'var(--bg3)' : 'transparent',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.background = active ? 'var(--bg3)' : 'transparent'}>
+                  {f.label}
+                  {active && <Check size={14} color="#714b67" />}
+                </div>
+              );
+            })}
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
+              <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)' }}>
+                Add Custom Filter...
               </div>
-            );
-          })}
+            </div>
+          </div>
+
+          {/* Column 2: Group By */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '1px solid var(--border)', paddingLeft: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#00a09d', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+              <LayoutGrid size={16} fill="#00a09d" /> Group By
+            </div>
+            {groupBys.map((g, i) => {
+              const tag = { type: 'group', ...g };
+              const active = isSelected(tag);
+              return (
+                <div key={i} onClick={() => toggleTag(tag)} style={{
+                  padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13,
+                  background: active ? 'var(--bg3)' : 'transparent',
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.background = active ? 'var(--bg3)' : 'transparent'}>
+                  {g.label}
+                  {active && <Check size={14} color="#00a09d" />}
+                </div>
+              );
+            })}
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
+              <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                Add Custom Group <ChevronDown size={14} />
+              </div>
+            </div>
+          </div>
+
+          {/* Column 3: Favorites */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '1px solid var(--border)', paddingLeft: 24 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f1c40f', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+              <Star size={16} fill="#f1c40f" /> Favorites
+            </div>
+            <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}>
+              System
+            </div>
+            <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
+              <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                Save current search <ChevronDown size={14} />
+              </div>
+            </div>
+          </div>
         </div>
       )}
     </div>
