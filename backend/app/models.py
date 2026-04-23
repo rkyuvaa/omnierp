@@ -198,10 +198,25 @@ class BOM(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     components = relationship("BOMComponent", back_populates="bom", cascade="all, delete-orphan")
 
+class Component(Base):
+    __tablename__ = "components_master"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), index=True)
+    category = Column(String(100), index=True)
+    part_number = Column(String(100), unique=True, index=True)
+    product_type = Column(String(50)) # e.g. Storable, Service
+    sales_price = Column(Float, default=0.0)
+    sales_taxes = Column(Float, default=0.0)
+    on_hand_qty = Column(Float, default=0.0)
+    image_url = Column(String(500), nullable=True)
+    custom_data = Column(JSON, default={})
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class BOMComponent(Base):
     __tablename__ = "bom_components"
     id = Column(Integer, primary_key=True, index=True)
     bom_id = Column(Integer, ForeignKey("boms.id"))
+    component_id = Column(Integer, ForeignKey("components_master.id"), nullable=True)
     name = Column(String(100))
     part_number = Column(String(50), nullable=True)
     quantity = Column(Integer, default=1)
@@ -209,6 +224,7 @@ class BOMComponent(Base):
     warranty_unit = Column(String(20), default="months")
     sort_order = Column(Integer, default=0)
     bom = relationship("BOM", back_populates="components")
+    master_component = relationship("Component")
 
 class Product(Base):
     __tablename__ = "products"

@@ -34,9 +34,13 @@ export default function BOMList() {
         { key: 'name', label: 'BOM Name', bold: true },
         { key: 'description', label: 'Description' }
       ] : [
-        { key: 'name', label: 'Part Name', bold: true },
+        { key: 'name', label: 'Product Name', bold: true },
+        { key: 'category', label: 'Category' },
         { key: 'part_number', label: 'Part Number' },
-        { key: 'bom_name', label: 'Used In Model' }
+        { key: 'product_type', label: 'Type' },
+        { key: 'sales_price', label: 'Sales Price' },
+        { key: 'sales_taxes', label: 'Sales Taxes' },
+        { key: 'on_hand_qty', label: 'On Hand Qty' }
       ]}
     />
   );

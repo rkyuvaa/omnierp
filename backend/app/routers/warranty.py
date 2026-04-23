@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, func
 from ..database import get_db
-from ..models import Product, BOM, BOMComponent, ProductComponentSerial, Stage
+from ..models import Product, BOM, BOMComponent, ProductComponentSerial, Stage, Component
 from ..auth import get_current_user
 from typing import Optional, List
 import datetime
@@ -243,23 +243,53 @@ def get_boms(db: Session = Depends(get_db)):
 
 @router.get("/components")
 def get_components(search: Optional[str] = None, db: Session = Depends(get_db)):
-    q = db.query(BOMComponent).options(joinedload(BOMComponent.bom))
+    q = db.query(Component)
     if search:
         q = q.filter(or_(
-            BOMComponent.name.ilike(f"%{search}%"),
-            BOMComponent.part_number.ilike(f"%{search}%")
+            Component.name.ilike(f"%{search}%"),
+            Component.part_number.ilike(f"%{search}%"),
+            Component.category.ilike(f"%{search}%")
         ))
     comps = q.all()
     return [{
         "id": c.id,
         "name": c.name,
+        "category": c.category,
         "part_number": c.part_number,
-        "quantity": c.quantity,
-        "warranty_period": c.warranty_period,
-        "warranty_unit": c.warranty_unit,
-        "bom_id": c.bom_id,
-        "bom_name": c.bom.name if c.bom else "—"
+        "product_type": c.product_type,
+        "sales_price": c.sales_price,
+        "sales_taxes": c.sales_taxes,
+        "on_hand_qty": c.on_hand_qty,
+        "image_url": c.image_url,
+        "created_at": str(c.created_at)
     } for c in comps]
+
+@router.post("/components")
+def create_master_component(data: dict, db: Session = Depends(get_db)):
+    try:
+        valid_fields = ["name", "category", "part_number", "product_type", "sales_price", "sales_taxes", "on_hand_qty", "image_url"]
+        comp_data = {k: v for k, v in data.items() if k in valid_fields}
+        c = Component(**comp_data)
+        db.add(c); db.commit(); db.refresh(c)
+        return c
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.put("/components/{id}")
+def update_master_component(id: int, data: dict, db: Session = Depends(get_db)):
+    c = db.query(Component).filter(Component.id == id).first()
+    if not c: raise HTTPException(404)
+    valid_fields = ["name", "category", "part_number", "product_type", "sales_price", "sales_taxes", "on_hand_qty", "image_url"]
+    for k, v in data.items():
+        if k in valid_fields: setattr(c, k, v)
+    db.commit(); db.refresh(c); return c
+
+@router.delete("/components/{id}")
+def delete_master_component(id: int, db: Session = Depends(get_db)):
+    c = db.query(Component).filter(Component.id == id).first()
+    if not c: raise HTTPException(404)
+    db.delete(c); db.commit(); return {"message": "Deleted"}
 
 @router.get("/boms/{id}")
 def get_bom(id: int, db: Session = Depends(get_db)):
