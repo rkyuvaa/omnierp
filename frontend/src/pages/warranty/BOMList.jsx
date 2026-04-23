@@ -71,6 +71,7 @@ function ConfigSection({ title, items, onAdd, onUpdate, onDelete, fields }) {
 
 // ─── Configuration Tab ───────────────────────────────────────────────────────
 function ConfigurationTab() {
+  const [subTab, setSubTab] = useState('categories');
   const [categories, setCategories] = useState([]);
   const [taxes, setTaxes] = useState([]);
 
@@ -88,28 +89,56 @@ function ConfigurationTab() {
   const taxUpdate = async (id, d) => { await api.put(`/warranty/config/taxes/${id}`, d); toast.success('Updated'); loadAll(); };
   const taxDelete = async (id) => { if (!window.confirm('Delete this tax?')) return; await api.delete(`/warranty/config/taxes/${id}`); toast.success('Deleted'); loadAll(); };
 
+  const subTabStyle = (active) => ({
+    padding: '8px 20px',
+    cursor: 'pointer',
+    fontSize: 12,
+    fontWeight: 700,
+    borderRadius: '8px 8px 0 0',
+    border: '1px solid var(--border)',
+    borderBottom: active ? '1px solid var(--bg)' : '1px solid var(--border)',
+    background: active ? 'var(--bg)' : 'var(--bg2)',
+    color: active ? 'var(--accent)' : 'var(--text3)',
+    marginBottom: -1,
+    transition: 'all 0.15s',
+    textTransform: 'uppercase',
+    letterSpacing: '0.4px'
+  });
+
   return (
-    <div className="card">
-      <ConfigSection
-        title="Product Categories"
-        items={categories}
-        onAdd={catAdd} onUpdate={catUpdate} onDelete={catDelete}
-        fields={[
-          { key: 'name', label: 'Category Name', bold: true, placeholder: 'e.g. Electronics' },
-          { key: 'description', label: 'Description', placeholder: 'Optional description' }
-        ]}
-      />
-      <div style={{ borderTop: '1px solid var(--border)', marginBottom: 32 }} />
-      <ConfigSection
-        title="Tax Configurations"
-        items={taxes}
-        onAdd={taxAdd} onUpdate={taxUpdate} onDelete={taxDelete}
-        fields={[
-          { key: 'name', label: 'Tax Name', bold: true, placeholder: 'e.g. GST 18%' },
-          { key: 'rate', label: 'Rate (%)', type: 'number', flex: 0.5, placeholder: '18' },
-          { key: 'description', label: 'Description', placeholder: 'Optional' }
-        ]}
-      />
+    <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+      {/* Sub-tab header */}
+      <div style={{ display: 'flex', gap: 4, padding: '16px 20px 0', borderBottom: '1px solid var(--border)', background: 'var(--bg2)' }}>
+        <div style={subTabStyle(subTab === 'categories')} onClick={() => setSubTab('categories')}>Product Categories</div>
+        <div style={subTabStyle(subTab === 'taxes')} onClick={() => setSubTab('taxes')}>Tax Configurations</div>
+      </div>
+
+      {/* Sub-tab content */}
+      <div style={{ padding: 24 }}>
+        {subTab === 'categories' && (
+          <ConfigSection
+            title="Product Categories"
+            items={categories}
+            onAdd={catAdd} onUpdate={catUpdate} onDelete={catDelete}
+            fields={[
+              { key: 'name', label: 'Category Name', bold: true, placeholder: 'e.g. Electronics' },
+              { key: 'description', label: 'Description', placeholder: 'Optional description' }
+            ]}
+          />
+        )}
+        {subTab === 'taxes' && (
+          <ConfigSection
+            title="Tax Configurations"
+            items={taxes}
+            onAdd={taxAdd} onUpdate={taxUpdate} onDelete={taxDelete}
+            fields={[
+              { key: 'name', label: 'Tax Name', bold: true, placeholder: 'e.g. GST 18%' },
+              { key: 'rate', label: 'Rate (%)', type: 'number', flex: 0.5, placeholder: '18' },
+              { key: 'description', label: 'Description', placeholder: 'Optional' }
+            ]}
+          />
+        )}
+      </div>
     </div>
   );
 }
