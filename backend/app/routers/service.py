@@ -135,33 +135,41 @@ def list_svc(
 
 @router.post("/")
 def create_svc(data: SvcIn, db: Session = Depends(get_db), cu=Depends(get_current_user)):
-    try:
-        ref = next_sequence(db, "service")
-        payload = data.model_dump()
-        
-        # Handle date conversion for SQLAlchemy
-        dev_date = payload.get("delivery_date")
-        if dev_date and isinstance(dev_date, str) and dev_date.strip():
-            try:
-                payload["delivery_date"] = datetime.datetime.strptime(dev_date.strip(), "%Y-%m-%d").date()
-            except:
-                payload["delivery_date"] = None
-        else:
+    from sqlalchemy.exc import IntegrityError
+    
+    payload = data.model_dump()
+    
+    # Handle date conversion for SQLAlchemy
+    dev_date = payload.get("delivery_date")
+    if dev_date and isinstance(dev_date, str) and dev_date.strip():
+        try:
+            payload["delivery_date"] = datetime.datetime.strptime(dev_date.strip(), "%Y-%m-%d").date()
+        except:
             payload["delivery_date"] = None
-                
-        r = ServiceRequest(**payload, reference=ref, created_by=cu.id)
-        db.add(r)
-        db.commit()
-        db.refresh(r)
-        
-        log_action(db, cu, "CREATE", "service", r.id, ref)
-        return serialize(r)
-    except Exception as e:
-        db.rollback()
-        print(f"CRITICAL SAVE ERROR: {str(e)}")
-        import traceback
-        traceback.print_exc()
-        raise HTTPException(status_code=500, detail=f"Database Save Error: {str(e)}")
+    else:
+        payload["delivery_date"] = None
+            
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            ref = next_sequence(db, "service")
+            r = ServiceRequest(**payload, reference=ref, created_by=cu.id)
+            db.add(r)
+            db.commit()
+            db.refresh(r)
+            
+            log_action(db, cu, "CREATE", "service", r.id, ref)
+            return serialize(r)
+        except IntegrityError as e:
+            db.rollback()
+            if attempt < max_retries - 1:
+                continue # Retry to get next sequence
+            print(f"CRITICAL SAVE ERROR (IntegrityError): {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database Save Error: Duplicate reference constraint.")
+        except Exception as e:
+            db.rollback()
+            print(f"CRITICAL SAVE ERROR: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Database Save Error: {str(e)}")
 
 @router.get("/{rid}")
 def get_svc(rid: int, db: Session = Depends(get_db), cu=Depends(get_current_user)):
