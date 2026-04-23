@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from pydantic import BaseModel
 from typing import Optional
+import openpyxl
+import io
 from ..database import get_db
 from ..models import IssueWorkMatrix
 from ..auth import get_current_user
@@ -101,3 +103,103 @@ def delete_matrix(rid: int, db: Session = Depends(get_db), cu=Depends(get_curren
     row = db.query(IssueWorkMatrix).filter(IssueWorkMatrix.id == rid).first()
     if not row: raise HTTPException(404)
     db.delete(row); db.commit(); return {"status": "ok"}
+
+@router.post("/import")
+async def import_matrix(file: UploadFile = File(...), db: Session = Depends(get_db), cu=Depends(get_current_user)):
+    if not file.filename.endswith(('.xlsx', '.xls')):
+        raise HTTPException(400, "Please upload an Excel file (.xlsx or .xls)")
+    
+    content = await file.read()
+    wb = openpyxl.load_workbook(io.BytesIO(content), data_only=True)
+    ws = wb.active
+    
+    rows = list(ws.rows)
+    if len(rows) < 2:
+        raise HTTPException(400, "File is empty or missing headers")
+    
+    # Map headers to model fields
+    headers = [cell.value.lower().strip() if cell.value else "" for cell in rows[0]]
+    mapping = {
+        "system": "system",
+        "issue": "issue",
+        "issue code": "issue_code",
+        "subsystem": "subsystem",
+        "priority": "priority",
+        "safety risk": "safety_risk",
+        "operable vehicle": "operable_vehicle",
+        "diagnostic method": "diagnostic_method",
+        "action type": "action_type",
+        "corrective action": "corrective_action",
+        "part id": "part_id",
+        "qty": "qty",
+        "sop": "sop",
+        "labour time in minutes": "labour_time_minutes",
+        "serviceable location": "serviceable_location",
+        "warranty": "warranty",
+        "warranty policy": "warranty_policy",
+        "loaner vehicle required": "loaner_vehicle_required",
+        "part cost": "part_cost",
+        "rework cost": "rework_cost",
+        "labour cost": "labour_cost",
+        "root cause category": "root_cause_category"
+    }
+
+    imported_count = 0
+    for row_cells in rows[1:]:
+        data = {}
+        for idx, cell in enumerate(row_cells):
+            header = headers[idx] if idx < len(headers) else ""
+            field = mapping.get(header)
+            if field:
+                val = cell.value
+                if field == "loaner_vehicle_required":
+                    val = str(val).lower() in ("yes", "true", "1")
+                elif field in ("qty", "labour_time_minutes", "part_cost", "rework_cost", "labour_cost"):
+                    try: val = float(val) if val is not None else None
+                    except: val = None
+                data[field] = val
+        
+        if any(data.values()):
+            db.add(IssueWorkMatrix(**data))
+            imported_count += 1
+            
+    db.commit()
+    return {"status": "ok", "imported": imported_count}
+
+@router.get("/export")
+def export_matrix(db: Session = Depends(get_db), cu=Depends(get_current_user)):
+    rows = db.query(IssueWorkMatrix).all()
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Issue Work Matrix"
+    
+    headers = [
+        "System", "Issue", "Issue Code", "Subsystem", "Priority", 
+        "Safety Risk", "Operable Vehicle", "Diagnostic Method", 
+        "Action Type", "Corrective Action", "Part ID", "Qty", "SOP", 
+        "Labour Time in Minutes", "Serviceable Location", "Warranty", 
+        "Warranty Policy", "Loaner Vehicle Required", "Part Cost", 
+        "Rework Cost", "Labour Cost", "Root Cause Category"
+    ]
+    ws.append(headers)
+    
+    for r in rows:
+        ws.append([
+            r.system, r.issue, r.issue_code, r.subsystem, r.priority,
+            r.safety_risk, r.operable_vehicle, r.diagnostic_method,
+            r.action_type, r.corrective_action, r.part_id, r.qty, r.sop,
+            r.labour_time_minutes, r.serviceable_location, r.warranty,
+            r.warranty_policy, "Yes" if r.loaner_vehicle_required else "No",
+            r.part_cost, r.rework_cost, r.labour_cost, r.root_cause_category
+        ])
+        
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    from fastapi.responses import StreamingResponse
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=issue_work_matrix.xlsx"}
+    )

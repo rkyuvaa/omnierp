@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Search, X, RefreshCw } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, X, RefreshCw, Upload, Download } from 'lucide-react';
 
 const EMPTY = {
   system: '', issue: '', issue_code: '', subsystem: '',
@@ -164,6 +164,26 @@ export default function IssueWorkMatrix() {
     catch { toast.error('Delete failed'); }
   };
 
+  const handleImport = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    const loadingToast = toast.loading('Importing data...');
+    try {
+      const res = await api.post('/issue-matrix/import', formData);
+      toast.success(`Imported ${res.data.imported} rows`, { id: loadingToast });
+      load(search);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Import failed', { id: loadingToast });
+    }
+    e.target.value = ''; // Reset input
+  };
+
+  const handleExport = () => {
+    window.open(`${window.location.protocol}//${window.location.hostname}:8000/api/issue-matrix/export`, '_blank');
+  };
+
   const cell = (v) => v === null || v === undefined || v === '' ? <span style={{ color: 'var(--text3)' }}>—</span> : String(v);
 
   return (
@@ -175,6 +195,16 @@ export default function IssueWorkMatrix() {
           <input placeholder="Search system, issue, code..." value={search} onChange={handleSearch} />
         </div>
         <button className="btn btn-ghost btn-sm" onClick={() => load(search)}><RefreshCw size={13} /></button>
+        
+        <input type="file" id="matrix-import" hidden accept=".xlsx,.xls" onChange={handleImport} />
+        <label htmlFor="matrix-import" className="btn btn-ghost" style={{ cursor: 'pointer', gap: 8 }}>
+          <Upload size={14} /> Import
+        </label>
+
+        <button className="btn btn-ghost" onClick={handleExport} style={{ gap: 8 }}>
+          <Download size={14} /> Export
+        </button>
+
         <button className="btn btn-primary" onClick={() => setModal({})}>
           <Plus size={14} /> Add Row
         </button>
