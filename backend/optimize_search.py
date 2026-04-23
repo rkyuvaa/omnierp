@@ -1,39 +1,39 @@
 import sys
 import os
-from sqlalchemy import create_engine, text
+sys.path.append(os.getcwd())
 
-# Add the parent directory to sys.path to import app
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from app.config import settings
-
-engine = create_engine(settings.DATABASE_URL)
+from app.database import engine
+from sqlalchemy import text
 
 def migrate():
     with engine.connect() as conn:
-        print("Starting Database Optimization...")
+        print("Optimizing database indexes for search performance...")
         
-        # 1. Enable pg_trgm for substring search
-        conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm"))
+        # Products table indexes
+        indexes = [
+            ("idx_products_title", "products", "title"),
+            ("idx_products_name", "products", "name"),
+            ("idx_products_serial", "products", "serial_number"),
+            ("idx_service_cust", "service_requests", "customer_name"),
+            ("idx_service_veh", "service_requests", "vehicle_number"),
+            ("idx_service_ref", "service_requests", "reference"),
+            ("idx_leads_name", "leads", "customer_name"),
+            ("idx_leads_phone", "leads", "phone"),
+            ("idx_install_ref", "installations", "reference"),
+            ("idx_install_cust", "installations", "customer_name"),
+            ("idx_install_veh", "installations", "vehicle_number"),
+        ]
         
-        # 2. Add indices to AuditLog
-        print("Optimizing AuditLog table...")
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_audit_module ON audit_logs (module)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_audit_record_id ON audit_logs (record_id)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs (action)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_audit_ref_trgm ON audit_logs USING gin (record_ref gin_trgm_ops)"))
-        
-        # 3. Add indices to Leads (Standard fields)
-        print("Optimizing Leads table...")
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_lead_title_trgm ON leads USING gin (title gin_trgm_ops)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_lead_cust_trgm ON leads USING gin (customer_name gin_trgm_ops)"))
-        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_lead_ref_trgm ON leads USING gin (reference gin_trgm_ops)"))
-        
-        # 4. Add GIN index for JSONB (if using JSONB, but OmniERP uses JSON)
-        # Note: In PostgreSQL, gin index on standard JSON is limited, but we can index specific paths or cast.
-        # For now, trgm on main fields is the biggest win.
+        for idx_name, table, col in indexes:
+            try:
+                print(f"Creating index {idx_name} on {table}({col})...")
+                # PostgreSQL/SQLite compatible index creation check if possible, or just try/except
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS {idx_name} ON {table} ({col})"))
+            except Exception as e:
+                print(f"Index {idx_name} failed or exists: {e}")
         
         conn.commit()
-        print("Optimization Complete!")
+    print("Optimization finished.")
 
 if __name__ == "__main__":
     migrate()

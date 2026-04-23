@@ -63,7 +63,7 @@ def serialize_product(p: Product):
                 "warranty_unit": c.warranty_unit,
                 "warranty_start_date": str(c.warranty_start_date) if c.warranty_start_date else None,
                 "warranty_end_date": str(c.warranty_end_date) if c.warranty_end_date else None
-            } for c in p.component_serials]
+            } for c in p.component_serials] if 'component_serials' in p.__dict__ else []
         }
     except Exception as e:
         print(f"Serialization error for product {getattr(p, 'id', 'unknown')}: {e}")
@@ -78,34 +78,12 @@ def get_products(
     db: Session = Depends(get_db)
 ):
     try:
-        # Background Check: Sync stages with warranty dates
-        now = datetime.date.today()
-        stages = db.query(Stage).filter(Stage.module == 'warranty').all()
-        s_new = next((s for s in stages if s.name and 'new' in s.name.lower()), None)
-        s_live = next((s for s in stages if s.name and 'on warranty' in s.name.lower()), None)
-        s_expired = next((s for s in stages if s.name and 'expired' in s.name.lower()), None)
-        
-        # Check all products for date-based stage transitions
-        prods_to_sync = db.query(Product).all()
-        updated = False
-        for p in prods_to_sync:
-            target_id = p.stage_id
-            if p.warranty_end_date and p.warranty_end_date < now:
-                if s_expired: target_id = s_expired.id
-            elif p.warranty_start_date:
-                if s_live: target_id = s_live.id
-            else:
-                if s_new: target_id = s_new.id
-            
-            if target_id != p.stage_id:
-                p.stage_id = target_id
-                updated = True
-        if updated: db.commit()
+        # Efficiently get stage counts first (this doesn't need to join everything)
+        stage_counts = {str(s_id): count for s_id, count in db.query(Product.stage_id, func.count(Product.id)).group_by(Product.stage_id).all() if s_id}
 
         q = db.query(Product).options(
             joinedload(Product.stage),
-            joinedload(Product.bom),
-            joinedload(Product.component_serials).joinedload(ProductComponentSerial.bom_component)
+            joinedload(Product.bom)
         )
         
         if search:
@@ -121,9 +99,6 @@ def get_products(
         total = q.count()
         products = q.order_by(Product.id.desc()).offset(skip).limit(limit).all()
         
-        # Calculate stage counts efficiently
-        stage_counts = {str(s_id): count for s_id, count in db.query(Product.stage_id, func.count(Product.id)).group_by(Product.stage_id).all() if s_id}
-            
         return {
             "total": total, 
             "items": [serialize_product(p) for p in products],
