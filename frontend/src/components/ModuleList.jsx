@@ -51,6 +51,7 @@ export default function ModuleList({
       <div className="toolbar" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-start', position: 'relative', zIndex: 1000 }}>
         <div style={{ flex: 1 }}>
           <SmartSearch 
+            module={module}
             onSearch={handleSmartSearch} 
             filters={filters} 
             groupBys={groupBys} 

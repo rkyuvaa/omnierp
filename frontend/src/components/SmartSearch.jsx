@@ -1,13 +1,25 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Filter, LayoutGrid, ChevronDown, Check, Star, Plus } from 'lucide-react';
 
-export default function SmartSearch({ onSearch, filters = [], groupBys = [], placeholder = "Search..." }) {
+export default function SmartSearch({ module = 'default', onSearch, filters = [], groupBys = [], placeholder = "Search..." }) {
   const [inputValue, setInputValue] = useState('');
   const [activeTags, setActiveTags] = useState([]); // { type: 'filter|group|search', label, key, value }
   const [showPanel, setShowPanel] = useState(false);
   const panelRef = useRef(null);
+  
+  const favKey = `omnierp_search_favs_${module}`;
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(favKey)) || []; } catch { return []; }
+  });
 
   useEffect(() => {
+    // On initial load, apply default favorite if exists
+    const defaultFav = favorites.find(f => f.isDefault);
+    if (defaultFav && activeTags.length === 0) {
+      setActiveTags(defaultFav.tags);
+      triggerSearch(defaultFav.tags);
+    }
+    
     const handleClickOutside = (e) => {
       if (panelRef.current && !panelRef.current.contains(e.target)) setShowPanel(false);
     };
@@ -51,6 +63,46 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
     const nextTags = activeTags.filter((_, i) => i !== idx);
     setActiveTags(nextTags);
     triggerSearch(nextTags);
+  };
+
+  const handleAddCustomFilter = () => {
+    const key = window.prompt("Enter field name to filter by (e.g. priority):");
+    if (!key) return;
+    const val = window.prompt(`Enter value for ${key}:`);
+    if (val === null) return;
+    toggleTag({ type: 'filter', label: `${key}: ${val}`, key, value: val });
+  };
+
+  const handleAddCustomGroup = () => {
+    const key = window.prompt("Enter field name to group by (e.g. stage_id):");
+    if (!key) return;
+    toggleTag({ type: 'group', label: `Group By: ${key}`, key });
+  };
+
+  const handleSaveSearch = () => {
+    const name = window.prompt("Enter a name for this search:");
+    if (!name) return;
+    const isDefault = window.confirm("Make this the default search view?");
+    
+    let newFavs = [...favorites];
+    if (isDefault) newFavs = newFavs.map(f => ({ ...f, isDefault: false })); // clear other defaults
+    
+    newFavs.push({ id: Date.now(), name, tags: activeTags, isDefault });
+    setFavorites(newFavs);
+    localStorage.setItem(favKey, JSON.stringify(newFavs));
+  };
+  
+  const applyFavorite = (fav) => {
+    setActiveTags(fav.tags);
+    triggerSearch(fav.tags);
+    setShowPanel(false);
+  };
+
+  const deleteFavorite = (e, id) => {
+    e.stopPropagation();
+    const newFavs = favorites.filter(f => f.id !== id);
+    setFavorites(newFavs);
+    localStorage.setItem(favKey, JSON.stringify(newFavs));
   };
 
   const isSelected = (tag) => activeTags.some(t => t.key === tag.key && t.type === tag.type);
@@ -162,7 +214,7 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
               );
             })}
             <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
-              <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)' }}>
+              <div onClick={handleAddCustomFilter} style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)' }}>
                 Add Custom Filter...
               </div>
             </div>
@@ -188,7 +240,7 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
               );
             })}
             <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
-              <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div onClick={handleAddCustomGroup} style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 Add Custom Group <ChevronDown size={14} />
               </div>
             </div>
@@ -199,11 +251,22 @@ export default function SmartSearch({ onSearch, filters = [], groupBys = [], pla
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f1c40f', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
               <Star size={16} fill="#f1c40f" /> Favorites
             </div>
-            <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13 }}>
-              System
-            </div>
+            
+            {favorites.map(fav => (
+              <div key={fav.id} onClick={() => applyFavorite(fav)} style={{
+                padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13,
+                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+              }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <span>{fav.name} {fav.isDefault && <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 6 }}>(Default)</span>}</span>
+                <X size={14} style={{ opacity: 0.5 }} onClick={(e) => deleteFavorite(e, fav.id)} />
+              </div>
+            ))}
+            {favorites.length === 0 && (
+              <div style={{ padding: '6px 12px', fontSize: 13, color: 'var(--text3)', opacity: 0.6 }}>No saved searches</div>
+            )}
+
             <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
-              <div style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div onClick={handleSaveSearch} style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 Save current search <ChevronDown size={14} />
               </div>
             </div>
