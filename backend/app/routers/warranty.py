@@ -1,11 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import or_, func
 from ..database import get_db
 from ..models import Product, BOM, BOMComponent, ProductComponentSerial, Stage
 from ..auth import get_current_user
 from typing import Optional, List
 import datetime
-from sqlalchemy import or_
 
 router = APIRouter()
 
@@ -119,7 +119,15 @@ def get_products(
             
         total = q.count()
         products = q.order_by(Product.id.desc()).offset(skip).limit(limit).all()
-        return {"total": total, "items": [serialize_product(p) for p in products]}
+        
+        # Calculate stage counts efficiently
+        stage_counts = {str(s_id): count for s_id, count in db.query(Product.stage_id, func.count(Product.id)).group_by(Product.stage_id).all() if s_id}
+            
+        return {
+            "total": total, 
+            "items": [serialize_product(p) for p in products],
+            "stage_counts": stage_counts
+        }
     except Exception as e:
         print(f"Error in get_products: {e}")
         raise HTTPException(status_code=500, detail=str(e))

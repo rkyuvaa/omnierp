@@ -96,7 +96,7 @@ def get_inst(search: str = "", stage_id: str = "", stage_names: Optional[str] = 
         count_q = count_q.join(Stage).filter(func.upper(func.trim(Stage.name)).in_(names))
     
     counts_res = count_q.all()
-    stage_counts = {r[0]: r[1] for r in counts_res if r[0] is not None}
+    stage_counts = {str(r[0]): r[1] for r in counts_res if r[0] is not None}
 
     total = q.count()
     limit = 50

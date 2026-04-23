@@ -107,7 +107,7 @@ def list_tickets(
             count_q = count_q.filter(KonwertCareTicket.issue_type == issue_type)
         
         counts_res = count_q.all()
-        stage_counts = {r[0]: r[1] for r in counts_res if r[0] is not None}
+        stage_counts = {str(r[0]): r[1] for r in counts_res if r[0] is not None}
 
         total = q.count()
         tickets = q.order_by(KonwertCareTicket.id.desc()).offset(skip).limit(limit).all()

@@ -81,7 +81,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
 
           {stages && stages.length > 0 && (
             <div className="stage-ribbon" style={{ display: 'flex', gap: 6, paddingBottom: 10, width: '100%', marginTop: 8, flexWrap: 'wrap' }}>
-              {(allowedStages ? stages.filter(s => s.name && allowedStages.map(a => a.toUpperCase().trim()).includes(s.name.toUpperCase().trim())) : (stageLimit ? stages.slice(stageLimit) : stages)).map(s => { const sc = stageCounts ? (stageCounts[s.id] || 0) : s.count; return (
+              {(allowedStages ? stages.filter(s => s.name && allowedStages.map(a => a.toUpperCase().trim()).includes(s.name.toUpperCase().trim())) : (stageLimit ? stages.slice(stageLimit) : stages)).map(s => { const sc = stageCounts ? (stageCounts[String(s.id)] || 0) : s.count; return (
                 <div key={s.id} onClick={() => handleStage(s.id)}
                   style={{
                     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',

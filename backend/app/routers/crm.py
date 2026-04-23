@@ -101,9 +101,12 @@ def list_leads(
             cast(Activity.due_date, Date) == day
         ).subquery()
         q = q.filter(Lead.id.in_(lead_ids))
+    # Stage counts based on filtered query (before pagination)
+    stage_counts = {str(s_id): count for s_id, count in db.query(Lead.stage_id, func.count(Lead.id)).group_by(Lead.stage_id).all() if s_id}
+    
     total = q.count()
     items = q.order_by(Lead.id.desc()).offset(skip).limit(limit).all()
-    return {"total": total, "items": [serialize_lead(l) for l in items]}
+    return {"total": total, "items": [serialize_lead(l) for l in items], "stage_counts": stage_counts}
 
 @router.post("/leads")
 def create_lead(data: LeadIn, db: Session = Depends(get_db), cu=Depends(get_current_user)):

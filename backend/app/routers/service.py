@@ -75,7 +75,7 @@ def list_svc(search: Optional[str] = None, stage_id: Optional[int] = None, skip:
         ))
 
     # Stage counts based on filtered query (before pagination)
-    stage_counts = {s_id: count for s_id, count in q.with_entities(ServiceRequest.stage_id, func.count(ServiceRequest.id)).group_by(ServiceRequest.stage_id).all() if s_id}
+    stage_counts = {str(s_id): count for s_id, count in q.with_entities(ServiceRequest.stage_id, func.count(ServiceRequest.id)).group_by(ServiceRequest.stage_id).all() if s_id}
     
     if stage_id: q = q.filter(ServiceRequest.stage_id == stage_id)
     total = q.count()
