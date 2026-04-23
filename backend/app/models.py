@@ -441,6 +441,8 @@ class ServiceRequest(Base):
     customer_id = Column(Integer, nullable=True)
     vehicle_number = Column(String(50), nullable=True, index=True)
     phone = Column(String(50), nullable=True, index=True)
+    contact_name = Column(String(100), nullable=True)
+    contact_number = Column(String(50), nullable=True)
     invoice_number = Column(String(100), nullable=True)
     vehicle_year = Column(String(10), nullable=True)
     delivery_date = Column(Date, nullable=True)

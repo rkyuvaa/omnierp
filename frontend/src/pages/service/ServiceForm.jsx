@@ -206,8 +206,8 @@ export default function ServiceForm() {
     try {
       // Strictly define allowed fields to prevent 500 error from extra frontend data
       const allowed = [
-        'customer_id', 'customer_name', 'phone', 'invoice_number', 
-        'vehicle_year', 'delivery_date', 'vehicle_number', 
+        'customer_id', 'customer_name', 'phone', 'contact_name', 'contact_number',
+        'invoice_number', 'vehicle_year', 'delivery_date', 'vehicle_number', 
         'vehicle_make', 'vehicle_model', 'product_id', 
         'problem_description', 'stage_id', 'staff_id', 'notes', 'custom_data'
       ];
@@ -430,6 +430,29 @@ export default function ServiceForm() {
                       readOnly={!!form.product_id}
                     />
                 </div>
+              </div>
+
+              {/* Second Row for Contact Details */}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginTop: 16 }}>
+                <div className="form-group">
+                  <label className="form-label text-xs uppercase fw-800">Contact Name</label>
+                  <input 
+                    className="form-input" 
+                    placeholder="Enter contact name..."
+                    value={form.contact_name || ''} 
+                    onChange={e => set('contact_name', e.target.value)} 
+                  />
+                </div>
+                <div className="form-group">
+                  <label className="form-label text-xs uppercase fw-800">Contact Number</label>
+                  <input 
+                    className="form-input" 
+                    placeholder="Enter contact number..."
+                    value={form.contact_number || ''} 
+                    onChange={e => set('contact_number', e.target.value)} 
+                  />
+                </div>
+                <div className="form-group" /> {/* Empty group for alignment if needed, or leave blank */}
               </div>
             </div>
 

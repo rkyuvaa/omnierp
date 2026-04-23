@@ -16,6 +16,8 @@ class SvcIn(BaseModel):
     customer_id: Optional[int] = None
     customer_name: Optional[str] = None
     phone: Optional[str] = None
+    contact_name: Optional[str] = None
+    contact_number: Optional[str] = None
     invoice_number: Optional[str] = None
     vehicle_year: Optional[str] = None
     delivery_date: Optional[str] = None
@@ -42,6 +44,8 @@ def serialize(r: ServiceRequest):
         "reference": r.reference, 
         "customer_name": r.customer_name,
         "phone": r.phone,
+        "contact_name": r.contact_name,
+        "contact_number": r.contact_number,
         "invoice_number": r.invoice_number,
         "vehicle_year": r.vehicle_year,
         "delivery_date": str(r.delivery_date) if r.delivery_date else None,
