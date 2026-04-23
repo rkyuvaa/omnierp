@@ -22,7 +22,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
 
   const doSearch = v => {
     clearTimeout(timer.current);
-    timer.current = setTimeout(() => reload({ search: v, stage_id: stageFilter || undefined }), 350);
+    timer.current = setTimeout(() => reload({ search: v, stage_id: stageFilter || undefined }), 600);
   };
   const handleSearch = e => { setSearch(e.target.value); doSearch(e.target.value); };
   const handleStage = id => {

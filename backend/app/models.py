@@ -505,19 +505,45 @@ class FormDefinition(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class IssueWorkMatrix(Base):
+    __tablename__ = "issue_work_matrix"
+    id = Column(Integer, primary_key=True, index=True)
+    system = Column(String(200), nullable=True)
+    issue = Column(String(500), nullable=True)
+    issue_code = Column(String(100), nullable=True, index=True)
+    subsystem = Column(String(200), nullable=True)
+    priority = Column(String(50), nullable=True)
+    safety_risk = Column(String(50), nullable=True)
+    operable_vehicle = Column(String(50), nullable=True)
+    diagnostic_method = Column(String(200), nullable=True)
+    action_type = Column(String(200), nullable=True)
+    corrective_action = Column(Text, nullable=True)
+    part_id = Column(String(100), nullable=True)
+    qty = Column(Float, nullable=True)
+    sop = Column(String(300), nullable=True)
+    labour_time_minutes = Column(Float, nullable=True)
+    serviceable_location = Column(String(200), nullable=True)
+    warranty = Column(String(50), nullable=True)
+    warranty_policy = Column(String(300), nullable=True)
+    loaner_vehicle_required = Column(Boolean, default=False)
+    part_cost = Column(Float, nullable=True)
+    rework_cost = Column(Float, nullable=True)
+    labour_cost = Column(Float, nullable=True)
+    root_cause_category = Column(String(200), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 class FormSubmission(Base):
     __tablename__ = "form_submissions"
     id = Column(Integer, primary_key=True, index=True)
     form_definition_id = Column(Integer, ForeignKey("form_definitions.id"))
-    parent_id = Column(Integer, index=True) # lead_id or installation_id
+    parent_id = Column(Integer, index=True)
     reference_number = Column(String(100), unique=True)
-    
     data = Column(JSON, default={})
-    status = Column(String(20), default="draft") # draft, final
+    status = Column(String(20), default="draft")
     created_by = Column(Integer, ForeignKey("users.id"))
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
-
-    # Relationship to user
     author = relationship("User")
     definition = relationship("FormDefinition")
+
