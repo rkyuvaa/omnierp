@@ -8,7 +8,7 @@ import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Search, Download, Trash2, Eye } from 'lucide-react';
 
-export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions }) {
+export default function ModuleList({ title, endpoint, module, formPath, exportPath, columns, extraFilters = {}, headerContent, topContent, stageLimit, allowedStages, batchActions, showStages = true }) {
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState([]);
   const [stageFilter, setStageFilter] = useState('');
@@ -79,7 +79,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
             <span className="text-muted text-sm" style={{ fontWeight: 600, opacity: 0.7 }}>{total} records</span>
           </div>
 
-          {stages && stages.length > 0 && (
+          {showStages && stages && stages.length > 0 && (
             <div className="stage-ribbon" style={{ display: 'flex', gap: 6, paddingBottom: 10, width: '100%', marginTop: 8, flexWrap: 'wrap' }}>
               {(allowedStages ? stages.filter(s => s.name && allowedStages.map(a => a.toUpperCase().trim()).includes(s.name.toUpperCase().trim())) : (stageLimit ? stages.slice(stageLimit) : stages)).map(s => { const sc = stageCounts ? (stageCounts[String(s.id)] || 0) : s.count; return (
                 <div key={s.id} onClick={() => handleStage(s.id)}
@@ -116,7 +116,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
               <thead><tr><th>Reference</th><th style={{ width: 40, textAlign: "center" }} onClick={e => e.stopPropagation()}>
                 <input type="checkbox" style={{ transform:"scale(1.2)", cursor:"pointer" }} onChange={e => setSelected(e.target.checked ? items.map(i => i.id) : [])} checked={items.length > 0 && selected.length === items.length} />
               </th>
-{columns.map(c => <th key={c.key}>{c.label}</th>)}<th>Stage</th><th>Created</th><th></th></tr></thead>
+{columns.map(c => <th key={c.key}>{c.label}</th>)}{showStages && <th>Stage</th>}<th>Created</th><th></th></tr></thead>
               <tbody>
                 {items.map(row => (
                   <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
@@ -133,7 +133,7 @@ export default function ModuleList({ title, endpoint, module, formPath, exportPa
                       />
                     </td>
 {columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
-                    <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>
+                    {showStages && <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>}
                     <td className="text-muted text-sm">{row.created_at?.slice(0,10)}</td>
                     <td onClick={e => e.stopPropagation()}>
                       <div className="flex gap-2">

@@ -20,6 +20,7 @@ export default function BOMList() {
     <ModuleList
       title="BOM / Models"
       module="warranty"
+      showStages={false}
       endpoint={activeTab === 'sales' ? '/warranty/boms' : '/warranty/components'}
       formPath={activeTab === 'sales' ? '/warranty/bom' : '/warranty/components'}
       exportPath={activeTab === 'sales' ? '/warranty/boms/export/excel' : '/warranty/components/export/excel'}
