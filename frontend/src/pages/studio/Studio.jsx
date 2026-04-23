@@ -8,7 +8,7 @@ import { Plus, Pencil, Trash2, RotateCw, Settings, Layers, FileText, ChevronRigh
 import DocumentManagement from './DocumentManagement';
 
 const MODULES = ['crm', 'installation', 'service', 'warranty', 'konwertcare'];
-const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'multi-select', 'boolean', 'checkbox', 'file', 'form'];
+const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'multiple-selection', 'boolean', 'checkbox', 'file', 'form'];
 
 const emptyTab = { name: '', sort_order: 0 };
 const emptyField = { field_name: '', field_label: '', field_type: 'text', placeholder: '', options: [], required: false, width: 'full', visibility_rule: null, sort_order: 0 };

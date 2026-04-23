@@ -151,7 +151,7 @@ export function UserSelect({ field, value, onChange }) {
   );
 }
 
-export function MultiSelectField({ field, value, onChange }) {
+export function MultipleSelectionField({ field, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState('');
   const wrapperRef = useRef();
@@ -425,7 +425,7 @@ export function FieldInput({ field, value, onChange }) {
     case 'timer': return <TimerField value={v} onChange={onChange}/>;
     case 'toggle': return <ToggleField value={v} onChange={onChange}/>;
     case 'selection': return <select className="form-select" value={v} onChange={e=>onChange(e.target.value)}><option value="">— Select —</option>{(field.options||[]).map(o=><option key={o} value={o}>{o}</option>)}</select>;
-    case 'multi-select': return <MultiSelectField field={field} value={v} onChange={onChange}/>;
+    case 'multiple-selection': return <MultipleSelectionField field={field} value={v} onChange={onChange}/>;
     case 'user': return <UserSelect field={field} value={v} onChange={onChange}/>;
     case 'branch': return <BranchSelect field={field} value={v} onChange={onChange}/>;
     default: return <input className="form-input" type="text" placeholder={field.placeholder} value={v} onChange={e=>onChange(e.target.value)}/>;

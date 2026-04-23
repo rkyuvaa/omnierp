@@ -4,7 +4,7 @@ import { Plus, Pencil, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 
-const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'multi-select', 'user', 'branch', 'boolean', 'checkbox', 'toggle', 'file', 'form', 'timer'];
+const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'multiple-selection', 'user', 'branch', 'boolean', 'checkbox', 'toggle', 'file', 'form', 'timer'];
 const WIDTH_OPTIONS = [{value:'full',label:'Full Row (1/1)'},{value:'half',label:'Half Row (1/2)'},{value:'quarter',label:'Quarter (1/4)'},{value:'third',label:'Third (1/3)'}];
 
 export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose }) {
@@ -37,7 +37,7 @@ export function FieldModal({ initial, tabs, stages, stageRules, onSave, onClose 
   }, [f.field_name, stageRules]);
 
   const set = (k, v) => setF(p => ({ ...p, [k]: v }));
-  const needsOptions = ['selection', 'multi-select', 'checkbox'].includes(f.field_type);
+  const needsOptions = ['selection', 'multiple-selection', 'checkbox'].includes(f.field_type);
   const allFields = (tabs || []).flatMap(t => Array.isArray(t.fields) ? t.fields : []).filter(x => x.field_name !== f.field_name);
 
   const handleSave = () => {
