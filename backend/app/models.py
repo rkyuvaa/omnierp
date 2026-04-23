@@ -188,6 +188,21 @@ class AuditLog(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     user = relationship("User")
 
+class ProductCategory(Base):
+    __tablename__ = "product_categories"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, index=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class TaxConfig(Base):
+    __tablename__ = "tax_configs"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, index=True)
+    rate = Column(Float, default=0.0)  # percentage
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class BOM(Base):
     __tablename__ = "boms"
     id = Column(Integer, primary_key=True, index=True)

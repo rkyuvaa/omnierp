@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import or_, func
 from ..database import get_db
-from ..models import Product, BOM, BOMComponent, ProductComponentSerial, Stage, Component
+from ..models import Product, BOM, BOMComponent, ProductComponentSerial, Stage, Component, ProductCategory, TaxConfig
 from ..auth import get_current_user
 from typing import Optional, List
 import datetime
@@ -349,3 +349,66 @@ def update_bom(id: int, data: dict, db: Session = Depends(get_db)):
         print(f"Error in update_bom: {e}")
         db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
+
+# ─── Product Categories ─────────────────────────────────────────────────────
+
+@router.get("/config/categories")
+def get_categories(db: Session = Depends(get_db)):
+    return [{"id": c.id, "name": c.name, "description": c.description or ""} for c in db.query(ProductCategory).order_by(ProductCategory.name).all()]
+
+@router.post("/config/categories")
+def create_category(data: dict, db: Session = Depends(get_db)):
+    if not data.get("name"): raise HTTPException(400, "Name is required")
+    try:
+        c = ProductCategory(name=data["name"].strip(), description=data.get("description",""))
+        db.add(c); db.commit(); db.refresh(c)
+        return {"id": c.id, "name": c.name, "description": c.description or ""}
+    except Exception as e:
+        db.rollback(); raise HTTPException(500, str(e))
+
+@router.put("/config/categories/{id}")
+def update_category(id: int, data: dict, db: Session = Depends(get_db)):
+    c = db.query(ProductCategory).filter(ProductCategory.id == id).first()
+    if not c: raise HTTPException(404)
+    if data.get("name"): c.name = data["name"].strip()
+    c.description = data.get("description", c.description)
+    db.commit(); db.refresh(c)
+    return {"id": c.id, "name": c.name, "description": c.description or ""}
+
+@router.delete("/config/categories/{id}")
+def delete_category(id: int, db: Session = Depends(get_db)):
+    c = db.query(ProductCategory).filter(ProductCategory.id == id).first()
+    if not c: raise HTTPException(404)
+    db.delete(c); db.commit(); return {"message": "Deleted"}
+
+# ─── Tax Configurations ──────────────────────────────────────────────────────
+
+@router.get("/config/taxes")
+def get_taxes(db: Session = Depends(get_db)):
+    return [{"id": t.id, "name": t.name, "rate": t.rate, "description": t.description or ""} for t in db.query(TaxConfig).order_by(TaxConfig.name).all()]
+
+@router.post("/config/taxes")
+def create_tax(data: dict, db: Session = Depends(get_db)):
+    if not data.get("name"): raise HTTPException(400, "Name is required")
+    try:
+        t = TaxConfig(name=data["name"].strip(), rate=float(data.get("rate", 0)), description=data.get("description",""))
+        db.add(t); db.commit(); db.refresh(t)
+        return {"id": t.id, "name": t.name, "rate": t.rate, "description": t.description or ""}
+    except Exception as e:
+        db.rollback(); raise HTTPException(500, str(e))
+
+@router.put("/config/taxes/{id}")
+def update_tax(id: int, data: dict, db: Session = Depends(get_db)):
+    t = db.query(TaxConfig).filter(TaxConfig.id == id).first()
+    if not t: raise HTTPException(404)
+    if data.get("name"): t.name = data["name"].strip()
+    if "rate" in data: t.rate = float(data["rate"])
+    t.description = data.get("description", t.description)
+    db.commit(); db.refresh(t)
+    return {"id": t.id, "name": t.name, "rate": t.rate, "description": t.description or ""}
+
+@router.delete("/config/taxes/{id}")
+def delete_tax(id: int, db: Session = Depends(get_db)):
+    t = db.query(TaxConfig).filter(TaxConfig.id == id).first()
+    if not t: raise HTTPException(404)
+    db.delete(t); db.commit(); return {"message": "Deleted"}
