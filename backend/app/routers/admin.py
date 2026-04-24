@@ -79,7 +79,7 @@ async def restore_backup(file: UploadFile = File(...), cu=Depends(get_current_us
             # We use --clean --if-exists in pg_dump ideally, but if not, we might need to drop and recreate.
             # For simplicity, we'll run the SQL file.
             restore_cmd = [
-                "psql",
+                "/usr/bin/psql",
                 "-h", host,
                 "-p", port,
                 "-U", user,

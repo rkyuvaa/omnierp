@@ -42,7 +42,7 @@ def create_backup():
         os.environ['PGPASSWORD'] = password
         
         dump_cmd = [
-            "pg_dump",
+            "/usr/bin/pg_dump",
             "-h", str(host),
             "-p", port,
             "-U", str(user),
