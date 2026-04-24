@@ -86,9 +86,32 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
   const [showPanel, setShowPanel] = useState(false);
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
+  const [allFields, setAllFields] = useState(columns); // start with standard columns
   
   const panelRef = useRef(null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    // If module is set, fetch custom fields from studio layout
+    if (module && module !== 'default') {
+      import('../utils/api').then(({ default: api }) => {
+        api.get(`/studio/layout/${module}/tabs`).then(res => {
+          let extraFields = [];
+          res.data.forEach(tab => {
+            (tab.fields || []).forEach(f => {
+              // Ensure we don't duplicate existing columns
+              if (!columns.some(c => c.key === f.field_name)) {
+                extraFields.push({ key: `custom_data__${f.field_name}`, label: `${f.field_label} (Custom)` });
+              }
+            });
+          });
+          setAllFields([...columns, ...extraFields]);
+        }).catch(err => console.log('Could not load custom fields for search', err));
+      });
+    } else {
+      setAllFields(columns);
+    }
+  }, [module, columns]);
 
   useEffect(() => {
     const handleClickOutside = (e) => {
@@ -315,7 +338,7 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
                   </div>
                 );
               })}
-              {columns && columns.length > 0 && (
+              {allFields && allFields.length > 0 && (
                 <div onClick={() => { setShowPanel(false); setShowFilterModal(true); }} style={{
                   padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: 'var(--text1)',
                   display: 'flex', alignItems: 'center', gap: 8, marginTop: 4
@@ -351,7 +374,7 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
                   </div>
                 );
               })}
-              {columns && columns.length > 0 && (
+              {allFields && allFields.length > 0 && (
                 <div onClick={() => { setShowPanel(false); setShowGroupModal(true); }} style={{
                   padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: 'var(--text1)',
                   display: 'flex', alignItems: 'center', gap: 8, marginTop: 4
@@ -368,10 +391,10 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
     </div>
     
     {showFilterModal && (
-      <FilterModal columns={columns} onClose={() => setShowFilterModal(false)} onApply={(tag) => { toggleTag(tag); setShowFilterModal(false); }} />
+      <FilterModal columns={allFields} onClose={() => setShowFilterModal(false)} onApply={(tag) => { toggleTag(tag); setShowFilterModal(false); }} />
     )}
     {showGroupModal && (
-      <GroupModal columns={columns} onClose={() => setShowGroupModal(false)} onApply={(tag) => { toggleTag(tag); setShowGroupModal(false); }} />
+      <GroupModal columns={allFields} onClose={() => setShowGroupModal(false)} onApply={(tag) => { toggleTag(tag); setShowGroupModal(false); }} />
     )}
     </>
   );

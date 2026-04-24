@@ -11,7 +11,11 @@ export function useList(endpoint, params = {}) {
   const load = useCallback(async (extra = {}) => {
     setLoading(true);
     try {
-      const r = await api.get(endpoint, { params: { skip: (page - 1) * 50, limit: 50, ...params, ...extra } });
+      const queryParams = { skip: (page - 1) * 50, limit: 50, ...params, ...extra };
+      if (queryParams.filters && typeof queryParams.filters === 'object') {
+        queryParams.filters = JSON.stringify(queryParams.filters);
+      }
+      const r = await api.get(endpoint, { params: queryParams });
       if (r.data.items !== undefined) { 
         setItems(r.data.items); 
         setTotal(r.data.total); 

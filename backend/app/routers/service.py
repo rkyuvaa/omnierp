@@ -82,15 +82,39 @@ def list_svc(
     extra_filters = {k: v for k, v in all_params.items() if k not in reserved}
 
     q = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff), joinedload(ServiceRequest.product))
-    
-    # Apply extra filters
-    for k, v in extra_filters.items():
-        if hasattr(ServiceRequest, k):
-            attr = getattr(ServiceRequest, k)
-            if v == 'null':
-                q = q.filter(attr == None)
-            else:
-                q = q.filter(attr == v)
+    import json
+    # Handle advanced JSON stringified filters
+    filters_param = all_params.get('filters')
+    if filters_param:
+        try:
+            advanced_filters = json.loads(filters_param)
+            for k, rules in advanced_filters.items():
+                # rules is either a simple value, or a list of [{op: '=', val: '...'}, ...]
+                if not isinstance(rules, list):
+                    # Fallback for simple filter
+                    rules = [{'op': '=', 'val': rules}]
+                
+                for rule in rules:
+                    op = rule.get('op', '=')
+                    val = rule.get('val')
+                    if val is None or val == '': continue
+                    
+                    # Resolve column attribute (standard or JSON custom_data)
+                    attr = None
+                    if hasattr(ServiceRequest, k):
+                        attr = getattr(ServiceRequest, k)
+                    elif k.startswith("custom_data__"):
+                        json_key = k.replace("custom_data__", "")
+                        attr = ServiceRequest.custom_data[json_key].astext
+                    
+                    if attr is not None:
+                        if op == '=': q = q.filter(attr == val)
+                        elif op == '!=': q = q.filter(attr != val)
+                        elif op == 'ilike': q = q.filter(attr.ilike(f"%{val}%"))
+                        elif op == '>': q = q.filter(attr > val)
+                        elif op == '<': q = q.filter(attr < val)
+        except Exception as e:
+            print("Error parsing advanced filters:", e)
 
     if search: 
         q = q.filter(or_(
