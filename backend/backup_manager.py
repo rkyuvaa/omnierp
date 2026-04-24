@@ -104,10 +104,71 @@ def delete_old_backups(keep=7):
             if os.path.exists(path):
                 os.remove(path)
 
+def restore_backup_from_file(zip_path):
+    temp_extract = os.path.join(BACKUP_DIR, "temp_cli_extract")
+    if os.path.exists(temp_extract):
+        shutil.rmtree(temp_extract)
+    os.makedirs(temp_extract)
+    
+    try:
+        # 1. Extract the bundle
+        with zipfile.ZipFile(zip_path, 'r') as zipf:
+            zipf.extractall(temp_extract)
+        
+        # 2. Restore Database
+        sql_file = os.path.join(temp_extract, "database.sql")
+        if os.path.exists(sql_file):
+            db_params = get_db_params()
+            if not db_params:
+                return "Database config error"
+            
+            user, password, host, port, dbname = db_params
+            os.environ['PGPASSWORD'] = password
+            
+            restore_cmd = [
+                "/usr/bin/psql",
+                "-h", str(host),
+                "-p", str(port) if port else "5432",
+                "-U", str(user),
+                "-d", str(dbname),
+                "-f", sql_file
+            ]
+            result = subprocess.run(restore_cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                return f"Database restore failed: {result.stderr}"
+        
+        # 3. Restore Files
+        uploads_zip = os.path.join(temp_extract, "uploads.zip")
+        if os.path.exists(uploads_zip):
+            if not os.path.exists(UPLOADS_DIR):
+                os.makedirs(UPLOADS_DIR)
+            with zipfile.ZipFile(uploads_zip, 'r') as zipf:
+                zipf.extractall(UPLOADS_DIR)
+        
+        return None
+        
+    finally:
+        if os.path.exists(temp_extract):
+            shutil.rmtree(temp_extract)
+
 if __name__ == "__main__":
-    name, err = create_backup()
-    if err:
-        print(f"Error: {err}")
+    import sys
+    if "--restore" in sys.argv:
+        idx = sys.argv.index("--restore")
+        if idx + 1 < len(sys.argv):
+            path = sys.argv[idx+1]
+            print(f"Restoring from {path}...")
+            err = restore_backup_from_file(path)
+            if err:
+                print(f"Error: {err}")
+            else:
+                print("Restore completed successfully.")
+        else:
+            print("Usage: python backup_manager.py --restore <path_to_zip>")
     else:
-        print(f"Backup created: {name}")
-        delete_old_backups()
+        name, err = create_backup()
+        if err:
+            print(f"Error: {err}")
+        else:
+            print(f"Backup created: {name}")
+            delete_old_backups()
