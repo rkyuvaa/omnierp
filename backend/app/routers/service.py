@@ -82,12 +82,25 @@ def list_svc(
     extra_filters = {k: v for k, v in all_params.items() if k not in reserved}
 
     q = db.query(ServiceRequest).options(joinedload(ServiceRequest.stage), joinedload(ServiceRequest.staff), joinedload(ServiceRequest.product))
+    
+    # Apply simple extra filters first
+    for k, v in extra_filters.items():
+        if hasattr(ServiceRequest, k):
+            attr = getattr(ServiceRequest, k)
+            if v == 'null':
+                q = q.filter(attr == None)
+            else:
+                q = q.filter(attr == v)
+                
     import json
+    import urllib.parse
     # Handle advanced JSON stringified filters
     filters_param = all_params.get('filters')
     if filters_param:
         try:
-            advanced_filters = json.loads(filters_param)
+            # Safely unquote just in case it wasn't decoded by FastAPI
+            decoded_param = urllib.parse.unquote(filters_param)
+            advanced_filters = json.loads(decoded_param)
             for k, rules in advanced_filters.items():
                 # rules is either a simple value, or a list of [{op: '=', val: '...'}, ...]
                 if not isinstance(rules, list):
