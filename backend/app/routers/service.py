@@ -167,6 +167,8 @@ def list_svc(
         
         grouped_list = [{"group": k, "items": v} for k, v in groups.items()]
         return {"total": total, "items": grouped_list, "stage_counts": stage_counts, "is_grouped": True}
+        
+    return {"total": total, "items": serialized, "stage_counts": stage_counts}
 
 class AISearchIn(BaseModel):
     query: str
