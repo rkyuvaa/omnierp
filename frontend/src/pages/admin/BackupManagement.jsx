@@ -33,7 +33,8 @@ export default function BackupManagement() {
       toast.success('Backup snapshot created successfully');
       fetchBackups();
     } catch (error) {
-      toast.error('Failed to create backup');
+      const msg = error.response?.data?.detail || 'Failed to create backup';
+      toast.error(msg);
     } finally {
       setGenerating(false);
     }

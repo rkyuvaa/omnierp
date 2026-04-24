@@ -12,17 +12,12 @@ def ensure_backup_dir():
     if not os.path.exists(BACKUP_DIR):
         os.makedirs(BACKUP_DIR)
 
+from sqlalchemy.engine import make_url
+
 def get_db_params():
-    # DATABASE_URL: "postgresql://erp_user:password@localhost:5432/erp_db"
-    url = settings.DATABASE_URL
-    # Basic parsing
     try:
-        parts = url.split("://")[1]
-        user_pass, host_db = parts.split("@")
-        user, password = user_pass.split(":")
-        host_port, dbname = host_db.split("/")
-        host, port = host_port.split(":") if ":" in host_port else (host_port, "5432")
-        return user, password, host, port, dbname
+        url = make_url(settings.DATABASE_URL)
+        return url.username, url.password, url.host, url.port, url.database
     except Exception as e:
         print(f"Error parsing DATABASE_URL: {e}")
         return None
@@ -40,6 +35,7 @@ def create_backup():
             return None, "Failed to parse database configuration"
         
         user, password, host, port, dbname = db_params
+        port = str(port) if port else "5432"
         sql_file = os.path.join(temp_dir, "database.sql")
         
         # Set environment variable for password to avoid interactive prompt
@@ -47,16 +43,18 @@ def create_backup():
         
         dump_cmd = [
             "pg_dump",
-            "-h", host,
+            "-h", str(host),
             "-p", port,
-            "-U", user,
+            "-U", str(user),
             "-f", sql_file,
-            dbname
+            str(dbname)
         ]
         
         result = subprocess.run(dump_cmd, capture_output=True, text=True)
         if result.returncode != 0:
-            return None, f"pg_dump failed: {result.stderr}"
+            error_msg = result.stderr if result.stderr else "Unknown error"
+            print(f"pg_dump error: {error_msg}")
+            return None, f"Database backup failed: {error_msg}"
         
         # 2. Archive Uploads
         uploads_zip = os.path.join(temp_dir, "uploads.zip")
