@@ -20,7 +20,7 @@ export default function ModuleList({
   const [stageFilter, setStageFilter] = useState('');
   const [deleting, setDeleting] = useState(null);
   const stages = useStages(module);
-  const { items, total, loading, reload, stageCounts, page, setPage } = useList(endpoint, { ...extraFilters, ...searchParams.filters, search: searchParams.search, group_by: searchParams.group_by });
+  const { items, total, loading, reload, stageCounts, page, setPage } = useList(endpoint, { ...extraFilters, filters: searchParams.filters, search: searchParams.search, group_by: searchParams.group_by });
   const { user } = useAuth();
   const perms = user?.is_superadmin ? {can_read:true, can_create:true, can_edit:true, can_delete:true} : (user?.module_permissions?.[module] || {});
   const navigate = useNavigate();
@@ -28,18 +28,18 @@ export default function ModuleList({
 
   const handleSmartSearch = (params) => {
     setSearchParams(params);
-    reload({ ...extraFilters, ...params.filters, search: params.search, group_by: params.group_by, stage_id: stageFilter || undefined });
+    reload({ ...extraFilters, filters: params.filters, search: params.search, group_by: params.group_by, stage_id: stageFilter || undefined });
   };
 
   const handleStage = id => {
     const v = id === stageFilter ? '' : id;
     setStageFilter(v);
-    reload({ ...extraFilters, ...searchParams.filters, search: searchParams.search, group_by: searchParams.group_by, stage_id: v || undefined });
+    reload({ ...extraFilters, filters: searchParams.filters, search: searchParams.search, group_by: searchParams.group_by, stage_id: v || undefined });
   };
   const confirmDelete = async () => {
     await api.delete(`${endpoint}/${deleting}`);
     toast.success('Deleted'); setDeleting(null);
-    reload({ ...extraFilters, ...searchParams.filters, search: searchParams.search, group_by: searchParams.group_by, stage_id: stageFilter || undefined });
+    reload({ ...extraFilters, filters: searchParams.filters, search: searchParams.search, group_by: searchParams.group_by, stage_id: stageFilter || undefined });
   };
 
   if (!perms.can_read && !user?.is_superadmin) return <Layout title={title}><Empty message="Access Denied: You do not have permission to view this module." /></Layout>;

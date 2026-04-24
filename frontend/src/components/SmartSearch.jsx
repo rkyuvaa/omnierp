@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Filter, LayoutGrid, Check } from 'lucide-react';
+import { Search, X, Filter, LayoutGrid, Check, Star } from 'lucide-react';
 
 // Modal definition inside SmartSearch (inline to avoid dependency issues if Modal is missing)
 const FilterModal = ({ columns, onClose, onApply }) => {
@@ -88,8 +88,43 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [allFields, setAllFields] = useState(columns); // start with standard columns
   
+  const favKey = `omnierp_search_favs_${module}`;
+  const [favorites, setFavorites] = useState(() => {
+    try { return JSON.parse(localStorage.getItem(favKey)) || []; } catch { return []; }
+  });
+
   const panelRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Helper to serialize filters properly for the API
+  const serializeTagsForSearch = (newTags) => {
+    const searchValues = newTags.filter(t => t.type === 'field').map(t => `${t.key}:${t.value}`).join(' ');
+    const filterMap = {};
+    newTags.filter(t => t.type === 'filter').forEach(t => {
+      if (t.operator) {
+        if (!filterMap[t.key]) filterMap[t.key] = [];
+        filterMap[t.key].push({ op: t.operator, val: t.value });
+      } else {
+        filterMap[t.key] = t.value;
+      }
+    });
+
+    return {
+      search: searchValues,
+      filters: filterMap,
+      group_by: newTags.find(t => t.type === 'group')?.key || null,
+      rawTags: newTags
+    };
+  };
+
+  useEffect(() => {
+    // On initial load, apply default favorite if exists
+    const defaultFav = favorites.find(f => f.isDefault);
+    if (defaultFav && activeTags.length === 0) {
+      setActiveTags(defaultFav.tags);
+      onSearch(serializeTagsForSearch(defaultFav.tags));
+    }
+  }, []); // Run only once on mount
 
   useEffect(() => {
     // If module is set, fetch custom fields from studio layout
@@ -99,7 +134,6 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
           let extraFields = [];
           res.data.forEach(tab => {
             (tab.fields || []).forEach(f => {
-              // Ensure we don't duplicate existing columns
               if (!columns.some(c => c.key === f.field_name)) {
                 extraFields.push({ key: `custom_data__${f.field_name}`, label: `${f.field_label} (Custom)` });
               }
@@ -124,28 +158,34 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
   }, []);
 
   const triggerSearch = (newTags) => {
-    // Collect all field search values
-    const searchValues = newTags.filter(t => t.type === 'field').map(t => `${t.key}:${t.value}`).join(' ');
-    
-    // Collect specific filters into a map
-    const filterMap = {};
-    newTags.filter(t => t.type === 'filter').forEach(t => {
-      // Allow advanced operator structure if it has one
-      if (t.operator) {
-        if (!filterMap[t.key]) filterMap[t.key] = [];
-        filterMap[t.key].push({ op: t.operator, val: t.value });
-      } else {
-        filterMap[t.key] = t.value;
-      }
-    });
+    onSearch(serializeTagsForSearch(newTags));
+  };
 
-    const params = {
-      search: searchValues,
-      filters: filterMap,
-      group_by: newTags.find(t => t.type === 'group')?.key || null,
-      rawTags: newTags
-    };
-    onSearch(params);
+  const handleSaveSearch = () => {
+    const name = window.prompt("Enter a name for this search configuration:");
+    if (!name) return;
+    const isDefault = window.confirm("Make this the default search view? (It will automatically apply every time you open this page)");
+    
+    let newFavs = [...favorites];
+    if (isDefault) newFavs = newFavs.map(f => ({ ...f, isDefault: false })); // clear other defaults
+    
+    newFavs.push({ id: Date.now(), name, tags: activeTags, isDefault });
+    setFavorites(newFavs);
+    localStorage.setItem(favKey, JSON.stringify(newFavs));
+    setShowPanel(false);
+  };
+  
+  const applyFavorite = (fav) => {
+    setActiveTags(fav.tags);
+    triggerSearch(fav.tags);
+    setShowPanel(false);
+  };
+
+  const deleteFavorite = (e, id) => {
+    e.stopPropagation();
+    const newFavs = favorites.filter(f => f.id !== id);
+    setFavorites(newFavs);
+    localStorage.setItem(favKey, JSON.stringify(newFavs));
   };
 
   const toggleTag = (tag) => {
@@ -383,6 +423,35 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
                   Add Custom Group...
                 </div>
               )}
+            </div>
+          </>
+
+          {/* 4. Favorites & Save Section */}
+          <>
+            <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Favorites
+            </div>
+            <div style={{ padding: '4px 8px' }}>
+              {favorites.map((f) => (
+                <div key={f.id} onClick={() => applyFavorite(f)} style={{
+                  padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                  display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                  color: 'var(--text1)'
+                }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Star size={14} color={f.isDefault ? "#eab308" : "var(--text3)"} fill={f.isDefault ? "#eab308" : "none"} />
+                    {f.name} {f.isDefault && <span style={{ fontSize: 10, color: '#eab308' }}>(Default)</span>}
+                  </div>
+                  <X size={14} color="#ef4444" style={{ opacity: 0.6 }} onClick={(e) => deleteFavorite(e, f.id)} />
+                </div>
+              ))}
+              <div onClick={handleSaveSearch} style={{
+                padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13, color: 'var(--text1)',
+                display: 'flex', alignItems: 'center', gap: 8, marginTop: 4
+              }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                <Star size={14} color="var(--text3)" />
+                Save Current Search...
+              </div>
             </div>
           </>
 
