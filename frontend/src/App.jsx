@@ -24,6 +24,7 @@ import Roles from './pages/admin/Roles';
 import Branches from './pages/admin/Branches';
 import Modules from './pages/admin/Modules';
 import AuditLog from './pages/admin/AuditLog';
+import BackupManagement from './pages/admin/BackupManagement';
 
 // Integrated PrivateRoute
 const PrivateRoute = ({ children }) => {
@@ -57,6 +58,7 @@ export default function App() {
           <Route path="/admin/branches" element={<PrivateRoute><Branches /></PrivateRoute>} />
           <Route path="/admin/roles" element={<PrivateRoute><Roles /></PrivateRoute>} />
           <Route path="/admin/modules" element={<PrivateRoute><Modules /></PrivateRoute>} />
+          <Route path="/admin/backups" element={<PrivateRoute><BackupManagement /></PrivateRoute>} />
           <Route path="/audit" element={<PrivateRoute><AuditLog /></PrivateRoute>} />
           <Route path="/studio" element={<PrivateRoute><Studio /></PrivateRoute>} />
         </Routes>

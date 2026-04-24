@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from fastapi.staticfiles import StaticFiles
 import os
-from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix
+from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin
 
 app = FastAPI(title="OmniERP API", version="1.0.0")
 
@@ -38,6 +38,7 @@ app.include_router(crm_layout.router, prefix="/api/crm-layout", tags=["crm-layou
 app.include_router(forms.router, prefix="/api/forms", tags=["Forms"])
 app.include_router(konwertcare.router, prefix="/api/konwertcare", tags=["konwertcare"])
 app.include_router(issue_matrix.router, prefix="/api/issue-matrix", tags=["issue-matrix"])
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 
 
 from fastapi.responses import FileResponse

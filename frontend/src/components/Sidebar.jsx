@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench,  Settings, LogOut, Layers, Shield, GitBranch, ClipboardList, Package, ShieldCheck, HeartPulse } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench,  Settings, LogOut, Layers, Shield, GitBranch, ClipboardList, Package, ShieldCheck, HeartPulse, Database } from 'lucide-react';
 
 const mainItems = [{to:'/',label:'Dashboard',icon:LayoutDashboard}];
 const moduleItems = [
@@ -14,8 +14,10 @@ const adminItems = [
   {to:'/admin/users',label:'User Management',icon:Users},
   {to:'/warranty/bom',label:'BOM Master',icon:Package},
   {to:'/studio',label:'Studio',icon:Settings},
+  {to:'/admin/backups',label:'System Backup',icon:Database},
   {to:'/audit',label:'Audit Log',icon:ClipboardList}
 ];
+
 
 const NavItem=({to,label,icon:Icon,active})=>(<Link to={to} className={`nav-item ${active?'active':''}`} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,textDecoration:'none',fontSize:14,fontWeight:active?600:500,color:active?'#ffffff':'var(--text2)',background:active?'var(--accent)':'transparent',transition:'all 0.15s'}} onMouseEnter={e=>{if(!active){e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)';}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)';}}}><Icon size={18} style={{opacity:active?1:0.8}}/>{label}</Link>);
 
