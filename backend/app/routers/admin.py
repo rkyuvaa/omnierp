@@ -22,12 +22,17 @@ def generate_backup(cu=Depends(get_current_user)):
     if not cu.is_superadmin:
         raise HTTPException(status_code=403, detail="Only superadmins can manage backups")
     
-    name, err = create_backup()
-    if err:
-        raise HTTPException(status_code=500, detail=err)
-    
-    delete_old_backups()
-    return {"message": "Backup created successfully", "filename": name}
+    try:
+        name, err = create_backup()
+        if err:
+            raise HTTPException(status_code=500, detail=err)
+        
+        delete_old_backups()
+        return {"message": "Backup created successfully", "filename": name}
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")
 
 @router.get("/backups/{filename}/download")
 def download_backup(filename: str, cu=Depends(get_current_user)):
