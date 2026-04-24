@@ -1,6 +1,6 @@
 from app.database import SessionLocal, engine, Base
 from app.models import User, Role
-from app.auth import get_password_hash
+from app.auth import hash_password
 import sys
 
 def init_fresh_db():
@@ -19,7 +19,7 @@ def init_fresh_db():
         admin_user = User(
             email="admin@erp.com",
             name="Super Admin",
-            hashed_password=get_password_hash("admin123"),
+            hashed_password=hash_password("admin123"),
             is_active=True,
             is_superadmin=True
         )
