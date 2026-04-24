@@ -55,6 +55,7 @@ export default function ModuleList({
             onSearch={handleSmartSearch} 
             filters={filters} 
             groupBys={groupBys} 
+            columns={columns}
             placeholder={`Search ${title}...`} 
           />
         </div>
