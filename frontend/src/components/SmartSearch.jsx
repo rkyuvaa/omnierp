@@ -1,110 +1,54 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Filter, LayoutGrid, ChevronDown, Check, Star, Plus, Wand2 } from 'lucide-react';
-import api from '../utils/api';
-import toast from 'react-hot-toast';
+import { Search, X, Filter, LayoutGrid, Check } from 'lucide-react';
 
 export default function SmartSearch({ module = 'default', onSearch, filters = [], groupBys = [], placeholder = "Search..." }) {
   const [inputValue, setInputValue] = useState('');
-  const [activeTags, setActiveTags] = useState([]); // { type: 'filter|group|search', label, key, value }
+  const [activeTags, setActiveTags] = useState([]); // { type: "filter" | "group" | "field", label: "...", key: "...", value: "..." }
   const [showPanel, setShowPanel] = useState(false);
-  const [isAiMode, setIsAiMode] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const panelRef = useRef(null);
   
-  const favKey = `omnierp_search_favs_${module}`;
-  const [favorites, setFavorites] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(favKey)) || []; } catch { return []; }
-  });
+  const panelRef = useRef(null);
+  const inputRef = useRef(null);
 
   useEffect(() => {
-    // On initial load, apply default favorite if exists
-    const defaultFav = favorites.find(f => f.isDefault);
-    if (defaultFav && activeTags.length === 0) {
-      setActiveTags(defaultFav.tags);
-      triggerSearch(defaultFav.tags);
-    }
-    
     const handleClickOutside = (e) => {
-      if (panelRef.current && !panelRef.current.contains(e.target)) setShowPanel(false);
+      if (panelRef.current && !panelRef.current.contains(e.target)) {
+        setShowPanel(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const triggerSearch = (newTags) => {
+    // Collect all field search values
+    const searchValues = newTags.filter(t => t.type === 'field').map(t => `${t.key}:${t.value}`).join(' ');
+    
+    // Collect specific filters into a map
+    const filterMap = {};
+    newTags.filter(t => t.type === 'filter').forEach(t => {
+      filterMap[t.key] = t.value;
+    });
+
     const params = {
-      search: newTags.filter(t => t.type === 'search').map(t => t.value).join(' '),
-      filters: newTags.filter(t => t.type === 'filter').reduce((acc, t) => ({ ...acc, [t.key]: t.value }), {}),
-      group_by: newTags.find(t => t.type === 'group')?.key || null
+      search: searchValues,
+      filters: filterMap,
+      group_by: newTags.find(t => t.type === 'group')?.key || null,
+      rawTags: newTags // In case parent wants to do advanced AND/OR parsing
     };
     onSearch(params);
   };
 
-  const handleAiSearch = async () => {
-    if (!inputValue.trim()) return;
-    setIsSearching(true);
-    try {
-      const response = await api.post(`/${module}/ai-search`, { query: inputValue });
-      const parsed = response.data;
-      
-      let nextTags = [...activeTags];
-      
-      // Add Active Filters from AI
-      (parsed.active_filters || []).forEach(f => {
-        const filterDef = filters.find(flt => flt.label === f || flt.key === f);
-        if (filterDef) {
-          nextTags.push({ type: 'filter', label: filterDef.label, key: filterDef.key, value: filterDef.value });
-        } else {
-           nextTags.push({ type: 'filter', label: `Filter: ${f}`, key: f, value: 'true' });
-        }
-      });
-      
-      // Add Group Bys from AI
-      if (parsed.group_by && parsed.group_by.length > 0) {
-        nextTags = nextTags.filter(t => t.type !== 'group'); // clear existing groups
-        const g = parsed.group_by[0];
-        const groupDef = groupBys.find(gb => gb.label === g || gb.key === g);
-        if (groupDef) {
-           nextTags.push({ type: 'group', label: groupDef.label, key: groupDef.key });
-        } else {
-           nextTags.push({ type: 'group', label: `Group By: ${g}`, key: g });
-        }
-      }
-      
-      setActiveTags(nextTags);
-      triggerSearch(nextTags);
-      setInputValue('');
-      setIsAiMode(false);
-      if (parsed.explanation) toast.success(`AI: ${parsed.explanation}`);
-    } catch (error) {
-      toast.error("AI couldn't process the query. Ensure the backend endpoint is configured.");
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const addSearchTag = () => {
-    if (!inputValue.trim()) return;
-    if (isAiMode) {
-      handleAiSearch();
-      return;
-    }
-    const newTag = { type: 'search', label: `"${inputValue}"`, value: inputValue };
-    const nextTags = [...activeTags, newTag];
-    setActiveTags(nextTags);
-    setInputValue('');
-    triggerSearch(nextTags);
-  };
-
-
   const toggleTag = (tag) => {
-    const exists = activeTags.find(t => t.key === tag.key && t.type === tag.type);
+    const exists = activeTags.find(t => t.key === tag.key && t.type === tag.type && t.value === tag.value);
     let nextTags;
     if (exists) {
-      nextTags = activeTags.filter(t => !(t.key === tag.key && t.type === tag.type));
+      nextTags = activeTags.filter(t => !(t.key === tag.key && t.type === tag.type && t.value === tag.value));
     } else {
-      if (tag.type === 'group') nextTags = activeTags.filter(t => t.type !== 'group'); // Only one group by
-      else nextTags = [...activeTags];
+      if (tag.type === 'group') {
+        nextTags = activeTags.filter(t => t.type !== 'group'); // Only one group by
+      } else {
+        nextTags = [...activeTags];
+      }
       nextTags.push(tag);
     }
     setActiveTags(nextTags);
@@ -116,229 +60,219 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
     setActiveTags(nextTags);
     triggerSearch(nextTags);
   };
-
-  const handleAddCustomFilter = () => {
-    const key = window.prompt("Enter field name to filter by (e.g. priority):");
-    if (!key) return;
-    const val = window.prompt(`Enter value for ${key}:`);
-    if (val === null) return;
-    toggleTag({ type: 'filter', label: `${key}: ${val}`, key, value: val });
-  };
-
-  const handleAddCustomGroup = () => {
-    const key = window.prompt("Enter field name to group by (e.g. stage_id):");
-    if (!key) return;
-    toggleTag({ type: 'group', label: `Group By: ${key}`, key });
-  };
-
-  const handleSaveSearch = () => {
-    const name = window.prompt("Enter a name for this search:");
-    if (!name) return;
-    const isDefault = window.confirm("Make this the default search view?");
-    
-    let newFavs = [...favorites];
-    if (isDefault) newFavs = newFavs.map(f => ({ ...f, isDefault: false })); // clear other defaults
-    
-    newFavs.push({ id: Date.now(), name, tags: activeTags, isDefault });
-    setFavorites(newFavs);
-    localStorage.setItem(favKey, JSON.stringify(newFavs));
-  };
   
-  const applyFavorite = (fav) => {
-    setActiveTags(fav.tags);
-    triggerSearch(fav.tags);
-    setShowPanel(false);
+  const clearAll = () => {
+    setActiveTags([]);
+    triggerSearch([]);
+    setInputValue('');
+  }
+
+  const isSelected = (tag) => activeTags.some(t => t.key === tag.key && t.type === tag.type && t.value === tag.value);
+
+  // Map tag types to their specific colors
+  const getColor = (type) => {
+    if (type === 'filter') return { bg: '#e0f2fe', text: '#0284c7', border: '#bae6fd' }; // Blue chips
+    if (type === 'group') return { bg: '#dcfce7', text: '#16a34a', border: '#bbf7d0' };  // Green chips
+    if (type === 'field') return { bg: '#f3e8ff', text: '#9333ea', border: '#e9d5ff' };  // Purple chips
+    return { bg: 'var(--bg3)', text: 'var(--text1)', border: 'transparent' };
   };
 
-  const deleteFavorite = (e, id) => {
-    e.stopPropagation();
-    const newFavs = favorites.filter(f => f.id !== id);
-    setFavorites(newFavs);
-    localStorage.setItem(favKey, JSON.stringify(newFavs));
-  };
-
-  const isSelected = (tag) => activeTags.some(t => t.key === tag.key && t.type === tag.type);
+  // Predefined search fields available when typing
+  const searchFields = [
+    { label: 'Name', key: 'name' },
+    { label: 'Customer', key: 'customer_name' },
+    { label: 'Reference', key: 'reference' }
+  ];
 
   return (
     <div className="smart-search-container" ref={panelRef} style={{ position: 'relative', width: '100%', marginBottom: 16 }}>
-      {/* Search Bar */}
-      <div className="search-bar" style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 6,
-        flexWrap: 'wrap',
-        minHeight: 40,
-        padding: '4px 12px'
+      
+      {/* Search Bar Container */}
+      <div 
+        className="search-bar" 
+        onClick={() => { setShowPanel(true); inputRef.current?.focus(); }}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 6,
+          flexWrap: 'wrap',
+          minHeight: 40,
+          padding: '6px 12px',
+          background: 'var(--bg1)',
+          border: '1px solid var(--border)',
+          borderRadius: 8,
+          cursor: 'text',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
       }}>
-        <Search size={16} color="var(--text3)" />
+        <Search size={16} color="var(--text3)" style={{ flexShrink: 0 }} />
         
-        {activeTags.map((tag, i) => (
-          <div key={i} style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 4,
-            background: tag.type === 'filter' ? '#714b6722' : tag.type === 'group' ? '#00a09d22' : 'var(--bg3)',
-            color: tag.type === 'filter' ? '#714b67' : tag.type === 'group' ? '#00a09d' : 'var(--text1)',
-            padding: '1px 8px',
-            borderRadius: 4,
-            fontSize: 12,
-            fontWeight: 600,
-            border: `1px solid ${tag.type === 'filter' ? '#714b6744' : tag.type === 'group' ? '#00a09d44' : 'transparent'}`
-          }}>
-            {tag.label}
-            <X size={12} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={() => removeTag(i)} />
-          </div>
-        ))}
+        {/* Active Tokens */}
+        {activeTags.map((tag, i) => {
+          const colors = getColor(tag.type);
+          return (
+            <div key={i} style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              background: colors.bg,
+              color: colors.text,
+              padding: '2px 8px',
+              borderRadius: 4,
+              fontSize: 12,
+              fontWeight: 600,
+              border: `1px solid ${colors.border}`,
+              whiteSpace: 'nowrap'
+            }}>
+              {tag.label}
+              <X size={12} style={{ cursor: 'pointer', opacity: 0.7 }} onClick={(e) => { e.stopPropagation(); removeTag(i); }} />
+            </div>
+          );
+        })}
 
+        {/* Input Field (cursor after last token) */}
         <input
+          ref={inputRef}
           value={inputValue}
-          onChange={e => setInputValue(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && addSearchTag()}
-          placeholder={activeTags.length === 0 ? (isAiMode ? "Ask AI to search..." : placeholder) : ''}
+          onChange={e => {
+            setInputValue(e.target.value);
+            setShowPanel(true);
+          }}
+          onFocus={() => setShowPanel(true)}
+          placeholder={activeTags.length === 0 ? placeholder : ''}
           style={{
             flex: 1,
             border: 'none',
             outline: 'none',
             background: 'transparent',
-            padding: '6px 0',
+            padding: '2px 0',
             fontSize: 13,
             minWidth: 100,
-            color: isAiMode ? '#8e44ad' : 'inherit'
+            color: 'var(--text1)'
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Backspace' && inputValue === '' && activeTags.length > 0) {
+              removeTag(activeTags.length - 1);
+            }
           }}
         />
 
-        {isSearching && <div className="spinner" style={{ width: 14, height: 14, marginRight: 8 }}></div>}
-
-        <button 
-          onClick={() => { setIsAiMode(!isAiMode); if(!isAiMode) setInputValue(''); }}
-          title="AI Search"
-          style={{
-            border: 'none',
-            background: isAiMode ? '#8e44ad22' : 'transparent',
-            borderRadius: 4,
-            padding: '4px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            color: isAiMode ? '#8e44ad' : 'var(--text3)'
-          }}
-        >
-          <Wand2 size={16} />
-        </button>
-
-        <button 
-          onClick={() => setShowPanel(!showPanel)}
-          style={{
-            border: 'none',
-            background: showPanel ? 'var(--bg3)' : 'transparent',
-            borderRadius: 4,
-            padding: '4px 8px',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            color: 'var(--text2)'
-          }}
-        >
-          <ChevronDown size={16} style={{ transform: showPanel ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-        </button>
+        {/* Clear All Button */}
+        {activeTags.length > 0 && (
+          <button 
+            onClick={(e) => { e.stopPropagation(); clearAll(); }}
+            title="Clear all"
+            style={{ border: 'none', background: 'transparent', cursor: 'pointer', padding: '4px', display: 'flex', alignItems: 'center', color: 'var(--text3)' }}
+          >
+            <X size={16} />
+          </button>
+        )}
       </div>
 
-      {/* Odoo-style Dropdown Panel */}
+      {/* Vertical Dropdown Panel */}
       {showPanel && (
         <div style={{
           position: 'absolute',
           top: '100%',
-          right: 0,
           left: 0,
+          right: 0,
           marginTop: 4,
-          background: '#ffffff', // Force solid white background
+          background: 'var(--card-bg)',
           border: '1px solid var(--border)',
-          borderRadius: 4,
-          boxShadow: '0 12px 40px rgba(0,0,0,0.25)', // Stronger shadow for depth
-          zIndex: 99999, // Ensure it's above everything
-          display: 'grid',
-          gridTemplateColumns: '1fr 1fr 1fr',
-          padding: '20px 24px',
-          gap: 24,
-          minWidth: 600
+          borderRadius: 8,
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          zIndex: 1000,
+          display: 'flex',
+          flexDirection: 'column',
+          maxHeight: 400,
+          overflowY: 'auto',
+          padding: '8px 0'
         }}>
-          {/* Column 1: Filters */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#714b67', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-              <Filter size={16} fill="#714b67" /> Filters
-            </div>
-            {filters.map((f, i) => {
-              const tag = { type: 'filter', ...f };
-              const active = isSelected(tag);
-              return (
-                <div key={i} onClick={() => toggleTag(tag)} style={{
-                  padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13,
-                  background: active ? 'var(--bg3)' : 'transparent',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.background = active ? 'var(--bg3)' : 'transparent'}>
-                  {f.label}
-                  {active && <Check size={14} color="#714b67" />}
-                </div>
-              );
-            })}
-            <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
-              <div onClick={handleAddCustomFilter} style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)' }}>
-                Add Custom Filter...
+          
+          {/* 1. Dynamic Search Fields Section (Only shows when typing) */}
+          {inputValue.trim() && (
+            <>
+              <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Search for "{inputValue}" in
               </div>
-            </div>
-          </div>
+              <div style={{ padding: '4px 8px' }}>
+                {searchFields.map((f, i) => (
+                  <div key={i} onClick={() => {
+                    toggleTag({ type: 'field', label: `${f.label}: ${inputValue}`, key: f.key, value: inputValue });
+                    setInputValue('');
+                  }} style={{
+                    padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                    display: 'flex', alignItems: 'center', gap: 8, color: 'var(--text1)'
+                  }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                    <Search size={14} color="var(--text3)" />
+                    Search <strong>{f.label}</strong> for "{inputValue}"
+                  </div>
+                ))}
+              </div>
+              <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }}></div>
+            </>
+          )}
 
-          {/* Column 2: Group By */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '1px solid var(--border)', paddingLeft: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#00a09d', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-              <LayoutGrid size={16} fill="#00a09d" /> Group By
-            </div>
-            {groupBys.map((g, i) => {
-              const tag = { type: 'group', ...g };
-              const active = isSelected(tag);
-              return (
-                <div key={i} onClick={() => toggleTag(tag)} style={{
-                  padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13,
-                  background: active ? 'var(--bg3)' : 'transparent',
-                  display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-                }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.background = active ? 'var(--bg3)' : 'transparent'}>
-                  {g.label}
-                  {active && <Check size={14} color="#00a09d" />}
-                </div>
-              );
-            })}
-            <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
-              <div onClick={handleAddCustomGroup} style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                Add Custom Group <ChevronDown size={14} />
+          {/* 2. Filters Section */}
+          {filters && filters.length > 0 && (
+            <>
+              <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Filters
               </div>
-            </div>
-          </div>
+              <div style={{ padding: '4px 8px' }}>
+                {filters.map((f, i) => {
+                  const tag = { type: 'filter', label: f.label, key: f.key, value: f.value };
+                  const active = isSelected(tag);
+                  return (
+                    <div key={i} onClick={() => toggleTag(tag)} style={{
+                      padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                      background: active ? '#e0f2fe' : 'transparent',
+                      color: active ? '#0284c7' : 'var(--text1)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }} onMouseEnter={e => !active && (e.currentTarget.style.background = 'var(--bg2)')} onMouseLeave={e => !active && (e.currentTarget.style.background = 'transparent')}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Filter size={14} color={active ? "#0284c7" : "var(--text3)"} />
+                        {f.label}
+                      </div>
+                      {active && <Check size={14} color="#0284c7" />}
+                    </div>
+                  );
+                })}
+              </div>
+              {groupBys && groupBys.length > 0 && (
+                <div style={{ height: 1, background: 'var(--border)', margin: '4px 0' }}></div>
+              )}
+            </>
+          )}
 
-          {/* Column 3: Favorites */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, borderLeft: '1px solid var(--border)', paddingLeft: 24 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#f1c40f', fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
-              <Star size={16} fill="#f1c40f" /> Favorites
-            </div>
-            
-            {favorites.map(fav => (
-              <div key={fav.id} onClick={() => applyFavorite(fav)} style={{
-                padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13,
-                display: 'flex', justifyContent: 'space-between', alignItems: 'center'
-              }} onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                <span>{fav.name} {fav.isDefault && <span style={{ fontSize: 10, opacity: 0.6, marginLeft: 6 }}>(Default)</span>}</span>
-                <X size={14} style={{ opacity: 0.5 }} onClick={(e) => deleteFavorite(e, fav.id)} />
+          {/* 3. Group By Section */}
+          {groupBys && groupBys.length > 0 && (
+            <>
+              <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Group By
               </div>
-            ))}
-            {favorites.length === 0 && (
-              <div style={{ padding: '6px 12px', fontSize: 13, color: 'var(--text3)', opacity: 0.6 }}>No saved searches</div>
-            )}
+              <div style={{ padding: '4px 8px' }}>
+                {groupBys.map((g, i) => {
+                  const tag = { type: 'group', label: `Group By: ${g.label}`, key: g.key };
+                  const active = isSelected(tag);
+                  return (
+                    <div key={i} onClick={() => { toggleTag(tag); setShowPanel(false); }} style={{
+                      padding: '8px 16px', borderRadius: 6, cursor: 'pointer', fontSize: 13,
+                      background: active ? '#dcfce7' : 'transparent',
+                      color: active ? '#16a34a' : 'var(--text1)',
+                      display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                    }} onMouseEnter={e => !active && (e.currentTarget.style.background = 'var(--bg2)')} onMouseLeave={e => !active && (e.currentTarget.style.background = 'transparent')}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <LayoutGrid size={14} color={active ? "#16a34a" : "var(--text3)"} />
+                        {g.label}
+                      </div>
+                      {active && <Check size={14} color="#16a34a" />}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
 
-            <div style={{ borderTop: '1px solid var(--border)', marginTop: 4, paddingTop: 8 }}>
-              <div onClick={handleSaveSearch} style={{ padding: '6px 12px', borderRadius: 4, cursor: 'pointer', fontSize: 13, color: 'var(--text3)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                Save current search <ChevronDown size={14} />
-              </div>
-            </div>
-          </div>
         </div>
       )}
     </div>
