@@ -1,15 +1,22 @@
+import { useState } from 'react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../hooks/useAuth';
-import { User } from 'lucide-react';
+import { User, Menu } from 'lucide-react';
 
 export default function Layout({ children, title, headerTabs }) {
   const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+
   return (
     <div className="app-shell">
-      <Sidebar />
+      {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <div className="main-content">
         <div className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <button className="menu-toggle" onClick={() => setSidebarOpen(true)}>
+              <Menu size={20} />
+            </button>
             <span className="topbar-title">{title}</span>
             {headerTabs && <div style={{ display: 'flex', gap: 4 }}>{headerTabs}</div>}
           </div>
