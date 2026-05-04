@@ -239,7 +239,7 @@ export default function IssueWorkMatrix() {
               </tr>
             ) : (
               rows.map((row, idx) => (
-                <tr key={row.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.1s' }}
+                <tr key={row.id} style={{ borderBottom: '1px solid var(--border)' }}
                   onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
                   onMouseLeave={e => e.currentTarget.style.background = ''}>
                   <td style={{ padding: '8px 12px', color: 'var(--text3)', fontWeight: 600 }}>{idx + 1}</td>

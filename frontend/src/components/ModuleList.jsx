@@ -47,6 +47,35 @@ export default function ModuleList({
   return (
     <Layout title={title} headerTabs={headerTabs}>
       {topContent && <div style={{ marginBottom: 16 }}>{topContent}</div>}
+
+      {showStages && stages && stages.length > 0 && (
+        <div className="stage-ribbon" style={{ display: 'flex', gap: 6, paddingBottom: 10, width: '100%', marginBottom: 16, flexWrap: 'wrap' }}>
+          {(allowedStages ? stages.filter(s => s.name && allowedStages.map(a => a.toUpperCase().trim()).includes(s.name.toUpperCase().trim())) : (stageLimit ? stages.slice(stageLimit) : stages)).map(s => { const sc = stageCounts ? (stageCounts[String(s.id)] || 0) : s.count; return (
+            <div key={s.id} onClick={() => handleStage(s.id)}
+              style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
+                padding: '10px 12px', borderRadius: 20, cursor: 'pointer', flex: 1, minWidth: '95px',
+                height: 72, textAlign: 'center',
+                border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
+                background: stageFilter === s.id ? s.color : (s.color + '15'),
+                color: stageFilter === s.id ? '#ffffff' : s.color,
+                boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
+              }}>
+              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
+              <span style={{ 
+                fontSize: 14, fontWeight: 900,
+                background: '#ffffff', color: s.color,
+                minWidth: 26, height: 26, borderRadius: 13,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0 4px',
+                marginTop: 'auto'
+              }}>
+                {sc}
+              </span>
+            </div>
+          );})}
+        </div>
+      )}
       
       <div className="toolbar" style={{ marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-start', position: 'relative', zIndex: 1000 }}>
         <div style={{ flex: 1 }}>
@@ -66,7 +95,7 @@ export default function ModuleList({
               <button className="btn btn-danger btn-sm" style={{ fontWeight: 600, letterSpacing: '0.5px' }} onClick={async () => {
                 if(!window.confirm(`Permanently wipe ${selected.length} records off the Global Database?`)) return;
                 try {
-                  const results = await Promise.all(selected.map(id => api.delete(`${endpoint}/${id}`)));
+                  const results = await Promise.all((selected || []).map(id => api.delete(`${endpoint}/${id}`)));
                   toast.success('Batch Deletion Process Completed.');
                   setSelected([]); reload();
                 } catch { toast.error('Partial Error: Access Restrictions Hit.'); }
@@ -86,42 +115,9 @@ export default function ModuleList({
       </div>
 
       <div className="card">
-        <div className="card-header" style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+        <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 16 }}>
             <span className="card-title" style={{ fontSize: 18, fontWeight: 700 }}>{title}</span>
             <span className="text-muted text-sm" style={{ fontWeight: 600, opacity: 0.7 }}>{total} records</span>
-          </div>
-
-          {showStages && stages && stages.length > 0 && (
-            <div className="stage-ribbon" style={{ display: 'flex', gap: 6, paddingBottom: 10, width: '100%', marginTop: 8, flexWrap: 'wrap' }}>
-              {(allowedStages ? stages.filter(s => s.name && allowedStages.map(a => a.toUpperCase().trim()).includes(s.name.toUpperCase().trim())) : (stageLimit ? stages.slice(stageLimit) : stages)).map(s => { const sc = stageCounts ? (stageCounts[String(s.id)] || 0) : s.count; return (
-                <div key={s.id} onClick={() => handleStage(s.id)}
-                  style={{
-                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '10px 12px', borderRadius: 20, cursor: 'pointer', flex: 1, minWidth: '95px',
-                    height: 72, textAlign: 'center', transition: 'all 0.2s',
-                    border: `1.5px solid ${stageFilter === s.id ? s.color : (s.color + '40')}`,
-                    background: stageFilter === s.id ? s.color : (s.color + '15'),
-                    color: stageFilter === s.id ? '#ffffff' : s.color,
-                    boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
-                  }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
-                  <span style={{ 
-                    fontSize: 14, fontWeight: 900,
-                    background: '#ffffff', color: s.color,
-                    minWidth: 26, height: 26, borderRadius: 13,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 2px 4px rgba(0,0,0,0.1)', padding: '0 4px',
-                    marginTop: 'auto'
-                  }}>
-                    {sc}
-                  </span>
-                </div>
-              );})}
-            </div>
-          )}
-          
-          {headerContent && <div style={{ width: '100%' }}>{headerContent}</div>}
         </div>
         {loading ? <Loader /> : items.length === 0 ? <Empty /> : (<>
           <div className="table-wrap">
@@ -132,18 +128,18 @@ export default function ModuleList({
 {columns.map(c => <th key={c.key}>{c.label}</th>)}{showStages && <th>Stage</th>}<th>Created</th><th></th></tr></thead>
               <tbody>
                 {searchParams.group_by ? (
-                  items.map((group, gIdx) => (
+                  (items || []).map((group, gIdx) => (
                     <React.Fragment key={gIdx}>
                       <tr style={{ background: 'var(--bg3)', borderBottom: '2px solid var(--border)' }}>
-                        <td colSpan={columns.length + 5} style={{ padding: '8px 12px', fontWeight: 800, color: 'var(--accent)', fontSize: 13 }}>
-                          {group.group} ({group.items.length})
+                        <td colSpan={(columns || []).length + 5} style={{ padding: '8px 12px', fontWeight: 800, color: 'var(--accent)', fontSize: 13 }}>
+                          {group.group} ({group.items?.length || 0})
                         </td>
                       </tr>
-                      {group.items.map(row => (
+                      {(group.items || []).map(row => (
                         <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
                           <td><span className="ref-text">{row.reference}</span></td>
                           <td></td>
-                          {columns.map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
+                          {(columns || []).map(c => <td key={c.key} className={c.muted ? 'text-muted' : c.bold ? 'fw-600' : ''}>{row[c.key] || '—'}</td>)}
                           {showStages && <td>{row.stage_name && <Badge color={row.stage_color}>{row.stage_name}</Badge>}</td>}
                           <td className="text-muted text-sm">{row.created_at?.slice(0,10)}</td>
                           <td onClick={e => e.stopPropagation()}>
@@ -157,7 +153,7 @@ export default function ModuleList({
                     </React.Fragment>
                   ))
                 ) : (
-                  items.map(row => (
+                  (items || []).map(row => (
                     <tr key={row.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`${formPath}/${row.id}`)}>
                       <td><span className="ref-text">{row.reference}</span></td>
                       <td style={{ width: 40, textAlign: "center" }} onClick={e => e.stopPropagation()}>

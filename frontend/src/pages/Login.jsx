@@ -21,10 +21,9 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <div className="logo-icon">O</div>
+          <div className="logo-icon">K</div>
           <div>
-            <div className="logo-text">OmniERP</div>
-            <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: -2 }}>Enterprise Resource Platform</div>
+            <div className="logo-text">KIM ERP</div>
           </div>
         </div>
         <form onSubmit={handleSubmit}>

@@ -313,28 +313,27 @@ export default function ServiceForm() {
       </div>
       
       {!isNew && stages.length > 0 && (
-        <div style={{ marginBottom: 20, width: '100%', marginTop: -4 }}>
-          <div style={{ display: 'flex', gap: 10, width: '100%', padding: '4px 0' }}>
-            {stages.map(s => {
-              const isCurrent = form && String(form.stage_id) === String(s.id);
-              const stageColor = s.color || '#6366f1';
-              return (
-                <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
-                  style={{
-                    flex: 1, padding: '10px 4px', borderRadius: 50, textAlign: 'center', fontSize: 9.5, fontWeight: 800,
-                    cursor: isAdmin ? 'pointer' : 'default', textTransform: 'uppercase', letterSpacing: '0.5px',
-                    background: isCurrent ? stageColor : 'rgba(0,0,0,0.03)',
-                    color: isCurrent ? '#fff' : stageColor,
-                    border: `1.5px solid ${isCurrent ? 'transparent' : (s.color ? s.color + '33' : 'var(--border)')}`,
-                    opacity: isCurrent ? 1 : 0.7, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                    boxShadow: isCurrent ? `0 4px 15px ${stageColor}55` : 'none',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 34
-                  }}>
-                  {s.name}
-                </div>
-              );
-            })}
-          </div>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
+          {stages.map(s => {
+            const isCurrent = form && String(form.stage_id) === String(s.id);
+            const stageColor = s.color || '#6366f1';
+            return (
+              <div key={s.id} onClick={() => isAdmin && set('stage_id', s.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '4px 6px', borderRadius: 18, cursor: isAdmin ? "pointer" : "default", 
+                  flex: 1, height: 35,
+                  border: `1.5px solid ${isCurrent ? stageColor : (stageColor + '40')}`,
+                  background: isCurrent ? stageColor : 'transparent',
+                  color: isCurrent ? '#ffffff' : stageColor,
+                  boxShadow: isCurrent ? `0 3px 8px ${stageColor}40` : 'none',
+                  minWidth: 0, opacity: isCurrent ? 1 : 0.7,
+                  textAlign: 'center'
+                }}>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
+              </div>
+            );
+          })}
         </div>
       )}
 
