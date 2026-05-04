@@ -129,8 +129,8 @@ def get_lead(lid: int, db: Session = Depends(get_db), cu=Depends(get_current_use
 
 @router.get("/leads/{lid}/navigation")
 def get_lead_navigation(lid: int, db: Session = Depends(get_db)):
-    prev_id = db.query(Lead.id).filter(Lead.id < lid).order_by(Lead.id.desc()).first()
-    next_id = db.query(Lead.id).filter(Lead.id > lid).order_by(Lead.id.asc()).first()
+    prev_id = db.query(Lead.id).filter(Lead.id > lid).order_by(Lead.id.asc()).first()
+    next_id = db.query(Lead.id).filter(Lead.id < lid).order_by(Lead.id.desc()).first()
     return {
         "prev": prev_id[0] if prev_id else None,
         "next": next_id[0] if next_id else None

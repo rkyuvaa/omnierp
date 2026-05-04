@@ -80,6 +80,21 @@ export default function ServiceForm() {
       setLoading(false);
     }
   }, [id, isNew, loadTabs, loadStageRules]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'ArrowRight' && nav.next) {
+        setLoading(true);
+        navigate(`/service/${nav.next}`);
+      } else if (e.key === 'ArrowLeft' && nav.prev) {
+        setLoading(true);
+        navigate(`/service/${nav.prev}`);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nav, navigate]);
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => {
     setForm(f => {

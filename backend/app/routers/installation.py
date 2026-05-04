@@ -126,8 +126,8 @@ def get_installation(id: int, db: Session = Depends(get_db)):
 
 @router.get("/{id}/navigation")
 def get_installation_navigation(id: int, db: Session = Depends(get_db)):
-    prev_id = db.query(Installation.id).filter(Installation.id < id).order_by(Installation.id.desc()).first()
-    next_id = db.query(Installation.id).filter(Installation.id > id).order_by(Installation.id.asc()).first()
+    prev_id = db.query(Installation.id).filter(Installation.id > id).order_by(Installation.id.asc()).first()
+    next_id = db.query(Installation.id).filter(Installation.id < id).order_by(Installation.id.desc()).first()
     return {
         "prev": prev_id[0] if prev_id else None,
         "next": next_id[0] if next_id else None

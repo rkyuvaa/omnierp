@@ -120,8 +120,8 @@ def get_product(id: int, db: Session = Depends(get_db)):
 
 @router.get("/products/{id}/navigation")
 def get_product_navigation(id: int, db: Session = Depends(get_db)):
-    prev_id = db.query(Product.id).filter(Product.id < id).order_by(Product.id.desc()).first()
-    next_id = db.query(Product.id).filter(Product.id > id).order_by(Product.id.asc()).first()
+    prev_id = db.query(Product.id).filter(Product.id > id).order_by(Product.id.asc()).first()
+    next_id = db.query(Product.id).filter(Product.id < id).order_by(Product.id.desc()).first()
     return {
         "prev": prev_id[0] if prev_id else None,
         "next": next_id[0] if next_id else None

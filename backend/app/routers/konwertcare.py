@@ -130,8 +130,8 @@ def get_ticket(id: int, db: Session = Depends(get_db)):
 
 @router.get("/{id}/navigation")
 def get_ticket_navigation(id: int, db: Session = Depends(get_db)):
-    prev_id = db.query(KonwertCareTicket.id).filter(KonwertCareTicket.id < id).order_by(KonwertCareTicket.id.desc()).first()
-    next_id = db.query(KonwertCareTicket.id).filter(KonwertCareTicket.id > id).order_by(KonwertCareTicket.id.asc()).first()
+    prev_id = db.query(KonwertCareTicket.id).filter(KonwertCareTicket.id > id).order_by(KonwertCareTicket.id.asc()).first()
+    next_id = db.query(KonwertCareTicket.id).filter(KonwertCareTicket.id < id).order_by(KonwertCareTicket.id.desc()).first()
     return {
         "prev": prev_id[0] if prev_id else None,
         "next": next_id[0] if next_id else None

@@ -83,6 +83,21 @@ export default function InstallationForm() {
     }
   }, [id]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'ArrowRight' && nav.next) {
+        setLoading(true);
+        navigate(`/installation/${nav.next}`);
+      } else if (e.key === 'ArrowLeft' && nav.prev) {
+        setLoading(true);
+        navigate(`/installation/${nav.prev}`);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nav, navigate]);
+
   // Auto-select tab based on stage
   useEffect(() => {
     if (form?.stage_id && tabs.length > 0 && activeTab === 0) {

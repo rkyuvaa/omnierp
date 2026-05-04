@@ -61,6 +61,21 @@ export default function ProductDetail() {
     }
   }, [id, isNew, loadTabs, loadStageRules]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'ArrowRight' && nav.next) {
+        setLoading(true);
+        navigate(`/warranty/products/${nav.next}`);
+      } else if (e.key === 'ArrowLeft' && nav.prev) {
+        setLoading(true);
+        navigate(`/warranty/products/${nav.prev}`);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nav, navigate]);
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => setForm(f => ({ ...f, custom_data: { ...f.custom_data, [k]: v } }));
 

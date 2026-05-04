@@ -264,8 +264,8 @@ def get_svc(rid: int, db: Session = Depends(get_db), cu=Depends(get_current_user
 
 @router.get("/{rid}/navigation")
 def get_service_navigation(rid: int, db: Session = Depends(get_db)):
-    prev_id = db.query(ServiceRequest.id).filter(ServiceRequest.id < rid).order_by(ServiceRequest.id.desc()).first()
-    next_id = db.query(ServiceRequest.id).filter(ServiceRequest.id > rid).order_by(ServiceRequest.id.asc()).first()
+    prev_id = db.query(ServiceRequest.id).filter(ServiceRequest.id > rid).order_by(ServiceRequest.id.asc()).first()
+    next_id = db.query(ServiceRequest.id).filter(ServiceRequest.id < rid).order_by(ServiceRequest.id.desc()).first()
     return {
         "prev": prev_id[0] if prev_id else None,
         "next": next_id[0] if next_id else None

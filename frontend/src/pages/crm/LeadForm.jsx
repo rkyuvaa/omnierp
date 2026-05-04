@@ -183,6 +183,19 @@ export default function LeadForm() {
     }
   }, [id, isNew, user]);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'ArrowRight' && nav.next) {
+        navigate(`/crm/${nav.next}`);
+      } else if (e.key === 'ArrowLeft' && nav.prev) {
+        navigate(`/crm/${nav.prev}`);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nav, navigate]);
+
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const setCustom = (k, v) => {
     setForm(f => {
