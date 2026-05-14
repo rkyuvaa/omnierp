@@ -106,6 +106,17 @@ export default function EmployeeMaster() {
     finally { setImporting(false); }
   }
 
+  async function downloadTemplate() {
+    try {
+      const res = await api.get('/hr/employees/import/template', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'employee_import_template.xlsx';
+      a.click();
+    } catch { toast.error('Failed to download template'); }
+  }
+
   async function openDetail(emp) {
     try {
       const res = await api.get(`/hr/employees/${emp.id}`);
@@ -306,6 +317,12 @@ export default function EmployeeMaster() {
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{importFile ? importFile.name : 'Click to select Excel file'}</div>
                 <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>Only .xlsx files supported</div>
               </label>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+              <button onClick={downloadTemplate} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Download size={14} /> Download Sample Template
+              </button>
             </div>
             
             <div style={{ background: 'var(--accent-dim)', padding: 12, borderRadius: 8, marginBottom: 20 }}>

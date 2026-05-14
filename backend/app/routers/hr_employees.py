@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, datetime
+from fastapi.responses import StreamingResponse
 import openpyxl
 import io
 from app.database import get_db
@@ -176,6 +177,54 @@ def deactivate_employee(emp_id: int, db: Session = Depends(get_db), current_user
     emp.is_active = False
     db.commit()
     return {"message": "Employee deactivated"}
+
+@router.get("/import/template")
+def get_import_template(current_user: User = Depends(get_current_user)):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Employee Import Template"
+    
+    headers = [
+        "employee_id", "name", "email", "phone", "designation", 
+        "department_id", "branch_id", "shift_id", "date_of_joining", 
+        "basic_salary", "biometric_id"
+    ]
+    
+    # Style headers
+    from openpyxl.styles import Font, PatternFill
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="4F46E5") # Primary accent color
+    
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        
+    # Add a sample row
+    sample_row = [
+        "EMP001", "John Doe", "john@example.com", "9876543210", "Manager",
+        "", "", "", "2024-01-01", "50000", "101"
+    ]
+    for col_idx, val in enumerate(sample_row, 1):
+        ws.cell(row=2, column=col_idx, value=val)
+
+    # Add instructions in second sheet or comments
+    ws.column_dimensions['A'].width = 15
+    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['C'].width = 25
+    ws.column_dimensions['D'].width = 15
+    ws.column_dimensions['E'].width = 20
+    ws.column_dimensions['I'].width = 15
+    
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    
+    return StreamingResponse(
+        buf, 
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=employee_import_template.xlsx"}
+    )
 
 @router.post("/import/excel")
 async def import_employees_excel(
