@@ -25,6 +25,12 @@ import Branches from './pages/admin/Branches';
 import Modules from './pages/admin/Modules';
 import AuditLog from './pages/admin/AuditLog';
 import BackupManagement from './pages/admin/BackupManagement';
+import EmployeeMaster from './pages/hr/EmployeeMaster';
+import Attendance from './pages/hr/Attendance';
+import Requests from './pages/hr/Requests';
+import Approvals from './pages/hr/Approvals';
+import Payroll from './pages/hr/Payroll';
+import HRConfigurations from './pages/hr/HRConfigurations';
 
 // Integrated PrivateRoute
 const PrivateRoute = ({ children }) => {
@@ -61,6 +67,12 @@ export default function App() {
           <Route path="/admin/backups" element={<PrivateRoute><BackupManagement /></PrivateRoute>} />
           <Route path="/audit" element={<PrivateRoute><AuditLog /></PrivateRoute>} />
           <Route path="/studio" element={<PrivateRoute><Studio /></PrivateRoute>} />
+          <Route path="/hr/employees" element={<PrivateRoute><EmployeeMaster /></PrivateRoute>} />
+          <Route path="/hr/attendance" element={<PrivateRoute><Attendance /></PrivateRoute>} />
+          <Route path="/hr/requests" element={<PrivateRoute><Requests /></PrivateRoute>} />
+          <Route path="/hr/approvals" element={<PrivateRoute><Approvals /></PrivateRoute>} />
+          <Route path="/hr/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
+          <Route path="/hr/configurations" element={<PrivateRoute><HRConfigurations /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

@@ -1,6 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench,  Settings, LogOut, Layers, Shield, GitBranch, ClipboardList, Package, ShieldCheck, HeartPulse, Database } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 
 const mainItems = [{to:'/',label:'Dashboard',icon:LayoutDashboard}];
 const moduleItems = [
@@ -9,6 +10,15 @@ const moduleItems = [
   {to:'/service',label:'Service',icon:ClipboardList,key:'service'},
   {to:'/warranty/products',label:'Product & Warranty',icon:ShieldCheck,key:'warranty'},
   {to:'/konwertcare',label:'Konwert Care+',icon:HeartPulse,key:'konwertcare'}
+];
+
+const hrSubItems = [
+  {to:'/hr/employees',label:'Employee Master',icon:UserSquare},
+  {to:'/hr/attendance',label:'Attendance',icon:Clock},
+  {to:'/hr/requests',label:'Requests',icon:FileText},
+  {to:'/hr/approvals',label:'Approvals',icon:CheckSquare},
+  {to:'/hr/payroll',label:'Payroll',icon:DollarSign},
+  {to:'/hr/configurations',label:'Configurations',icon:SlidersHorizontal},
 ];
 const adminItems = [
   {to:'/admin/users',label:'User Management',icon:Users},
@@ -20,6 +30,30 @@ const adminItems = [
 
 
 const NavItem=({to,label,icon:Icon,active,onClick})=>(<Link to={to} onClick={onClick} className={`nav-item ${active?'active':''}`} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,textDecoration:'none',fontSize:14,fontWeight:active?600:500,color:active?'#ffffff':'var(--text2)',background:active?'var(--accent)':'transparent'}} onMouseEnter={e=>{if(!active){e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)';}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)';}}}><Icon size={18} style={{opacity:active?1:0.8}}/>{label}</Link>);
+
+function HRModule({ isActive, handleNav }) {
+  const [expanded, setExpanded] = useState(true);
+  const isHRActive = hrSubItems.some(i => isActive(i.to));
+  return (
+    <div>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isHRActive?600:500,color:isHRActive?'var(--text)':'var(--text2)',background:isHRActive?'var(--bg3)':'transparent',textAlign:'left'}}
+      >
+        <Clock size={18} style={{opacity:0.8}}/>
+        <span style={{flex:1}}>Attendance & HR</span>
+        {expanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+      </button>
+      {expanded && (
+        <div style={{paddingLeft:16}}>
+          {hrSubItems.map(i => (
+            <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
@@ -47,6 +81,7 @@ export default function Sidebar({ isOpen, onClose }) {
             const p = user?.module_permissions?.[i.key];
             return p && (p.can_read || p.can_create || p.can_edit || p.can_delete);
           }).map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav} />)}
+          <HRModule isActive={isActive} handleNav={handleNav} />
         </div>
         
         {user?.is_superadmin && (
