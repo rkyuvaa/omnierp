@@ -488,8 +488,8 @@ export default function HRConfigurations() {
                           <option value="">— Select Component —</option>
                           {salaryComponents.filter(c => c.is_active).map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
                         </select>
-                        <input type="number" placeholder={master ? `Default: ${master.calc_value}` : 'Override'} value={comp.override_value ?? ''}
-                          onChange={e => { const sc = [...form.components]; sc[idx].override_value = e.target.value !== '' ? parseFloat(e.target.value) : null; setForm({ ...form, components: sc }); }}
+                        <input type="number" placeholder={master ? `Default: ${master.calc_value}` : 'Value'} value={comp.value ?? ''}
+                          onChange={e => { const sc = [...form.components]; sc[idx].value = e.target.value !== '' ? parseFloat(e.target.value) : 0; setForm({ ...form, components: sc }); }}
                           style={inputStyle} />
                         <button onClick={() => { const sc = form.components.filter((_, i) => i !== idx); setForm({ ...form, components: sc }); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
                       </div>
