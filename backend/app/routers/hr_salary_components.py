@@ -14,6 +14,7 @@ CALC_TYPES = [
     "percentage_of_basic",
     "percentage_of_gross",
     "fixed",
+    "slab",
 ]
 
 class SalaryComponentCreate(BaseModel):
@@ -23,6 +24,7 @@ class SalaryComponentCreate(BaseModel):
     calc_type: str = "percentage_of_ctc"
     calc_value: float = 0
     cap_amount: Optional[float] = None  # e.g. 15000 for PF cap
+    slabs: Optional[list] = None  # [{"min":0,"max":10000,"value":0}, ...]
     show_on_payslip: bool = True
     sort_order: int = 0
 
@@ -38,6 +40,7 @@ def _serialize(c: HRSalaryComponent):
         "calc_type": c.calc_type,
         "calc_value": c.calc_value,
         "cap_amount": c.cap_amount,
+        "slabs": c.slabs or [],
         "show_on_payslip": c.show_on_payslip,
         "is_active": c.is_active,
         "sort_order": c.sort_order,

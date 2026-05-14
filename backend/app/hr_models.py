@@ -303,9 +303,10 @@ class HRSalaryComponent(Base):
     code = Column(String(20), unique=True)   # e.g. "BASIC", "HRA", "PF_EMP"
     component_type = Column(String(20), default="earning")  # earning | deduction
     calc_type = Column(String(30), default="percentage_of_ctc")
-    # percentage_of_ctc | percentage_of_basic | percentage_of_gross | fixed
+    # percentage_of_ctc | percentage_of_basic | percentage_of_gross | fixed | slab
     calc_value = Column(Float, default=0)
     cap_amount = Column(Float, nullable=True)  # e.g. 15000 for PF cap rule
+    slabs = Column(JSON, nullable=True)  # [{"min":0,"max":10000,"value":0},{"min":10001,"max":null,"value":200}]
     show_on_payslip = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)  # Controls payslip display order

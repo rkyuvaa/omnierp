@@ -438,15 +438,57 @@ export default function HRConfigurations() {
                       <option value="deduction">Deduction</option>
                     </select></div>
                   <div><label style={labelStyle}>Calculation Type</label>
-                    <select value={form.calc_type || 'percentage_of_ctc'} onChange={e => setForm({ ...form, calc_type: e.target.value })} style={inputStyle}>
+                    <select value={form.calc_type || 'percentage_of_ctc'} onChange={e => setForm({ ...form, calc_type: e.target.value, slabs: e.target.value === 'slab' ? (form.slabs?.length ? form.slabs : [{ min: 0, max: 10000, value: 0 }]) : form.slabs })} style={inputStyle}>
                       <option value="percentage_of_ctc">% of Salary (CTC)</option>
                       <option value="percentage_of_basic">% of Basic</option>
                       <option value="percentage_of_gross">% of Gross Earnings</option>
                       <option value="fixed">Fixed Amount (₹)</option>
+                      <option value="slab">Slab-based (PT / TDS)</option>
                     </select></div>
                 </div>
-                <div><label style={labelStyle}>{form.calc_type === 'fixed' ? 'Fixed Amount (₹)' : 'Percentage (%)'}</label>
-                  <input type="number" step="0.01" value={form.calc_value || 0} onChange={e => setForm({ ...form, calc_value: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
+                {form.calc_type !== 'slab' && (
+                  <div><label style={labelStyle}>{form.calc_type === 'fixed' ? 'Fixed Amount (₹)' : 'Percentage (%)'}</label>
+                    <input type="number" step="0.01" value={form.calc_value || 0} onChange={e => setForm({ ...form, calc_value: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
+                )}
+
+                {/* SLAB EDITOR */}
+                {form.calc_type === 'slab' && (
+                  <div style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                    <div style={{ background: 'var(--bg2)', padding: '8px 14px', fontWeight: 700, fontSize: 12, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Salary Slabs</span>
+                      <button type="button" onClick={() => setForm({ ...form, slabs: [...(form.slabs || []), { min: 0, max: null, value: 0 }] })}
+                        style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 6, padding: '3px 10px', fontSize: 11, cursor: 'pointer' }}>+ Add Slab</button>
+                    </div>
+                    <div style={{ padding: 12 }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, marginBottom: 6 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>Min Salary (₹)</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>Max Salary (₹)</div>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)' }}>Fixed Amount (₹)</div>
+                        <div></div>
+                      </div>
+                      {(form.slabs || []).map((slab, idx) => (
+                        <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 6, marginBottom: 6, alignItems: 'center' }}>
+                          <input type="number" placeholder="0" value={slab.min ?? ''}
+                            onChange={e => { const s = [...form.slabs]; s[idx] = { ...s[idx], min: parseFloat(e.target.value) || 0 }; setForm({ ...form, slabs: s }); }}
+                            style={{ ...inputStyle, fontSize: 13 }} />
+                          <input type="number" placeholder="No limit (∞)" value={slab.max ?? ''}
+                            onChange={e => { const s = [...form.slabs]; s[idx] = { ...s[idx], max: e.target.value !== '' ? parseFloat(e.target.value) : null }; setForm({ ...form, slabs: s }); }}
+                            style={{ ...inputStyle, fontSize: 13 }} />
+                          <input type="number" placeholder="₹ amount" value={slab.value ?? ''}
+                            onChange={e => { const s = [...form.slabs]; s[idx] = { ...s[idx], value: parseFloat(e.target.value) || 0 }; setForm({ ...form, slabs: s }); }}
+                            style={{ ...inputStyle, fontSize: 13 }} />
+                          <button type="button" onClick={() => { const s = form.slabs.filter((_, i) => i !== idx); setForm({ ...form, slabs: s }); }}
+                            style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '6px 8px', cursor: 'pointer', color: '#dc2626' }}>
+                            <X size={12} /></button>
+                        </div>
+                      ))}
+                      <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 8 }}>
+                        💡 Leave Max blank for the last slab (means "and above"). Example for PT: 0–10000 = ₹0, 10001–15000 = ₹150, 15001+ = ₹200
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
                   <label style={labelStyle}>
                     Cap / Max Limit (₹) — <span style={{ color: 'var(--text3)', fontWeight: 400 }}>Optional. For PF: enter 15000</span>
