@@ -305,6 +305,7 @@ class HRSalaryComponent(Base):
     calc_type = Column(String(30), default="percentage_of_ctc")
     # percentage_of_ctc | percentage_of_basic | percentage_of_gross | fixed
     calc_value = Column(Float, default=0)
+    cap_amount = Column(Float, nullable=True)  # e.g. 15000 for PF cap rule
     show_on_payslip = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)  # Controls payslip display order

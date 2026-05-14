@@ -447,6 +447,19 @@ export default function HRConfigurations() {
                 </div>
                 <div><label style={labelStyle}>{form.calc_type === 'fixed' ? 'Fixed Amount (₹)' : 'Percentage (%)'}</label>
                   <input type="number" step="0.01" value={form.calc_value || 0} onChange={e => setForm({ ...form, calc_value: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
+                <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                  <label style={labelStyle}>
+                    Cap / Max Limit (₹) — <span style={{ color: 'var(--text3)', fontWeight: 400 }}>Optional. For PF: enter 15000</span>
+                  </label>
+                  <input type="number" step="1" placeholder="Leave blank for no cap" 
+                    value={form.cap_amount ?? ''} 
+                    onChange={e => setForm({ ...form, cap_amount: e.target.value !== '' ? parseFloat(e.target.value) : null })} 
+                    style={inputStyle} />
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6 }}>
+                    💡 If set, the calculation base will be capped at this amount.
+                    Example: Basic = ₹25,000 → PF calculated on ₹15,000 only.
+                  </div>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div><label style={labelStyle}>Display Order</label><input type="number" value={form.sort_order || 0} onChange={e => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })} style={inputStyle} /></div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 20 }}>
