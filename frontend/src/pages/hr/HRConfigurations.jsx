@@ -18,6 +18,7 @@ export default function HRConfigurations() {
   const [showImportModal, setShowImportModal] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [testing, setTesting] = useState(false);
   const [importing, setImporting] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
   const [importFile, setImportFile] = useState(null);
@@ -90,6 +91,20 @@ export default function HRConfigurations() {
       toast.success('Sync started in background');
       setTimeout(fetchTab, 3000);
     } catch { toast.error('Sync failed'); }
+  }
+
+  async function testConnection() {
+    if (!form.ip_address) return toast.error('Enter IP address first');
+    setTesting(true);
+    try {
+      const res = await api.post('/hr/biometric/test-connection', form);
+      if (res.data.success) {
+        toast.success(res.data.message);
+      } else {
+        toast.error(res.data.message);
+      }
+    } catch { toast.error('Connection test failed'); }
+    finally { setTesting(false); }
   }
 
   async function handleImportHolidays() {
@@ -312,6 +327,11 @@ export default function HRConfigurations() {
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
                   <div><label style={labelStyle}>IP Address</label><input value={form.ip_address || ''} onChange={e => setForm({ ...form, ip_address: e.target.value })} style={inputStyle} placeholder="192.168.1.100" /></div>
                   <div><label style={labelStyle}>Port</label><input type="number" value={form.port || 4370} onChange={e => setForm({ ...form, port: parseInt(e.target.value) })} style={inputStyle} /></div>
+                </div>
+                <div style={{ marginTop: 10, marginBottom: 10 }}>
+                  <button onClick={testConnection} disabled={testing} type="button" className="btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600 }}>
+                    {testing ? <RefreshCw size={14} className="spin" /> : <Wifi size={14} />} {testing ? 'Testing...' : 'Test Connection'}
+                  </button>
                 </div>
                 <div><label style={labelStyle}>Branch</label>
                   <select value={form.branch_id || ''} onChange={e => setForm({ ...form, branch_id: e.target.value || null })} style={inputStyle}>

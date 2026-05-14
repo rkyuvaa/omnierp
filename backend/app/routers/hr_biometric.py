@@ -143,6 +143,27 @@ def manual_sync(machine_id: int, background_tasks: BackgroundTasks,
     background_tasks.add_task(_do_sync, machine_id)
     return {"message": f"Sync started for {m.name}"}
 
+@router.post("/test-connection")
+def test_connection(data: MachineCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Tries to connect to a machine and returns success or error immediately"""
+    try:
+        from zk import ZK
+        # Use a very short timeout for "Test Connection"
+        zk = ZK(data.ip_address, port=data.port, timeout=5)
+        conn = None
+        try:
+            conn = zk.connect()
+            # If connected, fetch serial number as a test
+            sn = conn.get_serialnumber()
+            conn.disconnect()
+            return {"success": True, "message": f"Connection Successful! Serial: {sn}"}
+        except Exception as e:
+            if conn: conn.disconnect()
+            return {"success": False, "message": f"Connection Failed: {str(e)}"}
+    except Exception as e:
+        return {"success": False, "message": f"Could not initialize ZK library: {str(e)}"}
+
+
 @router.get("/sync-log")
 def sync_log(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     machines = db.query(HRBiometricMachine).all()
