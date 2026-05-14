@@ -274,13 +274,14 @@ export default function HRConfigurations() {
       {/* Modal */}
       {modal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 480, maxWidth: '100%', maxHeight: '90vh', overflow: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: modal === 'salary_template' ? 600 : 480, maxHeight: '90vh', overflow: 'auto', padding: 28 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontWeight: 700 }}>
-                {modal === 'shift' ? (form.id ? 'Edit Shift' : 'New Shift') :
-                 modal === 'leave' ? (form.id ? 'Edit Leave Type' : 'New Leave Type') :
-                 modal === 'holiday' ? (form.id ? 'Edit Holiday' : 'Add Holiday') :
-                 (form.id ? 'Edit Machine' : 'Add Machine')}
+                {modal === 'shift' ? 'Shift Configuration' : 
+                 modal === 'leave' ? 'Leave Type' : 
+                 modal === 'holiday' ? 'Holiday' : 
+                 modal === 'biometric' ? 'Biometric Machine' : 
+                 'Salary Template'}
               </h3>
               <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
@@ -393,7 +394,7 @@ export default function HRConfigurations() {
                     <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
                       <input placeholder="Name" value={comp.name} onChange={e => { const sc = [...form.components]; sc[idx].name = e.target.value; setForm({ ...form, components: sc }); }} style={inputStyle} />
                       <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...form.components]; sc[idx].is_percentage = e.target.value === 'true'; setForm({ ...form, components: sc }); }} style={inputStyle}>
-                        <option value="true">% of Basic</option>
+                        <option value="true">% of Salary (CTC)</option>
                         <option value="false">Fixed ₹</option>
                       </select>
                       <input type="number" value={comp.value} onChange={e => { const sc = [...form.components]; sc[idx].value = parseFloat(e.target.value) || 0; setForm({ ...form, components: sc }); }} style={inputStyle} />

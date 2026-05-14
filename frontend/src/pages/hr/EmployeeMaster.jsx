@@ -416,7 +416,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             <button onClick={() => setShowSalaryModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ color: 'var(--text2)' }}>Gross Salary</span>
+            <span style={{ color: 'var(--text2)' }}>Salary (CTC)</span>
             <span style={{ fontWeight: 700 }}>₹{Number(emp.basic_salary || 0).toLocaleString('en-IN')}</span>
           </div>
           {(emp.salary_components || []).map((comp, i) => (
