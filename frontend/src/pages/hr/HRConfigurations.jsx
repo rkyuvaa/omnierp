@@ -469,10 +469,10 @@ export default function HRConfigurations() {
                       style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ Add</button>
                   </div>
                   {(form.components || []).map((comp, idx) => {
-                    const master = salaryComponents.find(c => c.id === parseInt(comp.component_id));
+                    const master = salaryComponents.find(c => String(c.id) === String(comp.component_id));
                     return (
                       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                        <select value={comp.component_id || ''} onChange={e => { 
+                        <select value={String(comp.component_id || '')} onChange={e => { 
                           const sc = [...form.components]; 
                           const master = salaryComponents.find(c => c.id === parseInt(e.target.value));
                           sc[idx] = { 
