@@ -485,26 +485,27 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             </div>
             <div style={{ marginBottom: 20 }}>
               <label style={labelStyle}>Gross Salary (₹)</label>
-              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} />
+              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} placeholder="e.g. 50000" />
             </div>
-            <div style={{ marginBottom: 10 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <label style={labelStyle}>Salary Components (Percentage of Gross)</label>
-                <button onClick={() => setSalaryForm({ ...salaryForm, salary_components: [...salaryForm.salary_components, { name: '', type: 'earning', is_percentage: true, value: 0 }] })}
-                  style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ Add</button>
-              </div>
-              {salaryForm.salary_components.map((comp, idx) => (
-                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
-                  <input placeholder="Name" value={comp.name} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].name = e.target.value; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={inputStyle} />
-                  <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].is_percentage = e.target.value === 'true'; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={inputStyle}>
-                    <option value="true">% of Gross</option>
-                    <option value="false">Fixed Amount</option>
-                  </select>
-                  <input type="number" value={comp.value} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].value = parseFloat(e.target.value) || 0; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={inputStyle} />
-                  <button onClick={() => { const sc = salaryForm.salary_components.filter((_, i) => i !== idx); setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
+
+            {salaryForm.salary_components.length > 0 && (
+              <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+                <label style={{ ...labelStyle, marginBottom: 12 }}>Preview of Components</label>
+                {salaryForm.salary_components.map((comp, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+                    <span style={{ color: 'var(--text2)' }}>{comp.name} ({comp.value}{comp.is_percentage ? '%' : '₹'})</span>
+                    <span style={{ fontWeight: 600 }}>
+                      ₹{comp.is_percentage ? ((salaryForm.basic_salary * comp.value) / 100).toLocaleString('en-IN') : comp.value.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                ))}
+                <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                  <span>Total Calculated</span>
+                  <span>₹{salaryForm.salary_components.reduce((acc, c) => acc + (c.is_percentage ? (salaryForm.basic_salary * c.value / 100) : c.value), 0).toLocaleString('en-IN')}</span>
                 </div>
-              ))}
-            </div>
+              </div>
+            )}
+
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={() => setShowSalaryModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={saveSalary} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save Salary Structure'}</button>
