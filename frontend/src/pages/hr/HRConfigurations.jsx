@@ -13,6 +13,7 @@ export default function HRConfigurations() {
   const [holidays, setHolidays] = useState([]);
   const [machines, setMachines] = useState([]);
   const [salaryTemplates, setSalaryTemplates] = useState([]);
+  const [salaryComponents, setSalaryComponents] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
@@ -36,7 +37,11 @@ export default function HRConfigurations() {
       else if (tab === 'leave') { const r = await api.get('/hr/leave/types'); setLeaveTypes(r.data); }
       else if (tab === 'holidays') { const r = await api.get('/hr/holidays/', { params: { year } }); setHolidays(r.data); }
       else if (tab === 'biometric') { const r = await api.get('/hr/biometric/machines'); setMachines(r.data); }
-      else if (tab === 'salary_templates') { const r = await api.get('/hr/salary-templates/'); setSalaryTemplates(r.data); }
+      else if (tab === 'salary_templates') {
+        const [rt, rc] = await Promise.all([api.get('/hr/salary-templates/'), api.get('/hr/salary-components/')]);
+        setSalaryTemplates(rt.data); setSalaryComponents(rc.data);
+      }
+      else if (tab === 'salary_components') { const r = await api.get('/hr/salary-components/'); setSalaryComponents(r.data); }
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   }
@@ -48,7 +53,8 @@ export default function HRConfigurations() {
       if (type === 'shift') setForm({ working_days: ['Mon','Tue','Wed','Thu','Fri','Sat'], grace_minutes: 15, half_day_hours: 4 });
       else if (type === 'leave') setForm({ is_paid: true, carry_forward: false, max_days_per_year: 12 });
       else if (type === 'holiday') setForm({ holiday_type: 'national', year });
-      else if (type === 'salary_template') setForm({ components: [{ name: 'Basic', type: 'earning', is_percentage: true, value: 50 }] });
+      else if (type === 'salary_template') setForm({ components: [] });
+      else if (type === 'salary_component') setForm({ component_type: 'earning', calc_type: 'percentage_of_ctc', calc_value: 0, show_on_payslip: true, sort_order: 0 });
       else setForm({ port: 4370 });
     }
   }
@@ -71,6 +77,9 @@ export default function HRConfigurations() {
       } else if (modal === 'salary_template') {
         if (form.id) await api.put(`/hr/salary-templates/${form.id}`, form);
         else await api.post('/hr/salary-templates/', form);
+      } else if (modal === 'salary_component') {
+        if (form.id) await api.put(`/hr/salary-components/${form.id}`, form);
+        else await api.post('/hr/salary-components/', form);
       }
       toast.success('Saved successfully');
       setModal(null);
@@ -87,6 +96,7 @@ export default function HRConfigurations() {
       else if (type === 'holiday') await api.delete(`/hr/holidays/${id}`);
       else if (type === 'biometric') await api.delete(`/hr/biometric/machines/${id}`);
       else if (type === 'salary_template') await api.delete(`/hr/salary-templates/${id}`);
+      else if (type === 'salary_component') await api.delete(`/hr/salary-components/${id}`);
       toast.success('Deleted');
       fetchTab();
     } catch { toast.error('Delete failed'); }
@@ -163,6 +173,7 @@ export default function HRConfigurations() {
           <button style={tabStyle(tab === 'holidays')} onClick={() => setTab('holidays')}><Calendar size={14} /> Holidays</button>
           <button style={tabStyle(tab === 'biometric')} onClick={() => setTab('biometric')}><Wifi size={14} /> Biometric Machines</button>
           <button style={tabStyle(tab === 'salary_templates')} onClick={() => setTab('salary_templates')}><FileText size={14} /> Salary Templates</button>
+          <button style={tabStyle(tab === 'salary_components')} onClick={() => setTab('salary_components')}><Settings size={14} /> Salary Components</button>
         </div>
 
         {/* SHIFTS */}
@@ -267,6 +278,29 @@ export default function HRConfigurations() {
                 onDelete={() => deleteItem('salary_template', t.id)}
               />
             ))}
+          </Section>
+        )}
+
+        {/* SALARY COMPONENTS MASTER */}
+        {tab === 'salary_components' && (
+          <Section title="Salary Component Master" onAdd={() => openModal('salary_component')}>
+            {salaryComponents.filter(c => c.is_active).map(c => {
+              const calcLabel = c.calc_type === 'percentage_of_ctc' ? `${c.calc_value}% of Salary (CTC)` :
+                c.calc_type === 'percentage_of_basic' ? `${c.calc_value}% of Basic` :
+                c.calc_type === 'percentage_of_gross' ? `${c.calc_value}% of Gross` :
+                `Fixed ₹${c.calc_value}`;
+              return (
+                <Card key={c.id}
+                  title={`${c.name}`}
+                  badge={c.code}
+                  badgeColor={c.component_type === 'earning' ? '#22c55e' : '#ef4444'}
+                  subtitle={`${c.component_type === 'earning' ? 'Earning' : 'Deduction'} · ${calcLabel}`}
+                  extra={c.show_on_payslip ? '✓ Shows on payslip' : '✗ Hidden from payslip'}
+                  onEdit={() => openModal('salary_component', c)}
+                  onDelete={() => deleteItem('salary_component', c.id)}
+                />
+              );
+            })}
           </Section>
         )}
       </div>
@@ -378,29 +412,66 @@ export default function HRConfigurations() {
               </div>
             )}
 
+            {/* Salary Component Form */}
+            {modal === 'salary_component' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+                  <div><label style={labelStyle}>Component Name</label><input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="e.g. Basic Salary" /></div>
+                  <div><label style={labelStyle}>Code</label><input value={form.code || ''} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} style={inputStyle} placeholder="BASIC" /></div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div><label style={labelStyle}>Type</label>
+                    <select value={form.component_type || 'earning'} onChange={e => setForm({ ...form, component_type: e.target.value })} style={inputStyle}>
+                      <option value="earning">Earning</option>
+                      <option value="deduction">Deduction</option>
+                    </select></div>
+                  <div><label style={labelStyle}>Calculation Type</label>
+                    <select value={form.calc_type || 'percentage_of_ctc'} onChange={e => setForm({ ...form, calc_type: e.target.value })} style={inputStyle}>
+                      <option value="percentage_of_ctc">% of Salary (CTC)</option>
+                      <option value="percentage_of_basic">% of Basic</option>
+                      <option value="percentage_of_gross">% of Gross Earnings</option>
+                      <option value="fixed">Fixed Amount (₹)</option>
+                    </select></div>
+                </div>
+                <div><label style={labelStyle}>{form.calc_type === 'fixed' ? 'Fixed Amount (₹)' : 'Percentage (%)'}</label>
+                  <input type="number" step="0.01" value={form.calc_value || 0} onChange={e => setForm({ ...form, calc_value: parseFloat(e.target.value) || 0 })} style={inputStyle} /></div>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div><label style={labelStyle}>Display Order</label><input type="number" value={form.sort_order || 0} onChange={e => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })} style={inputStyle} /></div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 20 }}>
+                    <input type="checkbox" id="payslip_show" checked={form.show_on_payslip !== false} onChange={e => setForm({ ...form, show_on_payslip: e.target.checked })} />
+                    <label htmlFor="payslip_show" style={{ fontSize: 13, fontWeight: 600 }}>Show on Payslip</label>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Salary Template Form */}
             {modal === 'salary_template' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div><label style={labelStyle}>Template Name</label><input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="e.g. Manager Slab" /></div>
                 <div><label style={labelStyle}>Description</label><input value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} style={inputStyle} /></div>
-                
-                <div style={{ marginTop: 10 }}>
+                <div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
                     <label style={{ ...labelStyle, margin: 0 }}>Components</label>
-                    <button onClick={() => setForm({ ...form, components: [...(form.components || []), { name: '', type: 'earning', is_percentage: true, value: 0 }] })}
+                    <button onClick={() => setForm({ ...form, components: [...(form.components || []), { component_id: '', override_value: null }] })}
                       style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ Add</button>
                   </div>
-                  {(form.components || []).map((comp, idx) => (
-                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
-                      <input placeholder="Name" value={comp.name} onChange={e => { const sc = [...form.components]; sc[idx].name = e.target.value; setForm({ ...form, components: sc }); }} style={inputStyle} />
-                      <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...form.components]; sc[idx].is_percentage = e.target.value === 'true'; setForm({ ...form, components: sc }); }} style={inputStyle}>
-                        <option value="true">% of Salary (CTC)</option>
-                        <option value="false">Fixed ₹</option>
-                      </select>
-                      <input type="number" value={comp.value} onChange={e => { const sc = [...form.components]; sc[idx].value = parseFloat(e.target.value) || 0; setForm({ ...form, components: sc }); }} style={inputStyle} />
-                      <button onClick={() => { const sc = form.components.filter((_, i) => i !== idx); setForm({ ...form, components: sc }); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
-                    </div>
-                  ))}
+                  {(form.components || []).map((comp, idx) => {
+                    const master = salaryComponents.find(c => c.id === parseInt(comp.component_id));
+                    return (
+                      <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                        <select value={comp.component_id || ''} onChange={e => { const sc = [...form.components]; sc[idx].component_id = parseInt(e.target.value); setForm({ ...form, components: sc }); }} style={inputStyle}>
+                          <option value="">— Select Component —</option>
+                          {salaryComponents.filter(c => c.is_active).map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
+                        </select>
+                        <input type="number" placeholder={master ? `Default: ${master.calc_value}` : 'Override'} value={comp.override_value ?? ''}
+                          onChange={e => { const sc = [...form.components]; sc[idx].override_value = e.target.value !== '' ? parseFloat(e.target.value) : null; setForm({ ...form, components: sc }); }}
+                          style={inputStyle} />
+                        <button onClick={() => { const sc = form.components.filter((_, i) => i !== idx); setForm({ ...form, components: sc }); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
+                      </div>
+                    );
+                  })}
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>Leave Override blank to use the default value from Component Master</div>
                 </div>
               </div>
             )}

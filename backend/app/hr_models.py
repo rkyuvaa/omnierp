@@ -24,6 +24,7 @@ class HREmployee(Base):
     date_of_leaving = Column(Date, nullable=True)
     basic_salary = Column(Numeric(12, 2), default=0)
     salary_components = Column(JSON, default=[])          # [{"name":"HRA","type":"earning","is_percentage":True,"value":40}]
+    salary_template_id = Column(Integer, ForeignKey("hr_salary_templates.id"), nullable=True)
     biometric_id = Column(String(50), nullable=True)      # ID on the biometric machine
     photo_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
@@ -289,6 +290,23 @@ class HRSalaryTemplate(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100), unique=True)
     description = Column(String(500), nullable=True)
-    components = Column(JSON) # List of {name, type, is_percentage, value}
+    components = Column(JSON) # List of {component_id, override_value}
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class HRSalaryComponent(Base):
+    """Master list of salary heads (Basic, HRA, PF, ESI, etc.)"""
+    __tablename__ = "hr_salary_components"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))               # e.g. "Basic Salary"
+    code = Column(String(20), unique=True)   # e.g. "BASIC", "HRA", "PF_EMP"
+    component_type = Column(String(20), default="earning")  # earning | deduction
+    calc_type = Column(String(30), default="percentage_of_ctc")
+    # percentage_of_ctc | percentage_of_basic | percentage_of_gross | fixed
+    calc_value = Column(Float, default=0)
+    show_on_payslip = Column(Boolean, default=True)
+    is_active = Column(Boolean, default=True)
+    sort_order = Column(Integer, default=0)  # Controls payslip display order
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
