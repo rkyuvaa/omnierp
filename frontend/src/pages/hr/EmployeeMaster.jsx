@@ -229,7 +229,7 @@ export default function EmployeeMaster() {
                 { key: 'designation', label: 'Designation', type: 'text' },
                 { key: 'date_of_joining', label: 'Date of Joining', type: 'date' },
                 { key: 'biometric_id', label: 'Biometric ID (eSSL)', type: 'text' },
-                { key: 'basic_salary', label: 'Gross Salary (₹)', type: 'number' },
+                { key: 'basic_salary', label: 'Salary (CTC) (₹)', type: 'number' },
               ].map(f => (
                 <div key={f.key}>
                   <label style={labelStyle}>{f.label}</label>
@@ -484,7 +484,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               </select>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>Gross Salary (₹)</label>
+              <label style={labelStyle}>Salary (CTC) (₹)</label>
               <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} placeholder="e.g. 50000" />
             </div>
 
