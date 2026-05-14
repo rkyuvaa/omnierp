@@ -10,6 +10,7 @@ from app.hr_models import HRSalaryTemplate
 router = APIRouter()
 
 class SalaryComponent(BaseModel):
+    component_id: Optional[int] = None
     name: str
     type: str = "earning"
     is_percentage: bool = True
