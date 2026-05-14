@@ -130,11 +130,20 @@ async def import_holidays_excel(
                     errors.append(f"Row {row_idx}: Invalid date format")
                     continue
 
+                # Robust Branch ID parsing
+                branch_id = None
+                if row[2] and str(row[2]).strip() != "":
+                    try:
+                        branch_id = int(float(row[2]))
+                    except (ValueError, TypeError):
+                        # If it's text (like 'National Holiday'), ignore it or log it
+                        pass
+
                 holiday = HRHoliday(
                     name=str(row[0]).strip(),
                     date=holiday_date,
-                    branch_id=int(float(row[2])) if row[2] and str(row[2]).strip() != "" else None,
-                    holiday_type=str(row[3]).strip() if row[3] else "national",
+                    branch_id=branch_id,
+                    holiday_type=str(row[3]).strip() if len(row) > 3 and row[3] else "national",
                     is_active=True
                 )
                 db.add(holiday)
