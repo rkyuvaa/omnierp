@@ -2,11 +2,18 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download } from 'lucide-react';
+import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi } from 'lucide-react';
 
 const STATUS_BADGE = { true: { bg: '#dcfce7', color: '#16a34a', label: 'Active' }, false: { bg: '#fee2e2', color: '#dc2626', label: 'Inactive' } };
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+const inputStyle = {
+  width: '100%', padding: '8px 12px', borderRadius: 8,
+  border: '1px solid var(--border)', background: 'var(--bg2)',
+  color: 'var(--text)', fontSize: 14, boxSizing: 'border-box'
+};
+const labelStyle = { fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block' };
 
 export default function EmployeeMaster() {
   const [employees, setEmployees] = useState([]);
@@ -131,13 +138,6 @@ export default function EmployeeMaster() {
     e.email?.toLowerCase().includes(search.toLowerCase())
   );
 
-  const inputStyle = {
-    width: '100%', padding: '8px 12px', borderRadius: 8,
-    border: '1px solid var(--border)', background: 'var(--bg2)',
-    color: 'var(--text)', fontSize: 14, boxSizing: 'border-box'
-  };
-  const labelStyle = { fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block' };
-
   return (
     <Layout title="Employee Master">
       <div style={{ padding: '0 24px 24px' }}>
@@ -229,7 +229,7 @@ export default function EmployeeMaster() {
                 { key: 'designation', label: 'Designation', type: 'text' },
                 { key: 'date_of_joining', label: 'Date of Joining', type: 'date' },
                 { key: 'biometric_id', label: 'Biometric ID (eSSL)', type: 'text' },
-                { key: 'basic_salary', label: 'Basic Salary (₹)', type: 'number' },
+                { key: 'basic_salary', label: 'Gross Salary (₹)', type: 'number' },
               ].map(f => (
                 <div key={f.key}>
                   <label style={labelStyle}>{f.label}</label>
@@ -278,13 +278,13 @@ export default function EmployeeMaster() {
               </div>
               {(form.salary_components || []).map((comp, idx) => (
                 <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                  <input placeholder="Component Name (e.g. HRA)" value={comp.name} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], name: e.target.value }; setForm({ ...form, salary_components: sc }); }} style={{ ...inputStyle }} />
+                  <input placeholder="Component Name" value={comp.name} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], name: e.target.value }; setForm({ ...form, salary_components: sc }); }} style={{ ...inputStyle }} />
                   <select value={comp.type} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], type: e.target.value }; setForm({ ...form, salary_components: sc }); }} style={inputStyle}>
                     <option value="earning">Earning</option>
                     <option value="deduction">Deduction</option>
                   </select>
                   <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], is_percentage: e.target.value === 'true' }; setForm({ ...form, salary_components: sc }); }} style={inputStyle}>
-                    <option value="true">% of Basic</option>
+                    <option value="true">% of Gross</option>
                     <option value="false">Fixed ₹</option>
                   </select>
                   <input type="number" placeholder="Value" value={comp.value} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], value: parseFloat(e.target.value) || 0 }; setForm({ ...form, salary_components: sc }); }} style={inputStyle} />
@@ -318,22 +318,11 @@ export default function EmployeeMaster() {
                 <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>Only .xlsx files supported</div>
               </label>
             </div>
-
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
               <button onClick={downloadTemplate} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                 <Download size={14} /> Download Sample Template
               </button>
             </div>
-            
-            <div style={{ background: 'var(--accent-dim)', padding: 12, borderRadius: 8, marginBottom: 20 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginBottom: 4 }}>
-                <FileText size={14} /> Expected Columns (Row 1):
-              </div>
-              <div style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.6 }}>
-                employee_id, name, email, phone, designation, department_id, branch_id, shift_id, date_of_joining, basic_salary, biometric_id
-              </div>
-            </div>
-
             <div style={{ display: 'flex', gap: 10 }}>
               <button onClick={() => setShowImportModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={handleImport} disabled={importing} className="btn btn-primary" style={{ flex: 1 }}>{importing ? 'Importing...' : 'Start Import'}</button>
@@ -345,7 +334,7 @@ export default function EmployeeMaster() {
   );
 }
 
-function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) {
+function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -365,7 +354,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
       await api.post(`/hr/leave/balances/${emp.id}`, balances);
       toast.success('Balances updated');
       setShowBalanceModal(false);
-      window.location.reload(); // Refresh to show new balances
+      window.location.reload();
     } catch { toast.error('Failed to update balances'); }
     finally { setSaving(false); }
   }
@@ -381,12 +370,6 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
     finally { setSaving(false); }
   }
 
-  const statusColors = {
-    present: '#22c55e', late: '#f59e0b', absent: '#ef4444',
-    half_day: '#f97316', leave: '#6366f1', on_duty: '#06b6d4',
-    holiday: '#8b5cf6', weekly_off: '#94a3b8'
-  };
-
   return (
     <div>
       <button onClick={onBack} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'var(--text2)', marginBottom: 20, fontSize: 13 }}>
@@ -394,52 +377,33 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
       </button>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        {/* Profile Card */}
         <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 24, border: '1px solid var(--border)', gridColumn: '1 / -1' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ width: 60, height: 60, background: 'var(--accent)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 22, fontWeight: 700 }}>
-                {emp.name?.[0] || 'E'}
-              </div>
+              <div style={{ width: 60, height: 60, background: 'var(--accent)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 22, fontWeight: 700 }}>{emp.name?.[0]}</div>
               <div>
                 <div style={{ fontSize: 20, fontWeight: 700 }}>{emp.name}</div>
-                <div style={{ color: 'var(--text2)', fontSize: 14 }}>{emp.designation || 'No designation'} · {emp.employee_id}</div>
-                <div style={{ color: 'var(--text3)', fontSize: 12 }}>{emp.email}</div>
+                <div style={{ color: 'var(--text2)', fontSize: 14 }}>{emp.designation} · {emp.employee_id}</div>
               </div>
             </div>
-            <button onClick={onEdit} className="btn btn-primary" style={{ fontSize: 13 }}>Edit</button>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginTop: 20 }}>
-            {[
-              ['Department', emp.department_name || '—'],
-              ['Branch', emp.branch_name || '—'],
-              ['Shift', emp.shift_name || '—'],
-              ['Date of Joining', emp.date_of_joining || '—'],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <div style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 700 }}>{k}</div>
-                <div style={{ fontWeight: 600, marginTop: 2 }}>{v}</div>
-              </div>
-            ))}
+            <button onClick={onEdit} className="btn btn-primary" style={{ fontSize: 13 }}>Edit Profile</button>
           </div>
         </div>
 
         {/* Leave Balances */}
         <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <div style={{ fontWeight: 700 }}>Leave Balances — {new Date().getFullYear()}</div>
+            <div style={{ fontWeight: 700 }}>Leave Balances — 2026</div>
             <button onClick={() => setShowBalanceModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
           </div>
-          {(emp.leave_balances || []).length === 0 ? (
-            <div style={{ color: 'var(--text3)', fontSize: 13 }}>No leave balances allocated. Click "Manage" to add.</div>
-          ) : (emp.leave_balances || []).map(b => (
-            <div key={b.leave_type_id} style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                <span style={{ fontSize: 13, fontWeight: 600 }}>{b.leave_type_name} <span style={{ color: 'var(--text3)', fontWeight: 400 }}>({b.leave_type_code})</span></span>
-                <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.used_days} / {b.allocated_days} used</span>
+          {balances.map(b => (
+            <div key={b.id} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
+                <span>{b.leave_type_name}</span>
+                <span style={{ color: 'var(--text2)' }}>{b.used_days} / {b.allocated_days} used</span>
               </div>
               <div style={{ background: 'var(--border)', borderRadius: 999, height: 6 }}>
-                <div style={{ width: `${Math.min(100, (b.used_days / (b.allocated_days || 1)) * 100)}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
+                <div style={{ width: `${(b.used_days/b.allocated_days)*100}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
               </div>
             </div>
           ))}
@@ -452,7 +416,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
             <button onClick={() => setShowSalaryModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ color: 'var(--text2)' }}>Basic Salary</span>
+            <span style={{ color: 'var(--text2)' }}>Gross Salary</span>
             <span style={{ fontWeight: 700 }}>₹{Number(emp.basic_salary || 0).toLocaleString('en-IN')}</span>
           </div>
           {(emp.salary_components || []).map((comp, i) => (
@@ -460,7 +424,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
               <span style={{ color: 'var(--text2)' }}>{comp.name} {comp.is_percentage ? `(${comp.value}%)` : ''}</span>
               <span style={{ color: comp.type === 'earning' ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
                 {comp.type === 'deduction' ? '−' : '+'}
-                {comp.is_percentage ? `₹${((emp.basic_salary || 0) * comp.value / 100).toFixed(0)}` : `₹${comp.value}`}
+                ₹{comp.is_percentage ? ((emp.basic_salary * comp.value) / 100).toLocaleString('en-IN') : comp.value.toLocaleString('en-IN')}
               </span>
             </div>
           ))}
@@ -475,29 +439,24 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
               <h3 style={{ margin: 0, fontWeight: 700 }}>Manage Leave Balances</h3>
               <button onClick={() => setShowBalanceModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
-            
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {leaveTypes.map(lt => {
-                const b = balances.find(x => x.leave_type_id === lt.id) || { leave_type_id: lt.id, allocated_days: 0, used_days: 0 };
+                const b = balances.find(x => x.leave_type_id === lt.id) || { leave_type_id: lt.id, allocated_days: 0 };
                 return (
                   <div key={lt.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, alignItems: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{lt.name} ({lt.code})</div>
-                    <div style={{ position: 'relative' }}>
-                      <input type="number" step="0.5" value={b.allocated_days} 
-                        onChange={e => {
-                          const newB = [...balances];
-                          const idx = newB.findIndex(x => x.leave_type_id === lt.id);
-                          if (idx >= 0) newB[idx].allocated_days = parseFloat(e.target.value) || 0;
-                          else newB.push({ leave_type_id: lt.id, allocated_days: parseFloat(e.target.value) || 0, used_days: 0 });
-                          setBalances(newB);
-                        }} 
-                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13 }} />
-                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{lt.name}</div>
+                    <input type="number" step="0.5" value={b.allocated_days} 
+                      onChange={e => {
+                        const newB = [...balances];
+                        const idx = newB.findIndex(x => x.leave_type_id === lt.id);
+                        if (idx >= 0) newB[idx].allocated_days = parseFloat(e.target.value) || 0;
+                        else newB.push({ leave_type_id: lt.id, allocated_days: parseFloat(e.target.value) || 0 });
+                        setBalances(newB);
+                      }} style={inputStyle} />
                   </div>
                 );
               })}
             </div>
-
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={() => setShowBalanceModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={saveBalances} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save Balances'}</button>
@@ -514,7 +473,6 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
               <h3 style={{ margin: 0, fontWeight: 700 }}>Manage Salary Structure</h3>
               <button onClick={() => setShowSalaryModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
-
             <div style={{ background: 'var(--accent-dim)', padding: 12, borderRadius: 8, marginBottom: 20 }}>
               <label style={labelStyle}>Apply from Template</label>
               <select onChange={e => {
@@ -525,32 +483,28 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
                 {salaryTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
-            
             <div style={{ marginBottom: 20 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block' }}>Basic Salary (₹)</label>
-              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} 
-                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} />
+              <label style={labelStyle}>Gross Salary (₹)</label>
+              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} />
             </div>
-
             <div style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Salary Components</label>
+                <label style={labelStyle}>Salary Components (Percentage of Gross)</label>
                 <button onClick={() => setSalaryForm({ ...salaryForm, salary_components: [...salaryForm.salary_components, { name: '', type: 'earning', is_percentage: true, value: 0 }] })}
                   style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ Add</button>
               </div>
               {salaryForm.salary_components.map((comp, idx) => (
                 <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
-                  <input placeholder="Name" value={comp.name} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].name = e.target.value; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 12 }} />
-                  <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].is_percentage = e.target.value === 'true'; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 12 }}>
-                    <option value="true">% of Basic</option>
+                  <input placeholder="Name" value={comp.name} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].name = e.target.value; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={inputStyle} />
+                  <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].is_percentage = e.target.value === 'true'; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={inputStyle}>
+                    <option value="true">% of Gross</option>
                     <option value="false">Fixed Amount</option>
                   </select>
-                  <input type="number" value={comp.value} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].value = parseFloat(e.target.value) || 0; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 12 }} />
+                  <input type="number" value={comp.value} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].value = parseFloat(e.target.value) || 0; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={inputStyle} />
                   <button onClick={() => { const sc = salaryForm.salary_components.filter((_, i) => i !== idx); setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
                 </div>
               ))}
             </div>
-
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={() => setShowSalaryModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={saveSalary} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save Salary Structure'}</button>
@@ -561,5 +515,3 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
     </div>
   );
 }
-
-
