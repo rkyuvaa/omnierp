@@ -349,12 +349,14 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
+  const [salaryTemplates, setSalaryTemplates] = useState([]);
   const [balances, setBalances] = useState(emp.leave_balances || []);
   const [salaryForm, setSalaryForm] = useState({ basic_salary: emp.basic_salary, salary_components: emp.salary_components || [] });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     api.get('/hr/leave/types').then(r => setLeaveTypes(r.data));
+    api.get('/hr/salary-templates/').then(r => setSalaryTemplates(r.data));
   }, []);
 
   async function saveBalances() {
@@ -511,6 +513,17 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) 
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontWeight: 700 }}>Manage Salary Structure</h3>
               <button onClick={() => setShowSalaryModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+
+            <div style={{ background: 'var(--accent-dim)', padding: 12, borderRadius: 8, marginBottom: 20 }}>
+              <label style={labelStyle}>Apply from Template</label>
+              <select onChange={e => {
+                const t = salaryTemplates.find(x => x.id === parseInt(e.target.value));
+                if (t) setSalaryForm({ ...salaryForm, salary_components: t.components });
+              }} style={inputStyle}>
+                <option value="">— Select Template —</option>
+                {salaryTemplates.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+              </select>
             </div>
             
             <div style={{ marginBottom: 20 }}>

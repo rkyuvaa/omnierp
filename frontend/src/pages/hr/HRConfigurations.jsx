@@ -12,6 +12,7 @@ export default function HRConfigurations() {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [holidays, setHolidays] = useState([]);
   const [machines, setMachines] = useState([]);
+  const [salaryTemplates, setSalaryTemplates] = useState([]);
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
@@ -35,6 +36,7 @@ export default function HRConfigurations() {
       else if (tab === 'leave') { const r = await api.get('/hr/leave/types'); setLeaveTypes(r.data); }
       else if (tab === 'holidays') { const r = await api.get('/hr/holidays/', { params: { year } }); setHolidays(r.data); }
       else if (tab === 'biometric') { const r = await api.get('/hr/biometric/machines'); setMachines(r.data); }
+      else if (tab === 'salary_templates') { const r = await api.get('/hr/salary-templates/'); setSalaryTemplates(r.data); }
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   }
@@ -46,6 +48,7 @@ export default function HRConfigurations() {
       if (type === 'shift') setForm({ working_days: ['Mon','Tue','Wed','Thu','Fri','Sat'], grace_minutes: 15, half_day_hours: 4 });
       else if (type === 'leave') setForm({ is_paid: true, carry_forward: false, max_days_per_year: 12 });
       else if (type === 'holiday') setForm({ holiday_type: 'national', year });
+      else if (type === 'salary_template') setForm({ components: [{ name: 'Basic', type: 'earning', is_percentage: true, value: 50 }] });
       else setForm({ port: 4370 });
     }
   }
@@ -65,6 +68,9 @@ export default function HRConfigurations() {
       } else if (modal === 'biometric') {
         if (form.id) await api.put(`/hr/biometric/machines/${form.id}`, form);
         else await api.post('/hr/biometric/machines', form);
+      } else if (modal === 'salary_template') {
+        if (form.id) await api.put(`/hr/salary-templates/${form.id}`, form);
+        else await api.post('/hr/salary-templates/', form);
       }
       toast.success('Saved successfully');
       setModal(null);
@@ -80,6 +86,7 @@ export default function HRConfigurations() {
       else if (type === 'leave') await api.delete(`/hr/leave/types/${id}`);
       else if (type === 'holiday') await api.delete(`/hr/holidays/${id}`);
       else if (type === 'biometric') await api.delete(`/hr/biometric/machines/${id}`);
+      else if (type === 'salary_template') await api.delete(`/hr/salary-templates/${id}`);
       toast.success('Deleted');
       fetchTab();
     } catch { toast.error('Delete failed'); }
@@ -155,6 +162,7 @@ export default function HRConfigurations() {
           <button style={tabStyle(tab === 'leave')} onClick={() => setTab('leave')}><Gift size={14} /> Leave Types</button>
           <button style={tabStyle(tab === 'holidays')} onClick={() => setTab('holidays')}><Calendar size={14} /> Holidays</button>
           <button style={tabStyle(tab === 'biometric')} onClick={() => setTab('biometric')}><Wifi size={14} /> Biometric Machines</button>
+          <button style={tabStyle(tab === 'salary_templates')} onClick={() => setTab('salary_templates')}><FileText size={14} /> Salary Templates</button>
         </div>
 
         {/* SHIFTS */}
@@ -241,6 +249,23 @@ export default function HRConfigurations() {
                   <button onClick={() => deleteItem('biometric', m.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 12 }}>Remove</button>
                 </div>
               </div>
+            ))}
+          </Section>
+        )}
+
+        {/* SALARY TEMPLATES */}
+        {tab === 'salary_templates' && (
+          <Section title="Salary Templates" onAdd={() => openModal('salary_template')}>
+            {salaryTemplates.map(t => (
+              <Card key={t.id}
+                title={t.name}
+                badge={`${(t.components || []).length} components`}
+                badgeColor="var(--accent)"
+                subtitle={t.description || 'No description'}
+                extra={(t.components || []).map(c => `${c.name}: ${c.value}${c.is_percentage ? '%' : '₹'}`).join(', ')}
+                onEdit={() => openModal('salary_template', t)}
+                onDelete={() => deleteItem('salary_template', t.id)}
+              />
             ))}
           </Section>
         )}
@@ -349,6 +374,33 @@ export default function HRConfigurations() {
                     <option value="">All Branches</option>
                     {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                   </select></div>
+              </div>
+            )}
+
+            {/* Salary Template Form */}
+            {modal === 'salary_template' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                <div><label style={labelStyle}>Template Name</label><input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="e.g. Manager Slab" /></div>
+                <div><label style={labelStyle}>Description</label><input value={form.description || ''} onChange={e => setForm({ ...form, description: e.target.value })} style={inputStyle} /></div>
+                
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                    <label style={{ ...labelStyle, margin: 0 }}>Components</label>
+                    <button onClick={() => setForm({ ...form, components: [...(form.components || []), { name: '', type: 'earning', is_percentage: true, value: 0 }] })}
+                      style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ Add</button>
+                  </div>
+                  {(form.components || []).map((comp, idx) => (
+                    <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
+                      <input placeholder="Name" value={comp.name} onChange={e => { const sc = [...form.components]; sc[idx].name = e.target.value; setForm({ ...form, components: sc }); }} style={inputStyle} />
+                      <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...form.components]; sc[idx].is_percentage = e.target.value === 'true'; setForm({ ...form, components: sc }); }} style={inputStyle}>
+                        <option value="true">% of Basic</option>
+                        <option value="false">Fixed ₹</option>
+                      </select>
+                      <input type="number" value={comp.value} onChange={e => { const sc = [...form.components]; sc[idx].value = parseFloat(e.target.value) || 0; setForm({ ...form, components: sc }); }} style={inputStyle} />
+                      <button onClick={() => { const sc = form.components.filter((_, i) => i !== idx); setForm({ ...form, components: sc }); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
 
