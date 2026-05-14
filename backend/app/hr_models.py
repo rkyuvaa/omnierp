@@ -283,3 +283,12 @@ class HRPayrollRecord(Base):
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     employee = relationship("HREmployee")
+
+class HRSalaryTemplate(Base):
+    __tablename__ = "hr_salary_templates"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True)
+    description = Column(String(500), nullable=True)
+    components = Column(JSON) # List of {name, type, is_percentage, value}
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
