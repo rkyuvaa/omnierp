@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown } from 'lucide-react';
+import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download } from 'lucide-react';
 
 const STATUS_BADGE = { true: { bg: '#dcfce7', color: '#16a34a', label: 'Active' }, false: { bg: '#fee2e2', color: '#dc2626', label: 'Inactive' } };
 
@@ -16,11 +16,14 @@ export default function EmployeeMaster() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showModal, setShowModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [editEmp, setEditEmp] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [activeTab, setActiveTab] = useState('list'); // list | detail
   const [selectedEmp, setSelectedEmp] = useState(null);
+  const [importFile, setImportFile] = useState(null);
 
   useEffect(() => {
     fetchAll();
@@ -84,6 +87,25 @@ export default function EmployeeMaster() {
     } catch { toast.error('Failed'); }
   }
 
+  async function handleImport() {
+    if (!importFile) return toast.error('Please select a file');
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', importFile);
+    try {
+      const res = await api.post('/hr/employees/import/excel', formData);
+      toast.success(`Imported ${res.data.imported} employees. Skipped ${res.data.skipped}.`);
+      if (res.data.errors?.length > 0) {
+        console.error('Import errors:', res.data.errors);
+        toast.error(`There were ${res.data.errors.length} errors. Check console.`);
+      }
+      setShowImportModal(false);
+      setImportFile(null);
+      fetchAll();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Import failed'); }
+    finally { setImporting(false); }
+  }
+
   async function openDetail(emp) {
     try {
       const res = await api.get(`/hr/employees/${emp.id}`);
@@ -119,6 +141,9 @@ export default function EmployeeMaster() {
                 <input placeholder="Search by name, ID or email..." value={search} onChange={e => setSearch(e.target.value)}
                   style={{ ...inputStyle, paddingLeft: 32 }} />
               </div>
+              <button className="btn" onClick={() => setShowImportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+                <Upload size={15} /> Import
+              </button>
               <button className="btn btn-primary" onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
                 <UserPlus size={15} /> Add Employee
               </button>
@@ -261,6 +286,40 @@ export default function EmployeeMaster() {
             <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
               <button onClick={() => setShowModal(false)} className="btn" style={{ background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={saveEmployee} disabled={saving} className="btn btn-primary">{saving ? 'Saving...' : editEmp ? 'Update' : 'Create'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Import Modal */}
+      {showImportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 440, maxWidth: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontWeight: 700 }}>Import Employees</h3>
+              <button onClick={() => setShowImportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+            <div style={{ background: 'var(--bg2)', border: '2px dashed var(--border)', borderRadius: 12, padding: 30, textAlign: 'center', marginBottom: 20 }}>
+              <input type="file" accept=".xlsx" onChange={e => setImportFile(e.target.files[0])} id="import-file" style={{ display: 'none' }} />
+              <label htmlFor="import-file" style={{ cursor: 'pointer' }}>
+                <Upload size={30} style={{ color: 'var(--text3)', marginBottom: 10 }} />
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{importFile ? importFile.name : 'Click to select Excel file'}</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>Only .xlsx files supported</div>
+              </label>
+            </div>
+            
+            <div style={{ background: 'var(--accent-dim)', padding: 12, borderRadius: 8, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginBottom: 4 }}>
+                <FileText size={14} /> Expected Columns (Row 1):
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.6 }}>
+                employee_id, name, email, phone, designation, department_id, branch_id, shift_id, date_of_joining, basic_salary, biometric_id
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowImportModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
+              <button onClick={handleImport} disabled={importing} className="btn btn-primary" style={{ flex: 1 }}>{importing ? 'Importing...' : 'Start Import'}</button>
             </div>
           </div>
         </div>

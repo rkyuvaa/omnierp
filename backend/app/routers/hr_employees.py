@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, datetime
+import openpyxl
+import io
 from app.database import get_db
 from app.models import User
 from app.auth import get_current_user
@@ -174,3 +176,59 @@ def deactivate_employee(emp_id: int, db: Session = Depends(get_db), current_user
     emp.is_active = False
     db.commit()
     return {"message": "Employee deactivated"}
+
+@router.post("/import/excel")
+async def import_employees_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        contents = await file.read()
+        wb = openpyxl.load_workbook(io.BytesIO(contents))
+        ws = wb.active
+        
+        # Expecting headers in row 1: 
+        # employee_id, name, email, phone, designation, department_id, branch_id, shift_id, date_of_joining, basic_salary, biometric_id
+        
+        imported = 0
+        skipped = 0
+        errors = []
+        
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
+            if not row[0] or not row[1]: # Skip empty rows
+                continue
+                
+            emp_id = str(row[0])
+            name = str(row[1])
+            
+            # Check if exists
+            if db.query(HREmployee).filter(HREmployee.employee_id == emp_id).first():
+                skipped += 1
+                continue
+                
+            try:
+                emp = HREmployee(
+                    employee_id=emp_id,
+                    name=name,
+                    email=str(row[2]) if row[2] else None,
+                    phone=str(row[3]) if row[3] else None,
+                    designation=str(row[4]) if row[4] else None,
+                    department_id=int(row[5]) if row[5] else None,
+                    branch_id=int(row[6]) if row[6] else None,
+                    shift_id=int(row[7]) if row[7] else None,
+                    date_of_joining=row[8] if isinstance(row[8], (date, datetime)) else None,
+                    basic_salary=float(row[9]) if row[9] else 0,
+                    biometric_id=str(row[10]) if row[10] else None,
+                    is_active=True
+                )
+                db.add(emp)
+                imported += 1
+            except Exception as e:
+                errors.append(f"Row {row_idx}: {str(e)}")
+                
+        db.commit()
+        return {"imported": imported, "skipped": skipped, "errors": errors}
+    except Exception as e:
+        raise HTTPException(400, f"Failed to process file: {str(e)}")
+

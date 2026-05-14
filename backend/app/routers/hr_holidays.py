@@ -1,8 +1,10 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
+import openpyxl
+import io
 from app.database import get_db
 from app.models import User
 from app.auth import get_current_user
@@ -70,3 +72,51 @@ def delete_holiday(holiday_id: int, db: Session = Depends(get_db), current_user:
     if not holiday: raise HTTPException(404, "Holiday not found")
     db.delete(holiday); db.commit()
     return {"message": "Deleted"}
+
+@router.post("/import/excel")
+async def import_holidays_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    try:
+        contents = await file.read()
+        wb = openpyxl.load_workbook(io.BytesIO(contents))
+        ws = wb.active
+        
+        # Expecting headers in row 1: 
+        # name, date, branch_id, holiday_type
+        
+        imported = 0
+        errors = []
+        
+        from datetime import datetime
+        
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
+            if not row[0] or not row[1]:
+                continue
+                
+            try:
+                holiday_date = row[1]
+                if isinstance(holiday_date, str):
+                    holiday_date = datetime.strptime(holiday_date, "%Y-%m-%d").date()
+                elif isinstance(holiday_date, datetime):
+                    holiday_date = holiday_date.date()
+                
+                holiday = HRHoliday(
+                    name=str(row[0]),
+                    date=holiday_date,
+                    branch_id=int(row[2]) if row[2] else None,
+                    holiday_type=str(row[3]) if row[3] else "national",
+                    is_active=True
+                )
+                db.add(holiday)
+                imported += 1
+            except Exception as e:
+                errors.append(f"Row {row_idx}: {str(e)}")
+                
+        db.commit()
+        return {"imported": imported, "errors": errors}
+    except Exception as e:
+        raise HTTPException(400, f"Failed to process file: {str(e)}")
+

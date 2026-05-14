@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw } from 'lucide-react';
+import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText } from 'lucide-react';
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
@@ -15,9 +15,12 @@ export default function HRConfigurations() {
   const [branches, setBranches] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modal, setModal] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
+  const [importFile, setImportFile] = useState(null);
 
   useEffect(() => {
     api.get('/branches/').then(r => setBranches(r.data));
@@ -89,6 +92,25 @@ export default function HRConfigurations() {
     } catch { toast.error('Sync failed'); }
   }
 
+  async function handleImportHolidays() {
+    if (!importFile) return toast.error('Please select a file');
+    setImporting(true);
+    const formData = new FormData();
+    formData.append('file', importFile);
+    try {
+      const res = await api.post('/hr/holidays/import/excel', formData);
+      toast.success(`Imported ${res.data.imported} holidays.`);
+      if (res.data.errors?.length > 0) {
+        console.error('Import errors:', res.data.errors);
+        toast.error(`There were ${res.data.errors.length} errors. Check console.`);
+      }
+      setShowImportModal(false);
+      setImportFile(null);
+      fetchTab();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Import failed'); }
+    finally { setImporting(false); }
+  }
+
   const tabStyle = (active) => ({
     padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
     background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)',
@@ -146,9 +168,14 @@ export default function HRConfigurations() {
         {tab === 'holidays' && (
           <Section title="Holiday Calendar" onAdd={() => openModal('holiday')}
             extra={
-              <select value={year} onChange={e => setYear(parseInt(e.target.value))} style={{ ...inputStyle, width: 'auto', minWidth: 100 }}>
-                {[2023,2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
-              </select>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button onClick={() => setShowImportModal(true)} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+                  <Upload size={14} /> Import
+                </button>
+                <select value={year} onChange={e => setYear(parseInt(e.target.value))} style={{ ...inputStyle, width: 'auto', minWidth: 100 }}>
+                  {[2023,2024,2025,2026,2027].map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
             }>
             {holidays.map(h => (
               <Card key={h.id}
@@ -297,6 +324,40 @@ export default function HRConfigurations() {
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button onClick={() => setModal(null)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={save} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Holiday Import Modal */}
+      {showImportModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 440, maxWidth: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontWeight: 700 }}>Import Holidays</h3>
+              <button onClick={() => setShowImportModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+            <div style={{ background: 'var(--bg2)', border: '2px dashed var(--border)', borderRadius: 12, padding: 30, textAlign: 'center', marginBottom: 20 }}>
+              <input type="file" accept=".xlsx" onChange={e => setImportFile(e.target.files[0])} id="holiday-import-file" style={{ display: 'none' }} />
+              <label htmlFor="holiday-import-file" style={{ cursor: 'pointer' }}>
+                <Upload size={30} style={{ color: 'var(--text3)', marginBottom: 10 }} />
+                <div style={{ fontWeight: 600, fontSize: 14 }}>{importFile ? importFile.name : 'Click to select Excel file'}</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>Only .xlsx files supported</div>
+              </label>
+            </div>
+            
+            <div style={{ background: 'var(--accent-dim)', padding: 12, borderRadius: 8, marginBottom: 20 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--accent)', fontWeight: 600, marginBottom: 4 }}>
+                <FileText size={14} /> Expected Columns (Row 1):
+              </div>
+              <div style={{ fontSize: 11, color: 'var(--text2)', lineHeight: 1.6 }}>
+                name, date (YYYY-MM-DD), branch_id, holiday_type
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowImportModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
+              <button onClick={handleImportHolidays} disabled={importing} className="btn btn-primary" style={{ flex: 1 }}>{importing ? 'Importing...' : 'Start Import'}</button>
             </div>
           </div>
         </div>
