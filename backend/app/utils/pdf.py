@@ -84,11 +84,13 @@ def generate_form_html(submission, definition):
             """
             rows_html += field_html
         elif f['type'] == 'textarea':
-             rows_html += f'<div class="field-group" style="width: 100%;"><div class="label">{f["label"]}</div><div class="value" style="border: 1px solid #eee; padding: 10px;">{str(val).replace("\\n","<br>")}</div></div>'
+             formatted_val = str(val).replace("\n", "<br>")
+             rows_html += f'<div class="field-group" style="width: 100%;"><div class="label">{f["label"]}</div><div class="value" style="border: 1px solid #eee; padding: 10px;">{formatted_val}</div></div>'
         else:
              width = "48%" if f.get('width') == 'half' else "23%" if f.get('width') == 'quarter' else "100%"
              rows_html += f'<div class="field-group" style="width: {width}; display: inline-block; vertical-align: top; margin-right: 2%;"><div class="label">{f["label"]}</div><div class="value">{val}</div></div>'
 
+    header_text = pdf_cfg.get('header', '').replace('\n', '<br>')
     html = f"""
     <html>
     <head><style>{css}</style></head>
@@ -98,7 +100,7 @@ def generate_form_html(submission, definition):
                 <tr>
                     <td>
                         {f'<img src="{pdf_cfg["logo"]}" class="logo" />' if pdf_cfg.get('logo') else '<div style="font-weight:bold; font-size: 20pt;">OmniERP</div>'}
-                        <div style="font-size: 9pt; color: #666; margin-top: 5px;">{pdf_cfg.get('header', '').replace('\\n', '<br>')}</div>
+                        <div style="font-size: 9pt; color: #666; margin-top: 5px;">{header_text}</div>
                     </td>
                     <td class="doc-title">
                         <div class="doc-name">{definition.name.upper()}</div>
