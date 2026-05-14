@@ -1,8 +1,354 @@
+import { useState, useEffect } from 'react';
+import api from '../../utils/api';
+import Layout from '../../components/Layout';
+import toast from 'react-hot-toast';
+import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown } from 'lucide-react';
+
+const STATUS_BADGE = { true: { bg: '#dcfce7', color: '#16a34a', label: 'Active' }, false: { bg: '#fee2e2', color: '#dc2626', label: 'Inactive' } };
+
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
 export default function EmployeeMaster() {
+  const [employees, setEmployees] = useState([]);
+  const [shifts, setShifts] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editEmp, setEditEmp] = useState(null);
+  const [form, setForm] = useState({});
+  const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('list'); // list | detail
+  const [selectedEmp, setSelectedEmp] = useState(null);
+
+  useEffect(() => {
+    fetchAll();
+  }, []);
+
+  async function fetchAll() {
+    setLoading(true);
+    try {
+      const [emps, sh, depts, brs] = await Promise.all([
+        api.get('/hr/employees/'),
+        api.get('/hr/shifts/'),
+        api.get('/departments/'),
+        api.get('/branches/'),
+      ]);
+      setEmployees(emps.data);
+      setShifts(sh.data);
+      setDepartments(depts.data);
+      setBranches(brs.data);
+    } catch { toast.error('Failed to load data'); }
+    finally { setLoading(false); }
+  }
+
+  async function openCreate() {
+    try {
+      const res = await api.get('/hr/employees/next-id');
+      setForm({ employee_id: res.data.next_id, is_active: true, salary_components: [] });
+    } catch {
+      setForm({ employee_id: 'EMP001', is_active: true, salary_components: [] });
+    }
+    setEditEmp(null);
+    setShowModal(true);
+  }
+
+  function openEdit(emp) {
+    setForm({ ...emp });
+    setEditEmp(emp);
+    setShowModal(true);
+  }
+
+  async function saveEmployee() {
+    setSaving(true);
+    try {
+      if (editEmp) {
+        await api.put(`/hr/employees/${editEmp.id}`, form);
+        toast.success('Employee updated');
+      } else {
+        await api.post('/hr/employees/', form);
+        toast.success('Employee created');
+      }
+      setShowModal(false);
+      fetchAll();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Save failed'); }
+    finally { setSaving(false); }
+  }
+
+  async function toggleActive(emp) {
+    try {
+      await api.put(`/hr/employees/${emp.id}`, { is_active: !emp.is_active });
+      toast.success(`Employee ${emp.is_active ? 'deactivated' : 'activated'}`);
+      fetchAll();
+    } catch { toast.error('Failed'); }
+  }
+
+  async function openDetail(emp) {
+    try {
+      const res = await api.get(`/hr/employees/${emp.id}`);
+      setSelectedEmp(res.data);
+      setActiveTab('detail');
+    } catch { toast.error('Failed to load employee'); }
+  }
+
+  const filtered = employees.filter(e =>
+    e.name?.toLowerCase().includes(search.toLowerCase()) ||
+    e.employee_id?.toLowerCase().includes(search.toLowerCase()) ||
+    e.email?.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const inputStyle = {
+    width: '100%', padding: '8px 12px', borderRadius: 8,
+    border: '1px solid var(--border)', background: 'var(--bg2)',
+    color: 'var(--text)', fontSize: 14, boxSizing: 'border-box'
+  };
+  const labelStyle = { fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block' };
+
   return (
-    <div style={{ padding: 32 }}>
-      <h2 style={{ fontSize: 22, fontWeight: 700, marginBottom: 8 }}>Employee Master</h2>
-      <p style={{ color: 'var(--text2)' }}>Employee records will appear here.</p>
+    <Layout title="Employee Master">
+      <div style={{ padding: '0 24px 24px' }}>
+        {activeTab === 'detail' && selectedEmp ? (
+          <EmployeeDetail emp={selectedEmp} onBack={() => setActiveTab('list')} onEdit={() => openEdit(selectedEmp)} shifts={shifts} />
+        ) : (
+          <>
+            {/* Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+                <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
+                <input placeholder="Search by name, ID or email..." value={search} onChange={e => setSearch(e.target.value)}
+                  style={{ ...inputStyle, paddingLeft: 32 }} />
+              </div>
+              <button className="btn btn-primary" onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
+                <UserPlus size={15} /> Add Employee
+              </button>
+            </div>
+
+            {/* Table */}
+            {loading ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div> : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
+                      {['Emp ID','Name','Designation','Department','Branch','Shift','Status','Actions'].map(h => (
+                        <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: 'var(--text2)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.length === 0 ? (
+                      <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>No employees found</td></tr>
+                    ) : filtered.map(emp => (
+                      <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'}
+                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }} onClick={() => openDetail(emp)}>{emp.employee_id}</span>
+                        </td>
+                        <td style={{ padding: '10px 12px', fontWeight: 600 }} onClick={() => openDetail(emp)}>{emp.name}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.designation || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.department_name || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.branch_name || '—'}</td>
+                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.shift_name || '—'}</td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: STATUS_BADGE[emp.is_active].bg, color: STATUS_BADGE[emp.is_active].color }}>
+                            {STATUS_BADGE[emp.is_active].label}
+                          </span>
+                        </td>
+                        <td style={{ padding: '10px 12px' }}>
+                          <div style={{ display: 'flex', gap: 8 }}>
+                            <button onClick={() => openEdit(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--text2)' }}>
+                              <Edit2 size={13} />
+                            </button>
+                            <button onClick={() => toggleActive(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: emp.is_active ? '#22c55e' : '#94a3b8' }}>
+                              {emp.is_active ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: 720, maxHeight: '90vh', overflow: 'auto', padding: 28 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
+              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{editEmp ? 'Edit Employee' : 'Add Employee'}</h3>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={20} /></button>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {[
+                { key: 'employee_id', label: 'Employee ID', type: 'text' },
+                { key: 'name', label: 'Full Name', type: 'text' },
+                { key: 'email', label: 'Email', type: 'email' },
+                { key: 'phone', label: 'Phone', type: 'text' },
+                { key: 'designation', label: 'Designation', type: 'text' },
+                { key: 'date_of_joining', label: 'Date of Joining', type: 'date' },
+                { key: 'biometric_id', label: 'Biometric ID (eSSL)', type: 'text' },
+                { key: 'basic_salary', label: 'Basic Salary (₹)', type: 'number' },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={labelStyle}>{f.label}</label>
+                  <input type={f.type} value={form[f.key] || ''} onChange={e => setForm({ ...form, [f.key]: e.target.value })} style={inputStyle} />
+                </div>
+              ))}
+
+              <div>
+                <label style={labelStyle}>Department</label>
+                <select value={form.department_id || ''} onChange={e => setForm({ ...form, department_id: e.target.value })} style={inputStyle}>
+                  <option value="">— Select —</option>
+                  {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Branch</label>
+                <select value={form.branch_id || ''} onChange={e => setForm({ ...form, branch_id: e.target.value })} style={inputStyle}>
+                  <option value="">— Select —</option>
+                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Shift</label>
+                <select value={form.shift_id || ''} onChange={e => setForm({ ...form, shift_id: e.target.value })} style={inputStyle}>
+                  <option value="">— Select —</option>
+                  {shifts.map(s => <option key={s.id} value={s.id}>{s.name} ({s.start_time}–{s.end_time})</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Status</label>
+                <select value={form.is_active ? 'true' : 'false'} onChange={e => setForm({ ...form, is_active: e.target.value === 'true' })} style={inputStyle}>
+                  <option value="true">Active</option>
+                  <option value="false">Inactive</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Salary Components */}
+            <div style={{ marginTop: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <label style={{ ...labelStyle, margin: 0 }}>Salary Components</label>
+                <button onClick={() => setForm({ ...form, salary_components: [...(form.salary_components || []), { name: '', type: 'earning', is_percentage: true, value: 0 }] })}
+                  style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 12, cursor: 'pointer' }}>
+                  + Add
+                </button>
+              </div>
+              {(form.salary_components || []).map((comp, idx) => (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr 1fr auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
+                  <input placeholder="Component Name (e.g. HRA)" value={comp.name} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], name: e.target.value }; setForm({ ...form, salary_components: sc }); }} style={{ ...inputStyle }} />
+                  <select value={comp.type} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], type: e.target.value }; setForm({ ...form, salary_components: sc }); }} style={inputStyle}>
+                    <option value="earning">Earning</option>
+                    <option value="deduction">Deduction</option>
+                  </select>
+                  <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], is_percentage: e.target.value === 'true' }; setForm({ ...form, salary_components: sc }); }} style={inputStyle}>
+                    <option value="true">% of Basic</option>
+                    <option value="false">Fixed ₹</option>
+                  </select>
+                  <input type="number" placeholder="Value" value={comp.value} onChange={e => { const sc = [...form.salary_components]; sc[idx] = { ...sc[idx], value: parseFloat(e.target.value) || 0 }; setForm({ ...form, salary_components: sc }); }} style={inputStyle} />
+                  <button onClick={() => { const sc = form.salary_components.filter((_, i) => i !== idx); setForm({ ...form, salary_components: sc }); }}
+                    style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '6px 8px', cursor: 'pointer', color: '#dc2626' }}><X size={13} /></button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+              <button onClick={() => setShowModal(false)} className="btn" style={{ background: 'var(--bg3)', border: 'none' }}>Cancel</button>
+              <button onClick={saveEmployee} disabled={saving} className="btn btn-primary">{saving ? 'Saving...' : editEmp ? 'Update' : 'Create'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
+}
+
+function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
+  const statusColors = {
+    present: '#22c55e', late: '#f59e0b', absent: '#ef4444',
+    half_day: '#f97316', leave: '#6366f1', on_duty: '#06b6d4',
+    holiday: '#8b5cf6', weekly_off: '#94a3b8'
+  };
+
+  return (
+    <div>
+      <button onClick={onBack} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'var(--text2)', marginBottom: 20, fontSize: 13 }}>
+        ← Back to List
+      </button>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        {/* Profile Card */}
+        <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 24, border: '1px solid var(--border)', gridColumn: '1 / -1' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+              <div style={{ width: 60, height: 60, background: 'var(--accent)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 22, fontWeight: 700 }}>
+                {emp.name?.[0] || 'E'}
+              </div>
+              <div>
+                <div style={{ fontSize: 20, fontWeight: 700 }}>{emp.name}</div>
+                <div style={{ color: 'var(--text2)', fontSize: 14 }}>{emp.designation || 'No designation'} · {emp.employee_id}</div>
+                <div style={{ color: 'var(--text3)', fontSize: 12 }}>{emp.email}</div>
+              </div>
+            </div>
+            <button onClick={onEdit} className="btn btn-primary" style={{ fontSize: 13 }}>Edit</button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 16, marginTop: 20 }}>
+            {[
+              ['Department', emp.department_name || '—'],
+              ['Branch', emp.branch_name || '—'],
+              ['Shift', emp.shift_name || '—'],
+              ['Date of Joining', emp.date_of_joining || '—'],
+            ].map(([k, v]) => (
+              <div key={k}>
+                <div style={{ fontSize: 11, color: 'var(--text3)', textTransform: 'uppercase', fontWeight: 700 }}>{k}</div>
+                <div style={{ fontWeight: 600, marginTop: 2 }}>{v}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Leave Balances */}
+        <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 16 }}>Leave Balances — {new Date().getFullYear()}</div>
+          {(emp.leave_balances || []).length === 0 ? (
+            <div style={{ color: 'var(--text3)', fontSize: 13 }}>No leave balances allocated</div>
+          ) : (emp.leave_balances || []).map(b => (
+            <div key={b.leave_type_id} style={{ marginBottom: 12 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 600 }}>{b.leave_type_name} <span style={{ color: 'var(--text3)', fontWeight: 400 }}>({b.leave_type_code})</span></span>
+                <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.used_days} / {b.allocated_days} used</span>
+              </div>
+              <div style={{ background: 'var(--border)', borderRadius: 999, height: 6 }}>
+                <div style={{ width: `${Math.min(100, (b.used_days / b.allocated_days) * 100)}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Salary Info */}
+        <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+          <div style={{ fontWeight: 700, marginBottom: 16 }}>Salary Structure</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+            <span style={{ color: 'var(--text2)' }}>Basic Salary</span>
+            <span style={{ fontWeight: 700 }}>₹{Number(emp.basic_salary || 0).toLocaleString('en-IN')}</span>
+          </div>
+          {(emp.salary_components || []).map((comp, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
+              <span style={{ color: 'var(--text2)' }}>{comp.name} {comp.is_percentage ? `(${comp.value}%)` : ''}</span>
+              <span style={{ color: comp.type === 'earning' ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                {comp.type === 'deduction' ? '−' : '+'}
+                {comp.is_percentage ? `₹${((emp.basic_salary || 0) * comp.value / 100).toFixed(0)}` : `₹${comp.value}`}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

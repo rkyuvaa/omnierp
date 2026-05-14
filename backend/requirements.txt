@@ -11,3 +11,5 @@ pydantic-settings==2.2.1
 openpyxl==3.1.2
 python-dotenv==1.0.1
 xhtml2pdf==0.2.11
+pyzk==0.9
+APScheduler==3.10.4
