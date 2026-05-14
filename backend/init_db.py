@@ -19,7 +19,7 @@ def init_fresh_db():
         admin_user = User(
             email="admin@erp.com",
             name="Super Admin",
-            hashed_password=hash_password("admin123"),
+            password_hash=hash_password("admin123"),
             is_active=True,
             is_superadmin=True
         )
