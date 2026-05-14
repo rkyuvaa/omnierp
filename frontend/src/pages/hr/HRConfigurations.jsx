@@ -472,7 +472,19 @@ export default function HRConfigurations() {
                     const master = salaryComponents.find(c => c.id === parseInt(comp.component_id));
                     return (
                       <div key={idx} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr auto', gap: 8, marginBottom: 8, alignItems: 'center' }}>
-                        <select value={comp.component_id || ''} onChange={e => { const sc = [...form.components]; sc[idx].component_id = e.target.value; setForm({ ...form, components: sc }); }} style={inputStyle}>
+                        <select value={comp.component_id || ''} onChange={e => { 
+                          const sc = [...form.components]; 
+                          const master = salaryComponents.find(c => c.id === parseInt(e.target.value));
+                          sc[idx] = { 
+                            ...sc[idx], 
+                            component_id: parseInt(e.target.value),
+                            name: master?.name || '',
+                            type: master?.component_type || 'earning',
+                            is_percentage: master?.calc_type !== 'fixed',
+                            value: master?.calc_value || 0
+                          }; 
+                          setForm({ ...form, components: sc }); 
+                        }} style={inputStyle}>
                           <option value="">— Select Component —</option>
                           {salaryComponents.filter(c => c.is_active).map(c => <option key={c.id} value={c.id}>{c.name} ({c.code})</option>)}
                         </select>
