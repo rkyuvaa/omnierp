@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText } from 'lucide-react';
+import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText, Download } from 'lucide-react';
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
@@ -124,6 +124,17 @@ export default function HRConfigurations() {
       fetchTab();
     } catch (e) { toast.error(e.response?.data?.detail || 'Import failed'); }
     finally { setImporting(false); }
+  }
+
+  async function downloadHolidayTemplate() {
+    try {
+      const res = await api.get('/hr/holidays/import/template', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'holiday_import_template.xlsx';
+      a.click();
+    } catch { toast.error('Failed to download template'); }
   }
 
   const tabStyle = (active) => ({
@@ -364,6 +375,12 @@ export default function HRConfigurations() {
                 <div style={{ fontWeight: 600, fontSize: 14 }}>{importFile ? importFile.name : 'Click to select Excel file'}</div>
                 <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>Only .xlsx files supported</div>
               </label>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+              <button onClick={downloadHolidayTemplate} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                <Download size={14} /> Download Sample Template
+              </button>
             </div>
             
             <div style={{ background: 'var(--accent-dim)', padding: 12, borderRadius: 8, marginBottom: 20 }}>

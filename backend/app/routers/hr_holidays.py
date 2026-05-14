@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
 from datetime import date
+from fastapi.responses import StreamingResponse
 import openpyxl
 import io
 from app.database import get_db
@@ -72,6 +73,28 @@ def delete_holiday(holiday_id: int, db: Session = Depends(get_db), current_user:
     if not holiday: raise HTTPException(404, "Holiday not found")
     db.delete(holiday); db.commit()
     return {"message": "Deleted"}
+
+@router.get("/import/template")
+def get_holiday_template(current_user: User = Depends(get_current_user)):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Holiday Import Template"
+    headers = ["name", "date", "branch_id", "holiday_type"]
+    for col_idx, h in enumerate(headers, 1):
+        ws.cell(row=1, column=col_idx, value=h)
+    # Sample row
+    ws.cell(row=2, column=1, value="New Year")
+    ws.cell(row=2, column=2, value="2024-01-01")
+    ws.cell(row=2, column=3, value="")
+    ws.cell(row=2, column=4, value="national")
+    
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=holiday_import_template.xlsx"}
+    )
 
 @router.post("/import/excel")
 async def import_holidays_excel(
