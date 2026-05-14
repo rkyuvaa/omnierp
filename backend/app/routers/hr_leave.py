@@ -1,0 +1,336 @@
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+from pydantic import BaseModel
+from typing import Optional, List
+from datetime import date, datetime, timedelta
+from app.database import get_db
+from app.models import User
+from app.auth import get_current_user
+from app.hr_models import (
+    HRLeaveType, HRLeaveBalance, HRLeaveRequest,
+    HREmployee, HRAttendanceRecord, HRNotification
+)
+
+router = APIRouter()
+
+# ── Leave Type Schemas ──────────────────────────────────────────────────────
+class LeaveTypeCreate(BaseModel):
+    name: str
+    code: str
+    max_days_per_year: float = 12
+    is_paid: bool = True
+    carry_forward: bool = False
+    carry_forward_max: float = 0
+
+class LeaveTypeUpdate(BaseModel):
+    name: Optional[str] = None
+    max_days_per_year: Optional[float] = None
+    is_paid: Optional[bool] = None
+    carry_forward: Optional[bool] = None
+    carry_forward_max: Optional[float] = None
+    is_active: Optional[bool] = None
+
+# ── Leave Request Schemas ───────────────────────────────────────────────────
+class LeaveApply(BaseModel):
+    employee_id: int
+    leave_type_id: int
+    from_date: date
+    to_date: date
+    is_half_day: bool = False
+    half_day_session: Optional[str] = None
+    reason: Optional[str] = None
+
+class LeaveAction(BaseModel):
+    remarks: Optional[str] = None
+
+class AllocateBalance(BaseModel):
+    employee_ids: List[int]
+    leave_type_id: int
+    year: int
+    allocated_days: float
+
+# ── Helpers ─────────────────────────────────────────────────────────────────
+def _next_leave_ref(db: Session):
+    count = db.query(HRLeaveRequest).count() + 1
+    return f"LV{str(count).zfill(5)}"
+
+def _working_days_count(from_date: date, to_date: date) -> float:
+    """Count calendar days (excluding Sundays) — can be customized per shift"""
+    total = 0
+    current = from_date
+    while current <= to_date:
+        if current.weekday() != 6:  # skip Sundays
+            total += 1
+        current += timedelta(days=1)
+    return total
+
+def _notify(db: Session, user_id: int, title: str, message: str, ref_type: str = None, ref_id: int = None):
+    notif = HRNotification(user_id=user_id, title=title, message=message,
+                           reference_type=ref_type, reference_id=ref_id)
+    db.add(notif)
+
+def _recompute_attendance(db: Session, employee_id: int, target_date: date):
+    """Mark attendance record as 'leave' when leave is approved"""
+    record = db.query(HRAttendanceRecord).filter(
+        HRAttendanceRecord.employee_id == employee_id,
+        HRAttendanceRecord.date == target_date
+    ).first()
+    if not record:
+        record = HRAttendanceRecord(employee_id=employee_id, date=target_date)
+        db.add(record)
+    record.status = "leave"
+    record.updated_at = datetime.utcnow()
+
+# ── Leave Type Routes ────────────────────────────────────────────────────────
+@router.get("/types")
+def list_leave_types(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    types = db.query(HRLeaveType).all()
+    return [{"id": t.id, "name": t.name, "code": t.code,
+             "max_days_per_year": t.max_days_per_year, "is_paid": t.is_paid,
+             "carry_forward": t.carry_forward, "carry_forward_max": t.carry_forward_max,
+             "is_active": t.is_active} for t in types]
+
+@router.post("/types")
+def create_leave_type(data: LeaveTypeCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if db.query(HRLeaveType).filter(HRLeaveType.code == data.code).first():
+        raise HTTPException(400, "Leave type code already exists")
+    lt = HRLeaveType(**data.model_dump())
+    db.add(lt); db.commit(); db.refresh(lt)
+    return {"id": lt.id, "name": lt.name, "code": lt.code}
+
+@router.put("/types/{type_id}")
+def update_leave_type(type_id: int, data: LeaveTypeUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    lt = db.query(HRLeaveType).filter(HRLeaveType.id == type_id).first()
+    if not lt: raise HTTPException(404, "Not found")
+    for k, v in data.model_dump(exclude_none=True).items():
+        setattr(lt, k, v)
+    db.commit(); db.refresh(lt)
+    return {"id": lt.id, "name": lt.name}
+
+@router.delete("/types/{type_id}")
+def delete_leave_type(type_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    lt = db.query(HRLeaveType).filter(HRLeaveType.id == type_id).first()
+    if not lt: raise HTTPException(404, "Not found")
+    lt.is_active = False
+    db.commit()
+    return {"message": "Deactivated"}
+
+# ── Leave Balance Routes ─────────────────────────────────────────────────────
+@router.get("/balances")
+def get_balances(
+    employee_id: Optional[int] = None,
+    year: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    year = year or datetime.now().year
+    q = db.query(HRLeaveBalance).filter(HRLeaveBalance.year == year)
+    if employee_id:
+        q = q.filter(HRLeaveBalance.employee_id == employee_id)
+    balances = q.all()
+    return [{
+        "id": b.id, "employee_id": b.employee_id,
+        "employee_name": b.employee.name if b.employee else None,
+        "leave_type_id": b.leave_type_id,
+        "leave_type_name": b.leave_type.name if b.leave_type else None,
+        "leave_type_code": b.leave_type.code if b.leave_type else None,
+        "year": b.year,
+        "allocated_days": b.allocated_days,
+        "used_days": b.used_days,
+        "remaining_days": b.allocated_days - b.used_days,
+    } for b in balances]
+
+@router.post("/allocate")
+def allocate_balances(data: AllocateBalance, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    created, updated = 0, 0
+    for emp_id in data.employee_ids:
+        existing = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == emp_id,
+            HRLeaveBalance.leave_type_id == data.leave_type_id,
+            HRLeaveBalance.year == data.year
+        ).first()
+        if existing:
+            existing.allocated_days = data.allocated_days
+            updated += 1
+        else:
+            b = HRLeaveBalance(employee_id=emp_id, leave_type_id=data.leave_type_id,
+                               year=data.year, allocated_days=data.allocated_days)
+            db.add(b)
+            created += 1
+    db.commit()
+    return {"created": created, "updated": updated}
+
+# ── Leave Application Routes ─────────────────────────────────────────────────
+@router.post("/apply")
+def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    emp = db.query(HREmployee).filter(HREmployee.id == data.employee_id).first()
+    if not emp: raise HTTPException(404, "Employee not found")
+
+    leave_type = db.query(HRLeaveType).filter(HRLeaveType.id == data.leave_type_id).first()
+    if not leave_type: raise HTTPException(404, "Leave type not found")
+
+    total_days = 0.5 if data.is_half_day else _working_days_count(data.from_date, data.to_date)
+
+    # Check balance (skip for LOP)
+    if leave_type.code != "LOP":
+        year = data.from_date.year
+        balance = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == data.employee_id,
+            HRLeaveBalance.leave_type_id == data.leave_type_id,
+            HRLeaveBalance.year == year
+        ).first()
+        if not balance or (balance.allocated_days - balance.used_days) < total_days:
+            raise HTTPException(400, f"Insufficient {leave_type.name} balance. Available: {(balance.allocated_days - balance.used_days) if balance else 0} days")
+
+    auto_approve_at = datetime.utcnow() + timedelta(hours=6)
+    req = HRLeaveRequest(
+        reference=_next_leave_ref(db),
+        employee_id=data.employee_id,
+        leave_type_id=data.leave_type_id,
+        from_date=data.from_date,
+        to_date=data.to_date,
+        total_days=total_days,
+        is_half_day=data.is_half_day,
+        half_day_session=data.half_day_session,
+        reason=data.reason,
+        approver_id=emp.manager_id,
+        auto_approve_at=auto_approve_at,
+    )
+    db.add(req); db.commit(); db.refresh(req)
+
+    # Notify manager
+    if emp.manager_id:
+        manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
+        if manager and manager.user_id:
+            _notify(db, manager.user_id,
+                    "Leave Request Pending",
+                    f"{emp.name} has applied for {leave_type.name} from {data.from_date} to {data.to_date}.",
+                    "leave", req.id)
+    db.commit()
+    return {"id": req.id, "reference": req.reference, "status": req.status, "auto_approve_at": str(auto_approve_at)}
+
+@router.get("/my-requests")
+def my_requests(
+    employee_id: int,
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    q = db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == employee_id)
+    if status:
+        q = q.filter(HRLeaveRequest.status == status)
+    reqs = q.order_by(HRLeaveRequest.created_at.desc()).all()
+    return [_serialize_request(r) for r in reqs]
+
+@router.get("/pending")
+def pending_approvals(
+    approver_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    reqs = db.query(HRLeaveRequest).filter(
+        HRLeaveRequest.approver_id == approver_id,
+        HRLeaveRequest.status == "pending"
+    ).order_by(HRLeaveRequest.created_at).all()
+    return [_serialize_request(r) for r in reqs]
+
+@router.get("/all")
+def all_requests(
+    status: Optional[str] = None,
+    employee_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    q = db.query(HRLeaveRequest)
+    if status: q = q.filter(HRLeaveRequest.status == status)
+    if employee_id: q = q.filter(HRLeaveRequest.employee_id == employee_id)
+    return [_serialize_request(r) for r in q.order_by(HRLeaveRequest.created_at.desc()).all()]
+
+@router.post("/{req_id}/approve")
+def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
+    if not req: raise HTTPException(404, "Request not found")
+    if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
+
+    req.status = "approved"
+    req.approver_remarks = data.remarks
+    req.approved_at = datetime.utcnow()
+
+    # Deduct balance
+    if req.leave_type and req.leave_type.code != "LOP":
+        balance = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == req.employee_id,
+            HRLeaveBalance.leave_type_id == req.leave_type_id,
+            HRLeaveBalance.year == req.from_date.year
+        ).first()
+        if balance:
+            balance.used_days += req.total_days
+
+    # Update attendance records
+    current_date = req.from_date
+    while current_date <= req.to_date:
+        _recompute_attendance(db, req.employee_id, current_date)
+        current_date += timedelta(days=1)
+
+    # Notify employee
+    if req.employee and req.employee.user_id:
+        _notify(db, req.employee.user_id,
+                "Leave Approved ✓",
+                f"Your {req.leave_type.name if req.leave_type else 'leave'} from {req.from_date} to {req.to_date} has been approved.",
+                "leave", req.id)
+    db.commit()
+    return {"message": "Approved", "id": req.id}
+
+@router.post("/{req_id}/reject")
+def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
+    if not req: raise HTTPException(404, "Request not found")
+    if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
+    req.status = "rejected"
+    req.approver_remarks = data.remarks
+    req.approved_at = datetime.utcnow()
+    if req.employee and req.employee.user_id:
+        _notify(db, req.employee.user_id,
+                "Leave Rejected ✗",
+                f"Your leave from {req.from_date} to {req.to_date} was rejected. Reason: {data.remarks or 'No reason given'}",
+                "leave", req.id)
+    db.commit()
+    return {"message": "Rejected"}
+
+@router.post("/{req_id}/cancel")
+def cancel_leave(req_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
+    if not req: raise HTTPException(404, "Request not found")
+    if req.status != "pending": raise HTTPException(400, "Only pending requests can be cancelled")
+    req.status = "cancelled"
+    db.commit()
+    return {"message": "Cancelled"}
+
+def _serialize_request(r: HRLeaveRequest):
+    remaining = None
+    if r.auto_approve_at:
+        diff = (r.auto_approve_at - datetime.utcnow()).total_seconds()
+        remaining = max(0, int(diff))
+    return {
+        "id": r.id,
+        "reference": r.reference,
+        "employee_id": r.employee_id,
+        "employee_name": r.employee.name if r.employee else None,
+        "leave_type_id": r.leave_type_id,
+        "leave_type_name": r.leave_type.name if r.leave_type else None,
+        "leave_type_code": r.leave_type.code if r.leave_type else None,
+        "from_date": str(r.from_date),
+        "to_date": str(r.to_date),
+        "total_days": r.total_days,
+        "is_half_day": r.is_half_day,
+        "half_day_session": r.half_day_session,
+        "reason": r.reason,
+        "status": r.status,
+        "approver_id": r.approver_id,
+        "approver_name": r.approver.name if r.approver else None,
+        "approver_remarks": r.approver_remarks,
+        "is_auto_approved": r.is_auto_approved,
+        "auto_approve_at": str(r.auto_approve_at) if r.auto_approve_at else None,
+        "seconds_until_auto_approve": remaining,
+        "created_at": str(r.created_at),
+    }

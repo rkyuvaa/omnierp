@@ -1,0 +1,285 @@
+from sqlalchemy import Column, Integer, String, Boolean, DateTime, ForeignKey, JSON, Float, Text, Date, Time, Numeric
+from sqlalchemy.orm import relationship
+from .database import Base
+from datetime import datetime
+
+
+# ─────────────────────────────────────────────
+# EMPLOYEE MASTER
+# ─────────────────────────────────────────────
+class HREmployee(Base):
+    __tablename__ = "hr_employees"
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(String(20), unique=True, index=True)  # EMP001
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, unique=True)
+    name = Column(String(100), index=True)
+    email = Column(String(100), nullable=True)
+    phone = Column(String(20), nullable=True)
+    designation = Column(String(100), nullable=True)
+    department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
+    manager_id = Column(Integer, nullable=True)           # FK to hr_employees.id
+    shift_id = Column(Integer, ForeignKey("hr_shifts.id"), nullable=True)
+    date_of_joining = Column(Date, nullable=True)
+    date_of_leaving = Column(Date, nullable=True)
+    basic_salary = Column(Numeric(12, 2), default=0)
+    salary_components = Column(JSON, default=[])          # [{"name":"HRA","type":"earning","is_percentage":True,"value":40}]
+    biometric_id = Column(String(50), nullable=True)      # ID on the biometric machine
+    photo_url = Column(String(500), nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    shift = relationship("HRShift", back_populates="employees")
+    department = relationship("Department")
+    branch = relationship("Branch")
+    user = relationship("User")
+
+
+# ─────────────────────────────────────────────
+# SHIFTS
+# ─────────────────────────────────────────────
+class HRShift(Base):
+    __tablename__ = "hr_shifts"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
+    start_time = Column(String(5))    # "09:00"
+    end_time = Column(String(5))      # "18:00"
+    grace_minutes = Column(Integer, default=15)
+    half_day_hours = Column(Float, default=4.0)
+    working_days = Column(JSON, default=["Mon","Tue","Wed","Thu","Fri","Sat"])
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    employees = relationship("HREmployee", back_populates="shift")
+    branch = relationship("Branch")
+
+
+# ─────────────────────────────────────────────
+# HOLIDAYS
+# ─────────────────────────────────────────────
+class HRHoliday(Base):
+    __tablename__ = "hr_holidays"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    date = Column(Date, index=True)
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)  # None = all branches
+    holiday_type = Column(String(20), default="national")  # national / company
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    branch = relationship("Branch")
+
+
+# ─────────────────────────────────────────────
+# LEAVE TYPES
+# ─────────────────────────────────────────────
+class HRLeaveType(Base):
+    __tablename__ = "hr_leave_types"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    code = Column(String(10), unique=True)   # CL, SL, EL, LOP
+    max_days_per_year = Column(Float, default=12)
+    is_paid = Column(Boolean, default=True)
+    carry_forward = Column(Boolean, default=False)
+    carry_forward_max = Column(Float, default=0)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    balances = relationship("HRLeaveBalance", back_populates="leave_type")
+    requests = relationship("HRLeaveRequest", back_populates="leave_type")
+
+
+# ─────────────────────────────────────────────
+# LEAVE BALANCES (per employee per year)
+# ─────────────────────────────────────────────
+class HRLeaveBalance(Base):
+    __tablename__ = "hr_leave_balances"
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"))
+    leave_type_id = Column(Integer, ForeignKey("hr_leave_types.id"))
+    year = Column(Integer)
+    allocated_days = Column(Float, default=0)
+    used_days = Column(Float, default=0)
+    carry_forwarded = Column(Float, default=0)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = relationship("HREmployee")
+    leave_type = relationship("HRLeaveType", back_populates="balances")
+
+
+# ─────────────────────────────────────────────
+# LEAVE REQUESTS
+# ─────────────────────────────────────────────
+class HRLeaveRequest(Base):
+    __tablename__ = "hr_leave_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    reference = Column(String(30), unique=True)
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"))
+    leave_type_id = Column(Integer, ForeignKey("hr_leave_types.id"))
+    from_date = Column(Date)
+    to_date = Column(Date)
+    total_days = Column(Float, default=1)
+    is_half_day = Column(Boolean, default=False)
+    half_day_session = Column(String(10), nullable=True)   # morning / afternoon
+    reason = Column(Text, nullable=True)
+    status = Column(String(20), default="pending")         # pending/approved/rejected/cancelled/auto_approved
+    approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
+    approver_remarks = Column(Text, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    auto_approve_at = Column(DateTime, nullable=True)      # created_at + 6 hours
+    is_auto_approved = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = relationship("HREmployee", foreign_keys=[employee_id])
+    approver = relationship("HREmployee", foreign_keys=[approver_id])
+    leave_type = relationship("HRLeaveType", back_populates="requests")
+
+
+# ─────────────────────────────────────────────
+# ON-DUTY REQUESTS
+# ─────────────────────────────────────────────
+class HROnDutyRequest(Base):
+    __tablename__ = "hr_onduty_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    reference = Column(String(30), unique=True)
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"))
+    date = Column(Date)
+    from_time = Column(String(5))   # "09:00"
+    to_time = Column(String(5))     # "18:00"
+    work_location = Column(String(200), nullable=True)
+    purpose = Column(Text, nullable=True)
+    status = Column(String(20), default="pending")  # pending/approved/rejected/auto_approved
+    approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
+    approver_remarks = Column(Text, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    auto_approve_at = Column(DateTime, nullable=True)
+    is_auto_approved = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = relationship("HREmployee", foreign_keys=[employee_id])
+    approver = relationship("HREmployee", foreign_keys=[approver_id])
+
+
+# ─────────────────────────────────────────────
+# BIOMETRIC MACHINES
+# ─────────────────────────────────────────────
+class HRBiometricMachine(Base):
+    __tablename__ = "hr_biometric_machines"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100))
+    ip_address = Column(String(50))
+    port = Column(Integer, default=4370)
+    branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
+    device_serial = Column(String(100), nullable=True)
+    is_active = Column(Boolean, default=True)
+    last_sync_at = Column(DateTime, nullable=True)
+    last_sync_status = Column(String(20), nullable=True)   # success / failed
+    last_sync_count = Column(Integer, default=0)
+    last_synced_uid = Column(Integer, default=0)           # last downloaded punch UID
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    branch = relationship("Branch")
+    punches = relationship("HRAttendancePunch", back_populates="machine")
+
+
+# ─────────────────────────────────────────────
+# RAW PUNCH RECORDS
+# ─────────────────────────────────────────────
+class HRAttendancePunch(Base):
+    __tablename__ = "hr_attendance_punches"
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"))
+    punch_time = Column(DateTime, index=True)
+    source = Column(String(20), default="biometric")  # biometric / mobile / manual
+    photo_url = Column(String(500), nullable=True)
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    location_name = Column(String(300), nullable=True)
+    machine_id = Column(Integer, ForeignKey("hr_biometric_machines.id"), nullable=True)
+    raw_punch_uid = Column(String(100), nullable=True)  # dedup key from biometric
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    employee = relationship("HREmployee")
+    machine = relationship("HRBiometricMachine", back_populates="punches")
+
+
+# ─────────────────────────────────────────────
+# DAILY CONSOLIDATED ATTENDANCE RECORD
+# ─────────────────────────────────────────────
+class HRAttendanceRecord(Base):
+    __tablename__ = "hr_attendance_records"
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"), index=True)
+    date = Column(Date, index=True)
+    check_in = Column(DateTime, nullable=True)
+    check_out = Column(DateTime, nullable=True)
+    hours_worked = Column(Float, nullable=True)
+    status = Column(String(20), default="absent")
+    # present / late / absent / half_day / leave / on_duty / holiday / weekly_off
+    is_late = Column(Boolean, default=False)
+    late_minutes = Column(Integer, default=0)
+    left_early = Column(Boolean, default=False)
+    early_by_minutes = Column(Integer, default=0)
+    check_in_photo = Column(String(500), nullable=True)
+    check_in_location = Column(String(300), nullable=True)
+    leave_request_id = Column(Integer, ForeignKey("hr_leave_requests.id"), nullable=True)
+    onduty_request_id = Column(Integer, ForeignKey("hr_onduty_requests.id"), nullable=True)
+    correction_reason = Column(Text, nullable=True)
+    corrected_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = relationship("HREmployee")
+    leave_request = relationship("HRLeaveRequest")
+    onduty_request = relationship("HROnDutyRequest")
+
+
+# ─────────────────────────────────────────────
+# IN-APP NOTIFICATIONS
+# ─────────────────────────────────────────────
+class HRNotification(Base):
+    __tablename__ = "hr_notifications"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    title = Column(String(200))
+    message = Column(Text)
+    notif_type = Column(String(50), default="info")   # info / success / warning / action
+    reference_type = Column(String(50), nullable=True)  # leave / onduty / attendance
+    reference_id = Column(Integer, nullable=True)
+    is_read = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+# ─────────────────────────────────────────────
+# PAYROLL RECORDS (monthly)
+# ─────────────────────────────────────────────
+class HRPayrollRecord(Base):
+    __tablename__ = "hr_payroll_records"
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"))
+    year = Column(Integer)
+    month = Column(Integer)
+    working_days = Column(Integer, default=0)   # shift working days in month
+    present_days = Column(Float, default=0)
+    absent_days = Column(Float, default=0)
+    leave_days = Column(Float, default=0)
+    lop_days = Column(Float, default=0)
+    on_duty_days = Column(Float, default=0)
+    basic_salary = Column(Numeric(12, 2), default=0)
+    total_earnings = Column(Numeric(12, 2), default=0)
+    total_deductions = Column(Numeric(12, 2), default=0)
+    net_salary = Column(Numeric(12, 2), default=0)
+    components_breakdown = Column(JSON, default={})
+    status = Column(String(20), default="draft")    # draft / finalized
+    finalized_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = relationship("HREmployee")
