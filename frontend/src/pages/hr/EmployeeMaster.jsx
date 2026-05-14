@@ -340,7 +340,11 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [salaryTemplates, setSalaryTemplates] = useState([]);
   const [balances, setBalances] = useState(emp.leave_balances || []);
-  const [salaryForm, setSalaryForm] = useState({ basic_salary: emp.basic_salary, salary_template_id: emp.salary_template_id || '' });
+  const [salaryForm, setSalaryForm] = useState({ 
+    basic_salary: emp.basic_salary, 
+    salary_template_id: emp.salary_template_id || '',
+    salary_components: emp.salary_components || []
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -485,7 +489,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} placeholder="e.g. 50000" />
             </div>
 
-            {salaryForm.salary_components.length > 0 && (
+            {salaryForm.salary_components?.length > 0 && (
               <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
                 <label style={{ ...labelStyle, marginBottom: 12 }}>Preview of Components</label>
                 {salaryForm.salary_components.map((comp, idx) => (
