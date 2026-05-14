@@ -160,6 +160,28 @@ def allocate_balances(data: AllocateBalance, db: Session = Depends(get_db), curr
     db.commit()
     return {"created": created, "updated": updated}
 
+class SingleBalanceUpdate(BaseModel):
+    leave_type_id: int
+    allocated_days: float
+
+@router.post("/balances/{employee_id}")
+def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    year = datetime.now().year
+    for item in data:
+        existing = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == employee_id,
+            HRLeaveBalance.leave_type_id == item.leave_type_id,
+            HRLeaveBalance.year == year
+        ).first()
+        if existing:
+            existing.allocated_days = item.allocated_days
+        else:
+            b = HRLeaveBalance(employee_id=employee_id, leave_type_id=item.leave_type_id,
+                               year=year, allocated_days=item.allocated_days)
+            db.add(b)
+    db.commit()
+    return {"message": "Balances updated"}
+
 # ── Leave Application Routes ─────────────────────────────────────────────────
 @router.post("/apply")
 def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
