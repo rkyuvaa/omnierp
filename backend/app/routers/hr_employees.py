@@ -185,23 +185,46 @@ async def import_employees_excel(
 ):
     try:
         contents = await file.read()
-        wb = openpyxl.load_workbook(io.BytesIO(contents))
+        wb = openpyxl.load_workbook(io.BytesIO(contents), data_only=True)
         ws = wb.active
-        
-        # Expecting headers in row 1: 
-        # employee_id, name, email, phone, designation, department_id, branch_id, shift_id, date_of_joining, basic_salary, biometric_id
         
         imported = 0
         skipped = 0
         errors = []
         
+        def safe_int(val):
+            if val is None or str(val).strip() == "": return None
+            try: return int(float(val)) # handles "1.0" or 1
+            except: return None
+
+        def safe_float(val):
+            if val is None or str(val).strip() == "": return 0.0
+            try: return float(val)
+            except: return 0.0
+
+        def safe_date(val):
+            if isinstance(val, (date, datetime)): return val
+            if val is None or str(val).strip() == "": return None
+            try:
+                # Try common formats
+                for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+                    try: return datetime.strptime(str(val).strip(), fmt).date()
+                    except: continue
+                return None
+            except: return None
+
         for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
-            if not row[0] or not row[1]: # Skip empty rows
-                continue
-                
-            emp_id = str(row[0])
-            name = str(row[1])
+            # Row mapping: 0:id, 1:name, 2:email, 3:phone, 4:designation, 5:dept_id, 6:branch_id, 7:shift_id, 8:doj, 9:salary, 10:biometric_id
+            if not row[0] or str(row[0]).strip() == "": 
+                continue # Skip if no employee ID
             
+            emp_id = str(row[0]).strip()
+            name = str(row[1]).strip() if row[1] else None
+            
+            if not name:
+                errors.append(f"Row {row_idx}: Name is missing")
+                continue
+
             # Check if exists
             if db.query(HREmployee).filter(HREmployee.employee_id == emp_id).first():
                 skipped += 1
@@ -211,24 +234,27 @@ async def import_employees_excel(
                 emp = HREmployee(
                     employee_id=emp_id,
                     name=name,
-                    email=str(row[2]) if row[2] else None,
-                    phone=str(row[3]) if row[3] else None,
-                    designation=str(row[4]) if row[4] else None,
-                    department_id=int(row[5]) if row[5] else None,
-                    branch_id=int(row[6]) if row[6] else None,
-                    shift_id=int(row[7]) if row[7] else None,
-                    date_of_joining=row[8] if isinstance(row[8], (date, datetime)) else None,
-                    basic_salary=float(row[9]) if row[9] else 0,
-                    biometric_id=str(row[10]) if row[10] else None,
+                    email=str(row[2]).strip() if row[2] else None,
+                    phone=str(row[3]).strip() if row[3] else None,
+                    designation=str(row[4]).strip() if row[4] else None,
+                    department_id=safe_int(row[5]),
+                    branch_id=safe_int(row[6]),
+                    shift_id=safe_int(row[7]),
+                    date_of_joining=safe_date(row[8]),
+                    basic_salary=safe_float(row[9]),
+                    biometric_id=str(row[10]).strip() if row[10] else None,
                     is_active=True
                 )
                 db.add(emp)
+                db.flush() # Check for integrity errors (FK etc) immediately
                 imported += 1
             except Exception as e:
-                errors.append(f"Row {row_idx}: {str(e)}")
+                db.rollback()
+                errors.append(f"Row {row_idx} ({emp_id}): {str(e)}")
                 
         db.commit()
         return {"imported": imported, "skipped": skipped, "errors": errors}
     except Exception as e:
-        raise HTTPException(400, f"Failed to process file: {str(e)}")
+        raise HTTPException(400, f"Critical failure: {str(e)}")
+
 
