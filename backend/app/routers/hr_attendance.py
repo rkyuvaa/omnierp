@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import date, datetime, timedelta
 import os, shutil, uuid
 from app.database import get_db
@@ -33,6 +33,15 @@ class PunchManual(BaseModel):
     employee_id: int
     punch_time: datetime
     source: str = "manual"
+
+class BulkPunch(BaseModel):
+    biometric_id: str
+    punch_time: datetime
+    raw_uid: str
+
+class BulkSync(BaseModel):
+    machine_id: int
+    punches: List[BulkPunch]
 
 class AttendanceCorrect(BaseModel):
     employee_id: int
@@ -305,3 +314,47 @@ def get_punches(employee_id: int, target_date: date = None,
         "latitude": p.latitude, "longitude": p.longitude,
         "location_name": p.location_name,
     } for p in punches]
+
+@router.post("/sync/bulk")
+def bulk_sync(data: BulkSync, db: Session = Depends(get_db)):
+    """Bulk upload punches from a local sync agent"""
+    imported = 0
+    skipped = 0
+    recompute_dates = set() # (employee_id, date)
+    
+    for p in data.punches:
+        # Find employee by biometric_id
+        emp = db.query(HREmployee).filter(HREmployee.biometric_id == p.biometric_id).first()
+        if not emp:
+            skipped += 1
+            continue
+            
+        # Check if punch exists
+        exists = db.query(HRAttendancePunch).filter(
+            HRAttendancePunch.employee_id == emp.id,
+            HRAttendancePunch.punch_time == p.punch_time
+        ).first()
+        
+        if exists:
+            skipped += 1
+            continue
+            
+        punch = HRAttendancePunch(
+            employee_id=emp.id,
+            punch_time=p.punch_time,
+            source="biometric",
+            machine_id=data.machine_id,
+            raw_punch_uid=p.raw_uid
+        )
+        db.add(punch)
+        recompute_dates.add((emp.id, p.punch_time.date()))
+        imported += 1
+        
+    db.commit()
+    
+    # Recompute daily records for all affected employees and dates
+    for emp_id, target_date in recompute_dates:
+        compute_record(db, emp_id, target_date)
+        
+    return {"message": "Bulk sync complete", "imported": imported, "skipped": skipped}
+
