@@ -346,6 +346,26 @@ export default function EmployeeMaster() {
 }
 
 function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
+  const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState([]);
+  const [balances, setBalances] = useState(emp.leave_balances || []);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    api.get('/hr/leave/types').then(r => setLeaveTypes(r.data));
+  }, []);
+
+  async function saveBalances() {
+    setSaving(true);
+    try {
+      await api.post(`/hr/leave/balances/${emp.id}`, balances);
+      toast.success('Balances updated');
+      setShowBalanceModal(false);
+      window.location.reload(); // Refresh to show new balances
+    } catch { toast.error('Failed to update balances'); }
+    finally { setSaving(false); }
+  }
+
   const statusColors = {
     present: '#22c55e', late: '#f59e0b', absent: '#ef4444',
     half_day: '#f97316', leave: '#6366f1', on_duty: '#06b6d4',
@@ -391,9 +411,12 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
 
         {/* Leave Balances */}
         <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
-          <div style={{ fontWeight: 700, marginBottom: 16 }}>Leave Balances — {new Date().getFullYear()}</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ fontWeight: 700 }}>Leave Balances — {new Date().getFullYear()}</div>
+            <button onClick={() => setShowBalanceModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
+          </div>
           {(emp.leave_balances || []).length === 0 ? (
-            <div style={{ color: 'var(--text3)', fontSize: 13 }}>No leave balances allocated</div>
+            <div style={{ color: 'var(--text3)', fontSize: 13 }}>No leave balances allocated. Click "Manage" to add.</div>
           ) : (emp.leave_balances || []).map(b => (
             <div key={b.leave_type_id} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
@@ -401,7 +424,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                 <span style={{ fontSize: 12, color: 'var(--text2)' }}>{b.used_days} / {b.allocated_days} used</span>
               </div>
               <div style={{ background: 'var(--border)', borderRadius: 999, height: 6 }}>
-                <div style={{ width: `${Math.min(100, (b.used_days / b.allocated_days) * 100)}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
+                <div style={{ width: `${Math.min(100, (b.used_days / (b.allocated_days || 1)) * 100)}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
               </div>
             </div>
           ))}
@@ -425,6 +448,46 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
           ))}
         </div>
       </div>
+
+      {/* Balance Modal */}
+      {showBalanceModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 440, maxWidth: '100%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontWeight: 700 }}>Manage Leave Balances</h3>
+              <button onClick={() => setShowBalanceModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {leaveTypes.map(lt => {
+                const b = balances.find(x => x.leave_type_id === lt.id) || { leave_type_id: lt.id, allocated_days: 0, used_days: 0 };
+                return (
+                  <div key={lt.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, alignItems: 'center' }}>
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{lt.name} ({lt.code})</div>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" step="0.5" value={b.allocated_days} 
+                        onChange={e => {
+                          const newB = [...balances];
+                          const idx = newB.findIndex(x => x.leave_type_id === lt.id);
+                          if (idx >= 0) newB[idx].allocated_days = parseFloat(e.target.value) || 0;
+                          else newB.push({ leave_type_id: lt.id, allocated_days: parseFloat(e.target.value) || 0, used_days: 0 });
+                          setBalances(newB);
+                        }} 
+                        style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13 }} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <button onClick={() => setShowBalanceModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
+              <button onClick={saveBalances} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save Balances'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
