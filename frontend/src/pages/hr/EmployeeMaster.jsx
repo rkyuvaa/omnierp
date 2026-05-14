@@ -345,10 +345,12 @@ export default function EmployeeMaster() {
   );
 }
 
-function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
+function EmployeeDetail({ emp, onBack, onEdit, shifts, branches, departments }) {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
+  const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [balances, setBalances] = useState(emp.leave_balances || []);
+  const [salaryForm, setSalaryForm] = useState({ basic_salary: emp.basic_salary, salary_components: emp.salary_components || [] });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -363,6 +365,17 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
       setShowBalanceModal(false);
       window.location.reload(); // Refresh to show new balances
     } catch { toast.error('Failed to update balances'); }
+    finally { setSaving(false); }
+  }
+
+  async function saveSalary() {
+    setSaving(true);
+    try {
+      await api.put(`/hr/employees/${emp.id}`, salaryForm);
+      toast.success('Salary structure updated');
+      setShowSalaryModal(false);
+      window.location.reload();
+    } catch { toast.error('Failed to update salary'); }
     finally { setSaving(false); }
   }
 
@@ -432,7 +445,10 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
 
         {/* Salary Info */}
         <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
-          <div style={{ fontWeight: 700, marginBottom: 16 }}>Salary Structure</div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <div style={{ fontWeight: 700 }}>Salary Structure</div>
+            <button onClick={() => setShowSalaryModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
+          </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
             <span style={{ color: 'var(--text2)' }}>Basic Salary</span>
             <span style={{ fontWeight: 700 }}>₹{Number(emp.basic_salary || 0).toLocaleString('en-IN')}</span>
@@ -487,7 +503,50 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
           </div>
         </div>
       )}
+
+      {/* Salary Modal */}
+      {showSalaryModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 500, maxWidth: '100%', maxHeight: '90vh', overflow: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontWeight: 700 }}>Manage Salary Structure</h3>
+              <button onClick={() => setShowSalaryModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+            
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block' }}>Basic Salary (₹)</label>
+              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} 
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} />
+            </div>
+
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)' }}>Salary Components</label>
+                <button onClick={() => setSalaryForm({ ...salaryForm, salary_components: [...salaryForm.salary_components, { name: '', type: 'earning', is_percentage: true, value: 0 }] })}
+                  style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>+ Add</button>
+              </div>
+              {salaryForm.salary_components.map((comp, idx) => (
+                <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr auto', gap: 8, marginBottom: 8 }}>
+                  <input placeholder="Name" value={comp.name} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].name = e.target.value; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 12 }} />
+                  <select value={comp.is_percentage ? 'true' : 'false'} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].is_percentage = e.target.value === 'true'; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 12 }}>
+                    <option value="true">% of Basic</option>
+                    <option value="false">Fixed Amount</option>
+                  </select>
+                  <input type="number" value={comp.value} onChange={e => { const sc = [...salaryForm.salary_components]; sc[idx].value = parseFloat(e.target.value) || 0; setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ width: '100%', padding: '6px 8px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 12 }} />
+                  <button onClick={() => { const sc = salaryForm.salary_components.filter((_, i) => i !== idx); setSalaryForm({ ...salaryForm, salary_components: sc }); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}><X size={14} /></button>
+                </div>
+              ))}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <button onClick={() => setShowSalaryModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
+              <button onClick={saveSalary} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>{saving ? 'Saving...' : 'Save Salary Structure'}</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
+
 
