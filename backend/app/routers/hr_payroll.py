@@ -143,7 +143,7 @@ def _calculate_components(ctc: float, components: list):
     return result_list, computed
 
 
-def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int, lop_calculation_base: str = "gross", arrears_held: float = 0, arrears_paid: float = 0) -> dict:
+def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int, lop_calculation_base: str = "gross", arrears_held: float = 0, arrears_paid: float = 0, arrears_held_remarks: str = "", arrears_paid_remarks: str = "") -> dict:
     """Calculate salary for one employee for a given month"""
     ctc = float(emp.basic_salary or 0)
     components = _resolve_components(db, emp)
@@ -204,10 +204,16 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int, lop_
         deductions["Loss of Pay (LOP)"] = lop_deduction
 
     if arrears_held > 0:
-        deductions["Salary Held (Arrears)"] = arrears_held
+        label = "Salary Held (Arrears)"
+        if arrears_held_remarks:
+            label += f" [{arrears_held_remarks}]"
+        deductions[label] = arrears_held
         
     if arrears_paid > 0:
-        earnings["Arrears Payout"] = arrears_paid
+        label = "Arrears Payout"
+        if arrears_paid_remarks:
+            label += f" [{arrears_paid_remarks}]"
+        earnings[label] = arrears_paid
 
     total_earnings = round(sum(earnings.values()), 2)
     total_deductions = round(sum(deductions.values()), 2)
@@ -278,6 +284,7 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
             HRArrearRecord.status == "held"
         ).all()
         arrears_held_val = sum(float(a.amount_held or 0) for a in arrears_held_records)
+        arrears_held_rem = ", ".join([a.remarks for a in arrears_held_records if a.remarks])
 
         arrears_paid_records = db.query(HRArrearRecord).filter(
             HRArrearRecord.employee_id == emp_id,
@@ -286,8 +293,9 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
             HRArrearRecord.status == "paid"
         ).all()
         arrears_paid_val = sum(float(a.amount_held or 0) for a in arrears_paid_records)
+        arrears_paid_rem = ", ".join([a.remarks for a in arrears_paid_records if a.remarks])
 
-        calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, arrears_held_val, arrears_paid_val)
+        calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, arrears_held_val, arrears_paid_val, arrears_held_rem, arrears_paid_rem)
 
         if existing:
             for k, v in calc.items():
@@ -438,16 +446,63 @@ def hold_arrear(data: ArrearHoldRequest, db: Session = Depends(get_db), current_
 
 @router.post("/arrears/pay")
 def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    arrears = db.query(HRArrearRecord).filter(HRArrearRecord.id.in_(data.arrear_ids)).all()
-    total_paid = 0
-    for arrear in arrears:
-        if arrear.status == "held":
-            arrear.status = "paid"
-            arrear.paid_in_month = data.pay_month
-            arrear.paid_in_year = data.pay_year
-            total_paid += float(arrear.amount_held or 0)
+    arrear = db.query(HRArrearRecord).filter(HRArrearRecord.id == data.arrear_id).first()
+    if not arrear: raise HTTPException(404, "Arrear record not found")
+    if arrear.status != "held": raise HTTPException(400, "Arrear is already paid or cancelled")
+    
+    pay_amt = round(float(data.amount), 2)
+    held_amt = round(float(arrear.amount_held or 0), 2)
+    
+    if pay_amt > held_amt:
+        raise HTTPException(400, f"Cannot pay more than held amount (₹{held_amt})")
+
+    if pay_amt < held_amt:
+        # Partial payout: Create a NEW record for the paid part, and keep balance in original
+        paid_record = HRArrearRecord(
+            employee_id=arrear.employee_id,
+            held_month=arrear.held_month,
+            held_year=arrear.held_year,
+            amount_held=pay_amt,
+            status="paid",
+            paid_in_month=data.pay_month,
+            paid_in_year=data.pay_year,
+            remarks=f"Partial payout from ₹{held_amt} hold"
+        )
+        db.add(paid_record)
+        
+        # Update original record with remaining balance
+        arrear.amount_held = round(held_amt - pay_amt, 2)
+        arrear.remarks = (arrear.remarks or "") + f" [₹{pay_amt} paid in {data.pay_month}/{data.pay_year}]"
+    else:
+        # Full payout
+        arrear.status = "paid"
+        arrear.paid_in_month = data.pay_month
+        arrear.paid_in_year = data.pay_year
+
     db.commit()
-    return {"message": "Arrears marked as paid", "total_paid": total_paid}
+    return {"message": "Arrear payout processed", "amount_paid": pay_amt}
+
+@router.get("/arrears/pending-list")
+def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Return all employees who have pending arrears balance."""
+    # Group by employee to show total pending per person
+    from sqlalchemy import func
+    results = db.query(
+        HRArrearRecord.employee_id,
+        HREmployee.name,
+        HREmployee.employee_id.label("code"),
+        func.sum(HRArrearRecord.amount_held).label("total_pending")
+    ).join(HREmployee, HRArrearRecord.employee_id == HREmployee.id)\
+     .filter(HRArrearRecord.status == "held")\
+     .group_by(HRArrearRecord.employee_id, HREmployee.name, HREmployee.employee_id)\
+     .all()
+     
+    return [{
+        "employee_id": r.employee_id,
+        "name": r.name,
+        "code": r.code,
+        "total_pending": float(r.total_pending or 0)
+    } for r in results]
 
 @router.get("/arrears/{employee_id}")
 def get_employee_arrears(employee_id: int, status: Optional[str] = "held", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):

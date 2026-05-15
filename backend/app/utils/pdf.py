@@ -519,11 +519,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8;">Rs. {total_earnings:,.2f}</td>
     <td style="width: 50%; border-left: none; border-bottom: none;"></td>
   </tr>
-  <tr>
-    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #c0392b;">Total Deductions</td>
-    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #c0392b;">Rs. {total_deductions:,.2f}</td>
-    <td style="width: 50%; border-left: none; border-top: none;"></td>
-  </tr>
+  {ded_summary_html}
 </table>
 
 <table style="margin-bottom: 0;">
