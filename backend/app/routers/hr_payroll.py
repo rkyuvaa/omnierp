@@ -143,8 +143,11 @@ def _calculate_components(ctc: float, components: list):
     return result_list, computed
 
 
-def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int, lop_calculation_base: str = "gross", arrears_held: float = 0, arrears_paid: float = 0, arrears_held_remarks: str = "", arrears_paid_remarks: str = "") -> dict:
-    """Calculate salary for one employee for a given month"""
+def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int, lop_base: str = "gross", arrears_held_list: list = None, arrears_paid_list: list = None) -> dict:
+    # arrears_held_list/arrears_paid_list should be list of (amount, remarks)
+    arrears_held_list = arrears_held_list or []
+    arrears_paid_list = arrears_paid_list or []
+    emp = employee
     ctc = float(emp.basic_salary or 0)
     components = _resolve_components(db, emp)
 
@@ -203,17 +206,18 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int, lop_
     if lop_deduction > 0:
         deductions["Loss of Pay (LOP)"] = lop_deduction
 
-    if arrears_held > 0:
-        label = "Salary Held (Arrears)"
-        if arrears_held_remarks:
-            label += f" [{arrears_held_remarks}]"
-        deductions[label] = arrears_held
+    for amt, rem in arrears_held_list:
+        if amt > 0:
+            label = rem if rem else "Salary Held (Arrears)"
+            deductions[label] = amt
         
-    if arrears_paid > 0:
-        label = "Arrears Payout"
-        if arrears_paid_remarks:
-            label += f" [{arrears_paid_remarks}]"
-        earnings[label] = arrears_paid
+    for amt, rem in arrears_paid_list:
+        if amt > 0:
+            label = rem if rem else "Arrears Payout"
+            earnings[label] = amt
+
+    arrears_held_total = sum(a[0] for a in arrears_held_list)
+    arrears_paid_total = sum(a[0] for a in arrears_paid_list)
 
     total_earnings = round(sum(earnings.values()), 2)
     total_deductions = round(sum(deductions.values()), 2)
@@ -230,8 +234,8 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int, lop_
         "total_earnings": total_earnings,
         "total_deductions": total_deductions,
         "net_salary": net_salary,
-        "arrears_held": arrears_held,
-        "arrears_paid": arrears_paid,
+        "arrears_held": arrears_held_total,
+        "arrears_paid": arrears_paid_total,
         "components_breakdown": {"earnings": earnings, "deductions": deductions},
     }
 
@@ -283,8 +287,7 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
             HRArrearRecord.held_year == data.year,
             HRArrearRecord.status == "held"
         ).all()
-        arrears_held_val = sum(float(a.amount_held or 0) for a in arrears_held_records)
-        arrears_held_rem = ", ".join([a.remarks for a in arrears_held_records if a.remarks])
+        held_list = [(float(a.amount_held or 0), a.remarks) for a in arrears_held_records]
 
         arrears_paid_records = db.query(HRArrearRecord).filter(
             HRArrearRecord.employee_id == emp_id,
@@ -292,10 +295,9 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
             HRArrearRecord.paid_in_year == data.year,
             HRArrearRecord.status == "paid"
         ).all()
-        arrears_paid_val = sum(float(a.amount_held or 0) for a in arrears_paid_records)
-        arrears_paid_rem = ", ".join([a.remarks for a in arrears_paid_records if a.remarks])
+        paid_list = [(float(a.amount_held or 0), a.remarks) for a in arrears_paid_records]
 
-        calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, arrears_held_val, arrears_paid_val, arrears_held_rem, arrears_paid_rem)
+        calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, held_list, paid_list)
 
         if existing:
             for k, v in calc.items():
