@@ -330,6 +330,17 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                     <div class="net-left">{block_label}<span class="net-words">{net_words}</span></div>
                     <div class="net-right">&#8377;{net_salary:,.2f}</div>
                   </div>"""
+                
+            elif ftype == 'pr_custom_comp':
+                comp_name = f.get('content', '')
+                comp_val = earnings.get(comp_name) or deductions.get(comp_name) or 0
+                content_html += f"""
+                  <table style="width:100%; border-collapse: collapse; margin-bottom: 5px;">
+                    <tr>
+                      <td style="padding: 5px; border-bottom: 1px solid #eee; font-size: 9.5pt; color: #333;"><strong>{block_label}</strong></td>
+                      <td style="padding: 5px; border-bottom: 1px solid #eee; text-align: right; font-size: 10pt; font-weight: 700;">&#8377;{float(comp_val):,.2f}</td>
+                    </tr>
+                  </table>"""
 
             content_html += "</td>"
             if col_count == 2:

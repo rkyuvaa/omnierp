@@ -174,6 +174,7 @@ function TemplateModal({ initial, module, parentFields, onSave, onClose }) {
                                  <option value="pr_earnings">Earnings Table</option>
                                  <option value="pr_deductions">Deductions Table</option>
                                  <option value="pr_net_salary">Net Salary Box</option>
+                                 <option value="pr_custom_comp">Specific Component</option>
                                </optgroup>
                              )}
                            </select>
@@ -197,6 +198,15 @@ function TemplateModal({ initial, module, parentFields, onSave, onClose }) {
                             }}
                             placeholder="Type paragraph text here..."
                             style={{ width: '100%', fontSize: 11, padding: 6, border: '1px solid #ddd', borderRadius: 4, minHeight: 60, resize: 'vertical' }}
+                          />
+                        ) : f.type === 'pr_custom_comp' ? (
+                          <input 
+                            value={f.content || ''} 
+                            onChange={e => {
+                              const next = [...form.fields_config]; next[i].content = e.target.value; set('fields_config', next);
+                            }}
+                            placeholder="Exact name (e.g. Basic Salary)"
+                            style={{ width: '100%', fontSize: 11, padding: 6, border: '1px solid #ddd', borderRadius: 4 }}
                           />
                         ) : f.type === 'static_image' ? (
                           <input 
