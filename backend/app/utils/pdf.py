@@ -383,8 +383,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             <td>{d_name}</td><td class="amt">{d_amt_str}</td>
         </tr>"""
 
-    # If logo exists, use it centered, else fallback to text
-    logo_block = f'<img src="{company_logo}" style="max-height:60px; margin-bottom: 5px;" /><br>' if company_logo else ''
+    # If logo exists, use it left-aligned, else fallback to text
+    logo_block = f'<img src="{company_logo}" style="max-height:70px;" />' if company_logo else ''
 
     return f"""<!DOCTYPE html>
 <html>
@@ -397,8 +397,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   .center {{ text-align: center; }}
   
   /* Header styling */
-  .company-name {{ font-size: 14pt; font-weight: bold; color: #104c8f; margin-bottom: 2px; }}
-  .company-address {{ font-size: 8.5pt; color: #666; margin-bottom: 15px; line-height: 1.3; }}
+  .company-name {{ font-size: 16pt; font-weight: bold; color: #104c8f; margin-bottom: 4px; }}
+  .company-address {{ font-size: 9pt; color: #666; line-height: 1.4; }}
   
   /* Salary Slip Bar */
   .title-bar {{ background-color: #1a68b2; color: #fff; padding: 8px 12px; font-size: 11pt; font-weight: bold; margin-bottom: 10px; }}
@@ -409,6 +409,10 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   /* Generic Table borders */
   table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; }}
   td, th {{ border: 1px solid #c9d9e8; padding: 6px 8px; }}
+  
+  /* Header Table */
+  .header-table {{ border: none; margin-bottom: 10px; }}
+  .header-table td {{ border: none; padding: 0; vertical-align: middle; }}
   
   /* Employee Info Table */
   .emp-table td.lbl {{ background-color: #f4f7f9; font-weight: bold; color: #444; width: 20%; }}
@@ -431,11 +435,17 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
 </head>
 <body>
 
-<div class="center">
-  {logo_block}
-  <div class="company-name">{company_name}</div>
-  <div class="company-address">{company_address}</div>
-</div>
+<table class="header-table">
+  <tr>
+    <td style="width: 25%; text-align: left;">
+      {logo_block}
+    </td>
+    <td style="width: 75%; text-align: center;">
+      <div class="company-name">{company_name}</div>
+      <div class="company-address">{company_address}</div>
+    </td>
+  </tr>
+</table>
 
 <div class="title-bar">SALARY SLIP — {month_name.upper()} {year}</div>
 <div class="month-text">{month_name} {year}</div>
