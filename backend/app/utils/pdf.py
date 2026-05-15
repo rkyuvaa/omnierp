@@ -451,7 +451,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   </tr>
   <tr>
     <td class="lbl">Designation</td><td class="val">{designation}</td>
-    <td class="lbl">Leave</td><td class="val">{leave_days}</td>
+    <td class="lbl">Leave</td><td class="val">{float(record.leave_days or 0):.1f}</td>
   </tr>
   <tr>
     <td class="lbl">Date of Joining</td><td class="val">{doj}</td>
