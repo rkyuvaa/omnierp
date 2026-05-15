@@ -386,12 +386,14 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
         e_name, e_amt = earn_items[i] if i < len(earn_items) else ("", None)
         d_name, d_amt = ded_items[i] if i < len(ded_items) else ("", None)
         
-        e_amt_str = f"Rs. {float(e_amt):,.2f}" if e_amt is not None else ""
-        d_amt_str = f"Rs. {float(d_amt):,.2f}" if d_amt is not None else ""
+        e_name_display = e_name if e_name else "&nbsp;"
+        d_name_display = d_name if d_name else "&nbsp;"
+        e_amt_str = f"Rs. {float(e_amt):,.2f}" if e_amt is not None else "&nbsp;"
+        d_amt_str = f"Rs. {float(d_amt):,.2f}" if d_amt is not None else "&nbsp;"
         
         earn_ded_rows += f"""<tr>
-            <td style="width:30%;">{e_name}</td><td class="amt" style="width:20%;">{e_amt_str}</td>
-            <td style="width:30%;">{d_name}</td><td class="amt" style="width:20%;">{d_amt_str}</td>
+            <td>{e_name_display}</td><td class="amt">{e_amt_str}</td>
+            <td>{d_name_display}</td><td class="amt">{d_amt_str}</td>
         </tr>"""
 
     # If logo exists, use it left-aligned, else fallback to text
@@ -482,10 +484,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
 
 <table>
   <tr>
-    <td class="comp-th" style="width:30%; border-right:none;">Earnings</td>
-    <td class="comp-th" style="width:20%; border-left:none;"></td>
-    <td class="comp-th" style="width:30%; border-right:none;">Deductions</td>
-    <td class="comp-th" style="width:20%; border-left:none;"></td>
+    <td colspan="2" class="comp-th" style="width:50%; text-align:center;">Earnings</td>
+    <td colspan="2" class="comp-th" style="width:50%; text-align:center;">Deductions</td>
   </tr>
   <tr>
     <td class="sub-th" style="width:30%;">Particulars</td>
