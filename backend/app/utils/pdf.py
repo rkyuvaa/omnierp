@@ -390,8 +390,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
         d_amt_str = f"Rs. {float(d_amt):,.2f}" if d_amt is not None else ""
         
         earn_ded_rows += f"""<tr>
-            <td>{e_name}</td><td class="amt">{e_amt_str}</td>
-            <td>{d_name}</td><td class="amt">{d_amt_str}</td>
+            <td style="width:30%;">{e_name}</td><td class="amt" style="width:20%;">{e_amt_str}</td>
+            <td style="width:30%;">{d_name}</td><td class="amt" style="width:20%;">{d_amt_str}</td>
         </tr>"""
 
     # If logo exists, use it left-aligned, else fallback to text
@@ -482,8 +482,10 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
 
 <table>
   <tr>
-    <td colspan="2" class="comp-th" style="width:50%;">Earnings</td>
-    <td colspan="2" class="comp-th" style="width:50%;">Deductions</td>
+    <td class="comp-th" style="width:30%; border-right:none;">Earnings</td>
+    <td class="comp-th" style="width:20%; border-left:none;"></td>
+    <td class="comp-th" style="width:30%; border-right:none;">Deductions</td>
+    <td class="comp-th" style="width:20%; border-left:none;"></td>
   </tr>
   <tr>
     <td class="sub-th" style="width:30%;">Particulars</td>
@@ -494,7 +496,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   {earn_ded_rows}
   
   <tr>
-    <td class="net-sal-lbl">Gross Earnings</td>
+    <td class="net-sal-lbl">Net Salary</td>
     <td class="amt">Rs. {total_earnings:,.2f}</td>
     <td class="net-sal-lbl">Total Deductions</td>
     <td class="amt">Rs. {total_deductions:,.2f}</td>
