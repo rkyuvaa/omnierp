@@ -405,6 +405,38 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     # If logo exists, use it left-aligned, else fallback to text
     logo_block = f'<img src="{company_logo}" style="max-height:70px;" />' if company_logo else ''
 
+    # Summary calculations for deductions
+    regular_deductions = sum(float(v) for k, v in deductions.items() if "Salary Held" not in k)
+    arrear_deductions = sum(float(v) for k, v in deductions.items() if "Salary Held" in k)
+    
+    ded_summary_html = f"""
+  <tr>
+    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #c0392b;">Total Deductions</td>
+    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #c0392b;">Rs. {total_deductions:,.2f}</td>
+    <td style="width: 50%; border-left: none; border-top: none;"></td>
+  </tr>"""
+    
+    if arrear_deductions > 0:
+        ded_summary_html = f"""
+  <tr>
+    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #7f8c8d; font-size: 8pt;">Regular Deductions</td>
+    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #7f8c8d; font-size: 8pt;">Rs. {regular_deductions:,.2f}</td>
+    <td style="width: 50%; border-left: none; border-bottom: none;"></td>
+  </tr>
+  <tr>
+    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #7f8c8d; font-size: 8pt;">Arrears Held</td>
+    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #7f8c8d; font-size: 8pt;">Rs. {arrear_deductions:,.2f}</td>
+    <td style="width: 50%; border-left: none; border-bottom: none; border-top: none;"></td>
+  </tr>
+  <tr>
+    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #c0392b;">Total Deductions</td>
+    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #c0392b;">Rs. {total_deductions:,.2f}</td>
+    <td style="width: 50%; border-left: none; border-top: none;"></td>
+  </tr>"""
+
+    import datetime
+    now_str = datetime.datetime.now().strftime("%d-%b-%Y %H:%M:%S")
+
     return f"""<!DOCTYPE html>
 <html>
 <head>
@@ -524,7 +556,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
 
 <table style="margin-bottom: 0;">
   <tr>
-    <td class="summary-bg" style="width:30%;">Earned This Month</td>
+    <td class="summary-bg" style="width:30%;">Net Salary</td>
     <td class="summary-bg amt" style="width:20%;">Rs. {net_salary:,.2f}</td>
     <td class="summary-bg" style="width:30%;">Days in Month</td>
     <td class="summary-bg amt" style="width:20%;">{days_in_month} days</td>
