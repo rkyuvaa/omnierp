@@ -237,12 +237,16 @@ def list_payroll(
         HRPayrollRecord.year == year,
     )
     records = q.all()
+    
+    # Filter out orphaned records where employee was deleted
+    valid_records = [r for r in records if r.employee]
+    
     return [{
         "id": r.id,
         "employee_id": r.employee_id,
-        "employee_code": r.employee.employee_id if r.employee else None,
-        "employee_name": r.employee.name if r.employee else None,
-        "designation": r.employee.designation if r.employee else None,
+        "employee_code": r.employee.employee_id,
+        "employee_name": r.employee.name,
+        "designation": r.employee.designation,
         "month": r.month, "year": r.year,
         "working_days": r.working_days,
         "present_days": float(r.present_days or 0),
@@ -256,7 +260,7 @@ def list_payroll(
         "net_salary": float(r.net_salary or 0),
         "components_breakdown": r.components_breakdown,
         "status": r.status,
-    } for r in records]
+    } for r in valid_records]
 
 
 @router.post("/{record_id}/finalize")
