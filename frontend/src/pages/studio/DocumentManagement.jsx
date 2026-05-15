@@ -71,7 +71,7 @@ function TemplateModal({ initial, parentFields, onSave, onClose }) {
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
   return (
-    <Modal size="lg" title={form.id ? `Editing: ${form.name}` : 'New Document Template'} onClose={onClose}
+    <Modal size="full" title={form.id ? `Editing: ${form.name}` : 'New Document Template'} onClose={onClose}
       footer={<><button className="btn btn-ghost" onClick={onClose}>Cancel</button><button className="btn btn-primary" onClick={() => onSave(form)}>Save Template</button></>}>
       
       <div style={{ display: 'grid', gridTemplateColumns: '180px 1fr', gap: 24, minHeight: 400 }}>

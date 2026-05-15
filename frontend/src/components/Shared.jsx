@@ -1,9 +1,10 @@
 import { X } from 'lucide-react';
 
-export function Modal({ title, onClose, children, footer, large }) {
+export function Modal({ title, onClose, children, footer, size }) {
+  const sizeClass = size === 'full' ? 'modal-full' : size === 'lg' ? 'modal-lg' : '';
   return (
     <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
-      <div className={`modal ${large ? 'modal-lg' : ''}`}>
+      <div className={`modal ${sizeClass}`}>
         <div className="modal-header">
           <span className="modal-title">{title}</span>
           <button className="btn btn-ghost btn-sm" onClick={onClose}><X size={14} /></button>
