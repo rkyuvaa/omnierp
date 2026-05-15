@@ -408,21 +408,21 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   .center {{ text-align: center; }}
   
   /* Header styling */
-  .company-name {{ font-size: 16pt; font-weight: bold; color: #104c8f; margin-bottom: 4px; }}
-  .company-address {{ font-size: 9pt; color: #333; line-height: 1.4; }}
+  .company-name {{ font-size: 15pt; font-weight: bold; color: #104c8f; margin-bottom: 4px; }}
+  .company-address {{ font-size: 8.5pt; color: #333; line-height: 1.4; }}
   
   /* Salary Slip Bar */
-  .title-bar {{ background-color: #1a68b2; color: #fff; padding: 8px 12px; font-size: 11pt; font-weight: bold; margin-bottom: 10px; }}
+  .title-bar {{ background-color: #1a68b2; color: #fff; padding: 5px 10px; font-size: 10pt; font-weight: bold; margin-bottom: 8px; }}
   
   /* Month/Year */
-  .month-text {{ text-align: right; font-weight: bold; color: #555; margin-bottom: 10px; font-size: 9.5pt; }}
+  .month-text {{ text-align: right; font-weight: bold; color: #555; margin-bottom: 8px; font-size: 9pt; }}
   
   /* Generic Table borders */
-  table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; }}
-  td, th {{ border: 1px solid #c9d9e8; padding: 6px 8px; }}
+  table {{ width: 100%; border-collapse: collapse; margin-bottom: 10px; }}
+  td, th {{ border: 1px solid #c9d9e8; padding: 3px 5px; }}
   
   /* Header Table */
-  .header-table {{ border: none; margin-bottom: 10px; }}
+  .header-table {{ border: none; margin-bottom: 8px; }}
   .header-table td {{ border: none; padding: 0; vertical-align: middle; }}
   
   /* Employee Info Table */
@@ -430,7 +430,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   .emp-table td.val {{ width: 30%; }}
   
   /* Earnings / Deductions Header */
-  .comp-th {{ background-color: #0d4782; color: #fff; font-weight: bold; padding: 8px; border: 1px solid #0d4782; }}
+  .comp-th {{ background-color: #0d4782; color: #fff; font-weight: bold; padding: 5px; border: 1px solid #0d4782; }}
   .sub-th {{ font-weight: bold; color: #555; background: #fff; border-bottom: 1px solid #c9d9e8; }}
   .sub-th.right {{ text-align: right; }}
   
@@ -438,10 +438,10 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   .net-sal-lbl {{ color: #104c8f; font-weight: bold; }}
   .summary-bg {{ background-color: #f4f7f9; font-weight: bold; }}
   
-  .grand-total {{ background-color: #3b8235; color: #fff; font-weight: bold; font-size: 11pt; padding: 10px 12px; border: none; }}
-  .grand-total-val {{ text-align: right; font-size: 12pt; border: none; }}
+  .grand-total {{ background-color: #3b8235; color: #fff; font-weight: bold; font-size: 10pt; padding: 6px 10px; border: none; }}
+  .grand-total-val {{ text-align: right; font-size: 10pt; border: none; }}
   
-  .footer {{ text-align: center; color: #777; font-size: 8pt; margin-top: 30px; line-height: 1.4; border-top: 1px solid #eee; padding-top: 10px; }}
+  .footer {{ text-align: center; color: #777; font-size: 8pt; margin-top: 20px; line-height: 1.4; border-top: 1px solid #eee; padding-top: 10px; }}
 </style>
 </head>
 <body>
@@ -496,10 +496,16 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   {earn_ded_rows}
   
   <tr>
-    <td class="net-sal-lbl">Net Salary</td>
+    <td class="net-sal-lbl">Gross Salary</td>
     <td class="amt">Rs. {total_earnings:,.2f}</td>
-    <td class="net-sal-lbl">Total Deductions</td>
-    <td class="amt">Rs. {total_deductions:,.2f}</td>
+    <td class="net-sal-lbl" style="border-left: none; border-right: none;"></td>
+    <td class="amt" style="border-left: none;"></td>
+  </tr>
+  <tr>
+    <td class="net-sal-lbl" style="color: #c0392b;">Total Deductions</td>
+    <td class="amt" style="color: #c0392b;">Rs. {total_deductions:,.2f}</td>
+    <td class="net-sal-lbl" style="border-left: none; border-right: none;"></td>
+    <td class="amt" style="border-left: none;"></td>
   </tr>
 </table>
 
