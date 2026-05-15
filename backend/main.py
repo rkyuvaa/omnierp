@@ -23,6 +23,33 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
+# Auto-migrate: add any missing columns safely
+from sqlalchemy import text as _text, inspect as _inspect
+def _safe_add_columns():
+    """Add new columns to existing tables if they don't exist."""
+    inspector = _inspect(engine)
+    migrations = [
+        # (table, column, sql_type)
+        ("hr_salary_components", "apply_if_gross_below", "DOUBLE PRECISION"),
+        ("hr_salary_components", "apply_if_gross_above", "DOUBLE PRECISION"),
+    ]
+    with engine.connect() as conn:
+        for table, col, col_type in migrations:
+            if table in inspector.get_table_names():
+                existing = [c["name"] for c in inspector.get_columns(table)]
+                if col not in existing:
+                    try:
+                        conn.execute(_text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type}"))
+                        conn.commit()
+                        print(f"✅ Added column {table}.{col}")
+                    except Exception as e:
+                        print(f"⚠️ Column migration {table}.{col}: {e}")
+
+try:
+    _safe_add_columns()
+except Exception as e:
+    print(f"Migration check skipped: {e}")
+
 # Start background scheduler
 _scheduler = start_scheduler()
 
