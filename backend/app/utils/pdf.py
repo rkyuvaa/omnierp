@@ -173,8 +173,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     If fields_config is provided and not empty, it builds the PDF dynamically based on the Studio layout.
     Otherwise, it falls back to the standard hardcoded layout.
     """
-    company_name    = pdf_cfg.get('company_name', pdf_cfg.get('header', 'KiM ERP').split('\n')[0])
-    company_address = pdf_cfg.get('header', '').replace('\n', '<br>')
+    company_name    = pdf_cfg.get('company_name', 'Konwert India Motors Private Limited')
+    company_address = pdf_cfg.get('header', 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108\nGSTIN: 33AAHCK7681B1ZL').replace('\n', '<br>')
     company_logo    = pdf_cfg.get('logo', '')
     footer_text     = pdf_cfg.get('footer', 'This is a computer-generated payslip. No signature required.')
 
@@ -398,7 +398,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   
   /* Header styling */
   .company-name {{ font-size: 16pt; font-weight: bold; color: #104c8f; margin-bottom: 4px; }}
-  .company-address {{ font-size: 9pt; color: #666; line-height: 1.4; }}
+  .company-address {{ font-size: 9pt; color: #333; line-height: 1.4; }}
   
   /* Salary Slip Bar */
   .title-bar {{ background-color: #1a68b2; color: #fff; padding: 8px 12px; font-size: 11pt; font-weight: bold; margin-bottom: 10px; }}
