@@ -258,39 +258,53 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     # DYNAMIC RENDERER (If user designed a custom layout)
     # ─────────────────────────────────────────────────────────
     if fields_config and len(fields_config) > 0:
-        content_html = ""
+        content_html = "<table style='width: 100%; border-collapse: collapse;'><tr>"
+        col_count = 0
+        
         for f in fields_config:
             ftype = f.get('type')
-            width_style = "width: 48%; display: inline-block; vertical-align: top; margin-right: 2%;" if f.get('width') == 'half' else "width: 100%;"
+            width_type = f.get('width', 'full')
+            
+            if width_type == 'full':
+                if col_count == 1:
+                    content_html += "<td style='width: 50%;'></td></tr><tr>"
+                else:
+                    content_html += "</tr><tr>"
+                content_html += "<td colspan='2' style='width: 100%; padding-bottom: 15px;'>"
+                col_count = 0
+            else: # half
+                if col_count == 0:
+                    content_html += "</tr><tr>"
+                content_html += "<td style='width: 50%; padding-right: 2%; padding-bottom: 15px; vertical-align: top;'>"
+                col_count += 1
+                
+            block_label = f.get('label', '').upper()
             
             # Basic Layout Elements
             if ftype == 'separator':
-                content_html += f'<hr style="border:none; border-top:2px solid #ccc; margin: 20px 0; width: 100%;" />'
+                content_html += f'<hr style="border:none; border-top:2px solid #ccc; margin: 10px 0; width: 100%;" />'
             elif ftype == 'heading':
-                content_html += f'<div style="{width_style} font-size: 14pt; font-weight: bold; color: #1a3c5e; margin: 25px 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; text-transform: uppercase;">{f.get("label", "HEADING")}</div>'
+                content_html += f'<div style="font-size: 14pt; font-weight: bold; color: #1a3c5e; margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px;">{block_label}</div>'
             elif ftype == 'static_text':
                 content = f.get('content', '').replace('\n', '<br>')
-                content_html += f'<div style="{width_style} font-size: 10pt; color: #444; margin-bottom: 15px; line-height: 1.6;">{content}</div>'
+                content_html += f'<div style="font-size: 10pt; color: #444; line-height: 1.6;">{content}</div>'
             elif ftype == 'static_image':
                 img_url = f.get('url', '')
-                if img_url: content_html += f'<div style="{width_style} margin: 15px 0; text-align: center;"><img src="{img_url}" style="max-width: 100%; max-height: 250px;" /></div>'
+                if img_url: content_html += f'<div style="text-align: center;"><img src="{img_url}" style="max-width: 100%; max-height: 250px;" /></div>'
             
             # Payroll-Specific Blocks
             elif ftype == 'pr_emp_info':
                 content_html += f"""
-                <div style="{width_style}">
-                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{f.get('label', 'EMPLOYEE DETAILS')}</div>
+                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{block_label}</div>
                   <table class="info-table">
                     <tr><td>Employee Name</td><td><strong>{emp_name}</strong></td><td>Employee Code</td><td>{emp_code}</td></tr>
                     <tr><td>Designation</td><td>{designation}</td><td>Department</td><td>{department}</td></tr>
                     <tr><td>Date of Joining</td><td>{doj}</td><td>Salary (CTC)</td><td>&#8377;{float(employee.basic_salary or 0):,.2f}</td></tr>
-                  </table>
-                </div>"""
+                  </table>"""
             
             elif ftype == 'pr_attendance':
                 content_html += f"""
-                <div style="{width_style}">
-                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{f.get('label', 'ATTENDANCE SUMMARY')}</div>
+                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{block_label}</div>
                   <div class="att-strip">
                     <div class="att-cell"><span class="att-num">{working_days}</span><span class="att-lbl">Working Days</span></div>
                     <div class="att-cell"><span class="att-num">{present_days:.1f}</span><span class="att-lbl">Present Days</span></div>
@@ -298,31 +312,32 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                     <div class="att-cell"><span class="att-num">{float(record.leave_days or 0):.1f}</span><span class="att-lbl">Leave Days</span></div>
                     <div class="att-cell"><span class="att-num">{lop_days:.1f}</span><span class="att-lbl">LOP Days</span></div>
                     <div class="att-cell"><span class="att-num">{on_duty_days:.1f}</span><span class="att-lbl">On Duty Days</span></div>
-                  </div>
-                </div>"""
+                  </div>"""
             
             elif ftype == 'pr_earnings':
                 content_html += f"""
-                <div style="{width_style}">
-                  <div class="comp-hdr">&#9650; {f.get('label', 'EARNINGS')}</div>
-                  <table class="comp-tbl">{earn_rows}<tr class="total-row"><td>Gross Earnings</td><td>&#8377;{total_earnings:,.2f}</td></tr></table>
-                </div>"""
+                  <div class="comp-hdr">{block_label}</div>
+                  <table class="comp-tbl">{earn_rows}<tr class="total-row"><td>Gross Earnings</td><td>&#8377;{total_earnings:,.2f}</td></tr></table>"""
                 
             elif ftype == 'pr_deductions':
                 content_html += f"""
-                <div style="{width_style}">
-                  <div class="comp-hdr" style="background:#c0392b;">&#9660; {f.get('label', 'DEDUCTIONS')}</div>
-                  <table class="comp-tbl">{ded_rows}<tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">&#8377;{total_deductions:,.2f}</td></tr></table>
-                </div>"""
+                  <div class="comp-hdr" style="background:#c0392b;">{block_label}</div>
+                  <table class="comp-tbl">{ded_rows}<tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">&#8377;{total_deductions:,.2f}</td></tr></table>"""
                 
             elif ftype == 'pr_net_salary':
                 content_html += f"""
-                <div style="{width_style}">
                   <div class="net-box">
-                    <div class="net-left">{f.get('label', 'NET SALARY')}<span class="net-words">{net_words}</span></div>
+                    <div class="net-left">{block_label}<span class="net-words">{net_words}</span></div>
                     <div class="net-right">&#8377;{net_salary:,.2f}</div>
-                  </div>
-                </div>"""
+                  </div>"""
+
+            content_html += "</td>"
+            if col_count == 2:
+                col_count = 0
+                
+        if col_count == 1:
+            content_html += "<td style='width: 50%;'></td>"
+        content_html += "</tr></table>"
 
         return f"""<!DOCTYPE html><html><head><meta charset="utf-8"/><style>{css}</style></head>
         <body><div class="payslip">
