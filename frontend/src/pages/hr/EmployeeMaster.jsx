@@ -479,7 +479,17 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             </div>
             <div style={{ background: 'var(--accent-dim)', padding: 16, borderRadius: 10, marginBottom: 20 }}>
               <label style={labelStyle}>Salary Template</label>
-              <select value={salaryForm.salary_template_id || ''} onChange={e => setSalaryForm({ ...salaryForm, salary_template_id: e.target.value || null })} style={inputStyle}>
+              <select value={salaryForm.salary_template_id || ''} 
+                onChange={e => {
+                  const tid = e.target.value ? parseInt(e.target.value) : null;
+                  const template = salaryTemplates.find(t => t.id === tid);
+                  setSalaryForm({ 
+                    ...salaryForm, 
+                    salary_template_id: tid,
+                    salary_components: template ? template.components : [] 
+                  });
+                }} 
+                style={inputStyle}>
                 <option value="">— Select Template —</option>
                 {salaryTemplates.map(t => <option key={t.id} value={t.id}>{t.name}{t.description ? ` — ${t.description}` : ''}</option>)}
               </select>
