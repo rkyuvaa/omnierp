@@ -381,7 +381,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     ded_items = list(deductions.items())
     max_len = max(len(earn_items), len(ded_items))
     
-    earn_ded_rows = ""
+    earn_html_rows = ""
+    ded_html_rows = ""
     for i in range(max_len):
         e_name, e_amt = earn_items[i] if i < len(earn_items) else ("", None)
         d_name, d_amt = ded_items[i] if i < len(ded_items) else ("", None)
@@ -391,9 +392,14 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
         e_amt_str = f"Rs. {float(e_amt):,.2f}" if e_amt is not None else "&nbsp;"
         d_amt_str = f"Rs. {float(d_amt):,.2f}" if d_amt is not None else "&nbsp;"
         
-        earn_ded_rows += f"""<tr>
-            <td>{e_name_display}</td><td class="amt">{e_amt_str}</td>
-            <td>{d_name_display}</td><td class="amt">{d_amt_str}</td>
+        earn_html_rows += f"""<tr>
+            <td style="width:60%; border-left:none; border-right:none; border-bottom: 1px solid #c9d9e8;">{e_name_display}</td>
+            <td class="amt" style="width:40%; border-right:none; border-bottom: 1px solid #c9d9e8;">{e_amt_str}</td>
+        </tr>"""
+        
+        ded_html_rows += f"""<tr>
+            <td style="width:60%; border-left:none; border-right:none; border-bottom: 1px solid #c9d9e8;">{d_name_display}</td>
+            <td class="amt" style="width:40%; border-right:none; border-bottom: 1px solid #c9d9e8;">{d_amt_str}</td>
         </tr>"""
 
     # If logo exists, use it left-aligned, else fallback to text
@@ -482,30 +488,41 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   </tr>
 </table>
 
-<table>
+<table style="width: 100%; border-collapse: collapse; border: 1px solid #c9d9e8; margin-bottom: 0;">
   <tr>
-    <td colspan="2" class="comp-th" style="width:50%; text-align:center;">Earnings</td>
-    <td colspan="2" class="comp-th" style="width:50%; text-align:center;">Deductions</td>
+    <td style="width: 50%; padding: 0; vertical-align: top; border-right: 1px solid #c9d9e8;">
+      <table style="width: 100%; border: none; margin-bottom: 0;">
+        <tr><td colspan="2" class="comp-th" style="border:none; border-bottom: 1px solid #0d4782;">Earnings</td></tr>
+        <tr>
+          <td class="sub-th" style="width:60%; border-left:none; border-right:none;">Particulars</td>
+          <td class="sub-th right" style="width:40%; border-right:none;">Amt (Rs.ps)</td>
+        </tr>
+        {earn_html_rows}
+      </table>
+    </td>
+    <td style="width: 50%; padding: 0; vertical-align: top;">
+      <table style="width: 100%; border: none; margin-bottom: 0;">
+        <tr><td colspan="2" class="comp-th" style="border:none; border-bottom: 1px solid #0d4782;">Deductions</td></tr>
+        <tr>
+          <td class="sub-th" style="width:60%; border-left:none; border-right:none;">Particulars</td>
+          <td class="sub-th right" style="width:40%; border-right:none;">Amt (Rs.ps)</td>
+        </tr>
+        {ded_html_rows}
+      </table>
+    </td>
+  </tr>
+</table>
+
+<table style="width: 100%; border-collapse: collapse; border: 1px solid #c9d9e8; border-top: none; margin-bottom: 10px;">
+  <tr>
+    <td class="net-sal-lbl" style="width: 30%; border-right: none;">Gross Salary</td>
+    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8;">Rs. {total_earnings:,.2f}</td>
+    <td style="width: 50%; border-left: none; border-bottom: none;"></td>
   </tr>
   <tr>
-    <td class="sub-th" style="width:30%;">Particulars</td>
-    <td class="sub-th right" style="width:20%;">Amt (Rs.ps)</td>
-    <td class="sub-th" style="width:30%;">Particulars</td>
-    <td class="sub-th right" style="width:20%;">Amt (Rs.ps)</td>
-  </tr>
-  {earn_ded_rows}
-  
-  <tr>
-    <td class="net-sal-lbl">Gross Salary</td>
-    <td class="amt">Rs. {total_earnings:,.2f}</td>
-    <td class="net-sal-lbl" style="border-left: none; border-right: none;"></td>
-    <td class="amt" style="border-left: none;"></td>
-  </tr>
-  <tr>
-    <td class="net-sal-lbl" style="color: #c0392b;">Total Deductions</td>
-    <td class="amt" style="color: #c0392b;">Rs. {total_deductions:,.2f}</td>
-    <td class="net-sal-lbl" style="border-left: none; border-right: none;"></td>
-    <td class="amt" style="border-left: none;"></td>
+    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #c0392b;">Total Deductions</td>
+    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #c0392b;">Rs. {total_deductions:,.2f}</td>
+    <td style="width: 50%; border-left: none; border-top: none;"></td>
   </tr>
 </table>
 
