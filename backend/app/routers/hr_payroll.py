@@ -469,13 +469,13 @@ def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_u
             status="paid",
             paid_in_month=data.pay_month,
             paid_in_year=data.pay_year,
-            remarks=f"Partial payout from ₹{held_amt} hold"
+            remarks=f"Partial payout from Rs.{held_amt} hold"
         )
         db.add(paid_record)
         
         # Update original record with remaining balance
         arrear.amount_held = round(held_amt - pay_amt, 2)
-        arrear.remarks = (arrear.remarks or "") + f" [₹{pay_amt} paid in {data.pay_month}/{data.pay_year}]"
+        arrear.remarks = (arrear.remarks or "") + f" [Rs.{pay_amt} paid in {data.pay_month}/{data.pay_year}]"
     else:
         # Full payout
         arrear.status = "paid"
