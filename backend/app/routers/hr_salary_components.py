@@ -25,6 +25,8 @@ class SalaryComponentCreate(BaseModel):
     calc_value: float = 0
     cap_amount: Optional[float] = None  # e.g. 15000 for PF cap
     slabs: Optional[list] = None  # [{"min":0,"max":10000,"value":0}, ...]
+    apply_if_gross_below: Optional[float] = None  # ESI: only if gross ≤ 21000
+    apply_if_gross_above: Optional[float] = None  # TDS: only if gross ≥ 100000
     show_on_payslip: bool = True
     sort_order: int = 0
 
@@ -41,6 +43,8 @@ def _serialize(c: HRSalaryComponent):
         "calc_value": c.calc_value,
         "cap_amount": c.cap_amount,
         "slabs": c.slabs or [],
+        "apply_if_gross_below": c.apply_if_gross_below,
+        "apply_if_gross_above": c.apply_if_gross_above,
         "show_on_payslip": c.show_on_payslip,
         "is_active": c.is_active,
         "sort_order": c.sort_order,

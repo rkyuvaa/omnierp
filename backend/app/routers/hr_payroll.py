@@ -49,6 +49,8 @@ def _resolve_components(db: Session, emp: HREmployee):
                         "calc_value": override_val if override_val is not None else comp.calc_value,
                         "cap_amount": comp.cap_amount,
                         "slabs": comp.slabs,
+                        "apply_if_gross_below": comp.apply_if_gross_below,
+                        "apply_if_gross_above": comp.apply_if_gross_above,
                         "show_on_payslip": comp.show_on_payslip,
                         "sort_order": comp.sort_order,
                     })
@@ -65,6 +67,8 @@ def _resolve_components(db: Session, emp: HREmployee):
             "calc_value": comp.get("value", 0),
             "cap_amount": comp.get("cap_amount"),
             "slabs": comp.get("slabs"),
+            "apply_if_gross_below": comp.get("apply_if_gross_below"),
+            "apply_if_gross_above": comp.get("apply_if_gross_above"),
             "show_on_payslip": comp.get("show_on_payslip", True),
             "sort_order": comp.get("sort_order", 99),
         })
@@ -120,6 +124,15 @@ def _calculate_components(ctc: float, components: list):
                         break
         else:  # fixed
             amount = round(val, 2)
+
+        # Gross threshold checks (ESI: apply only if gross ≤ 21000, TDS: apply only if gross ≥ 1L, etc.)
+        gross_earnings = sum(r["amount"] for r in result_list if r["component_type"] == "earning")
+        threshold_below = comp.get("apply_if_gross_below")
+        threshold_above = comp.get("apply_if_gross_above")
+        if threshold_below is not None and gross_earnings > float(threshold_below):
+            amount = 0  # e.g. ESI not applicable when gross > 21000
+        if threshold_above is not None and gross_earnings < float(threshold_above):
+            amount = 0  # e.g. TDS not applicable when gross < 1,00,000
 
         code = comp.get("code", comp["name"].upper().replace(" ", "_"))
         computed[code] = amount

@@ -368,6 +368,8 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
           code: master.code,
           cap_amount: master.cap_amount,
           slabs: master.slabs,
+          apply_if_gross_below: master.apply_if_gross_below,
+          apply_if_gross_above: master.apply_if_gross_above,
           sort_order: master.sort_order,
         };
       }
@@ -492,6 +494,11 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                 amount = val;
               }
               
+              // Gross threshold checks (ESI / TDS compliance)
+              const grossEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+              if (comp.apply_if_gross_below != null && grossEarnings > comp.apply_if_gross_below) amount = 0;
+              if (comp.apply_if_gross_above != null && grossEarnings < comp.apply_if_gross_above) amount = 0;
+
               const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
               computed[code] = amount;
               results.push({ ...comp, amount, calcType, _compType: compType });
@@ -624,6 +631,11 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                   amount = val;
                 }
                 
+                // Gross threshold checks (ESI / TDS compliance)
+                const grossEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                if (comp.apply_if_gross_below != null && grossEarnings > comp.apply_if_gross_below) amount = 0;
+                if (comp.apply_if_gross_above != null && grossEarnings < comp.apply_if_gross_above) amount = 0;
+
                 const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
                 computed[code] = amount;
                 results.push({ ...comp, amount, calcType, _compType: compType });

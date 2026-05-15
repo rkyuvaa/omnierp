@@ -307,6 +307,8 @@ class HRSalaryComponent(Base):
     calc_value = Column(Float, default=0)
     cap_amount = Column(Float, nullable=True)  # e.g. 15000 for PF cap rule
     slabs = Column(JSON, nullable=True)  # [{"min":0,"max":10000,"value":0},{"min":10001,"max":null,"value":200}]
+    apply_if_gross_below = Column(Float, nullable=True)  # ESI: only if gross ≤ 21000
+    apply_if_gross_above = Column(Float, nullable=True)  # TDS: only if gross ≥ 100000
     show_on_payslip = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)  # Controls payslip display order

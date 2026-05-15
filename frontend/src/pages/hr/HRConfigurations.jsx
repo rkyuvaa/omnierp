@@ -502,6 +502,35 @@ export default function HRConfigurations() {
                     Example: Basic = ₹25,000 → PF calculated on ₹15,000 only.
                   </div>
                 </div>
+
+                {/* Gross Threshold - India Compliance (ESI / TDS) */}
+                <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 12 }}>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+                    🇮🇳 Gross Salary Threshold — <span style={{ fontWeight: 400, color: 'var(--text3)' }}>India Compliance Rules</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                    <div>
+                      <label style={labelStyle}>Apply only if Gross ≤ (₹)</label>
+                      <input type="number" step="1" placeholder="e.g. 21000 for ESI"
+                        value={form.apply_if_gross_below ?? ''}
+                        onChange={e => setForm({ ...form, apply_if_gross_below: e.target.value !== '' ? parseFloat(e.target.value) : null })}
+                        style={inputStyle} />
+                      <div style={{ fontSize: 10, color: '#6366f1', marginTop: 4 }}>
+                        ESI: Enter 21000 — component skipped if gross {'>'} ₹21,000
+                      </div>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>Apply only if Gross ≥ (₹)</label>
+                      <input type="number" step="1" placeholder="e.g. 100000 for TDS"
+                        value={form.apply_if_gross_above ?? ''}
+                        onChange={e => setForm({ ...form, apply_if_gross_above: e.target.value !== '' ? parseFloat(e.target.value) : null })}
+                        style={inputStyle} />
+                      <div style={{ fontSize: 10, color: '#f59e0b', marginTop: 4 }}>
+                        TDS: Enter 100000 — component skipped if gross {'<'} ₹1,00,000
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div><label style={labelStyle}>Display Order</label><input type="number" value={form.sort_order || 0} onChange={e => setForm({ ...form, sort_order: parseInt(e.target.value) || 0 })} style={inputStyle} /></div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 20 }}>
@@ -540,7 +569,9 @@ export default function HRConfigurations() {
                             is_percentage: master?.calc_type !== 'fixed',
                             value: master?.calc_value || 0,
                             cap_amount: master?.cap_amount,
-                            slabs: master?.slabs
+                            slabs: master?.slabs,
+                            apply_if_gross_below: master?.apply_if_gross_below,
+                            apply_if_gross_above: master?.apply_if_gross_above
                           }; 
                           setForm({ ...form, components: sc }); 
                         }} style={inputStyle}>
