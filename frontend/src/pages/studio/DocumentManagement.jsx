@@ -59,12 +59,12 @@ export default function DocumentManagement({ module, templates, onDataChange, on
         </table>
       </div>
 
-      {modal && <TemplateModal initial={modal} parentFields={parentFields} onSave={save} onClose={() => setModal(null)} />}
+      {modal && <TemplateModal initial={modal} module={module} parentFields={parentFields} onSave={save} onClose={() => setModal(null)} />}
     </div>
   );
 }
 
-function TemplateModal({ initial, parentFields, onSave, onClose }) {
+function TemplateModal({ initial, module, parentFields, onSave, onClose }) {
   const [form, setForm] = useState(initial);
   const [activeTab, setActiveTab] = useState('general'); // general, fields, mapping, pdf
   
