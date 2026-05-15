@@ -167,10 +167,11 @@ def num_to_words(n: float) -> str:
     return ' '.join(parts)
 
 
-def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict) -> str:
+def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None) -> str:
     """
     Generate a professional Indian-format payslip HTML.
-    pdf_cfg comes from the FormDefinition.pdf_config saved in Studio → Documents → payroll.
+    If fields_config is provided and not empty, it builds the PDF dynamically based on the Studio layout.
+    Otherwise, it falls back to the standard hardcoded layout.
     """
     company_name    = pdf_cfg.get('company_name', pdf_cfg.get('header', 'KiM ERP').split('\n')[0])
     company_address = pdf_cfg.get('header', '').replace('\n', '<br>')
@@ -197,68 +198,156 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
 
     logo_html = f'<img src="{company_logo}" style="height:55px; max-width:180px;" />' if company_logo else f'<div style="font-size:20pt; font-weight:900; color:#1a3c5e;">{company_name}</div>'
 
-    # Build earnings rows
+    # Build standard earnings/deductions rows for both custom and default rendering
     earn_rows = ''
     for name, amt in earnings.items():
         earn_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600;">&#8377;{amt:,.2f}</td></tr>'
-    # Pad earnings to match deductions height if needed
-    earn_rows += '<tr><td colspan="2" style="padding:5px 8px;">&nbsp;</td></tr>' * max(0, len(deductions) - len(earnings) + 1)
-
-    # Build deductions rows
+    
     ded_rows = ''
     for name, amt in deductions.items():
         ded_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600; color:#c0392b;">&#8377;{amt:,.2f}</td></tr>'
+
+    css = """
+  @page { size: A4; margin: 1.2cm; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
+  .payslip { width: 100%; }
+
+  /* Header */
+  .hdr { display: table; width: 100%; border-bottom: 3px solid #1a3c5e; padding-bottom: 10px; margin-bottom: 12px; }
+  .hdr-left { display: table-cell; vertical-align: middle; width: 60%; }
+  .hdr-right { display: table-cell; vertical-align: middle; text-align: right; width: 40%; }
+  .slip-title { font-size: 16pt; font-weight: 900; color: #1a3c5e; letter-spacing: 1px; }
+  .slip-month { font-size: 10pt; color: #555; margin-top: 3px; }
+  .company-addr { font-size: 8.5pt; color: #666; margin-top: 4px; line-height: 1.4; }
+
+  /* Employee Info */
+  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; background: #f7f9fc; border: 1px solid #dde3ea; border-radius: 4px; }
+  .info-table td { padding: 5px 10px; font-size: 9pt; border-bottom: 1px solid #eaecef; }
+  .info-table td:first-child { font-weight: 700; color: #555; width: 22%; }
+  .info-table td:nth-child(3) { font-weight: 700; color: #555; width: 22%; }
+
+  /* Attendance strip */
+  .att-strip { display: table; width: 100%; background: #1a3c5e; color: #fff; border-radius: 4px; margin-bottom: 12px; }
+  .att-cell { display: table-cell; text-align: center; padding: 7px 5px; font-size: 9pt; border-right: 1px solid rgba(255,255,255,0.15); }
+  .att-cell:last-child { border-right: none; }
+  .att-num { font-size: 13pt; font-weight: 900; display: block; }
+  .att-lbl { font-size: 7.5pt; opacity: 0.8; display: block; }
+
+  /* Earnings / Deductions table */
+  .comp-wrap { display: table; width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+  .comp-col { display: table-cell; width: 50%; vertical-align: top; }
+  .comp-col:first-child { padding-right: 6px; }
+  .comp-col:last-child  { padding-left: 6px; }
+  .comp-hdr { background: #1a3c5e; color: #fff; padding: 6px 8px; font-size: 9.5pt; font-weight: 700; letter-spacing: 0.5px; }
+  .comp-tbl { width: 100%; border-collapse: collapse; border: 1px solid #dde3ea; font-size: 9pt; }
+  .comp-tbl .total-row td { background: #eef2f7; font-weight: 800; font-size: 9.5pt; border-top: 2px solid #1a3c5e; padding: 6px 8px; }
+  .comp-tbl .total-row td:last-child { text-align: right; }
+
+  /* Net salary box */
+  .net-box { background: #1a3c5e; color: #fff; padding: 10px 14px; border-radius: 4px; display: table; width: 100%; margin-bottom: 10px; }
+  .net-left { display: table-cell; vertical-align: middle; font-size: 12pt; font-weight: 700; }
+  .net-right { display: table-cell; text-align: right; vertical-align: middle; font-size: 14pt; font-weight: 900; }
+  .net-words { font-size: 8pt; opacity: 0.85; display: block; margin-top: 2px; font-weight: 400; font-style: italic; }
+
+  /* Footer */
+  .slip-footer { border-top: 1px solid #dde3ea; padding-top: 7px; font-size: 8pt; color: #888; text-align: center; margin-top: 4px; }
+    """
+
+    # ─────────────────────────────────────────────────────────
+    # DYNAMIC RENDERER (If user designed a custom layout)
+    # ─────────────────────────────────────────────────────────
+    if fields_config and len(fields_config) > 0:
+        content_html = ""
+        for f in fields_config:
+            ftype = f.get('type')
+            width_style = "width: 48%; display: inline-block; vertical-align: top; margin-right: 2%;" if f.get('width') == 'half' else "width: 100%;"
+            
+            # Basic Layout Elements
+            if ftype == 'separator':
+                content_html += f'<hr style="border:none; border-top:2px solid #ccc; margin: 20px 0; width: 100%;" />'
+            elif ftype == 'heading':
+                content_html += f'<div style="{width_style} font-size: 14pt; font-weight: bold; color: #1a3c5e; margin: 25px 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; text-transform: uppercase;">{f.get("label", "HEADING")}</div>'
+            elif ftype == 'static_text':
+                content = f.get('content', '').replace('\n', '<br>')
+                content_html += f'<div style="{width_style} font-size: 10pt; color: #444; margin-bottom: 15px; line-height: 1.6;">{content}</div>'
+            elif ftype == 'static_image':
+                img_url = f.get('url', '')
+                if img_url: content_html += f'<div style="{width_style} margin: 15px 0; text-align: center;"><img src="{img_url}" style="max-width: 100%; max-height: 250px;" /></div>'
+            
+            # Payroll-Specific Blocks
+            elif ftype == 'pr_emp_info':
+                content_html += f"""
+                <div style="{width_style}">
+                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{f.get('label', 'EMPLOYEE DETAILS')}</div>
+                  <table class="info-table">
+                    <tr><td>Employee Name</td><td><strong>{emp_name}</strong></td><td>Employee Code</td><td>{emp_code}</td></tr>
+                    <tr><td>Designation</td><td>{designation}</td><td>Department</td><td>{department}</td></tr>
+                    <tr><td>Date of Joining</td><td>{doj}</td><td>Salary (CTC)</td><td>&#8377;{float(employee.basic_salary or 0):,.2f}</td></tr>
+                  </table>
+                </div>"""
+            
+            elif ftype == 'pr_attendance':
+                content_html += f"""
+                <div style="{width_style}">
+                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{f.get('label', 'ATTENDANCE SUMMARY')}</div>
+                  <div class="att-strip">
+                    <div class="att-cell"><span class="att-num">{working_days}</span><span class="att-lbl">Working Days</span></div>
+                    <div class="att-cell"><span class="att-num">{present_days:.1f}</span><span class="att-lbl">Present Days</span></div>
+                    <div class="att-cell"><span class="att-num">{float(record.absent_days or 0):.1f}</span><span class="att-lbl">Absent Days</span></div>
+                    <div class="att-cell"><span class="att-num">{float(record.leave_days or 0):.1f}</span><span class="att-lbl">Leave Days</span></div>
+                    <div class="att-cell"><span class="att-num">{lop_days:.1f}</span><span class="att-lbl">LOP Days</span></div>
+                    <div class="att-cell"><span class="att-num">{on_duty_days:.1f}</span><span class="att-lbl">On Duty Days</span></div>
+                  </div>
+                </div>"""
+            
+            elif ftype == 'pr_earnings':
+                content_html += f"""
+                <div style="{width_style}">
+                  <div class="comp-hdr">&#9650; {f.get('label', 'EARNINGS')}</div>
+                  <table class="comp-tbl">{earn_rows}<tr class="total-row"><td>Gross Earnings</td><td>&#8377;{total_earnings:,.2f}</td></tr></table>
+                </div>"""
+                
+            elif ftype == 'pr_deductions':
+                content_html += f"""
+                <div style="{width_style}">
+                  <div class="comp-hdr" style="background:#c0392b;">&#9660; {f.get('label', 'DEDUCTIONS')}</div>
+                  <table class="comp-tbl">{ded_rows}<tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">&#8377;{total_deductions:,.2f}</td></tr></table>
+                </div>"""
+                
+            elif ftype == 'pr_net_salary':
+                content_html += f"""
+                <div style="{width_style}">
+                  <div class="net-box">
+                    <div class="net-left">{f.get('label', 'NET SALARY')}<span class="net-words">{net_words}</span></div>
+                    <div class="net-right">&#8377;{net_salary:,.2f}</div>
+                  </div>
+                </div>"""
+
+        return f"""<!DOCTYPE html><html><head><meta charset="utf-8"/><style>{css}</style></head>
+        <body><div class="payslip">
+          <div class="hdr">
+            <div class="hdr-left">{logo_html}<div class="company-addr">{company_address}</div></div>
+            <div class="hdr-right"><div class="slip-title">SALARY SLIP</div><div class="slip-month">{month_name} {year}</div></div>
+          </div>
+          {content_html}
+          <div class="slip-footer">{footer_text}</div>
+        </div></body></html>"""
+
+    # ─────────────────────────────────────────────────────────
+    # DEFAULT RENDERER (Standard Hardcoded Indian Format)
+    # ─────────────────────────────────────────────────────────
+    
+    # Pad rows for uniform height in default layout
+    earn_rows += '<tr><td colspan="2" style="padding:5px 8px;">&nbsp;</td></tr>' * max(0, len(deductions) - len(earnings) + 1)
     ded_rows += '<tr><td colspan="2" style="padding:5px 8px;">&nbsp;</td></tr>' * max(0, len(earnings) - len(deductions) + 1)
 
-    html = f"""<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8"/>
 <style>
-  @page {{ size: A4; margin: 1.2cm; }}
-  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
-  body {{ font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }}
-  .payslip {{ width: 100%; }}
-
-  /* Header */
-  .hdr {{ display: table; width: 100%; border-bottom: 3px solid #1a3c5e; padding-bottom: 10px; margin-bottom: 12px; }}
-  .hdr-left {{ display: table-cell; vertical-align: middle; width: 60%; }}
-  .hdr-right {{ display: table-cell; vertical-align: middle; text-align: right; width: 40%; }}
-  .slip-title {{ font-size: 16pt; font-weight: 900; color: #1a3c5e; letter-spacing: 1px; }}
-  .slip-month {{ font-size: 10pt; color: #555; margin-top: 3px; }}
-  .company-addr {{ font-size: 8.5pt; color: #666; margin-top: 4px; line-height: 1.4; }}
-
-  /* Employee Info */
-  .info-table {{ width: 100%; border-collapse: collapse; margin-bottom: 12px; background: #f7f9fc; border: 1px solid #dde3ea; border-radius: 4px; }}
-  .info-table td {{ padding: 5px 10px; font-size: 9pt; border-bottom: 1px solid #eaecef; }}
-  .info-table td:first-child {{ font-weight: 700; color: #555; width: 22%; }}
-  .info-table td:nth-child(3) {{ font-weight: 700; color: #555; width: 22%; }}
-
-  /* Attendance strip */
-  .att-strip {{ display: table; width: 100%; background: #1a3c5e; color: #fff; border-radius: 4px; margin-bottom: 12px; }}
-  .att-cell {{ display: table-cell; text-align: center; padding: 7px 5px; font-size: 9pt; border-right: 1px solid rgba(255,255,255,0.15); }}
-  .att-cell:last-child {{ border-right: none; }}
-  .att-num {{ font-size: 13pt; font-weight: 900; display: block; }}
-  .att-lbl {{ font-size: 7.5pt; opacity: 0.8; display: block; }}
-
-  /* Earnings / Deductions table */
-  .comp-wrap {{ display: table; width: 100%; border-collapse: collapse; margin-bottom: 10px; }}
-  .comp-col {{ display: table-cell; width: 50%; vertical-align: top; }}
-  .comp-col:first-child {{ padding-right: 6px; }}
-  .comp-col:last-child  {{ padding-left: 6px; }}
-  .comp-hdr {{ background: #1a3c5e; color: #fff; padding: 6px 8px; font-size: 9.5pt; font-weight: 700; letter-spacing: 0.5px; }}
-  .comp-tbl {{ width: 100%; border-collapse: collapse; border: 1px solid #dde3ea; font-size: 9pt; }}
-  .comp-tbl .total-row td {{ background: #eef2f7; font-weight: 800; font-size: 9.5pt; border-top: 2px solid #1a3c5e; padding: 6px 8px; }}
-  .comp-tbl .total-row td:last-child {{ text-align: right; }}
-
-  /* Net salary box */
-  .net-box {{ background: #1a3c5e; color: #fff; padding: 10px 14px; border-radius: 4px; display: table; width: 100%; margin-bottom: 10px; }}
-  .net-left {{ display: table-cell; vertical-align: middle; font-size: 12pt; font-weight: 700; }}
-  .net-right {{ display: table-cell; text-align: right; vertical-align: middle; font-size: 14pt; font-weight: 900; }}
-  .net-words {{ font-size: 8pt; opacity: 0.85; display: block; margin-top: 2px; font-weight: 400; font-style: italic; }}
-
-  /* Footer */
-  .slip-footer {{ border-top: 1px solid #dde3ea; padding-top: 7px; font-size: 8pt; color: #888; text-align: center; margin-top: 4px; }}
+{css}
 </style>
 </head>
 <body>

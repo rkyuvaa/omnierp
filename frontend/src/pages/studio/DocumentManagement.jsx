@@ -167,6 +167,15 @@ function TemplateModal({ initial, parentFields, onSave, onClose }) {
                                <option value="static_image">Image Box</option>
                                <option value="separator">Line Separator</option>
                              </optgroup>
+                             {module === 'payroll' && (
+                               <optgroup label="Payroll Blocks">
+                                 <option value="pr_emp_info">Employee Info</option>
+                                 <option value="pr_attendance">Attendance Strip</option>
+                                 <option value="pr_earnings">Earnings Table</option>
+                                 <option value="pr_deductions">Deductions Table</option>
+                                 <option value="pr_net_salary">Net Salary Box</option>
+                               </optgroup>
+                             )}
                            </select>
                            <button onClick={() => {
                              const next = [...form.fields_config];
@@ -202,6 +211,13 @@ function TemplateModal({ initial, parentFields, onSave, onClose }) {
                           <hr style={{ border: 'none', borderTop: '2px solid #ccc', margin: '12px 0' }} />
                         ) : f.type === 'heading' ? (
                           <div style={{ fontSize: 14, fontWeight: 'bold', color: '#333' }}>{f.label} Preview</div>
+                        ) : f.type.startsWith('pr_') ? (
+                          <div style={{ 
+                            fontSize: 12, fontWeight: 'bold', color: '#0369a1', background: '#e0f2fe', 
+                            border: '1px dashed #7dd3fc', padding: '16px', borderRadius: 6, textAlign: 'center' 
+                          }}>
+                            Dynamic {f.type.replace('pr_', '').replace('_', ' ').toUpperCase()} Block
+                          </div>
                         ) : (
                           <div style={{ fontSize: 11, color: '#aaa', background: '#fff', border: '1px solid #eee', padding: 8, borderRadius: 4 }}>
                             {f.type.replace('_', ' ').toUpperCase()} input space...

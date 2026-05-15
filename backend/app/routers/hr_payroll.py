@@ -352,9 +352,10 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
     ).first()
     
     pdf_cfg = payroll_template.pdf_config if payroll_template else {}
+    fields_config = payroll_template.fields_config if payroll_template else []
 
     month_name = MONTH_NAMES[record.month]
-    html = generate_payslip_html(record, employee, month_name, record.year, pdf_cfg)
+    html = generate_payslip_html(record, employee, month_name, record.year, pdf_cfg, fields_config)
     pdf_bytes = render_to_pdf(html)
 
     if not pdf_bytes:
