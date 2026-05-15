@@ -173,10 +173,10 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     If fields_config is provided and not empty, it builds the PDF dynamically based on the Studio layout.
     Otherwise, it falls back to the standard hardcoded layout.
     """
-    # Robust fallback for company info
-    company_name = pdf_cfg.get('company_name') or 'Konwert India Motors Private Limited'
-    company_address = pdf_cfg.get('header') or 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108\nGSTIN: 33AAHCK7681B1ZL'
-    company_address = company_address.replace('\n', '<br>')
+    # Hardcoded company info as requested
+    company_name    = 'Konwert India Motors Private Limited'
+    company_address = 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108'
+    company_gstin   = 'GSTIN: 33AAHCK7681B1ZL'
     
     company_logo    = pdf_cfg.get('logo', '')
     footer_text     = pdf_cfg.get('footer', 'This is a computer-generated payslip. No signature required.')
@@ -205,18 +205,18 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     on_duty_days    = float(record.on_duty_days or 0)
     
     # Format CTC
-    emp_ctc = f"&#8377;{float(employee.basic_salary or 0):,.2f}" if employee.basic_salary else "—"
+    emp_ctc = f"Rs. {float(employee.basic_salary or 0):,.2f}" if employee.basic_salary else "—"
 
-    logo_html = f'<img src="{company_logo}" style="height:55px; max-width:180px;" />' if company_logo else f'<div style="font-size:20pt; font-weight:900; color:#1a3c5e;">{company_name}</div>'
+    logo_block = f'<img src="{company_logo}" style="height:55px; max-width:180px;" />' if company_logo else f'<div style="font-size:20pt; font-weight:900; color:#1a3c5e;">{company_name}</div>'
 
     # Build standard earnings/deductions rows for both custom and default rendering
     earn_rows = ''
     for name, amt in earnings.items():
-        earn_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600;">&#8377;{amt:,.2f}</td></tr>'
+        earn_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600;">Rs. {amt:,.2f}</td></tr>'
     
     ded_rows = ''
     for name, amt in deductions.items():
-        ded_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600; color:#c0392b;">&#8377;{amt:,.2f}</td></tr>'
+        ded_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600; color:#c0392b;">Rs. {amt:,.2f}</td></tr>'
 
     css = """
   @page { size: A4; margin: 1.2cm; }
@@ -310,7 +310,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                   <table class="info-table">
                     <tr><td>Employee Name</td><td><strong>{emp_name}</strong></td><td>Employee Code</td><td>{emp_code}</td></tr>
                     <tr><td>Designation</td><td>{designation}</td><td>Department</td><td>{department}</td></tr>
-                    <tr><td>Date of Joining</td><td>{doj}</td><td>Salary (CTC)</td><td>&#8377;{float(employee.basic_salary or 0):,.2f}</td></tr>
+                    <tr><td>Date of Joining</td><td>{doj}</td><td>Salary (CTC)</td><td>Rs. {float(employee.basic_salary or 0):,.2f}</td></tr>
                   </table>"""
             
             elif ftype == 'pr_attendance':
@@ -328,18 +328,18 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             elif ftype == 'pr_earnings':
                 content_html += f"""
                   <div class="comp-hdr">{block_label}</div>
-                  <table class="comp-tbl">{earn_rows}<tr class="total-row"><td>Gross Earnings</td><td>&#8377;{total_earnings:,.2f}</td></tr></table>"""
+                  <table class="comp-tbl">{earn_rows}<tr class="total-row"><td>Gross Earnings</td><td>Rs. {total_earnings:,.2f}</td></tr></table>"""
                 
             elif ftype == 'pr_deductions':
                 content_html += f"""
                   <div class="comp-hdr" style="background:#c0392b;">{block_label}</div>
-                  <table class="comp-tbl">{ded_rows}<tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">&#8377;{total_deductions:,.2f}</td></tr></table>"""
+                  <table class="comp-tbl">{ded_rows}<tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">Rs. {total_deductions:,.2f}</td></tr></table>"""
                 
             elif ftype == 'pr_net_salary':
                 content_html += f"""
                   <div class="net-box">
                     <div class="net-left">{block_label}<span class="net-words">{net_words}</span></div>
-                    <div class="net-right">&#8377;{net_salary:,.2f}</div>
+                    <div class="net-right">Rs. {net_salary:,.2f}</div>
                   </div>"""
                 
             elif ftype == 'pr_custom_comp':
@@ -349,7 +349,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                   <table style="width:100%; border-collapse: collapse; margin-bottom: 5px;">
                     <tr>
                       <td style="padding: 5px; border-bottom: 1px solid #eee; font-size: 9.5pt; color: #333;"><strong>{block_label}</strong></td>
-                      <td style="padding: 5px; border-bottom: 1px solid #eee; text-align: right; font-size: 10pt; font-weight: 700;">&#8377;{float(comp_val):,.2f}</td>
+                      <td style="padding: 5px; border-bottom: 1px solid #eee; text-align: right; font-size: 10pt; font-weight: 700;">Rs. {float(comp_val):,.2f}</td>
                     </tr>
                   </table>"""
 
@@ -454,6 +454,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     <td style="width: 75%; text-align: center;">
       <div class="company-name">{company_name}</div>
       <div class="company-address">{company_address}</div>
+      <div class="company-address">{company_gstin}</div>
     </td>
   </tr>
 </table>
