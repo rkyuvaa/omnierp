@@ -320,23 +320,59 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
     finally { setSaving(false); }
   }
 
-  async function handlePay(arrearId, fullAmount) {
-    const payAmt = prompt(`How much would you like to pay? (Max ₹${fullAmount})`, fullAmount);
-    if (!payAmt || isNaN(payAmt) || payAmt <= 0) return;
-    if (parseFloat(payAmt) > fullAmount) return toast.error('Amount exceeds held balance');
+  const [payingArrearId, setPayingArrearId] = useState(null);
+  const [payoutAmount, setPayoutAmount] = useState('');
+
+  useEffect(() => {
+    fetchPending();
+  }, []);
+
+  async function fetchPending() {
+    try {
+      const res = await api.get(`/hr/payroll/arrears/${data.employee_id}`, { params: { status: 'held' } });
+      setPending(res.data);
+    } catch { toast.error('Failed to load pending arrears'); }
+    finally { setLoading(false); }
+  }
+
+  async function handleHold() {
+    if (!holdAmount || holdAmount <= 0) return toast.error('Enter valid amount');
+    setSaving(true);
+    try {
+      await api.post('/hr/payroll/arrears/hold', {
+        employee_id: data.employee_id,
+        amount: parseFloat(holdAmount),
+        month, year, remarks
+      });
+      toast.success('Salary held as arrear');
+      setHoldAmount(''); setRemarks('');
+      fetchPending();
+      onRefresh();
+    } catch { toast.error('Failed'); }
+    finally { setSaving(false); }
+  }
+
+  async function handlePay(arrearId, maxAmount) {
+    const amt = parseFloat(payoutAmount);
+    if (!amt || amt <= 0) return toast.error('Enter valid amount');
+    if (amt > maxAmount) return toast.error('Amount exceeds held balance');
 
     setSaving(true);
     try {
       await api.post('/hr/payroll/arrears/pay', {
         arrear_id: arrearId,
-        amount: parseFloat(payAmt),
+        amount: amt,
         pay_month: month,
         pay_year: year
       });
       toast.success('Arrears payout processed');
+      setPayingArrearId(null);
+      setPayoutAmount('');
       fetchPending();
       onRefresh();
-    } catch { toast.error('Failed'); }
+    } catch (err) { 
+      toast.error(err.response?.data?.detail || 'Failed to process payout'); 
+    }
     finally { setSaving(false); }
   }
 
@@ -364,19 +400,50 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pending.map(a => (
-                  <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 13 }}>₹{a.amount_held.toLocaleString()}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</div>
-                      {a.remarks && <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>Note: {a.remarks}</div>}
+                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: 13 }}>₹{a.amount_held.toLocaleString()}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)' }}>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</div>
+                        {a.remarks && <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>Note: {a.remarks}</div>}
+                      </div>
+                      {payingArrearId !== a.id && (
+                        <button 
+                          onClick={() => { setPayingArrearId(a.id); setPayoutAmount(a.amount_held); }}
+                          disabled={saving}
+                          style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Pay Part/Full
+                        </button>
+                      )}
                     </div>
-                    <button 
-                      onClick={() => handlePay(a.id, a.amount_held)}
-                      disabled={saving}
-                      style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-                    >
-                      Pay Part/Full
-                    </button>
+                    {payingArrearId === a.id && (
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+                        <div style={{ flex: 1 }}>
+                          <input 
+                            type="number" 
+                            value={payoutAmount} 
+                            onChange={e => setPayoutAmount(e.target.value)}
+                            placeholder="Amount"
+                            autoFocus
+                            style={{ width: '100%', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12 }}
+                          />
+                        </div>
+                        <button 
+                          onClick={() => handlePay(a.id, a.amount_held)}
+                          disabled={saving}
+                          style={{ background: '#22c55e', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Confirm
+                        </button>
+                        <button 
+                          onClick={() => { setPayingArrearId(null); setPayoutAmount(''); }}
+                          style={{ background: 'var(--bg2)', color: 'var(--text2)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
