@@ -56,6 +56,8 @@ def get_layout_models(module: str):
         "warranty": (WarrantyTab, WarrantyField, WarrantyStageRule),
         "konwertcare": (KonwertCareTab, KonwertCareField, KonwertCareStageRule)
     }
+    if module == "payroll":
+        return (None, None, None)
     if module not in mapping:
         raise HTTPException(status_code=400, detail="Invalid module")
     return mapping[module]
@@ -103,10 +105,9 @@ def delete_stage(sid: int, db: Session = Depends(get_db), _=Depends(require_admi
 # ── Layout (Tabs & Fields) ────────────────────────────────────
 @router.get("/layout/{module}/tabs")
 def get_tabs(module: str, db: Session = Depends(get_db)):
-    print(f"DEBUG: Fetching tabs for module: {module}")
     TabModel, FieldModel, _ = get_layout_models(module)
+    if not TabModel: return []
     tabs = db.query(TabModel).options(joinedload(TabModel.fields)).filter(TabModel.is_active == True).order_by(TabModel.sort_order).all()
-    print(f"DEBUG: Found {len(tabs)} tabs in {TabModel.__tablename__}")
     res = []
     for t in tabs:
         res.append({
@@ -179,6 +180,7 @@ def delete_field(module: str, fid: int, db: Session = Depends(get_db), _=Depends
 @router.get("/layout/{module}/stage-rules")
 def get_rules(module: str, db: Session = Depends(get_db)):
     _, _, RuleModel = get_layout_models(module)
+    if not RuleModel: return []
     return db.query(RuleModel).all()
 
 @router.post("/layout/{module}/stage-rules")
