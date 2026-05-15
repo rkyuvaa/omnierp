@@ -173,8 +173,11 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     If fields_config is provided and not empty, it builds the PDF dynamically based on the Studio layout.
     Otherwise, it falls back to the standard hardcoded layout.
     """
-    company_name    = pdf_cfg.get('company_name', 'Konwert India Motors Private Limited')
-    company_address = pdf_cfg.get('header', 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108\nGSTIN: 33AAHCK7681B1ZL').replace('\n', '<br>')
+    # Robust fallback for company info
+    company_name = pdf_cfg.get('company_name') or 'Konwert India Motors Private Limited'
+    company_address = pdf_cfg.get('header') or 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108\nGSTIN: 33AAHCK7681B1ZL'
+    company_address = company_address.replace('\n', '<br>')
+    
     company_logo    = pdf_cfg.get('logo', '')
     footer_text     = pdf_cfg.get('footer', 'This is a computer-generated payslip. No signature required.')
 
@@ -191,10 +194,18 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     designation     = employee.designation or '—'
     department      = employee.department.name if employee.department else '—'
     doj             = employee.date_of_joining.strftime('%d/%m/%Y') if employee.date_of_joining else '—'
-    working_days    = int(record.working_days or 0)
+    
+    # Automatic Days in Month calculation
+    import calendar
+    days_in_month   = calendar.monthrange(year, record.month)[1]
+    
+    working_days    = int(record.working_days or days_in_month)
     present_days    = record.present_days or 0
     lop_days        = float(record.lop_days or 0)
     on_duty_days    = float(record.on_duty_days or 0)
+    
+    # Format CTC
+    emp_ctc = f"&#8377;{float(employee.basic_salary or 0):,.2f}" if employee.basic_salary else "—"
 
     logo_html = f'<img src="{company_logo}" style="height:55px; max-width:180px;" />' if company_logo else f'<div style="font-size:20pt; font-weight:900; color:#1a3c5e;">{company_name}</div>'
 
@@ -465,7 +476,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
   </tr>
   <tr>
     <td class="lbl">Date of Joining</td><td class="val">{doj}</td>
-    <td class="lbl"></td><td class="val"></td>
+    <td class="lbl">Salary (CTC)</td><td class="val">{emp_ctc}</td>
   </tr>
 </table>
 
@@ -495,7 +506,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     <td class="summary-bg" style="width:30%;">Earned This Month</td>
     <td class="summary-bg amt" style="width:20%;">Rs. {net_salary:,.2f}</td>
     <td class="summary-bg" style="width:30%;">Days in Month</td>
-    <td class="summary-bg amt" style="width:20%;">{working_days} days</td>
+    <td class="summary-bg amt" style="width:20%;">{days_in_month} days</td>
   </tr>
 </table>
 
