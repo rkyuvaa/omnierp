@@ -462,6 +462,11 @@ def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_u
     if pay_amt > held_amt:
         raise HTTPException(400, f"Cannot pay more than held amount (₹{held_amt})")
 
+    # Get the base remarks (strip any previous payment history in brackets)
+    base_remarks = (arrear.remarks or "").split(" [")[0]
+    if not base_remarks or base_remarks == "None":
+        base_remarks = "Arrear Payout"
+
     if pay_amt < held_amt:
         # Partial payout: Create a NEW record for the paid part, and keep balance in original
         paid_record = HRArrearRecord(
@@ -472,18 +477,20 @@ def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_u
             status="paid",
             paid_in_month=data.pay_month,
             paid_in_year=data.pay_year,
-            remarks=f"Partial payout from Rs.{held_amt} hold"
+            remarks=base_remarks # Use clean original remark
         )
         db.add(paid_record)
         
-        # Update original record with remaining balance
+        # Update original record with remaining balance and track history
         arrear.amount_held = round(held_amt - pay_amt, 2)
-        arrear.remarks = (arrear.remarks or "") + f" [Rs.{pay_amt} paid in {data.pay_month}/{data.pay_year}]"
+        history_entry = f" [Rs.{pay_amt} paid in {data.pay_month}/{data.pay_year}]"
+        arrear.remarks = (arrear.remarks or "") + history_entry
     else:
-        # Full payout
+        # Full payout: Use clean original remark for the final paid state
         arrear.status = "paid"
         arrear.paid_in_month = data.pay_month
         arrear.paid_in_year = data.pay_year
+        arrear.remarks = base_remarks
 
     db.commit()
     return {"message": "Arrear payout processed", "amount_paid": pay_amt}
