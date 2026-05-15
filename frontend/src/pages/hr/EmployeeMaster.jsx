@@ -440,15 +440,20 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               if (calcType === 'percentage_of_ctc') {
                 amount = (ctc * val) / 100;
               } else if (calcType === 'percentage_of_basic') {
-                let base = computed['BASIC'] || 0;
+                // Robust matching for BASIC
+                let base = computed['BASIC'] || computed['BASIC_SALARY'] || 0;
+                if (!base) {
+                  const basicComp = results.find(r => r.name.toLowerCase().includes('basic'));
+                  if (basicComp) base = basicComp.amount;
+                }
                 if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
                 amount = (base * val) / 100;
               } else if (calcType === 'percentage_of_gross') {
-                let base = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                let base = results.filter(r => (r.type || r.component_type) === 'earning').reduce((acc, r) => acc + r.amount, 0);
                 if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
                 amount = (base * val) / 100;
               } else if (calcType === 'slab') {
-                const gross = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                const gross = results.filter(r => (r.type || r.component_type) === 'earning').reduce((acc, r) => acc + r.amount, 0);
                 if (comp.slabs) {
                   for (const slab of comp.slabs) {
                     const min = parseFloat(slab.min) || 0;
@@ -566,15 +571,20 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                 if (calcType === 'percentage_of_ctc') {
                   amount = (ctc * val) / 100;
                 } else if (calcType === 'percentage_of_basic') {
-                  let base = computed['BASIC'] || 0;
+                  // Robust matching for BASIC
+                  let base = computed['BASIC'] || computed['BASIC_SALARY'] || 0;
+                  if (!base) {
+                    const basicComp = results.find(r => r.name.toLowerCase().includes('basic'));
+                    if (basicComp) base = basicComp.amount;
+                  }
                   if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
                   amount = (base * val) / 100;
                 } else if (calcType === 'percentage_of_gross') {
-                  let base = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                  let base = results.filter(r => (r.type || r.component_type) === 'earning').reduce((acc, r) => acc + r.amount, 0);
                   if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
                   amount = (base * val) / 100;
                 } else if (calcType === 'slab') {
-                  const gross = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                  const gross = results.filter(r => (r.type || r.component_type) === 'earning').reduce((acc, r) => acc + r.amount, 0);
                   if (comp.slabs) {
                     for (const slab of comp.slabs) {
                       const min = parseFloat(slab.min) || 0;
@@ -594,8 +604,8 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                 results.push({ ...comp, amount, calcType });
               });
 
-              const totalEarnings = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
-              const totalDeductions = results.filter(r => r.type === 'deduction' || r.component_type === 'deduction').reduce((acc, r) => acc + r.amount, 0);
+              const totalEarnings = results.filter(r => (r.type || r.component_type) === 'earning').reduce((acc, r) => acc + r.amount, 0);
+              const totalDeductions = results.filter(r => (r.type || r.component_type) === 'deduction').reduce((acc, r) => acc + r.amount, 0);
 
               return (
                 <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
@@ -614,7 +624,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                   ))}
                   <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
                     <span>Total Calculated (Net)</span>
-                    <span>₹{(totalEarnings - totalDeductions).toLocaleString('en-IN')}</span>
+                    <span>₹{Math.max(0, totalEarnings - totalDeductions).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               );
