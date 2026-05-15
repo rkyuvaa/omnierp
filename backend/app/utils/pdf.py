@@ -460,7 +460,6 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
 </table>
 
 <div class="title-bar">SALARY SLIP — {month_name.upper()} {year}</div>
-<div class="month-text">{month_name} {year}</div>
 
 <table class="emp-table">
   <tr>
