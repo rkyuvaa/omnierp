@@ -361,93 +361,146 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
         </div></body></html>"""
 
     # ─────────────────────────────────────────────────────────
-    # DEFAULT RENDERER (Standard Hardcoded Indian Format)
+    # DEFAULT RENDERER (Classic Konwert India Motors Format)
     # ─────────────────────────────────────────────────────────
+    from datetime import datetime
+    now_str = datetime.now().strftime('%d-%b-%Y %I:%M %p')
+
+    earn_items = list(earnings.items())
+    ded_items = list(deductions.items())
+    max_len = max(len(earn_items), len(ded_items))
     
-    # Pad rows for uniform height in default layout
-    earn_rows += '<tr><td colspan="2" style="padding:5px 8px;">&nbsp;</td></tr>' * max(0, len(deductions) - len(earnings) + 1)
-    ded_rows += '<tr><td colspan="2" style="padding:5px 8px;">&nbsp;</td></tr>' * max(0, len(earnings) - len(deductions) + 1)
+    earn_ded_rows = ""
+    for i in range(max_len):
+        e_name, e_amt = earn_items[i] if i < len(earn_items) else ("", None)
+        d_name, d_amt = ded_items[i] if i < len(ded_items) else ("", None)
+        
+        e_amt_str = f"Rs. {float(e_amt):,.2f}" if e_amt is not None else ""
+        d_amt_str = f"Rs. {float(d_amt):,.2f}" if d_amt is not None else ""
+        
+        earn_ded_rows += f"""<tr>
+            <td>{e_name}</td><td class="amt">{e_amt_str}</td>
+            <td>{d_name}</td><td class="amt">{d_amt_str}</td>
+        </tr>"""
+
+    # If logo exists, use it centered, else fallback to text
+    logo_block = f'<img src="{company_logo}" style="max-height:60px; margin-bottom: 5px;" /><br>' if company_logo else ''
 
     return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8"/>
 <style>
-{css}
+  @page {{ size: A4; margin: 1.2cm; }}
+  * {{ box-sizing: border-box; font-family: Arial, sans-serif; font-size: 9pt; }}
+  body {{ color: #333; }}
+  .center {{ text-align: center; }}
+  
+  /* Header styling */
+  .company-name {{ font-size: 14pt; font-weight: bold; color: #104c8f; margin-bottom: 2px; }}
+  .company-address {{ font-size: 8.5pt; color: #666; margin-bottom: 15px; line-height: 1.3; }}
+  
+  /* Salary Slip Bar */
+  .title-bar {{ background-color: #1a68b2; color: #fff; padding: 8px 12px; font-size: 11pt; font-weight: bold; margin-bottom: 10px; }}
+  
+  /* Month/Year */
+  .month-text {{ text-align: right; font-weight: bold; color: #555; margin-bottom: 10px; font-size: 9.5pt; }}
+  
+  /* Generic Table borders */
+  table {{ width: 100%; border-collapse: collapse; margin-bottom: 15px; }}
+  td, th {{ border: 1px solid #c9d9e8; padding: 6px 8px; }}
+  
+  /* Employee Info Table */
+  .emp-table td.lbl {{ background-color: #f4f7f9; font-weight: bold; color: #444; width: 20%; }}
+  .emp-table td.val {{ width: 30%; }}
+  
+  /* Earnings / Deductions Header */
+  .comp-th {{ background-color: #0d4782; color: #fff; font-weight: bold; padding: 8px; border: 1px solid #0d4782; }}
+  .sub-th {{ font-weight: bold; color: #555; background: #fff; border-bottom: 1px solid #c9d9e8; }}
+  .sub-th.right {{ text-align: right; }}
+  
+  .amt {{ text-align: right; font-weight: bold; }}
+  .net-sal-lbl {{ color: #104c8f; font-weight: bold; }}
+  .summary-bg {{ background-color: #f4f7f9; font-weight: bold; }}
+  
+  .grand-total {{ background-color: #3b8235; color: #fff; font-weight: bold; font-size: 11pt; padding: 10px 12px; border: none; }}
+  .grand-total-val {{ text-align: right; font-size: 12pt; border: none; }}
+  
+  .footer {{ text-align: center; color: #777; font-size: 8pt; margin-top: 30px; line-height: 1.4; border-top: 1px solid #eee; padding-top: 10px; }}
 </style>
 </head>
 <body>
-<div class="payslip">
 
-  <!-- HEADER -->
-  <div class="hdr">
-    <div class="hdr-left">
-      {logo_html}
-      <div class="company-addr">{company_address}</div>
-    </div>
-    <div class="hdr-right">
-      <div class="slip-title">SALARY SLIP</div>
-      <div class="slip-month">{month_name} {year}</div>
-    </div>
-  </div>
-
-  <!-- EMPLOYEE INFO -->
-  <table class="info-table">
-    <tr>
-      <td>Employee Name</td><td><strong>{emp_name}</strong></td>
-      <td>Employee Code</td><td>{emp_code}</td>
-    </tr>
-    <tr>
-      <td>Designation</td><td>{designation}</td>
-      <td>Department</td><td>{department}</td>
-    </tr>
-    <tr>
-      <td>Date of Joining</td><td>{doj}</td>
-      <td>Salary (CTC)</td><td>&#8377;{float(employee.basic_salary or 0):,.2f}</td>
-    </tr>
-  </table>
-
-  <!-- ATTENDANCE STRIP -->
-  <div class="att-strip">
-    <div class="att-cell"><span class="att-num">{working_days}</span><span class="att-lbl">Working Days</span></div>
-    <div class="att-cell"><span class="att-num">{present_days:.1f}</span><span class="att-lbl">Present Days</span></div>
-    <div class="att-cell"><span class="att-num">{float(record.absent_days or 0):.1f}</span><span class="att-lbl">Absent Days</span></div>
-    <div class="att-cell"><span class="att-num">{float(record.leave_days or 0):.1f}</span><span class="att-lbl">Leave Days</span></div>
-    <div class="att-cell"><span class="att-num">{lop_days:.1f}</span><span class="att-lbl">LOP Days</span></div>
-    <div class="att-cell"><span class="att-num">{on_duty_days:.1f}</span><span class="att-lbl">On Duty Days</span></div>
-  </div>
-
-  <!-- EARNINGS AND DEDUCTIONS -->
-  <div class="comp-wrap">
-    <div class="comp-col">
-      <div class="comp-hdr">&#9650; EARNINGS</div>
-      <table class="comp-tbl">
-        {earn_rows}
-        <tr class="total-row"><td>Gross Earnings</td><td>&#8377;{total_earnings:,.2f}</td></tr>
-      </table>
-    </div>
-    <div class="comp-col">
-      <div class="comp-hdr" style="background:#c0392b;">&#9660; DEDUCTIONS</div>
-      <table class="comp-tbl">
-        {ded_rows}
-        <tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">&#8377;{total_deductions:,.2f}</td></tr>
-      </table>
-    </div>
-  </div>
-
-  <!-- NET SALARY -->
-  <div class="net-box">
-    <div class="net-left">
-      Net Salary (Take Home)
-      <span class="net-words">{net_words}</span>
-    </div>
-    <div class="net-right">&#8377;{net_salary:,.2f}</div>
-  </div>
-
-  <!-- FOOTER -->
-  <div class="slip-footer">{footer_text}</div>
-
+<div class="center">
+  {logo_block}
+  <div class="company-name">{company_name}</div>
+  <div class="company-address">{company_address}</div>
 </div>
+
+<div class="title-bar">SALARY SLIP — {month_name.upper()} {year}</div>
+<div class="month-text">{month_name} {year}</div>
+
+<table class="emp-table">
+  <tr>
+    <td class="lbl">Employee name</td><td class="val">{emp_name}</td>
+    <td class="lbl">Present</td><td class="val">{present_days}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Employee code</td><td class="val">{emp_code}</td>
+    <td class="lbl">Absent / LOP</td><td class="val">{lop_days}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Designation</td><td class="val">{designation}</td>
+    <td class="lbl">Leave</td><td class="val">{leave_days}</td>
+  </tr>
+  <tr>
+    <td class="lbl">Date of Joining</td><td class="val">{doj}</td>
+    <td class="lbl"></td><td class="val"></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td colspan="2" class="comp-th" style="width:50%;">Earnings</td>
+    <td colspan="2" class="comp-th" style="width:50%;">Deductions</td>
+  </tr>
+  <tr>
+    <td class="sub-th" style="width:30%;">Particulars</td>
+    <td class="sub-th right" style="width:20%;">Amt (Rs.ps)</td>
+    <td class="sub-th" style="width:30%;">Particulars</td>
+    <td class="sub-th right" style="width:20%;">Amt (Rs.ps)</td>
+  </tr>
+  {earn_ded_rows}
+  
+  <tr>
+    <td class="net-sal-lbl">Gross Earnings</td>
+    <td class="amt">Rs. {total_earnings:,.2f}</td>
+    <td class="net-sal-lbl">Total Deductions</td>
+    <td class="amt">Rs. {total_deductions:,.2f}</td>
+  </tr>
+</table>
+
+<table style="margin-bottom: 0;">
+  <tr>
+    <td class="summary-bg" style="width:30%;">Earned This Month</td>
+    <td class="summary-bg amt" style="width:20%;">Rs. {net_salary:,.2f}</td>
+    <td class="summary-bg" style="width:30%;">Days in Month</td>
+    <td class="summary-bg amt" style="width:20%;">{working_days} days</td>
+  </tr>
+</table>
+
+<table style="border: none;">
+  <tr>
+    <td class="grand-total" style="width:50%;">TOTAL AMOUNT PAID</td>
+    <td class="grand-total grand-total-val" style="width:50%;">Rs. {net_salary:,.2f}</td>
+  </tr>
+</table>
+
+<div class="footer">
+  This is a computer-generated payslip and does not require a signature.<br>
+  Generated on {now_str}
+</div>
+
 </body>
 </html>"""
     return html
