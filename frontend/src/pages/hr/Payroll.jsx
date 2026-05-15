@@ -348,7 +348,11 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
       setHoldAmount(''); setRemarks('');
       fetchPending();
       onRefresh();
-    } catch { toast.error('Failed'); }
+    } catch (err) { 
+      const detail = err.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail[0]?.msg : (typeof detail === 'string' ? detail : 'Failed to hold salary');
+      toast.error(msg); 
+    }
     finally { setSaving(false); }
   }
 
@@ -371,7 +375,9 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
       fetchPending();
       onRefresh();
     } catch (err) { 
-      toast.error(err.response?.data?.detail || 'Failed to process payout'); 
+      const detail = err.response?.data?.detail;
+      const msg = Array.isArray(detail) ? detail[0]?.msg : (typeof detail === 'string' ? detail : 'Failed to process payout');
+      toast.error(msg); 
     }
     finally { setSaving(false); }
   }

@@ -426,7 +426,8 @@ class ArrearHoldRequest(BaseModel):
     remarks: Optional[str] = None
 
 class ArrearPayRequest(BaseModel):
-    arrear_ids: List[int]
+    arrear_id: int
+    amount: float
     pay_month: int
     pay_year: int
 
