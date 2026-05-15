@@ -499,23 +499,76 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} placeholder="e.g. 50000" />
             </div>
 
-            {salaryForm.salary_components?.length > 0 && (
-              <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
-                <label style={{ ...labelStyle, marginBottom: 12 }}>Preview of Components</label>
-                {salaryForm.salary_components.map((comp, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
-                    <span style={{ color: 'var(--text2)' }}>{comp.name} ({comp.value}{comp.is_percentage ? '%' : '₹'})</span>
-                    <span style={{ fontWeight: 600 }}>
-                      ₹{comp.is_percentage ? ((salaryForm.basic_salary * comp.value) / 100).toLocaleString('en-IN') : comp.value.toLocaleString('en-IN')}
-                    </span>
+            {(() => {
+              if (!salaryForm.salary_components?.length) return null;
+              
+              // Internal calculation logic
+              const ctc = salaryForm.basic_salary || 0;
+              let computed = { CTC: ctc };
+              const results = [];
+              const sorted = [...salaryForm.salary_components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+              sorted.forEach(comp => {
+                let amount = 0;
+                const val = parseFloat(comp.value) || 0;
+                const calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
+                
+                if (calcType === 'percentage_of_ctc') {
+                  amount = (ctc * val) / 100;
+                } else if (calcType === 'percentage_of_basic') {
+                  let base = computed['BASIC'] || 0;
+                  if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+                  amount = (base * val) / 100;
+                } else if (calcType === 'percentage_of_gross') {
+                  let base = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                  if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+                  amount = (base * val) / 100;
+                } else if (calcType === 'slab') {
+                  const gross = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                  if (comp.slabs) {
+                    for (const slab of comp.slabs) {
+                      const min = parseFloat(slab.min) || 0;
+                      const max = slab.max === null || slab.max === undefined ? Infinity : parseFloat(slab.max);
+                      if (gross >= min && gross <= max) {
+                        amount = parseFloat(slab.value) || 0;
+                        break;
+                      }
+                    }
+                  }
+                } else { // fixed
+                  amount = val;
+                }
+                
+                const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
+                computed[code] = amount;
+                results.push({ ...comp, amount, calcType });
+              });
+
+              const totalEarnings = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+              const totalDeductions = results.filter(r => r.type === 'deduction' || r.component_type === 'deduction').reduce((acc, r) => acc + r.amount, 0);
+
+              return (
+                <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+                  <label style={{ ...labelStyle, marginBottom: 12 }}>Preview of Components</label>
+                  {results.map((comp, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+                      <span style={{ color: 'var(--text2)' }}>
+                        {comp.name} 
+                        {comp.calcType !== 'fixed' && comp.calcType !== 'slab' ? ` (${comp.value}%)` : 
+                         comp.calcType === 'slab' ? ' (Slab)' : ''}
+                      </span>
+                      <span style={{ fontWeight: 600 }}>
+                        ₹{comp.amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                      </span>
+                    </div>
+                  ))}
+                  <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
+                    <span>Total Calculated (Net)</span>
+                    <span>₹{(totalEarnings - totalDeductions).toLocaleString('en-IN')}</span>
                   </div>
-                ))}
-                <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10, display: 'flex', justifyContent: 'space-between', fontWeight: 700 }}>
-                  <span>Total Calculated</span>
-                  <span>₹{salaryForm.salary_components.reduce((acc, c) => acc + (c.is_percentage ? (salaryForm.basic_salary * c.value / 100) : c.value), 0).toLocaleString('en-IN')}</span>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={() => setShowSalaryModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>

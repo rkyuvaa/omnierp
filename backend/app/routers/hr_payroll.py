@@ -46,6 +46,8 @@ def _resolve_components(db: Session, emp: HREmployee):
                         "component_type": comp.component_type,
                         "calc_type": comp.calc_type,
                         "calc_value": override if override is not None else comp.calc_value,
+                        "cap_amount": comp.cap_amount,
+                        "slabs": comp.slabs,
                         "show_on_payslip": comp.show_on_payslip,
                         "sort_order": comp.sort_order,
                     })
@@ -85,11 +87,28 @@ def _calculate_components(ctc: float, components: list):
         if calc_type == "percentage_of_ctc":
             amount = round(ctc * val / 100, 2)
         elif calc_type == "percentage_of_basic":
-            basic = computed.get("BASIC", 0)
-            amount = round(basic * val / 100, 2)
+            base = computed.get("BASIC", 0)
+            if comp.get("cap_amount"):
+                base = min(base, float(comp["cap_amount"]))
+            amount = round(base * val / 100, 2)
         elif calc_type == "percentage_of_gross":
+            base = sum(r["amount"] for r in result_list if r["component_type"] == "earning")
+            if comp.get("cap_amount"):
+                base = min(base, float(comp["cap_amount"]))
+            amount = round(base * val / 100, 2)
+        elif calc_type == "slab":
             gross = sum(r["amount"] for r in result_list if r["component_type"] == "earning")
-            amount = round(gross * val / 100, 2)
+            amount = 0
+            if comp.get("slabs"):
+                for slab in comp["slabs"]:
+                    s_min = float(slab.get("min", 0))
+                    s_max = slab.get("max")
+                    if s_max is None: s_max = float('inf')
+                    else: s_max = float(s_max)
+                    
+                    if s_min <= gross <= s_max:
+                        amount = float(slab.get("value", 0))
+                        break
         else:  # fixed
             amount = round(val, 2)
 

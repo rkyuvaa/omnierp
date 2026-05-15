@@ -534,9 +534,13 @@ export default function HRConfigurations() {
                             ...sc[idx], 
                             component_id: parseInt(e.target.value),
                             name: master?.name || '',
+                            code: master?.code || '',
                             type: master?.component_type || 'earning',
+                            calc_type: master?.calc_type || 'percentage_of_ctc',
                             is_percentage: master?.calc_type !== 'fixed',
-                            value: master?.calc_value || 0
+                            value: master?.calc_value || 0,
+                            cap_amount: master?.cap_amount,
+                            slabs: master?.slabs
                           }; 
                           setForm({ ...form, components: sc }); 
                         }} style={inputStyle}>

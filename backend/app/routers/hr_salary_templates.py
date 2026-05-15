@@ -12,9 +12,13 @@ router = APIRouter()
 class SalaryComponent(BaseModel):
     component_id: Optional[int] = None
     name: str
+    code: Optional[str] = None
     type: str = "earning"
+    calc_type: str = "percentage_of_ctc"
     is_percentage: bool = True
     value: float
+    cap_amount: Optional[float] = None
+    slabs: Optional[List[dict]] = None
 
 class SalaryTemplateCreate(BaseModel):
     name: str
