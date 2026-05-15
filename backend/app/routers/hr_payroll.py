@@ -349,7 +349,7 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
     payroll_template = db.query(FormDefinition).filter(
         FormDefinition.module == "payroll",
         FormDefinition.is_active == True
-    ).first()
+    ).order_by(FormDefinition.id.desc()).first()
     
     pdf_cfg = payroll_template.pdf_config if payroll_template else {}
     fields_config = payroll_template.fields_config if payroll_template else []
