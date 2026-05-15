@@ -277,12 +277,30 @@ class HRPayrollRecord(Base):
     total_earnings = Column(Numeric(12, 2), default=0)
     total_deductions = Column(Numeric(12, 2), default=0)
     net_salary = Column(Numeric(12, 2), default=0)
+    arrears_held = Column(Numeric(12, 2), default=0)
+    arrears_paid = Column(Numeric(12, 2), default=0)
     components_breakdown = Column(JSON, default={})
     status = Column(String(20), default="draft")    # draft / finalized
     finalized_at = Column(DateTime, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    employee = relationship("HREmployee")
+
+class HRArrearRecord(Base):
+    __tablename__ = "hr_arrear_records"
+    id = Column(Integer, primary_key=True, index=True)
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"))
+    held_month = Column(Integer)
+    held_year = Column(Integer)
+    amount_held = Column(Numeric(12, 2), default=0)
+    status = Column(String(20), default="held") # held / paid
+    paid_in_month = Column(Integer, nullable=True)
+    paid_in_year = Column(Integer, nullable=True)
+    remarks = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
     employee = relationship("HREmployee")
 
 class HRSalaryTemplate(Base):

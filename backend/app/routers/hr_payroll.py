@@ -7,7 +7,7 @@ from calendar import monthrange
 from app.database import get_db
 from app.models import User, FormDefinition
 from app.auth import get_current_user
-from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent
+from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord
 from app.utils.pdf import generate_payslip_html, render_to_pdf
 from sqlalchemy import extract
 
@@ -17,6 +17,7 @@ class PayrollGenerate(BaseModel):
     employee_ids: list
     month: int
     year: int
+    lop_calculation_base: Optional[str] = "gross"  # gross or ctc
 
 class PayrollFinalize(BaseModel):
     month: int
@@ -142,7 +143,7 @@ def _calculate_components(ctc: float, components: list):
     return result_list, computed
 
 
-def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int) -> dict:
+def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int, lop_calculation_base: str = "gross", arrears_held: float = 0, arrears_paid: float = 0) -> dict:
     """Calculate salary for one employee for a given month"""
     ctc = float(emp.basic_salary or 0)
     components = _resolve_components(db, emp)
@@ -162,9 +163,9 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int) -> d
     on_duty_days = len([r for r in records if r.status == "on_duty"])
     absent_days = len([r for r in records if r.status == "absent"])
 
-    # LOP
+    # LOP (Manual + Excess Leave)
     lop_type = db.query(HRLeaveType).filter(HRLeaveType.code == "LOP").first()
-    lop_days = 0
+    lop_days = absent_days
     if lop_type:
         balance = db.query(HRLeaveBalance).filter(
             HRLeaveBalance.employee_id == emp.id,
@@ -172,17 +173,11 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int) -> d
             HRLeaveBalance.year == year,
         ).first()
         if balance:
-            lop_days = balance.used_days
+            lop_days += balance.used_days
 
-    # Prorated CTC for month
-    effective = present_days + on_duty_days + (half_days * 0.5) + leave_days
-    total_payable_days = working_days if working_days > 0 else days_in_month
-    attendance_ratio = effective / total_payable_days if total_payable_days > 0 else 1.0
-    payable_ctc = round(ctc * attendance_ratio, 2)
-    lop_deduction = round(ctc * (lop_days / total_payable_days), 2) if total_payable_days > 0 else 0
-
-    # Calculate components
-    result_list, computed = _calculate_components(payable_ctc, components)
+    # Calculate components on FULL CTC (100% attendance base) to avoid double deduction
+    # LOP will be handled as an explicit deduction
+    result_list, computed = _calculate_components(ctc, components)
 
     earnings = {}
     deductions = {}
@@ -194,8 +189,25 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int) -> d
         else:
             deductions[r["name"]] = r["amount"]
 
+    full_gross_earnings = sum(earnings.values())
+    total_payable_days = working_days if working_days > 0 else days_in_month
+    
+    # Calculate LOP Deduction based on chosen base
+    lop_deduction = 0
+    if total_payable_days > 0 and lop_days > 0:
+        if lop_calculation_base == "gross":
+            lop_deduction = round(full_gross_earnings * (lop_days / total_payable_days), 2)
+        else: # ctc
+            lop_deduction = round(ctc * (lop_days / total_payable_days), 2)
+            
     if lop_deduction > 0:
-        deductions["Loss of Pay"] = lop_deduction
+        deductions["Loss of Pay (LOP)"] = lop_deduction
+
+    if arrears_held > 0:
+        deductions["Salary Held (Arrears)"] = arrears_held
+        
+    if arrears_paid > 0:
+        earnings["Arrears Payout"] = arrears_paid
 
     total_earnings = round(sum(earnings.values()), 2)
     total_deductions = round(sum(deductions.values()), 2)
@@ -208,10 +220,12 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int) -> d
         "leave_days": leave_days,
         "lop_days": lop_days,
         "on_duty_days": on_duty_days,
-        "basic_salary": payable_ctc,
+        "basic_salary": ctc,
         "total_earnings": total_earnings,
         "total_deductions": total_deductions,
         "net_salary": net_salary,
+        "arrears_held": arrears_held,
+        "arrears_paid": arrears_paid,
         "components_breakdown": {"earnings": earnings, "deductions": deductions},
     }
 
@@ -246,8 +260,6 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
         emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
         if not emp: continue
 
-        calc = _calculate_payroll(db, emp, data.month, data.year)
-
         existing = db.query(HRPayrollRecord).filter(
             HRPayrollRecord.employee_id == emp_id,
             HRPayrollRecord.month == data.month,
@@ -257,6 +269,25 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
         if existing and existing.status == "finalized":
             results.append({"employee_id": emp_id, "status": "skipped", "reason": "Already finalized"})
             continue
+
+        # Automatically apply Arrears from the HRArrearRecord table
+        arrears_held_records = db.query(HRArrearRecord).filter(
+            HRArrearRecord.employee_id == emp_id,
+            HRArrearRecord.held_month == data.month,
+            HRArrearRecord.held_year == data.year,
+            HRArrearRecord.status == "held"
+        ).all()
+        arrears_held_val = sum(float(a.amount_held or 0) for a in arrears_held_records)
+
+        arrears_paid_records = db.query(HRArrearRecord).filter(
+            HRArrearRecord.employee_id == emp_id,
+            HRArrearRecord.paid_in_month == data.month,
+            HRArrearRecord.paid_in_year == data.year,
+            HRArrearRecord.status == "paid"
+        ).all()
+        arrears_paid_val = sum(float(a.amount_held or 0) for a in arrears_paid_records)
+
+        calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, arrears_held_val, arrears_paid_val)
 
         if existing:
             for k, v in calc.items():
@@ -367,3 +398,57 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+class ArrearHoldRequest(BaseModel):
+    employee_id: int
+    amount: float
+    month: int
+    year: int
+    remarks: Optional[str] = None
+
+class ArrearPayRequest(BaseModel):
+    arrear_ids: List[int]
+    pay_month: int
+    pay_year: int
+
+@router.post("/arrears/hold")
+def hold_arrear(data: ArrearHoldRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    arrear = HRArrearRecord(
+        employee_id=data.employee_id,
+        held_month=data.month,
+        held_year=data.year,
+        amount_held=data.amount,
+        status="held",
+        remarks=data.remarks
+    )
+    db.add(arrear)
+    db.commit()
+    return {"message": "Arrear held successfully", "arrear_id": arrear.id}
+
+@router.post("/arrears/pay")
+def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    arrears = db.query(HRArrearRecord).filter(HRArrearRecord.id.in_(data.arrear_ids)).all()
+    total_paid = 0
+    for arrear in arrears:
+        if arrear.status == "held":
+            arrear.status = "paid"
+            arrear.paid_in_month = data.pay_month
+            arrear.paid_in_year = data.pay_year
+            total_paid += float(arrear.amount_held or 0)
+    db.commit()
+    return {"message": "Arrears marked as paid", "total_paid": total_paid}
+
+@router.get("/arrears/{employee_id}")
+def get_employee_arrears(employee_id: int, status: Optional[str] = "held", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    q = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == employee_id)
+    if status:
+        q = q.filter(HRArrearRecord.status == status)
+    arrears = q.all()
+    return [{
+        "id": a.id,
+        "amount_held": float(a.amount_held or 0),
+        "held_month": a.held_month,
+        "held_year": a.held_year,
+        "status": a.status,
+        "remarks": a.remarks
+    } for a in arrears]

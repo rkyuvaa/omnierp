@@ -32,6 +32,8 @@ def _safe_add_columns():
         # (table, column, sql_type)
         ("hr_salary_components", "apply_if_gross_below", "DOUBLE PRECISION"),
         ("hr_salary_components", "apply_if_gross_above", "DOUBLE PRECISION"),
+        ("hr_payroll_records", "arrears_held", "DOUBLE PRECISION"),
+        ("hr_payroll_records", "arrears_paid", "DOUBLE PRECISION"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:
