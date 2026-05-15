@@ -210,13 +210,13 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     for amt, rem in arrears_held_list:
         if amt > 0:
             label = rem if rem else "Salary Held (Arrears)"
-            label = re.sub(r'[^\x00-\x7F]+', 'Rs.', label)
+            label = label.split(" [")[0].replace("₹", "Rs.")
             deductions[label] = amt
         
     for amt, rem in arrears_paid_list:
         if amt > 0:
             label = rem if rem else "Arrears Payout"
-            label = re.sub(r'[^\x00-\x7F]+', 'Rs.', label)
+            label = label.split(" [")[0].replace("₹", "Rs.")
             earnings[label] = amt
 
     arrears_held_total = sum(a[0] for a in arrears_held_list)
