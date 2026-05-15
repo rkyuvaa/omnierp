@@ -34,7 +34,8 @@ def _resolve_components(db: Session, emp: HREmployee):
             resolved = []
             for item in template.components:
                 cid = item.get("component_id")
-                override = item.get("override_value")
+                # The template stores override in "value" field, not "override_value"
+                override_val = item.get("value")
                 comp = db.query(HRSalaryComponent).filter(
                     HRSalaryComponent.id == cid,
                     HRSalaryComponent.is_active == True
@@ -45,7 +46,7 @@ def _resolve_components(db: Session, emp: HREmployee):
                         "code": comp.code,
                         "component_type": comp.component_type,
                         "calc_type": comp.calc_type,
-                        "calc_value": override if override is not None else comp.calc_value,
+                        "calc_value": override_val if override_val is not None else comp.calc_value,
                         "cap_amount": comp.cap_amount,
                         "slabs": comp.slabs,
                         "show_on_payslip": comp.show_on_payslip,
@@ -58,12 +59,14 @@ def _resolve_components(db: Session, emp: HREmployee):
     for comp in (emp.salary_components or []):
         legacy.append({
             "name": comp.get("name", ""),
-            "code": comp.get("name", "").upper().replace(" ", "_"),
-            "component_type": comp.get("type", "earning"),
-            "calc_type": "percentage_of_ctc" if comp.get("is_percentage") else "fixed",
+            "code": comp.get("code", comp.get("name", "").upper().replace(" ", "_")),
+            "component_type": comp.get("type", comp.get("component_type", "earning")),
+            "calc_type": comp.get("calc_type", "percentage_of_ctc" if comp.get("is_percentage") else "fixed"),
             "calc_value": comp.get("value", 0),
-            "show_on_payslip": True,
-            "sort_order": 99,
+            "cap_amount": comp.get("cap_amount"),
+            "slabs": comp.get("slabs"),
+            "show_on_payslip": comp.get("show_on_payslip", True),
+            "sort_order": comp.get("sort_order", 99),
         })
     return legacy
 
@@ -71,9 +74,10 @@ def _resolve_components(db: Session, emp: HREmployee):
 def _calculate_components(ctc: float, components: list):
     """
     Calculate each component in dependency order.
-    - percentage_of_ctc  → % of Salary (CTC)
-    - percentage_of_basic → % of BASIC component
-    - percentage_of_gross → % of total earnings so far
+    - percentage_of_ctc   → % of Salary (CTC)
+    - percentage_of_basic → % of BASIC component (with optional cap)
+    - percentage_of_gross → % of total earnings so far (with optional cap)
+    - slab                → lookup gross in slab table
     - fixed               → fixed amount
     Returns (result_list, computed_dict)
     """
@@ -87,7 +91,12 @@ def _calculate_components(ctc: float, components: list):
         if calc_type == "percentage_of_ctc":
             amount = round(ctc * val / 100, 2)
         elif calc_type == "percentage_of_basic":
-            base = computed.get("BASIC", 0)
+            # Robust matching: try BASIC, BASIC_SALARY, or find by name
+            base = computed.get("BASIC", computed.get("BASIC_SALARY", 0))
+            if not base:
+                basic_item = next((r for r in result_list if "basic" in r.get("name", "").lower()), None)
+                if basic_item:
+                    base = basic_item["amount"]
             if comp.get("cap_amount"):
                 base = min(base, float(comp["cap_amount"]))
             amount = round(base * val / 100, 2)
@@ -190,6 +199,29 @@ def _calculate_payroll(db: Session, emp: HREmployee, month: int, year: int) -> d
         "total_deductions": total_deductions,
         "net_salary": net_salary,
         "components_breakdown": {"earnings": earnings, "deductions": deductions},
+    }
+
+
+@router.get("/debug/{emp_id}")
+def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Debug endpoint to inspect salary component resolution for an employee"""
+    emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
+    if not emp:
+        raise HTTPException(404, "Employee not found")
+    
+    components = _resolve_components(db, emp)
+    ctc = float(emp.basic_salary or 0)
+    result_list, computed = _calculate_components(ctc, components)
+    
+    return {
+        "employee": emp.name,
+        "employee_id": emp.employee_id,
+        "ctc": ctc,
+        "salary_template_id": emp.salary_template_id,
+        "raw_salary_components": emp.salary_components,
+        "resolved_components": components,
+        "calculated": result_list,
+        "computed_dict": computed,
     }
 
 
