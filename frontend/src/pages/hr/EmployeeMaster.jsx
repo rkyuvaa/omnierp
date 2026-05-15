@@ -423,15 +423,65 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             <span style={{ color: 'var(--text2)' }}>Salary (CTC)</span>
             <span style={{ fontWeight: 700 }}>₹{Number(emp.basic_salary || 0).toLocaleString('en-IN')}</span>
           </div>
-          {(emp.salary_components || []).map((comp, i) => (
-            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
-              <span style={{ color: 'var(--text2)' }}>{comp.name} {comp.is_percentage ? `(${comp.value}%)` : ''}</span>
-              <span style={{ color: comp.type === 'earning' ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
-                {comp.type === 'deduction' ? '−' : '+'}
-                ₹{comp.is_percentage ? ((emp.basic_salary * comp.value) / 100).toLocaleString('en-IN') : comp.value.toLocaleString('en-IN')}
-              </span>
-            </div>
-          ))}
+          {(() => {
+            const components = emp.salary_components || [];
+            if (components.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No salary structure defined</div>;
+
+            const ctc = emp.basic_salary || 0;
+            let computed = { CTC: ctc };
+            const results = [];
+            const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+            sorted.forEach(comp => {
+              let amount = 0;
+              const val = parseFloat(comp.value) || 0;
+              const calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
+              
+              if (calcType === 'percentage_of_ctc') {
+                amount = (ctc * val) / 100;
+              } else if (calcType === 'percentage_of_basic') {
+                let base = computed['BASIC'] || 0;
+                if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+                amount = (base * val) / 100;
+              } else if (calcType === 'percentage_of_gross') {
+                let base = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+                amount = (base * val) / 100;
+              } else if (calcType === 'slab') {
+                const gross = results.filter(r => r.type === 'earning' || r.component_type === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                if (comp.slabs) {
+                  for (const slab of comp.slabs) {
+                    const min = parseFloat(slab.min) || 0;
+                    const max = slab.max === null || slab.max === undefined ? Infinity : parseFloat(slab.max);
+                    if (gross >= min && gross <= max) {
+                      amount = parseFloat(slab.value) || 0;
+                      break;
+                    }
+                  }
+                }
+              } else { // fixed
+                amount = val;
+              }
+              
+              const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
+              computed[code] = amount;
+              results.push({ ...comp, amount, calcType });
+            });
+
+            return results.map((comp, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
+                <span style={{ color: 'var(--text2)' }}>
+                  {comp.name} 
+                  {comp.calcType !== 'fixed' && comp.calcType !== 'slab' ? ` (${comp.value}%)` : 
+                   comp.calcType === 'slab' ? ' (Slab)' : ''}
+                </span>
+                <span style={{ color: (comp.type === 'earning' || comp.component_type === 'earning') ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                  {(comp.type === 'deduction' || comp.component_type === 'deduction') ? '−' : '+'}
+                  ₹{comp.amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+            ));
+          })()}
         </div>
       </div>
 
