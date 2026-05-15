@@ -206,16 +206,17 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     if lop_deduction > 0:
         deductions["Loss of Pay (LOP)"] = lop_deduction
 
+    import re
     for amt, rem in arrears_held_list:
         if amt > 0:
             label = rem if rem else "Salary Held (Arrears)"
-            label = label.replace("₹", "Rs.")
+            label = re.sub(r'[^\x00-\x7F]+', 'Rs.', label)
             deductions[label] = amt
         
     for amt, rem in arrears_paid_list:
         if amt > 0:
             label = rem if rem else "Arrears Payout"
-            label = label.replace("₹", "Rs.")
+            label = re.sub(r'[^\x00-\x7F]+', 'Rs.', label)
             earnings[label] = amt
 
     arrears_held_total = sum(a[0] for a in arrears_held_list)
