@@ -318,26 +318,37 @@ def list_payroll(
     # Filter out orphaned records where employee was deleted
     valid_records = [r for r in records if r.employee]
     
-    return [{
-        "id": r.id,
-        "employee_id": r.employee_id,
-        "employee_code": r.employee.employee_id,
-        "employee_name": r.employee.name,
-        "designation": r.employee.designation,
-        "month": r.month, "year": r.year,
-        "working_days": r.working_days,
-        "present_days": float(r.present_days or 0),
-        "absent_days": float(r.absent_days or 0),
-        "leave_days": float(r.leave_days or 0),
-        "lop_days": float(r.lop_days or 0),
-        "on_duty_days": float(r.on_duty_days or 0),
-        "basic_salary": float(r.basic_salary or 0),
-        "total_earnings": float(r.total_earnings or 0),
-        "total_deductions": float(r.total_deductions or 0),
-        "net_salary": float(r.net_salary or 0),
-        "components_breakdown": r.components_breakdown,
-        "status": r.status,
-    } for r in valid_records]
+    response_data = []
+    for r in valid_records:
+        pending_arrears = db.query(HRArrearRecord).filter(
+            HRArrearRecord.employee_id == r.employee_id,
+            HRArrearRecord.status == "held"
+        ).all()
+        pending_total = sum(float(a.amount_held or 0) for a in pending_arrears)
+
+        response_data.append({
+            "id": r.id,
+            "employee_id": r.employee_id,
+            "employee_code": r.employee.employee_id,
+            "employee_name": r.employee.name,
+            "designation": r.employee.designation,
+            "month": r.month, "year": r.year,
+            "working_days": r.working_days,
+            "present_days": float(r.present_days or 0),
+            "absent_days": float(r.absent_days or 0),
+            "leave_days": float(r.leave_days or 0),
+            "lop_days": float(r.lop_days or 0),
+            "on_duty_days": float(r.on_duty_days or 0),
+            "basic_salary": float(r.basic_salary or 0),
+            "total_earnings": float(r.total_earnings or 0),
+            "total_deductions": float(r.total_deductions or 0),
+            "net_salary": float(r.net_salary or 0),
+            "pending_arrears": pending_total,
+            "components_breakdown": r.components_breakdown,
+            "status": r.status,
+        })
+    
+    return response_data
 
 
 @router.post("/{record_id}/finalize")

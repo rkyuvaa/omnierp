@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { ChevronLeft, ChevronRight, Download, Play, CheckCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight } from 'lucide-react';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -16,6 +16,7 @@ export default function Payroll() {
   const [generating, setGenerating] = useState(false);
   const [selected, setSelected] = useState([]);
   const [detail, setDetail] = useState(null);
+  const [arrearModal, setArrearModal] = useState(null); // { employee_id, employee_name, pending_arrears }
 
   useEffect(() => {
     api.get('/hr/employees/', { params: { is_active: true } }).then(r => setEmployees(r.data));
@@ -172,6 +173,12 @@ export default function Payroll() {
                             <CheckCircle size={12} /> Finalize
                           </button>
                         )}
+                        <button 
+                          onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears })}
+                          style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                        >
+                          <Wallet size={12} /> Arrears (₹{r.pending_arrears || 0})
+                        </button>
                         <button onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} title="Download Payslip PDF" style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Download size={12} /> Payslip
                         </button>
@@ -184,6 +191,165 @@ export default function Payroll() {
           </div>
         )}
       </div>
+
+      {arrearModal && (
+        <ArrearsModal 
+          data={arrearModal} 
+          month={month}
+          year={year}
+          onClose={() => setArrearModal(null)} 
+          onRefresh={fetchPayroll} 
+        />
+      )}
     </Layout>
+  );
+}
+
+function ArrearsModal({ data, month, year, onClose, onRefresh }) {
+  const [pending, setPending] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [holdAmount, setHoldAmount] = useState('');
+  const [remarks, setRemarks] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [selectedArrears, setSelectedArrears] = useState([]);
+
+  useEffect(() => {
+    fetchPending();
+  }, []);
+
+  async function fetchPending() {
+    try {
+      const res = await api.get(`/hr/payroll/arrears/${data.employee_id}`, { params: { status: 'held' } });
+      setPending(res.data);
+    } catch { toast.error('Failed to load pending arrears'); }
+    finally { setLoading(false); }
+  }
+
+  async function handleHold() {
+    if (!holdAmount || holdAmount <= 0) return toast.error('Enter valid amount');
+    setSaving(true);
+    try {
+      await api.post('/hr/payroll/arrears/hold', {
+        employee_id: data.employee_id,
+        amount: parseFloat(holdAmount),
+        month, year, remarks
+      });
+      toast.success('Salary held as arrear');
+      setHoldAmount(''); setRemarks('');
+      fetchPending();
+      onRefresh();
+    } catch { toast.error('Failed'); }
+    finally { setSaving(false); }
+  }
+
+  async function handlePay() {
+    if (selectedArrears.length === 0) return toast.error('Select arrears to pay');
+    setSaving(true);
+    try {
+      await api.post('/hr/payroll/arrears/pay', {
+        arrear_ids: selectedArrears,
+        pay_month: month,
+        pay_year: year
+      });
+      toast.success('Arrears added to current payout');
+      setSelectedArrears([]);
+      fetchPending();
+      onRefresh();
+    } catch { toast.error('Failed'); }
+    finally { setSaving(false); }
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
+      <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: 500, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+        <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg2)' }}>
+          <div>
+            <div style={{ fontWeight: 800, fontSize: 16 }}>Manage Arrears</div>
+            <div style={{ fontSize: 12, color: 'var(--text3)' }}>{data.employee_name}</div>
+          </div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)' }}><X size={20} /></button>
+        </div>
+
+        <div style={{ padding: 24, maxHeight: '70vh', overflowY: 'auto' }}>
+          {/* Pay Pending Section */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Clock size={14} /> Pay Pending Arrears
+            </div>
+            {loading ? (
+              <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text3)' }}>Loading...</div>
+            ) : pending.length === 0 ? (
+              <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 8, border: '1px dashed var(--border)' }}>No pending arrears</div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {pending.map(a => (
+                  <label key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={selectedArrears.includes(a.id)} 
+                      onChange={e => setSelectedArrears(prev => e.target.checked ? [...prev, a.id] : prev.filter(id => id !== a.id))}
+                    />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontWeight: 700, fontSize: 13 }}>₹{a.amount_held.toLocaleString()}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</div>
+                    </div>
+                  </label>
+                ))}
+                <button 
+                  onClick={handlePay} 
+                  disabled={saving || selectedArrears.length === 0} 
+                  className="btn btn-primary" 
+                  style={{ marginTop: 8, width: '100%', fontSize: 13, height: 38 }}
+                >
+                  <ArrowRight size={14} /> {saving ? 'Processing...' : `Pay Selected (₹${pending.filter(a => selectedArrears.includes(a.id)).reduce((s,a) => s+a.amount_held, 0).toLocaleString()})`}
+                </button>
+              </div>
+            )}
+          </div>
+
+          <div style={{ height: 1, background: 'var(--border)', margin: '24px 0' }} />
+
+          {/* Hold Salary Section */}
+          <div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <Plus size={14} /> Hold Salary (Create Arrear)
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Amount to Hold (₹)</label>
+                <input 
+                  type="number" 
+                  value={holdAmount} 
+                  onChange={e => setHoldAmount(e.target.value)} 
+                  placeholder="0.00" 
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} 
+                />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Remarks (Optional)</label>
+                <input 
+                  type="text" 
+                  value={remarks} 
+                  onChange={e => setRemarks(e.target.value)} 
+                  placeholder="Reason for holding salary..." 
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} 
+                />
+              </div>
+              <button 
+                onClick={handleHold} 
+                disabled={saving} 
+                className="btn btn-primary" 
+                style={{ width: '100%', background: '#6366f1', fontSize: 13, height: 38, border: 'none' }}
+              >
+                {saving ? 'Holding...' : 'Hold This Amount'}
+              </button>
+              <div style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'center', fontStyle: 'italic' }}>
+                Held amount will be deducted from {MONTH_NAMES[month-1]} payout.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
