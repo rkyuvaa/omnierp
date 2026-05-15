@@ -51,17 +51,29 @@ def generate_form_html(submission, definition):
     current_row = []
     
     for f in fields:
-        val = data.get(f['key'], '—')
+        val = data.get(f.get('key', ''), '—')
+        ftype = f.get('type', 'text')
         
         # Format values
-        if f['type'] == 'table':
+        if ftype == 'separator':
+            rows_html += f'<hr style="border:none; border-top:2px solid #ccc; margin: 20px 0; width: 100%;" />'
+        elif ftype == 'heading':
+            rows_html += f'<div style="width: 100%; font-size: 14pt; font-weight: bold; color: #1a3c5e; margin: 25px 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; text-transform: uppercase;">{f.get("label", "HEADING")}</div>'
+        elif ftype == 'static_text':
+            content = f.get('content', '').replace('\n', '<br>')
+            rows_html += f'<div style="width: 100%; font-size: 10pt; color: #444; margin-bottom: 15px; line-height: 1.6;">{content}</div>'
+        elif ftype == 'static_image':
+            img_url = f.get('url', '')
+            if img_url:
+                rows_html += f'<div style="width: 100%; margin: 15px 0; text-align: center;"><img src="{img_url}" style="max-width: 100%; max-height: 250px;" /></div>'
+        elif ftype == 'table':
             table_rows = ""
             for r in (val if isinstance(val, list) else []):
                 table_rows += f"<tr><td>{r.get('desc','')}</td><td>{r.get('qty','')}</td><td>{r.get('val','')}</td></tr>"
             
             field_html = f"""
             <div style="width: 100%; margin-top: 20px;">
-                <div class="label">{f['label']}</div>
+                <div class="label">{f.get('label', '')}</div>
                 <table class="table-field">
                     <thead><tr><th>Description</th><th>Qty</th><th>Value</th></tr></thead>
                     <tbody>{table_rows or '<tr><td colspan="3" style="text-align:center">No data</td></tr>'}</tbody>
@@ -69,26 +81,26 @@ def generate_form_html(submission, definition):
             </div>
             """
             rows_html += field_html
-        elif f['type'] == 'signature':
+        elif ftype == 'signature':
             sig_html = ""
-            if val and val.startswith('data:image'):
+            if val and isinstance(val, str) and val.startswith('data:image'):
                  sig_html = f'<img src="{val}" class="signature-img" />'
             else:
                  sig_html = '<div style="color:#ccc; padding: 20px;">No Signature Provided</div>'
                  
             field_html = f"""
-            <div style="width: 50%;">
-                <div class="label">{f['label']}</div>
+            <div style="width: 50%; display: inline-block; margin-top: 20px;">
+                <div class="label">{f.get('label', '')}</div>
                 <div class="signature-box">{sig_html}</div>
             </div>
             """
             rows_html += field_html
-        elif f['type'] == 'textarea':
+        elif ftype == 'textarea':
              formatted_val = str(val).replace("\n", "<br>")
-             rows_html += f'<div class="field-group" style="width: 100%;"><div class="label">{f["label"]}</div><div class="value" style="border: 1px solid #eee; padding: 10px;">{formatted_val}</div></div>'
+             rows_html += f'<div class="field-group" style="width: 100%;"><div class="label">{f.get("label", "")}</div><div class="value" style="border: 1px solid #eee; padding: 10px; background: #fafafa;">{formatted_val}</div></div>'
         else:
              width = "48%" if f.get('width') == 'half' else "23%" if f.get('width') == 'quarter' else "100%"
-             rows_html += f'<div class="field-group" style="width: {width}; display: inline-block; vertical-align: top; margin-right: 2%;"><div class="label">{f["label"]}</div><div class="value">{val}</div></div>'
+             rows_html += f'<div class="field-group" style="width: {width}; display: inline-block; vertical-align: top; margin-right: 2%;"><div class="label">{f.get("label", "")}</div><div class="value">{val}</div></div>'
 
     header_text = pdf_cfg.get('header', '').replace('\n', '<br>')
     html = f"""

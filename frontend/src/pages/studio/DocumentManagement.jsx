@@ -139,32 +139,75 @@ function TemplateModal({ initial, parentFields, onSave, onClose }) {
                       gridColumn: f.width === 'half' ? 'span 2' : f.width === 'quarter' ? 'span 1' : '1/-1',
                       border: '1px dashed #ddd', padding: 8, borderRadius: 4, position: 'relative', background: '#fafafa'
                     }}>
-                      <div style={{ fontSize: 10, fontWeight: 700, color: '#999', marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
-                         {f.label.toUpperCase()}
-                         <div className="flex gap-1">
+                      <div style={{ fontSize: 10, fontWeight: 700, color: '#999', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                         <input 
+                           value={f.label} 
+                           onChange={e => {
+                             const next = [...form.fields_config]; next[i].label = e.target.value; set('fields_config', next);
+                           }} 
+                           style={{ border: 'none', background: 'transparent', fontWeight: 800, color: '#333', outline: 'none', flex: 1, textTransform: 'uppercase', width: '100%' }} 
+                           placeholder="FIELD NAME"
+                         />
+                         <div className="flex gap-1" style={{ flexShrink: 0 }}>
                            <select value={f.type} onChange={e => {
                              const next = [...form.fields_config]; next[i].type = e.target.value; set('fields_config', next);
-                           }} style={{ fontSize: 8, padding: '1px 2px', background: '#eee', border: 'none', borderRadius: 2 }}>
-                             <option value="text">text</option>
-                             <option value="number">number</option>
-                             <option value="date">date</option>
-                             <option value="textarea">textarea</option>
-                             <option value="selection">selection</option>
-                             <option value="table">table</option>
-                             <option value="signature">sign</option>
-                             <option value="info">info</option>
+                           }} style={{ fontSize: 9, padding: '2px 4px', background: '#eee', border: 'none', borderRadius: 3 }}>
+                             <optgroup label="Data Fields">
+                               <option value="text">Text Input</option>
+                               <option value="number">Number</option>
+                               <option value="date">Date</option>
+                               <option value="textarea">Text Area</option>
+                               <option value="selection">Dropdown</option>
+                               <option value="table">Data Table</option>
+                               <option value="signature">Signature</option>
+                             </optgroup>
+                             <optgroup label="Layout & Design">
+                               <option value="heading">Heading</option>
+                               <option value="static_text">Text Box</option>
+                               <option value="static_image">Image Box</option>
+                               <option value="separator">Line Separator</option>
+                             </optgroup>
                            </select>
                            <button onClick={() => {
                              const next = [...form.fields_config];
                              next[i].width = next[i].width === 'full' ? 'half' : next[i].width === 'half' ? 'quarter' : 'full';
                              set('fields_config', next);
-                           }} style={{ fontSize: 8, padding: '2px 4px', background: '#eee', border: 'none', borderRadius: 2 }}>{f.width || 'full'}</button>
+                           }} style={{ fontSize: 9, padding: '2px 4px', background: '#eee', border: 'none', borderRadius: 3 }}>{f.width || 'full'}</button>
                            <button onClick={() => {
                              const next = form.fields_config.filter((_, idx) => idx !== i); set('fields_config', next);
-                           }} style={{ color: 'red', fontSize: 10, border: 'none', background: 'none' }}>×</button>
+                           }} style={{ color: 'var(--red)', fontSize: 12, border: 'none', background: 'none', padding: '0 4px' }}>×</button>
                          </div>
                       </div>
-                      <div style={{ fontSize: 12, color: '#ccc' }}>{f.type} input space...</div>
+                      
+                      <div style={{ marginTop: 8 }}>
+                        {f.type === 'static_text' ? (
+                          <textarea 
+                            value={f.content || ''} 
+                            onChange={e => {
+                              const next = [...form.fields_config]; next[i].content = e.target.value; set('fields_config', next);
+                            }}
+                            placeholder="Type paragraph text here..."
+                            style={{ width: '100%', fontSize: 11, padding: 6, border: '1px solid #ddd', borderRadius: 4, minHeight: 60, resize: 'vertical' }}
+                          />
+                        ) : f.type === 'static_image' ? (
+                          <input 
+                            value={f.url || ''} 
+                            onChange={e => {
+                              const next = [...form.fields_config]; next[i].url = e.target.value; set('fields_config', next);
+                            }}
+                            placeholder="Image URL (https://...)"
+                            style={{ width: '100%', fontSize: 11, padding: 6, border: '1px solid #ddd', borderRadius: 4 }}
+                          />
+                        ) : f.type === 'separator' ? (
+                          <hr style={{ border: 'none', borderTop: '2px solid #ccc', margin: '12px 0' }} />
+                        ) : f.type === 'heading' ? (
+                          <div style={{ fontSize: 14, fontWeight: 'bold', color: '#333' }}>{f.label} Preview</div>
+                        ) : (
+                          <div style={{ fontSize: 11, color: '#aaa', background: '#fff', border: '1px solid #eee', padding: 8, borderRadius: 4 }}>
+                            {f.type.replace('_', ' ').toUpperCase()} input space...
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))}
 
