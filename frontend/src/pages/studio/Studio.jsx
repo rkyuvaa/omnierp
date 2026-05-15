@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, RotateCw, Settings, Layers, FileText, ChevronRight } from 'lucide-react';
 import DocumentManagement from './DocumentManagement';
 
-const MODULES = ['crm', 'installation', 'service', 'warranty', 'konwertcare'];
+const MODULES = ['crm', 'installation', 'service', 'warranty', 'konwertcare', 'payroll'];
 const FIELD_TYPES = ['text', 'number', 'date', 'textarea', 'selection', 'multiple-selection', 'boolean', 'checkbox', 'file', 'form', 'button'];
 
 const emptyTab = { name: '', sort_order: 0 };

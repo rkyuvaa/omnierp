@@ -122,3 +122,317 @@ def generate_form_html(submission, definition):
     </html>
     """
     return html
+
+
+# ─────────────────────────────────────────────
+# PAYSLIP PDF GENERATOR
+# ─────────────────────────────────────────────
+
+ONES = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine',
+        'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen',
+        'Seventeen', 'Eighteen', 'Nineteen']
+TENS = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety']
+
+def _num_to_words_below_1000(n: int) -> str:
+    if n == 0: return ''
+    elif n < 20: return ONES[n]
+    elif n < 100: return TENS[n // 10] + ((' ' + ONES[n % 10]) if n % 10 else '')
+    else: return ONES[n // 100] + ' Hundred' + ((' ' + _num_to_words_below_1000(n % 100)) if n % 100 else '')
+
+def num_to_words(n: float) -> str:
+    """Convert a number to Indian words (e.g. 1,23,456 → One Lakh Twenty Three Thousand Four Hundred Fifty Six)"""
+    n = int(round(n))
+    if n == 0: return 'Zero'
+    parts = []
+    crore = n // 10_000_000; n %= 10_000_000
+    lakh  = n // 100_000;    n %= 100_000
+    thou  = n // 1000;       n %= 1000
+    rest  = n
+    if crore: parts.append(_num_to_words_below_1000(crore) + ' Crore')
+    if lakh:  parts.append(_num_to_words_below_1000(lakh)  + ' Lakh')
+    if thou:  parts.append(_num_to_words_below_1000(thou)  + ' Thousand')
+    if rest:  parts.append(_num_to_words_below_1000(rest))
+    return ' '.join(parts)
+
+
+def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict) -> str:
+    """
+    Generate a professional Indian-format payslip HTML.
+    pdf_cfg comes from the FormDefinition.pdf_config saved in Studio → Documents → payroll.
+    """
+    company_name    = pdf_cfg.get('company_name', pdf_cfg.get('header', 'KiM ERP').split('\n')[0])
+    company_address = pdf_cfg.get('header', '').replace('\n', '<br>')
+    company_logo    = pdf_cfg.get('logo', '')
+    footer_text     = pdf_cfg.get('footer', 'This is a computer-generated payslip. No signature required.')
+
+    breakdown       = record.components_breakdown or {}
+    earnings        = breakdown.get('earnings', {})
+    deductions      = breakdown.get('deductions', {})
+    total_earnings  = float(record.total_earnings or 0)
+    total_deductions= float(record.total_deductions or 0)
+    net_salary      = float(record.net_salary or 0)
+    net_words       = num_to_words(net_salary) + ' Rupees Only'
+
+    emp_name        = employee.name or '—'
+    emp_code        = employee.employee_id or '—'
+    designation     = employee.designation or '—'
+    department      = employee.department.name if employee.department else '—'
+    doj             = employee.date_of_joining.strftime('%d/%m/%Y') if employee.date_of_joining else '—'
+    working_days    = int(record.working_days or 0)
+    present_days    = record.present_days or 0
+    lop_days        = float(record.lop_days or 0)
+    on_duty_days    = float(record.on_duty_days or 0)
+
+    logo_html = f'<img src="{company_logo}" style="height:55px; max-width:180px;" />' if company_logo else f'<div style="font-size:20pt; font-weight:900; color:#1a3c5e;">{company_name}</div>'
+
+    # Build earnings rows
+    earn_rows = ''
+    for name, amt in earnings.items():
+        earn_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600;">&#8377;{amt:,.2f}</td></tr>'
+    # Pad earnings to match deductions height if needed
+    earn_rows += '<tr><td colspan="2" style="padding:5px 8px;">&nbsp;</td></tr>' * max(0, len(deductions) - len(earnings) + 1)
+
+    # Build deductions rows
+    ded_rows = ''
+    for name, amt in deductions.items():
+        ded_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600; color:#c0392b;">&#8377;{amt:,.2f}</td></tr>'
+    ded_rows += '<tr><td colspan="2" style="padding:5px 8px;">&nbsp;</td></tr>' * max(0, len(earnings) - len(deductions) + 1)
+
+    html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<style>
+  @page {{ size: A4; margin: 1.2cm; }}
+  * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+  body {{ font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }}
+  .payslip {{ width: 100%; }}
+
+  /* Header */
+  .hdr {{ display: table; width: 100%; border-bottom: 3px solid #1a3c5e; padding-bottom: 10px; margin-bottom: 12px; }}
+  .hdr-left {{ display: table-cell; vertical-align: middle; width: 60%; }}
+  .hdr-right {{ display: table-cell; vertical-align: middle; text-align: right; width: 40%; }}
+  .slip-title {{ font-size: 16pt; font-weight: 900; color: #1a3c5e; letter-spacing: 1px; }}
+  .slip-month {{ font-size: 10pt; color: #555; margin-top: 3px; }}
+  .company-addr {{ font-size: 8.5pt; color: #666; margin-top: 4px; line-height: 1.4; }}
+
+  /* Employee Info */
+  .info-table {{ width: 100%; border-collapse: collapse; margin-bottom: 12px; background: #f7f9fc; border: 1px solid #dde3ea; border-radius: 4px; }}
+  .info-table td {{ padding: 5px 10px; font-size: 9pt; border-bottom: 1px solid #eaecef; }}
+  .info-table td:first-child {{ font-weight: 700; color: #555; width: 22%; }}
+  .info-table td:nth-child(3) {{ font-weight: 700; color: #555; width: 22%; }}
+
+  /* Attendance strip */
+  .att-strip {{ display: table; width: 100%; background: #1a3c5e; color: #fff; border-radius: 4px; margin-bottom: 12px; }}
+  .att-cell {{ display: table-cell; text-align: center; padding: 7px 5px; font-size: 9pt; border-right: 1px solid rgba(255,255,255,0.15); }}
+  .att-cell:last-child {{ border-right: none; }}
+  .att-num {{ font-size: 13pt; font-weight: 900; display: block; }}
+  .att-lbl {{ font-size: 7.5pt; opacity: 0.8; display: block; }}
+
+  /* Earnings / Deductions table */
+  .comp-wrap {{ display: table; width: 100%; border-collapse: collapse; margin-bottom: 10px; }}
+  .comp-col {{ display: table-cell; width: 50%; vertical-align: top; }}
+  .comp-col:first-child {{ padding-right: 6px; }}
+  .comp-col:last-child  {{ padding-left: 6px; }}
+  .comp-hdr {{ background: #1a3c5e; color: #fff; padding: 6px 8px; font-size: 9.5pt; font-weight: 700; letter-spacing: 0.5px; }}
+  .comp-tbl {{ width: 100%; border-collapse: collapse; border: 1px solid #dde3ea; font-size: 9pt; }}
+  .comp-tbl .total-row td {{ background: #eef2f7; font-weight: 800; font-size: 9.5pt; border-top: 2px solid #1a3c5e; padding: 6px 8px; }}
+  .comp-tbl .total-row td:last-child {{ text-align: right; }}
+
+  /* Net salary box */
+  .net-box {{ background: #1a3c5e; color: #fff; padding: 10px 14px; border-radius: 4px; display: table; width: 100%; margin-bottom: 10px; }}
+  .net-left {{ display: table-cell; vertical-align: middle; font-size: 12pt; font-weight: 700; }}
+  .net-right {{ display: table-cell; text-align: right; vertical-align: middle; font-size: 14pt; font-weight: 900; }}
+  .net-words {{ font-size: 8pt; opacity: 0.85; display: block; margin-top: 2px; font-weight: 400; font-style: italic; }}
+
+  /* Footer */
+  .slip-footer {{ border-top: 1px solid #dde3ea; padding-top: 7px; font-size: 8pt; color: #888; text-align: center; margin-top: 4px; }}
+</style>
+</head>
+<body>
+<div class="payslip">
+
+  <!-- HEADER -->
+  <div class="hdr">
+    <div class="hdr-left">
+      {logo_html}
+      <div class="company-addr">{company_address}</div>
+    </div>
+    <div class="hdr-right">
+      <div class="slip-title">SALARY SLIP</div>
+      <div class="slip-month">{month_name} {year}</div>
+    </div>
+  </div>
+
+  <!-- EMPLOYEE INFO -->
+  <table class="info-table">
+    <tr>
+      <td>Employee Name</td><td><strong>{emp_name}</strong></td>
+      <td>Employee Code</td><td>{emp_code}</td>
+    </tr>
+    <tr>
+      <td>Designation</td><td>{designation}</td>
+      <td>Department</td><td>{department}</td>
+    </tr>
+    <tr>
+      <td>Date of Joining</td><td>{doj}</td>
+      <td>Salary (CTC)</td><td>&#8377;{float(employee.basic_salary or 0):,.2f}</td>
+    </tr>
+  </table>
+
+  <!-- ATTENDANCE STRIP -->
+  <div class="att-strip">
+    <div class="att-cell"><span class="att-num">{working_days}</span><span class="att-lbl">Working Days</span></div>
+    <div class="att-cell"><span class="att-num">{present_days:.1f}</span><span class="att-lbl">Present Days</span></div>
+    <div class="att-cell"><span class="att-num">{float(record.absent_days or 0):.1f}</span><span class="att-lbl">Absent Days</span></div>
+    <div class="att-cell"><span class="att-num">{float(record.leave_days or 0):.1f}</span><span class="att-lbl">Leave Days</span></div>
+    <div class="att-cell"><span class="att-num">{lop_days:.1f}</span><span class="att-lbl">LOP Days</span></div>
+    <div class="att-cell"><span class="att-num">{on_duty_days:.1f}</span><span class="att-lbl">On Duty Days</span></div>
+  </div>
+
+  <!-- EARNINGS AND DEDUCTIONS -->
+  <div class="comp-wrap">
+    <div class="comp-col">
+      <div class="comp-hdr">&#9650; EARNINGS</div>
+      <table class="comp-tbl">
+        {earn_rows}
+        <tr class="total-row"><td>Gross Earnings</td><td>&#8377;{total_earnings:,.2f}</td></tr>
+      </table>
+    </div>
+    <div class="comp-col">
+      <div class="comp-hdr" style="background:#c0392b;">&#9660; DEDUCTIONS</div>
+      <table class="comp-tbl">
+        {ded_rows}
+        <tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">&#8377;{total_deductions:,.2f}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- NET SALARY -->
+  <div class="net-box">
+    <div class="net-left">
+      Net Salary (Take Home)
+      <span class="net-words">{net_words}</span>
+    </div>
+    <div class="net-right">&#8377;{net_salary:,.2f}</div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="slip-footer">{footer_text}</div>
+
+</div>
+</body>
+</html>"""
+    return html
+
+
+def generate_form_html(submission, definition):
+    """
+    Generates a clean HTML structure for the PDF based on submission data and template config.
+    """
+    data = submission.data
+    fields = definition.fields_config
+    pdf_cfg = definition.pdf_config
+    
+    # Simple CSS for the A4 look
+    css = """
+    @page { size: A4; margin: 1.5cm; }
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; color: #333; line-height: 1.5; }
+    .header { border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
+    .header table { width: 100%; }
+    .logo { height: 60px; }
+    .doc-title { text-align: right; }
+    .doc-name { font-size: 18pt; font-weight: bold; margin-bottom: 5px; }
+    .doc-ref { font-size: 10pt; color: #666; }
+    
+    .grid { width: 100%; border-collapse: collapse; }
+    .field-group { margin-bottom: 15px; }
+    .label { font-size: 9pt; font-weight: bold; color: #777; margin-bottom: 2px; text-transform: uppercase; }
+    .value { font-size: 11pt; border-bottom: 1px solid #eee; min-height: 20px; padding: 2px 0; }
+    
+    .table-field { width: 100%; border: 1px solid #ddd; border-collapse: collapse; margin: 10px 0; }
+    .table-field th { background: #f5f5f5; border: 1px solid #ddd; padding: 6px; font-size: 10pt; text-align: left; }
+    .table-field td { border: 1px solid #ddd; padding: 6px; font-size: 10pt; }
+    
+    .signature-box { border: 1px dashed #ccc; background: #fafafa; padding: 10px; text-align: center; width: 250px; margin-top: 10px; }
+    .signature-img { max-height: 80px; }
+    
+    .footer { position: fixed; bottom: 0; width: 100%; border-top: 1px solid #eee; padding-top: 10px; font-size: 8pt; color: #999; }
+    """
+    
+    # Build HTML Rows
+    rows_html = ""
+    current_row = []
+    
+    for f in fields:
+        val = data.get(f['key'], '—')
+        
+        # Format values
+        if f['type'] == 'table':
+            table_rows = ""
+            for r in (val if isinstance(val, list) else []):
+                table_rows += f"<tr><td>{r.get('desc','')}</td><td>{r.get('qty','')}</td><td>{r.get('val','')}</td></tr>"
+            
+            field_html = f"""
+            <div style="width: 100%; margin-top: 20px;">
+                <div class="label">{f['label']}</div>
+                <table class="table-field">
+                    <thead><tr><th>Description</th><th>Qty</th><th>Value</th></tr></thead>
+                    <tbody>{table_rows or '<tr><td colspan="3" style="text-align:center">No data</td></tr>'}</tbody>
+                </table>
+            </div>
+            """
+            rows_html += field_html
+        elif f['type'] == 'signature':
+            sig_html = ""
+            if val and val.startswith('data:image'):
+                 sig_html = f'<img src="{val}" class="signature-img" />'
+            else:
+                 sig_html = '<div style="color:#ccc; padding: 20px;">No Signature Provided</div>'
+                 
+            field_html = f"""
+            <div style="width: 50%;">
+                <div class="label">{f['label']}</div>
+                <div class="signature-box">{sig_html}</div>
+            </div>
+            """
+            rows_html += field_html
+        elif f['type'] == 'textarea':
+             formatted_val = str(val).replace("\n", "<br>")
+             rows_html += f'<div class="field-group" style="width: 100%;"><div class="label">{f["label"]}</div><div class="value" style="border: 1px solid #eee; padding: 10px;">{formatted_val}</div></div>'
+        else:
+             width = "48%" if f.get('width') == 'half' else "23%" if f.get('width') == 'quarter' else "100%"
+             rows_html += f'<div class="field-group" style="width: {width}; display: inline-block; vertical-align: top; margin-right: 2%;"><div class="label">{f["label"]}</div><div class="value">{val}</div></div>'
+
+    header_text = pdf_cfg.get('header', '').replace('\n', '<br>')
+    html = f"""
+    <html>
+    <head><style>{css}</style></head>
+    <body>
+        <div class="header">
+            <table>
+                <tr>
+                    <td>
+                        {f'<img src="{pdf_cfg["logo"]}" class="logo" />' if pdf_cfg.get('logo') else '<div style="font-weight:bold; font-size: 20pt;">OmniERP</div>'}
+                        <div style="font-size: 9pt; color: #666; margin-top: 5px;">{header_text}</div>
+                    </td>
+                    <td class="doc-title">
+                        <div class="doc-name">{definition.name.upper()}</div>
+                        <div class="doc-ref">REF: {submission.reference_number}</div>
+                        <div class="doc-ref">DATE: {submission.created_at.strftime("%d-%m-%Y")}</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+        
+        <div class="content">
+            {rows_html}
+        </div>
+        
+        <div class="footer">
+            {pdf_cfg.get('footer', 'Generated by OmniERP Dynamic Form Engine')}
+        </div>
+    </body>
+    </html>
+    """
+    return html

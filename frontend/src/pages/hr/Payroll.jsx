@@ -66,6 +66,17 @@ export default function Payroll() {
     } catch { toast.error('Download failed'); }
   }
 
+  async function downloadPayslip(recordId, empCode, monthNum, yearNum) {
+    try {
+      const res = await api.get(`/hr/payroll/${recordId}/payslip`, { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const a = document.createElement('a'); a.href = url;
+      a.download = `Payslip_${empCode}_${MONTH_NAMES[monthNum - 1]}_${yearNum}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch { toast.error('Failed to download payslip'); }
+  }
+
   function prevMonth() { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); }
   function nextMonth() { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); }
 
@@ -155,11 +166,16 @@ export default function Payroll() {
                       </span>
                     </td>
                     <td style={{ padding: '10px 12px' }}>
-                      {r.status !== 'finalized' && (
-                        <button onClick={() => finalizeRecord(r.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                          <CheckCircle size={12} /> Finalize
+                      <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                        {r.status !== 'finalized' && (
+                          <button onClick={() => finalizeRecord(r.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <CheckCircle size={12} /> Finalize
+                          </button>
+                        )}
+                        <button onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} title="Download Payslip PDF" style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                          <Download size={12} /> Payslip
                         </button>
-                      )}
+                      </div>
                     </td>
                   </tr>
                 ))}

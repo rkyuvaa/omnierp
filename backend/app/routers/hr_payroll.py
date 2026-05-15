@@ -1,13 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
 from calendar import monthrange
 from app.database import get_db
-from app.models import User
+from app.models import User, FormDefinition
 from app.auth import get_current_user
 from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent
+from app.utils.pdf import generate_payslip_html, render_to_pdf
 from sqlalchemy import extract
 
 router = APIRouter()
@@ -330,3 +331,38 @@ def get_payroll_detail(record_id: int, db: Session = Depends(get_db), current_us
         "net_salary": float(record.net_salary or 0),
         "status": record.status,
     }
+
+
+MONTH_NAMES = ["","January","February","March","April","May","June",
+               "July","August","September","October","November","December"]
+
+@router.get("/{record_id}/payslip")
+def download_payslip(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Generate and return a payslip PDF for a payroll record."""
+    record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
+    if not record: raise HTTPException(404, "Payroll record not found")
+    
+    employee = record.employee
+    if not employee: raise HTTPException(404, "Employee not found")
+
+    # Load payslip branding from Studio → Documents → payroll module
+    payroll_template = db.query(FormDefinition).filter(
+        FormDefinition.module == "payroll",
+        FormDefinition.is_active == True
+    ).first()
+    
+    pdf_cfg = payroll_template.pdf_config if payroll_template else {}
+
+    month_name = MONTH_NAMES[record.month]
+    html = generate_payslip_html(record, employee, month_name, record.year, pdf_cfg)
+    pdf_bytes = render_to_pdf(html)
+
+    if not pdf_bytes:
+        raise HTTPException(500, "PDF generation failed")
+
+    filename = f"Payslip_{employee.employee_id}_{month_name}_{record.year}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
