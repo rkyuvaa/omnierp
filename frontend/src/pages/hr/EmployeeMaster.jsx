@@ -347,6 +347,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
     salary_components: emp.salary_components || []
   });
   const [saving, setSaving] = useState(false);
+  const [netPayInput, setNetPayInput] = useState('');
 
   useEffect(() => {
     api.get('/hr/leave/types').then(r => setLeaveTypes(r.data));
@@ -378,6 +379,82 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
       return c;
     });
   }
+
+  function calculateSalaryDetails(grossValue, compList) {
+    const results = [];
+    const ctc = parseFloat(grossValue) || 0;
+    const components = hydrateComponents(compList || []);
+    const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+
+    sorted.forEach(comp => {
+      let amount = 0;
+      const val = parseFloat(comp.value) || 0;
+      let calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
+      const compType = comp.component_type || comp.type || 'earning';
+      
+      // Failsafe: If Basic Salary is mistakenly set to % of Gross (which is 0 initially), treat it as % of CTC (Gross)
+      if (calcType === 'percentage_of_gross' && results.length === 0) {
+        calcType = 'percentage_of_ctc';
+      }
+      
+      if (calcType === 'percentage_of_ctc') amount = (ctc * val) / 100;
+      else if (calcType === 'percentage_of_basic') {
+        const basic = results.find(r => r.code === 'BASIC' || r.name?.toLowerCase().includes('basic'))?.amount || 0;
+        const base = comp.cap_amount ? Math.min(basic, comp.cap_amount) : basic;
+        amount = (base * val) / 100;
+      } else if (calcType === 'percentage_of_gross') {
+        const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+        const base = comp.cap_amount ? Math.min(gross, comp.cap_amount) : gross;
+        amount = (base * val) / 100;
+      } else if (calcType === 'slab') {
+        const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+        if (comp.slabs) {
+          for (const s of comp.slabs) {
+            if (gross >= (s.min || 0) && gross <= (s.max || Infinity)) { amount = s.value || 0; break; }
+          }
+        }
+      } else amount = val;
+
+      // Thresholds: check against the inputted Gross Salary (ctc)
+      if (comp.apply_if_gross_below > 0 && ctc > comp.apply_if_gross_below) amount = 0;
+      if (comp.apply_if_gross_above > 0 && ctc < comp.apply_if_gross_above) amount = 0;
+
+      results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
+    });
+
+    const totalEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+    const totalDeductions = results.filter(r => r._compType === 'deduction').reduce((acc, r) => acc + r.amount, 0);
+    const totalContributions = results.filter(r => r._compType === 'employer_contribution').reduce((acc, r) => acc + r.amount, 0);
+    const netPay = totalEarnings - totalDeductions;
+    const totalCTC = totalEarnings + totalContributions;
+
+    return { results, totalEarnings, totalDeductions, totalContributions, netPay, totalCTC, gross: ctc };
+  }
+
+  function findGrossForNet(targetNet, compList) {
+    if (!targetNet || targetNet <= 0) return 0;
+    let low = targetNet;
+    let high = targetNet * 2 + 100000;
+    let bestGross = targetNet;
+    for (let i = 0; i < 50; i++) {
+      const mid = (low + high) / 2;
+      const details = calculateSalaryDetails(mid, compList);
+      if (Math.abs(details.netPay - targetNet) < 0.1) {
+        bestGross = mid;
+        break;
+      }
+      if (details.netPay < targetNet) low = mid;
+      else high = mid;
+    }
+    return Math.round(bestGross * 100) / 100;
+  }
+
+  useEffect(() => {
+    if (salaryComponents.length > 0 && emp.basic_salary > 0 && !netPayInput) {
+       const details = calculateSalaryDetails(emp.basic_salary, emp.salary_components);
+       setNetPayInput(Math.round(details.netPay));
+    }
+  }, [salaryComponents, emp]);
 
   async function saveBalances() {
     setSaving(true);
@@ -455,48 +532,9 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             if (rawComponents.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No salary structure defined</div>;
             if (salaryComponents.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>Loading components...</div>;
 
-            const results = [];
-            const ctc = parseFloat(emp.basic_salary) || 0;
-            const components = hydrateComponents(emp.salary_components || []);
-            const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
+            const details = calculateSalaryDetails(emp.basic_salary, rawComponents);
 
-            sorted.forEach(comp => {
-              let amount = 0;
-              const val = parseFloat(comp.value) || 0;
-              let calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
-              const compType = comp.component_type || comp.type || 'earning';
-              
-              // Failsafe: If Basic Salary is mistakenly set to % of Gross (which is 0 initially), treat it as % of CTC (Gross)
-              if (calcType === 'percentage_of_gross' && results.length === 0) {
-                calcType = 'percentage_of_ctc';
-              }
-              
-              if (calcType === 'percentage_of_ctc') amount = (ctc * val) / 100;
-              else if (calcType === 'percentage_of_basic') {
-                const basic = results.find(r => r.code === 'BASIC' || r.name?.toLowerCase().includes('basic'))?.amount || 0;
-                const base = comp.cap_amount ? Math.min(basic, comp.cap_amount) : basic;
-                amount = (base * val) / 100;
-              } else if (calcType === 'percentage_of_gross') {
-                const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                const base = comp.cap_amount ? Math.min(gross, comp.cap_amount) : gross;
-                amount = (base * val) / 100;
-              } else if (calcType === 'slab') {
-                const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                if (comp.slabs) {
-                  for (const s of comp.slabs) {
-                    if (gross >= (s.min || 0) && gross <= (s.max || Infinity)) { amount = s.value || 0; break; }
-                  }
-                }
-              } else amount = val;
-
-              // Thresholds: check against the inputted Gross Salary (ctc)
-              if (comp.apply_if_gross_below > 0 && ctc > comp.apply_if_gross_below) amount = 0;
-              if (comp.apply_if_gross_above > 0 && ctc < comp.apply_if_gross_above) amount = 0;
-
-              results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
-            });
-
-            return results.map((comp, i) => (
+            return details.results.map((comp, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
                 <span style={{ color: 'var(--text2)' }}>
                   {comp.name} 
@@ -565,10 +603,13 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                 onChange={e => {
                   const tid = e.target.value ? parseInt(e.target.value) : null;
                   const template = salaryTemplates.find(t => t.id === tid);
+                  const newComps = template ? template.components : [];
+                  const newGross = findGrossForNet(parseFloat(netPayInput) || 0, newComps);
                   setSalaryForm({ 
                     ...salaryForm, 
                     salary_template_id: tid,
-                    salary_components: template ? template.components : [] 
+                    salary_components: newComps,
+                    basic_salary: newGross
                   });
                 }} 
                 style={inputStyle}>
@@ -577,63 +618,31 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               </select>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>Gross Salary (₹)</label>
-              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} placeholder="e.g. 35000" />
+              <label style={labelStyle}>Target Net Pay (In-Hand) (₹)</label>
+              <input type="number" value={netPayInput} onChange={e => {
+                const net = parseFloat(e.target.value) || 0;
+                setNetPayInput(net || '');
+                const gross = findGrossForNet(net, salaryForm.salary_components);
+                setSalaryForm({ ...salaryForm, basic_salary: gross });
+              }} style={inputStyle} placeholder="e.g. 35000" />
             </div>
 
             {(() => {
               if (!salaryForm.salary_components?.length) return null;
               if (salaryComponents.length === 0) return <div style={{ textAlign: 'center', padding: 20, color: 'var(--text3)' }}>Loading master components...</div>;
               
-              const results = [];
-              const ctc = parseFloat(salaryForm.basic_salary) || 0;
-              const components = hydrateComponents(salaryForm.salary_components || []);
-              const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
-
-              sorted.forEach(comp => {
-                let amount = 0;
-                const val = parseFloat(comp.value) || 0;
-                let calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
-                const compType = comp.component_type || comp.type || 'earning';
-                
-                // Failsafe: If Basic Salary is mistakenly set to % of Gross (which is 0 initially), treat it as % of CTC (Gross)
-                if (calcType === 'percentage_of_gross' && results.length === 0) {
-                  calcType = 'percentage_of_ctc';
-                }
-                
-                if (calcType === 'percentage_of_ctc') amount = (ctc * val) / 100;
-                else if (calcType === 'percentage_of_basic') {
-                  const basic = results.find(r => r.code === 'BASIC' || r.name?.toLowerCase().includes('basic'))?.amount || 0;
-                  const base = comp.cap_amount ? Math.min(basic, comp.cap_amount) : basic;
-                  amount = (base * val) / 100;
-                } else if (calcType === 'percentage_of_gross') {
-                  const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                  const base = comp.cap_amount ? Math.min(gross, comp.cap_amount) : gross;
-                  amount = (base * val) / 100;
-                } else if (calcType === 'slab') {
-                  const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                  if (comp.slabs) {
-                    for (const s of comp.slabs) {
-                      if (gross >= (s.min || 0) && gross <= (s.max || Infinity)) { amount = s.value || 0; break; }
-                    }
-                  }
-                } else amount = val;
-
-                // Thresholds: check against the inputted Gross Salary (ctc)
-                if (comp.apply_if_gross_below > 0 && ctc > comp.apply_if_gross_below) amount = 0;
-                if (comp.apply_if_gross_above > 0 && ctc < comp.apply_if_gross_above) amount = 0;
-
-                results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
-              });
-
-              const totalEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-              const totalDeductions = results.filter(r => r._compType === 'deduction').reduce((acc, r) => acc + r.amount, 0);
-              const totalContributions = results.filter(r => r._compType === 'employer_contribution').reduce((acc, r) => acc + r.amount, 0);
+              const details = calculateSalaryDetails(salaryForm.basic_salary, salaryForm.salary_components);
 
               return (
                 <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
                   <label style={{ ...labelStyle, marginBottom: 12 }}>Preview of Components</label>
-                  {results.map((comp, idx) => (
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 13, background: 'var(--bg)', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)' }}>
+                    <span style={{ color: 'var(--text2)', fontWeight: 600 }}>Calculated Gross Salary</span>
+                    <span style={{ color: '#22c55e', fontWeight: 700 }}>₹{details.gross.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
+                  </div>
+
+                  {details.results.map((comp, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
                       <span style={{ color: 'var(--text2)' }}>
                         {comp.name} 
@@ -652,23 +661,23 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                   <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
                       <span style={{ color: '#22c55e', fontWeight: 600 }}>Total Gross Salary</span>
-                      <span style={{ color: '#22c55e', fontWeight: 600 }}>₹{totalEarnings.toLocaleString('en-IN')}</span>
+                      <span style={{ color: '#22c55e', fontWeight: 600 }}>₹{details.totalEarnings.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
                       <span style={{ color: '#ef4444', fontWeight: 600 }}>Total Deductions</span>
-                      <span style={{ color: '#ef4444', fontWeight: 600 }}>₹{totalDeductions.toLocaleString('en-IN')}</span>
+                      <span style={{ color: '#ef4444', fontWeight: 600 }}>₹{details.totalDeductions.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
                       <span style={{ color: '#8b5cf6', fontWeight: 600 }}>Employer Contributions</span>
-                      <span style={{ color: '#8b5cf6', fontWeight: 600 }}>₹{totalContributions.toLocaleString('en-IN')}</span>
+                      <span style={{ color: '#8b5cf6', fontWeight: 600 }}>₹{details.totalContributions.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
                       <span>Net Pay (In-Hand)</span>
-                      <span>₹{(totalEarnings - totalDeductions).toLocaleString('en-IN')}</span>
+                      <span>₹{details.netPay.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, color: 'var(--accent)', marginTop: 4 }}>
                       <span>Total CTC</span>
-                      <span>₹{(totalEarnings + totalContributions).toLocaleString('en-IN')}</span>
+                      <span>₹{details.totalCTC.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}</span>
                     </div>
                   </div>
                 </div>
