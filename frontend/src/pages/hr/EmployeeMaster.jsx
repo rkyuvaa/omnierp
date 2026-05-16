@@ -456,7 +456,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             if (salaryComponents.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>Loading components...</div>;
 
             const components = hydrateComponents(rawComponents);
-            const ctc = emp.basic_salary || 0;
+            const ctc = parseFloat(emp.basic_salary) || 0;
             let computed = { CTC: ctc };
             const results = [];
             const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -498,9 +498,9 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               }
               
               // Gross threshold checks (ESI / TDS compliance)
-              const grossEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-              if (comp.apply_if_gross_below != null && grossEarnings > comp.apply_if_gross_below) amount = 0;
-              if (comp.apply_if_gross_above != null && grossEarnings < comp.apply_if_gross_above) amount = 0;
+              const currentGross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+              if (comp.apply_if_gross_below > 0 && currentGross > comp.apply_if_gross_below) amount = 0;
+              if (comp.apply_if_gross_above > 0 && currentGross < comp.apply_if_gross_above) amount = 0;
 
               const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
               computed[code] = amount;
@@ -598,7 +598,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               
               // Hydrate with master data for correct types
               const components = hydrateComponents(salaryForm.salary_components);
-              const ctc = salaryForm.basic_salary || 0;
+              const ctc = parseFloat(salaryForm.basic_salary) || 0;
               let computed = { CTC: ctc };
               const results = [];
               const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
@@ -640,9 +640,9 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                 }
                 
                 // Gross threshold checks (ESI / TDS compliance)
-                const grossEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                if (comp.apply_if_gross_below != null && grossEarnings > comp.apply_if_gross_below) amount = 0;
-                if (comp.apply_if_gross_above != null && grossEarnings < comp.apply_if_gross_above) amount = 0;
+                const currentGross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                if (comp.apply_if_gross_below > 0 && currentGross > comp.apply_if_gross_below) amount = 0;
+                if (comp.apply_if_gross_above > 0 && currentGross < comp.apply_if_gross_above) amount = 0;
 
                 const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
                 computed[code] = amount;
