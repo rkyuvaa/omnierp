@@ -13,6 +13,9 @@ from sqlalchemy import extract
 
 router = APIRouter()
 
+MONTH_NAMES = ["","January","February","March","April","May","June",
+               "July","August","September","October","November","December"]
+
 class PayrollGenerate(BaseModel):
     employee_ids: list
     month: int
@@ -213,20 +216,16 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     if lop_deduction > 0:
         deductions["Loss of Pay (LOP)"] = lop_deduction
 
-    import re
     for amt, rem in arrears_held_list:
         if amt > 0:
-            label = rem if rem else "Salary Held (Arrears)"
-            label = label.split(" [")[0].replace("₹", "Rs.")
-            if "Partial payout" in label: label = "Salary Held (Arrears)"
-            deductions[label] = amt
+            label = "Salary Held (Arrears)"
+            deductions[label] = round(deductions.get(label, 0) + amt, 2)
         
-    for amt, rem in arrears_paid_list:
+    for amt, rem, h_month, h_year in arrears_paid_list:
         if amt > 0:
-            label = rem if rem else "Arrears Payout"
-            label = label.split(" [")[0].replace("₹", "Rs.")
-            if "Partial payout" in label: label = "Arrear Payout"
-            earnings[label] = amt
+            m_name = MONTH_NAMES[h_month] if 0 < h_month < 13 else "Arrear"
+            label = f"Arrear Payout ({m_name} {h_year})"
+            earnings[label] = round(earnings.get(label, 0) + amt, 2)
 
     arrears_held_total = sum(a[0] for a in arrears_held_list)
     arrears_paid_total = sum(a[0] for a in arrears_paid_list)
@@ -307,7 +306,7 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
             HRArrearRecord.paid_in_year == data.year,
             HRArrearRecord.status == "paid"
         ).all()
-        paid_list = [(float(a.amount_held or 0), a.remarks) for a in arrears_paid_records]
+        paid_list = [(float(a.amount_held or 0), a.remarks, a.held_month, a.held_year) for a in arrears_paid_records]
 
         calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, held_list, paid_list)
 
