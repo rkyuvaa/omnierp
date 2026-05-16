@@ -261,7 +261,7 @@ export default function Attendance() {
                         return (
                           <td key={d.num} style={{ padding: '3px', textAlign: 'center', borderRight: '1px solid var(--border)', background: v ? '#fff7ed' : 'transparent' }}>
                             <div
-                              title={v ? v.label : (cfg ? `${cfg.full}\nIn: ${rec.check_in || '—'}\nOut: ${rec.check_out || '—'}` : 'Click to correct')}
+                              title={v ? v.label : (cfg ? `${cfg.full}\nIn: ${rec?.check_in || '—'}\nOut: ${rec?.check_out || '—'}` : 'Click to correct')}
                               onClick={() => openCorrect(emp, d)}
                               style={{
                                 width: 28, height: 28, margin: '0 auto', borderRadius: 6, cursor: 'pointer',
