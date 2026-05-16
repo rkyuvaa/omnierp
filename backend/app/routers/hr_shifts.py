@@ -16,6 +16,8 @@ class ShiftCreate(BaseModel):
     end_time: str     # "18:00"
     grace_minutes: int = 15
     half_day_hours: float = 4.0
+    half_day_late_minutes: int = 120
+    half_day_early_minutes: int = 120
     working_days: List[str] = ["Mon","Tue","Wed","Thu","Fri","Sat"]
 
 class ShiftUpdate(BaseModel):
@@ -25,6 +27,8 @@ class ShiftUpdate(BaseModel):
     end_time: Optional[str] = None
     grace_minutes: Optional[int] = None
     half_day_hours: Optional[float] = None
+    half_day_late_minutes: Optional[int] = None
+    half_day_early_minutes: Optional[int] = None
     working_days: Optional[List[str]] = None
     is_active: Optional[bool] = None
 
@@ -38,6 +42,8 @@ def serialize(s: HRShift):
         "end_time": s.end_time,
         "grace_minutes": s.grace_minutes,
         "half_day_hours": s.half_day_hours,
+        "half_day_late_minutes": s.half_day_late_minutes,
+        "half_day_early_minutes": s.half_day_early_minutes,
         "working_days": s.working_days or [],
         "is_active": s.is_active,
         "created_at": str(s.created_at),
