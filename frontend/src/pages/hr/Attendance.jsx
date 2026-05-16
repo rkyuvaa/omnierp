@@ -260,10 +260,11 @@ export default function Attendance() {
                   const empRecs = records[String(emp.id)] || {};
                   let pCount = 0, aCount = 0, lvCount = 0;
                   days.forEach(d => {
-                    const s = empRecs[d.dayStr]?.status;
-                    if (s === 'present' || s === 'late' || s === 'on_duty') pCount++;
-                    else if (s === 'absent') aCount++;
-                    else if (s === 'leave') lvCount++;
+                    const s = getEffStatus(d, empRecs, emp);
+                    if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
+                    else if (s === 'half_day') { pCount += 0.5; aCount += 0.5; }
+                    else if (s === 'absent') aCount += 1;
+                    else if (s === 'leave') lvCount += 1;
                   });
                   return (
                     <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)' }}>
