@@ -321,7 +321,7 @@ class HRSalaryComponent(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String(100))               # e.g. "Basic Salary"
     code = Column(String(20), unique=True)   # e.g. "BASIC", "HRA", "PF_EMP"
-    component_type = Column(String(20), default="earning")  # earning | deduction
+    component_type = Column(String(50), default="earning")  # earning | deduction | employer_contribution
     calc_type = Column(String(30), default="percentage_of_ctc")
     # percentage_of_ctc | percentage_of_basic | percentage_of_gross | fixed | slab
     calc_value = Column(Float, default=0)

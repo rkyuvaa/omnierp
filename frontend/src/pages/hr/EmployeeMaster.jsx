@@ -362,6 +362,8 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
       if (master) {
         return {
           ...c,
+          // Fallback to master value if override 'value' (from template/emp) is missing
+          value: (c.value !== undefined && c.value !== null) ? c.value : master.calc_value,
           type: master.component_type,
           component_type: master.component_type,
           calc_type: master.calc_type,
@@ -511,7 +513,11 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                   {comp.calcType !== 'fixed' && comp.calcType !== 'slab' ? ` (${comp.value}%)` : 
                    comp.calcType === 'slab' ? ' (Slab)' : ''}
                 </span>
-                <span style={{ color: comp._compType === 'earning' ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                <span style={{ 
+                  color: comp._compType === 'earning' ? '#22c55e' : 
+                         comp._compType === 'employer_contribution' ? '#8b5cf6' : '#ef4444', 
+                  fontWeight: 600 
+                }}>
                   {comp._compType === 'deduction' ? '−' : '+'}
                   ₹{comp.amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                 </span>
@@ -654,7 +660,11 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                         {comp.calcType !== 'fixed' && comp.calcType !== 'slab' ? ` (${comp.value}%)` : 
                          comp.calcType === 'slab' ? ' (Slab)' : ''}
                       </span>
-                      <span style={{ color: comp._compType === 'earning' ? '#22c55e' : '#ef4444', fontWeight: 600 }}>
+                      <span style={{ 
+                        color: comp._compType === 'earning' ? '#22c55e' : 
+                               comp._compType === 'employer_contribution' ? '#8b5cf6' : '#ef4444', 
+                        fontWeight: 600 
+                      }}>
                         {comp._compType === 'deduction' ? '−' : '+'}₹{comp.amount.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
                       </span>
                     </div>
