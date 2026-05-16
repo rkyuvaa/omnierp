@@ -187,27 +187,65 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             if DAY_MAP[dt.weekday()] in global_working_days:
                 working_days_count += 1
 
-    present_days = len([r for r in records if r.status in ["present", "late"]])
-    half_days = len([r for r in records if r.status == "half_day"])
-    leave_days = len([r for r in records if r.status == "leave"])
-    on_duty_days = len([r for r in records if r.status == "on_duty"])
-    absent_days = len([r for r in records if r.status == "absent"])
 
-    # LOP (Manual + Excess Leave)
-    lop_type = db.query(HRLeaveType).filter(HRLeaveType.code == "LOP").first()
-    lop_days = absent_days
-    if lop_type:
-        balance = db.query(HRLeaveBalance).filter(
-            HRLeaveBalance.employee_id == emp.id,
-            HRLeaveBalance.leave_type_id == lop_type.id,
-            HRLeaveBalance.year == year,
-        ).first()
-        if balance:
-            lop_days += balance.used_days
+    # 1. Calculate Total Working Days in Month (Denominator)
+    total_working_days_in_month = 0
+    for d in range(1, days_in_month + 1):
+        dt = date(year, month, d)
+        if DAY_MAP[dt.weekday()] in global_working_days:
+            total_working_days_in_month += 1
 
-    # Calculate components on FULL CTC (100% attendance base) to avoid double deduction
-    # LOP will be handled as an explicit deduction
-    result_list, computed = _calculate_components(ctc, components)
+    # 2. Calculate LOP Days (Numerator subtraction)
+    # We look at every day of the month.
+    # If it's a working day and no record or absent -> LOP
+    # If it's a non-working day but HR marked as absent -> LOP
+    lop_days = 0
+    present_days = 0
+    half_days = 0
+    leave_days = 0
+    on_duty_days = 0
+    absent_days_count = 0
+    
+    today = date.today()
+
+    for d in range(1, days_in_month + 1):
+        dt = date(year, month, d)
+        d_str = str(dt)
+        rec = next((r for r in records if r.date == dt), None)
+        
+        is_working_day = DAY_MAP[dt.weekday()] in global_working_days
+        
+        if rec:
+            if rec.status in ["present", "late"]: present_days += 1
+            elif rec.status == "half_day": half_days += 1
+            elif rec.status == "leave": leave_days += 1
+            elif rec.status == "on_duty": on_duty_days += 1
+            elif rec.status == "absent": absent_days_count += 1
+            
+            # LOP Logic
+            if rec.status == "absent":
+                lop_days += 1
+            elif rec.status == "half_day":
+                lop_days += 0.5
+            elif rec.status == "leave":
+                # Check if it's unpaid leave
+                if rec.leave_request and rec.leave_request.leave_type and not rec.leave_request.leave_type.is_paid:
+                    lop_days += 1
+        else:
+            # No record. If it's a working day in the past, it's LOP
+            if is_working_day and dt < today:
+                lop_days += 1
+                absent_days_count += 1
+
+    # 3. Pro-rate CTC based on Attendance
+    paid_days = total_working_days_in_month - lop_days
+    if total_working_days_in_month > 0:
+        effective_ctc = round(ctc * (paid_days / total_working_days_in_month), 2)
+    else:
+        effective_ctc = 0
+
+    # Calculate components on EFFECTIVE CTC
+    result_list, computed = _calculate_components(effective_ctc, components)
 
     earnings = {}
     deductions = {}
@@ -219,20 +257,9 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
         else:
             deductions[r["name"]] = r["amount"]
 
-    full_gross_earnings = sum(earnings.values())
-    total_payable_days = working_days_count if working_days_count > 0 else days_in_month
+    total_earnings_base = round(sum(earnings.values()), 2)
     
-    # Calculate LOP Deduction based on chosen base
-    lop_deduction = 0
-    if total_payable_days > 0 and lop_days > 0:
-        if lop_calculation_base == "gross":
-            lop_deduction = round(full_gross_earnings * (lop_days / total_payable_days), 2)
-        else: # ctc
-            lop_deduction = round(ctc * (lop_days / total_payable_days), 2)
-            
-    if lop_deduction > 0:
-        deductions["Loss of Pay (LOP)"] = lop_deduction
-
+    # 4. Handle Arrears (Add/Subtract after pro-rating)
     for amt, rem in arrears_held_list:
         if amt > 0:
             label = "Salary Held (Arrears)"
@@ -252,9 +279,9 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     net_salary = round(total_earnings - total_deductions, 2)
 
     return {
-        "working_days": working_days_count,
+        "working_days": total_working_days_in_month,
         "present_days": present_days + (half_days * 0.5),
-        "absent_days": absent_days,
+        "absent_days": absent_days_count,
         "leave_days": leave_days,
         "lop_days": lop_days,
         "on_duty_days": on_duty_days,
