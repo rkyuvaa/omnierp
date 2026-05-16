@@ -157,7 +157,15 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         record.is_late = is_late
         record.late_minutes = late_minutes
 
+        # Half day thresholds
+        half_day_late_dt = shift_start_dt + timedelta(minutes=shift.half_day_late_minutes or 240)
+        half_day_early_dt = shift_end_dt - timedelta(minutes=shift.half_day_early_minutes or 240)
+
         if hours_worked < shift.half_day_hours:
+            record.status = "half_day"
+        elif check_in > half_day_late_dt:
+            record.status = "half_day"
+        elif check_out and check_out < half_day_early_dt:
             record.status = "half_day"
         elif is_late:
             record.status = "late"

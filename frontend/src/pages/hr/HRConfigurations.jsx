@@ -421,6 +421,8 @@ export default function HRConfigurations() {
                   <div><label style={labelStyle}>End Time</label><input type="time" value={form.end_time || ''} onChange={e => setForm({ ...form, end_time: e.target.value })} style={inputStyle} /></div>
                   <div><label style={labelStyle}>Grace (minutes)</label><input type="number" value={form.grace_minutes || 15} onChange={e => setForm({ ...form, grace_minutes: parseInt(e.target.value) })} style={inputStyle} /></div>
                   <div><label style={labelStyle}>Half Day (hours)</label><input type="number" step="0.5" value={form.half_day_hours || 4} onChange={e => setForm({ ...form, half_day_hours: parseFloat(e.target.value) })} style={inputStyle} /></div>
+                  <div><label style={labelStyle}>Half Day Late In (mins)</label><input type="number" value={form.half_day_late_minutes || 120} onChange={e => setForm({ ...form, half_day_late_minutes: parseInt(e.target.value) })} style={inputStyle} placeholder="Minutes late = 0.5 day" /></div>
+                  <div><label style={labelStyle}>Half Day Early Out (mins)</label><input type="number" value={form.half_day_early_minutes || 120} onChange={e => setForm({ ...form, half_day_early_minutes: parseInt(e.target.value) })} style={inputStyle} placeholder="Minutes early = 0.5 day" /></div>
                 </div>
                 <div>
                   <label style={labelStyle}>Working Days</label>

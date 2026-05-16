@@ -49,6 +49,8 @@ class HRShift(Base):
     end_time = Column(String(5))      # "18:00"
     grace_minutes = Column(Integer, default=15)
     half_day_hours = Column(Float, default=4.0)
+    half_day_late_minutes = Column(Integer, default=120)  # e.g. 2 hours late = half day
+    half_day_early_minutes = Column(Integer, default=120) # e.g. 2 hours early = half day
     working_days = Column(JSON, default=["Mon","Tue","Wed","Thu","Fri","Sat"])
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
