@@ -365,6 +365,7 @@ def list_payroll(
             "total_deductions": float(r.total_deductions or 0),
             "net_salary": float(r.net_salary or 0),
             "pending_arrears": pending_total,
+            "arrears_paid": float(r.arrears_paid or 0),
             "components_breakdown": r.components_breakdown,
             "status": r.status,
         })
@@ -573,3 +574,22 @@ def get_employee_arrears(employee_id: int, status: Optional[str] = "held", db: S
         "status": a.status,
         "remarks": a.remarks
     } for a in arrears]
+
+@router.post("/arrears/revert/{arrear_id}")
+def revert_arrear_payout(arrear_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    arrear = db.query(HRArrearRecord).filter(HRArrearRecord.id == arrear_id).first()
+    if not arrear: raise HTTPException(404, "Arrear not found")
+    if arrear.status != "paid": raise HTTPException(400, "Only paid arrears can be reverted")
+    arrear.status = "held"
+    arrear.paid_in_month = None
+    arrear.paid_in_year = None
+    db.commit()
+    return {"message": "Payout reverted to held status"}
+
+@router.delete("/arrears/{arrear_id}")
+def delete_arrear(arrear_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    arrear = db.query(HRArrearRecord).filter(HRArrearRecord.id == arrear_id).first()
+    if not arrear: raise HTTPException(404, "Arrear not found")
+    db.delete(arrear)
+    db.commit()
+    return {"message": "Arrear record deleted"}

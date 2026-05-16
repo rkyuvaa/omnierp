@@ -230,8 +230,8 @@ export default function Payroll() {
                   <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>
                     <input type="checkbox" onChange={e => setSelected(e.target.checked ? records.map(r => r.employee_id) : [])} checked={selected.length === records.length && records.length > 0} />
                   </th>
-                  {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Deductions','Net Salary','Status','Actions'].map(h => (
-                    <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>{h}</th>
+                  {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => (
+                    <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Actions' ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -251,9 +251,10 @@ export default function Payroll() {
                     <td style={{ padding: '10px 12px', textAlign: 'center', color: '#6366f1', fontWeight: 600 }}>{r.leave_days}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f59e0b', fontWeight: 600 }}>{r.lop_days}</td>
                     <td style={{ padding: '10px 12px', textAlign: 'center', color: '#06b6d4', fontWeight: 600 }}>{r.on_duty_days}</td>
-                    <td style={{ padding: '10px 12px', color: '#22c55e', fontWeight: 600 }}>₹{Number(r.total_earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                    <td style={{ padding: '10px 12px', color: '#ef4444', fontWeight: 600 }}>₹{Number(r.total_deductions).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                    <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: 15 }}>₹{Number(r.net_salary).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                    <td style={{ padding: '10px 12px', color: '#22c55e', fontWeight: 600, textAlign: 'center' }}>₹{Number(r.total_earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                    <td style={{ padding: '10px 12px', color: '#6366f1', fontWeight: 600, textAlign: 'center' }}>₹{Number(r.arrears_paid || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                    <td style={{ padding: '10px 12px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>₹{Number(r.total_deductions).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                    <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: 15, textAlign: 'center' }}>₹{Number(r.net_salary).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                     <td style={{ padding: '10px 12px' }}>
                       <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 999, fontWeight: 700, background: r.status === 'finalized' ? '#dcfce7' : '#fef3c7', color: r.status === 'finalized' ? '#16a34a' : '#d97706' }}>
                         {r.status === 'finalized' ? 'Finalized' : 'Draft'}
@@ -276,10 +277,10 @@ export default function Payroll() {
                           </button>
                         )}
                         <button 
-                          onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears })}
+                          onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears, arrears_paid: r.arrears_paid })}
                           style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
                         >
-                          <Wallet size={12} /> Arrears (₹{r.pending_arrears || 0})
+                          <Wallet size={12} /> Arrears (₹{r.arrears_paid || 0} P | ₹{r.pending_arrears || 0} H)
                         </button>
                         <button onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} title="Download Payslip PDF" style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
                           <Download size={12} /> Payslip
@@ -445,6 +446,30 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
     finally { setSaving(false); }
   }
 
+  async function handleRevert(arrearId) {
+    if (!confirm('Revert this payout? It will be moved back to held status and removed from this month\'s salary.')) return;
+    setSaving(true);
+    try {
+      await api.post(`/hr/payroll/arrears/revert/${arrearId}`);
+      toast.success('Payout reverted');
+      fetchPending();
+      onRefresh();
+    } catch { toast.error('Failed to revert payout'); }
+    finally { setSaving(false); }
+  }
+
+  async function handleDelete(arrearId) {
+    if (!confirm('Permanently DELETE this arrear record? This cannot be undone.')) return;
+    setSaving(true);
+    try {
+      await api.delete(`/hr/payroll/arrears/${arrearId}`);
+      toast.success('Arrear record deleted');
+      fetchPending();
+      onRefresh();
+    } catch { toast.error('Failed to delete'); }
+    finally { setSaving(false); }
+  }
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 20 }}>
       <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: 500, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
@@ -460,31 +485,56 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
           {/* Pay Pending Section */}
           <div style={{ marginBottom: 24 }}>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Clock size={14} /> Pay Pending Arrears
+              <Clock size={14} /> Arrears History & Payouts
             </div>
             {loading ? (
               <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text3)' }}>Loading...</div>
             ) : pending.length === 0 ? (
-              <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 8, border: '1px dashed var(--border)' }}>No pending arrears</div>
+              <div style={{ padding: 20, textAlign: 'center', fontSize: 13, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 8, border: '1px dashed var(--border)' }}>No arrear records found</div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pending.map(a => (
-                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)' }}>
+                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: a.status === 'paid' ? '#f0f9ff' : 'var(--bg2)', borderRadius: 8, border: a.status === 'paid' ? '1px solid #bae6fd' : '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontWeight: 700, fontSize: 13 }}>₹{a.amount_held.toLocaleString()}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ fontWeight: 700, fontSize: 13 }}>₹{a.amount_held.toLocaleString()}</div>
+                          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, fontWeight: 700, background: a.status === 'paid' ? '#dcfce7' : '#fef3c7', color: a.status === 'paid' ? '#16a34a' : '#d97706', textTransform: 'uppercase' }}>
+                            {a.status}
+                          </span>
+                        </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)' }}>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</div>
                         {a.remarks && <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>Note: {a.remarks}</div>}
                       </div>
-                      {payingArrearId !== a.id && (
+                      <div style={{ display: 'flex', gap: 4 }}>
+                        {a.status === 'held' ? (
+                          payingArrearId !== a.id && (
+                            <button 
+                              onClick={() => { setPayingArrearId(a.id); setPayoutAmount(a.amount_held); }}
+                              disabled={saving}
+                              style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              Pay Part/Full
+                            </button>
+                          )
+                        ) : (
+                          <button 
+                            onClick={() => handleRevert(a.id)}
+                            disabled={saving}
+                            style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            Revert
+                          </button>
+                        )}
                         <button 
-                          onClick={() => { setPayingArrearId(a.id); setPayoutAmount(a.amount_held); }}
+                          onClick={() => handleDelete(a.id)}
                           disabled={saving}
-                          style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                          title="Delete Record"
+                          style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer' }}
                         >
-                          Pay Part/Full
+                          <Trash2 size={14} />
                         </button>
-                      )}
+                      </div>
                     </div>
                     {payingArrearId === a.id && (
                       <div style={{ display: 'flex', gap: 8, marginTop: 4, paddingTop: 8, borderTop: '1px solid var(--border)' }}>
