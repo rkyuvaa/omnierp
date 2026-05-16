@@ -365,6 +365,28 @@ export default function HRConfigurations() {
                 </div>
                 <input type="checkbox" checked={configs.regular_employee_check !== false} onChange={e => updateConfig('regular_employee_check', e.target.checked)} style={{ width: 20, height: 20 }} />
               </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Salary Calculation Method</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Pro-rata (pro-rate all components) or Deduction (explicit LOP deduction line).</div>
+                </div>
+                <select value={configs.salary_calculation_method || 'pro_rata'} onChange={e => updateConfig('salary_calculation_method', e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
+                  <option value="pro_rata">Pro-rata (Recommended)</option>
+                  <option value="deduction">Explicit LOP Deduction</option>
+                </select>
+              </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>LOP Calculation Base</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Choose if LOP is deducted based on Gross earnings or Total CTC.</div>
+                </div>
+                <select value={configs.lop_calculation_base || 'gross'} onChange={e => updateConfig('lop_calculation_base', e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
+                  <option value="gross">Gross Salary</option>
+                  <option value="ctc">Total CTC</option>
+                </select>
+              </div>
             </div>
           </div>
         )}

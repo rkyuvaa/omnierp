@@ -237,15 +237,20 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 lop_days += 1
                 absent_days_count += 1
 
-    # 3. Pro-rate CTC based on Attendance
-    paid_days = total_working_days_in_month - lop_days
-    if total_working_days_in_month > 0:
-        effective_ctc = round(ctc * (paid_days / total_working_days_in_month), 2)
+    # 3. Calculate Salary based on chosen Method
+    calc_method = get_hr_config(db, "salary_calculation_method", "pro_rata")
+    
+    if calc_method == "pro_rata":
+        paid_days = total_working_days_in_month - lop_days
+        if total_working_days_in_month > 0:
+            effective_ctc = round(ctc * (paid_days / total_working_days_in_month), 2)
+        else:
+            effective_ctc = 0
+        # Calculate components on EFFECTIVE CTC
+        result_list, computed = _calculate_components(effective_ctc, components)
     else:
-        effective_ctc = 0
-
-    # Calculate components on EFFECTIVE CTC
-    result_list, computed = _calculate_components(effective_ctc, components)
+        # Calculate components on FULL CTC
+        result_list, computed = _calculate_components(ctc, components)
 
     earnings = {}
     deductions = {}
@@ -256,6 +261,17 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             earnings[r["name"]] = r["amount"]
         else:
             deductions[r["name"]] = r["amount"]
+
+    # 4. Handle Explicit LOP Deduction if using 'deduction' method
+    if calc_method == "deduction" and lop_days > 0 and total_working_days_in_month > 0:
+        full_gross_earnings = sum(earnings.values())
+        if lop_calculation_base == "gross":
+            lop_deduction = round(full_gross_earnings * (lop_days / total_working_days_in_month), 2)
+        else: # ctc
+            lop_deduction = round(ctc * (lop_days / total_working_days_in_month), 2)
+            
+        if lop_deduction > 0:
+            deductions["Loss of Pay (LOP)"] = lop_deduction
 
     total_earnings_base = round(sum(earnings.values()), 2)
     
