@@ -354,36 +354,6 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
   const [remarks, setRemarks] = useState('');
   const [saving, setSaving] = useState(false);
   const [selectedArrears, setSelectedArrears] = useState([]);
-
-  useEffect(() => {
-    fetchPending();
-  }, []);
-
-  async function fetchPending() {
-    try {
-      const res = await api.get(`/hr/payroll/arrears/${data.employee_id}`, { params: { status: 'held' } });
-      setPending(res.data);
-    } catch { toast.error('Failed to load pending arrears'); }
-    finally { setLoading(false); }
-  }
-
-  async function handleHold() {
-    if (!holdAmount || holdAmount <= 0) return toast.error('Enter valid amount');
-    setSaving(true);
-    try {
-      await api.post('/hr/payroll/arrears/hold', {
-        employee_id: data.employee_id,
-        amount: parseFloat(holdAmount),
-        month, year, remarks
-      });
-      toast.success('Salary held as arrear');
-      setHoldAmount(''); setRemarks('');
-      fetchPending();
-      onRefresh();
-    } catch { toast.error('Failed'); }
-    finally { setSaving(false); }
-  }
-
   const [payingArrearId, setPayingArrearId] = useState(null);
   const [payoutAmount, setPayoutAmount] = useState('');
 
@@ -393,9 +363,9 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
 
   async function fetchPending() {
     try {
-      const res = await api.get(`/hr/payroll/arrears/${data.employee_id}`, { params: { status: 'held' } });
+      const res = await api.get(`/hr/payroll/arrears/${data.employee_id}`);
       setPending(res.data);
-    } catch { toast.error('Failed to load pending arrears'); }
+    } catch { toast.error('Failed to load arrears history'); }
     finally { setLoading(false); }
   }
 

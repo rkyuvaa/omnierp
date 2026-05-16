@@ -561,7 +561,7 @@ def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Dep
     } for r in results]
 
 @router.get("/arrears/{employee_id}")
-def get_employee_arrears(employee_id: int, status: Optional[str] = "held", db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     q = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == employee_id)
     if status:
         q = q.filter(HRArrearRecord.status == status)
