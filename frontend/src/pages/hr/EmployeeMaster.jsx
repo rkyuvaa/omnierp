@@ -463,8 +463,13 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             sorted.forEach(comp => {
               let amount = 0;
               const val = parseFloat(comp.value) || 0;
-              const calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
+              let calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
               const compType = comp.component_type || comp.type || 'earning';
+              
+              // Failsafe: If Basic Salary is mistakenly set to % of Gross (which is 0 initially), treat it as % of CTC (Gross)
+              if (calcType === 'percentage_of_gross' && results.length === 0) {
+                calcType = 'percentage_of_ctc';
+              }
               
               if (calcType === 'percentage_of_ctc') amount = (ctc * val) / 100;
               else if (calcType === 'percentage_of_basic') {
@@ -484,10 +489,9 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                 }
               } else amount = val;
 
-              // Thresholds
-              const currentGross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-              if (comp.apply_if_gross_below > 0 && currentGross > comp.apply_if_gross_below) amount = 0;
-              if (comp.apply_if_gross_above > 0 && currentGross < comp.apply_if_gross_above) amount = 0;
+              // Thresholds: check against the inputted Gross Salary (ctc)
+              if (comp.apply_if_gross_below > 0 && ctc > comp.apply_if_gross_below) amount = 0;
+              if (comp.apply_if_gross_above > 0 && ctc < comp.apply_if_gross_above) amount = 0;
 
               results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
             });
@@ -589,8 +593,13 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               sorted.forEach(comp => {
                 let amount = 0;
                 const val = parseFloat(comp.value) || 0;
-                const calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
+                let calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
                 const compType = comp.component_type || comp.type || 'earning';
+                
+                // Failsafe: If Basic Salary is mistakenly set to % of Gross (which is 0 initially), treat it as % of CTC (Gross)
+                if (calcType === 'percentage_of_gross' && results.length === 0) {
+                  calcType = 'percentage_of_ctc';
+                }
                 
                 if (calcType === 'percentage_of_ctc') amount = (ctc * val) / 100;
                 else if (calcType === 'percentage_of_basic') {
@@ -610,10 +619,9 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                   }
                 } else amount = val;
 
-                // Thresholds
-                const currentGross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                if (comp.apply_if_gross_below > 0 && currentGross > comp.apply_if_gross_below) amount = 0;
-                if (comp.apply_if_gross_above > 0 && currentGross < comp.apply_if_gross_above) amount = 0;
+                // Thresholds: check against the inputted Gross Salary (ctc)
+                if (comp.apply_if_gross_below > 0 && ctc > comp.apply_if_gross_below) amount = 0;
+                if (comp.apply_if_gross_above > 0 && ctc < comp.apply_if_gross_above) amount = 0;
 
                 results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
               });
