@@ -517,9 +517,9 @@ export default function HRConfigurations() {
                     </select></div>
                   <div><label style={labelStyle}>Calculation Type</label>
                     <select value={form.calc_type || 'percentage_of_ctc'} onChange={e => setForm({ ...form, calc_type: e.target.value, slabs: e.target.value === 'slab' ? (form.slabs?.length ? form.slabs : [{ min: 0, max: 10000, value: 0 }]) : form.slabs })} style={inputStyle}>
-                      <option value="percentage_of_ctc">% of Salary (CTC)</option>
+                      <option value="percentage_of_ctc">% of Gross Salary</option>
                       <option value="percentage_of_basic">% of Basic</option>
-                      <option value="percentage_of_gross">% of Gross Earnings</option>
+                      <option value="percentage_of_gross">% of All Earnings So Far</option>
                       <option value="fixed">Fixed Amount (₹)</option>
                       <option value="slab">Slab-based (PT / TDS)</option>
                     </select></div>

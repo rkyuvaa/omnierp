@@ -229,7 +229,7 @@ export default function EmployeeMaster() {
                 { key: 'designation', label: 'Designation', type: 'text' },
                 { key: 'date_of_joining', label: 'Date of Joining', type: 'date' },
                 { key: 'biometric_id', label: 'Biometric ID (eSSL)', type: 'text' },
-                { key: 'basic_salary', label: 'Salary (CTC) (₹)', type: 'number' },
+                { key: 'basic_salary', label: 'Gross Salary (₹)', type: 'number' },
               ].map(f => (
                 <div key={f.key}>
                   <label style={labelStyle}>{f.label}</label>
@@ -447,7 +447,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             <button onClick={() => setShowSalaryModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
           </div>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-            <span style={{ color: 'var(--text2)' }}>Salary (CTC)</span>
+            <span style={{ color: 'var(--text2)' }}>Gross Salary</span>
             <span style={{ fontWeight: 700 }}>₹{Number(emp.basic_salary || 0).toLocaleString('en-IN')}</span>
           </div>
           {(() => {
@@ -587,8 +587,8 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               </select>
             </div>
             <div style={{ marginBottom: 20 }}>
-              <label style={labelStyle}>Salary (CTC) (₹)</label>
-              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} placeholder="e.g. 50000" />
+              <label style={labelStyle}>Gross Salary (₹)</label>
+              <input type="number" value={salaryForm.basic_salary} onChange={e => setSalaryForm({ ...salaryForm, basic_salary: parseFloat(e.target.value) || 0 })} style={inputStyle} placeholder="e.g. 35000" />
             </div>
 
             {(() => {
@@ -649,6 +649,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
 
               const totalEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
               const totalDeductions = results.filter(r => r._compType === 'deduction').reduce((acc, r) => acc + r.amount, 0);
+              const totalContributions = results.filter(r => r._compType === 'employer_contribution').reduce((acc, r) => acc + r.amount, 0);
 
               return (
                 <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
@@ -671,16 +672,24 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                   ))}
                   <div style={{ borderTop: '1px solid var(--border)', marginTop: 10, paddingTop: 10 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
-                      <span style={{ color: '#22c55e', fontWeight: 600 }}>Gross Earnings</span>
+                      <span style={{ color: '#22c55e', fontWeight: 600 }}>Total Gross Salary</span>
                       <span style={{ color: '#22c55e', fontWeight: 600 }}>₹{totalEarnings.toLocaleString('en-IN')}</span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
                       <span style={{ color: '#ef4444', fontWeight: 600 }}>Total Deductions</span>
                       <span style={{ color: '#ef4444', fontWeight: 600 }}>₹{totalDeductions.toLocaleString('en-IN')}</span>
                     </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
+                      <span style={{ color: '#8b5cf6', fontWeight: 600 }}>Employer Contributions</span>
+                      <span style={{ color: '#8b5cf6', fontWeight: 600 }}>₹{totalContributions.toLocaleString('en-IN')}</span>
+                    </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, paddingTop: 6, borderTop: '1px solid var(--border)' }}>
-                      <span>Net Salary</span>
+                      <span>Net Pay (In-Hand)</span>
                       <span>₹{(totalEarnings - totalDeductions).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 700, fontSize: 15, color: 'var(--accent)', marginTop: 4 }}>
+                      <span>Total CTC</span>
+                      <span>₹{(totalEarnings + totalContributions).toLocaleString('en-IN')}</span>
                     </div>
                   </div>
                 </div>
