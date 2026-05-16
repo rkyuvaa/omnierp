@@ -34,6 +34,7 @@ export default function Attendance() {
   const [violations, setViolations] = useState({});
   const [configs, setConfigs] = useState({});
   const [scanning, setScanning] = useState(false);
+  const [holidays, setHolidays] = useState([]);
 
   useEffect(() => { fetchData(); }, [month, year, filterBranch, filterDept]);
   useEffect(() => {
@@ -48,15 +49,33 @@ export default function Attendance() {
       const params = { month, year };
       if (filterBranch) params.branch_id = filterBranch;
       if (filterDept) params.department_id = filterDept;
-      const [emps, recs] = await Promise.all([
+      const [emps, recs, hols] = await Promise.all([
         api.get('/hr/employees/', { params: { branch_id: filterBranch || undefined, department_id: filterDept || undefined, is_active: true } }),
         api.get('/hr/attendance/records', { params }),
+        api.get('/hr/holidays/', { params: { month, year } }),
       ]);
       setEmployees(emps.data);
       setRecords(recs.data);
+      setHolidays(hols.data || []);
     } catch { toast.error('Failed to load attendance'); }
     finally { setLoading(false); }
   }
+
+  const workDays = configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat'];
+  const todayDate = new Date().setHours(0,0,0,0);
+
+  const getEffStatus = (d, recs, emp = null) => {
+    const r = recs[d.dayStr];
+    if (r?.status) return r.status;
+    
+    // Check if it's a holiday
+    const isHol = holidays.find(h => h.date === d.dayStr && (!h.branch_id || h.branch_id === emp?.branch_id));
+    if (isHol) return 'holiday';
+
+    if (!workDays.includes(d.dayOfWeek)) return 'weekly_off';
+    if (new Date(d.dayStr) < todayDate) return 'absent';
+    return null;
+  };
 
   function prevMonth() {
     if (month === 1) { setMonth(12); setYear(y => y - 1); }
@@ -105,16 +124,6 @@ export default function Attendance() {
     if (configs.enable_sandwich_highlight === false) return;
     setScanning(true);
     const v = {};
-    const workDays = configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat'];
-    const today = new Date().setHours(0,0,0,0);
-
-    const getEffStatus = (d, recs) => {
-      const r = recs[d.dayStr];
-      if (r?.status) return r.status;
-      if (!workDays.includes(d.dayOfWeek)) return 'weekly_off';
-      if (new Date(d.dayStr) < today) return 'absent';
-      return null;
-    };
 
     employees.forEach(emp => {
       const empRecs = records[String(emp.id)] || {};
@@ -125,8 +134,8 @@ export default function Attendance() {
       if (configs.regular_employee_check !== false) {
         // Check both actual records and effective absences
         days.forEach(d => {
-          if (new Date(d.dayStr) >= today) return;
-          const status = getEffStatus(d, empRecs);
+          if (new Date(d.dayStr) >= todayDate) return;
+          const status = getEffStatus(d, empRecs, emp);
           const r = empRecs[d.dayStr];
           if (status === 'absent' || (status === 'leave' && r?.is_paid === false)) {
             isIrregular = true;
@@ -137,7 +146,7 @@ export default function Attendance() {
       // Sandwich Scan
       for (let i = 1; i < days.length - 1; i++) {
         const d = days[i];
-        const status = getEffStatus(d, empRecs);
+        const status = getEffStatus(d, empRecs, emp);
         
         if (status === 'weekly_off' || status === 'holiday') {
           // If irregular, flag all holidays as potential LOP
@@ -148,13 +157,13 @@ export default function Attendance() {
           // Check before: last working day
           let before = null;
           for (let j = i - 1; j >= 0; j--) {
-            const s = getEffStatus(days[j], empRecs);
+            const s = getEffStatus(days[j], empRecs, emp);
             if (s !== 'weekly_off' && s !== 'holiday') { before = s; break; }
           }
           // Check after: next working day
           let after = null;
           for (let j = i + 1; j < days.length; j++) {
-            const s = getEffStatus(days[j], empRecs);
+            const s = getEffStatus(days[j], empRecs, emp);
             if (s !== 'weekly_off' && s !== 'holiday') { after = s; break; }
           }
           
@@ -240,12 +249,12 @@ export default function Attendance() {
                   return (
                     <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '8px 14px', position: 'sticky', left: 0, background: 'var(--bg)', borderRight: '1px solid var(--border)', fontWeight: 600, zIndex: 1 }}>
-                        <div>{emp.name}</div>
+                        <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{emp.name}</div>
                         <div style={{ fontSize: 11, color: 'var(--text3)' }}>{emp.employee_id}</div>
                       </td>
                       {days.map(d => {
                         const rec = empRecs[d.dayStr];
-                        const status = rec?.status || null;
+                        const status = getEffStatus(d, empRecs, emp);
                         const cfg = status ? STATUS_CONFIG[status] : null;
                         const v = (violations[emp.id] || []).find(x => x.dayStr === d.dayStr);
 
