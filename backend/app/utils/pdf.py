@@ -8,7 +8,8 @@ def render_to_pdf(html_content: str):
     Converts HTML content to a PDF binary stream.
     """
     result = BytesIO()
-    pdf = pisa.pisaDocument(BytesIO(html_content.encode("utf-8")), result)
+    # xhtml2pdf handles encoding better if we pass it correctly
+    pdf = pisa.pisaDocument(BytesIO(html_content.encode("utf-8")), result, encoding="utf-8")
     if not pdf.err:
         return result.getvalue()
     return None
@@ -49,91 +50,21 @@ def generate_form_html(submission, definition):
     
     # Build HTML Rows
     rows_html = ""
-    current_row = []
-    
     for f in fields:
-        val = data.get(f.get('key', ''), '—')
+        val = data.get(f.get('key', ''), '-')
         ftype = f.get('type', 'text')
         
-        # Format values
         if ftype == 'separator':
-            rows_html += f'<hr style="border:none; border-top:2px solid #ccc; margin: 20px 0; width: 100%;" />'
+            rows_html += f'<hr style="border:none; border-top:1px solid #ccc; margin: 15px 0;" />'
         elif ftype == 'heading':
-            rows_html += f'<div style="width: 100%; font-size: 14pt; font-weight: bold; color: #1a3c5e; margin: 25px 0 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px; text-transform: uppercase;">{f.get("label", "HEADING")}</div>'
-        elif ftype == 'static_text':
-            content = f.get('content', '').replace('\n', '<br>')
-            rows_html += f'<div style="width: 100%; font-size: 10pt; color: #444; margin-bottom: 15px; line-height: 1.6;">{content}</div>'
-        elif ftype == 'static_image':
-            img_url = f.get('url', '')
-            if img_url:
-                rows_html += f'<div style="width: 100%; margin: 15px 0; text-align: center;"><img src="{img_url}" style="max-width: 100%; max-height: 250px;" /></div>'
+            rows_html += f'<div style="font-size: 13pt; font-weight: bold; color: #1e3a8a; margin: 20px 0 10px 0; border-bottom: 1px solid #eee;">{f.get("label", "").upper()}</div>'
         elif ftype == 'table':
-            table_rows = ""
-            for r in (val if isinstance(val, list) else []):
-                table_rows += f"<tr><td>{r.get('desc','')}</td><td>{r.get('qty','')}</td><td>{r.get('val','')}</td></tr>"
-            
-            field_html = f"""
-            <div style="width: 100%; margin-top: 20px;">
-                <div class="label">{f.get('label', '')}</div>
-                <table class="table-field">
-                    <thead><tr><th>Description</th><th>Qty</th><th>Value</th></tr></thead>
-                    <tbody>{table_rows or '<tr><td colspan="3" style="text-align:center">No data</td></tr>'}</tbody>
-                </table>
-            </div>
-            """
-            rows_html += field_html
-        elif ftype == 'signature':
-            sig_html = ""
-            if val and isinstance(val, str) and val.startswith('data:image'):
-                 sig_html = f'<img src="{val}" class="signature-img" />'
-            else:
-                 sig_html = '<div style="color:#ccc; padding: 20px;">No Signature Provided</div>'
-                 
-            field_html = f"""
-            <div style="width: 50%; display: inline-block; margin-top: 20px;">
-                <div class="label">{f.get('label', '')}</div>
-                <div class="signature-box">{sig_html}</div>
-            </div>
-            """
-            rows_html += field_html
-        elif ftype == 'textarea':
-             formatted_val = str(val).replace("\n", "<br>")
-             rows_html += f'<div class="field-group" style="width: 100%;"><div class="label">{f.get("label", "")}</div><div class="value" style="border: 1px solid #eee; padding: 10px; background: #fafafa;">{formatted_val}</div></div>'
+            rows_html += f'<div class="label">{f.get("label", "")}: Table data skipped in preview</div>'
         else:
-             width = "48%" if f.get('width') == 'half' else "23%" if f.get('width') == 'quarter' else "100%"
-             rows_html += f'<div class="field-group" style="width: {width}; display: inline-block; vertical-align: top; margin-right: 2%;"><div class="label">{f.get("label", "")}</div><div class="value">{val}</div></div>'
+            width = "48%" if f.get('width') == 'half' else "100%"
+            rows_html += f'<div class="field-group" style="width: {width}; display: inline-block; vertical-align: top;"><div class="label">{f.get("label", "")}</div><div class="value">{val}</div></div>'
 
-    header_text = pdf_cfg.get('header', '').replace('\n', '<br>')
-    html = f"""
-    <html>
-    <head><style>{css}</style></head>
-    <body>
-        <div class="header">
-            <table>
-                <tr>
-                    <td>
-                        {f'<img src="{pdf_cfg["logo"]}" class="logo" />' if pdf_cfg.get('logo') else '<div style="font-weight:bold; font-size: 20pt;">OmniERP</div>'}
-                        <div style="font-size: 9pt; color: #666; margin-top: 5px;">{header_text}</div>
-                    </td>
-                    <td class="doc-title">
-                        <div class="doc-name">{definition.name.upper()}</div>
-                        <div class="doc-ref">REF: {submission.reference_number}</div>
-                        <div class="doc-ref">DATE: {submission.created_at.strftime("%d-%m-%Y")}</div>
-                    </td>
-                </tr>
-            </table>
-        </div>
-        
-        <div class="content">
-            {rows_html}
-        </div>
-        
-        <div class="footer">
-            {pdf_cfg.get('footer', 'Generated by OmniERP Dynamic Form Engine')}
-        </div>
-    </body>
-    </html>
-    """
+    html = f"""<html><head><meta charset="utf-8"/><style>{css}</style></head><body>{rows_html}</body></html>"""
     return html
 
 
@@ -153,7 +84,6 @@ def _num_to_words_below_1000(n: int) -> str:
     else: return ONES[n // 100] + ' Hundred' + ((' ' + _num_to_words_below_1000(n % 100)) if n % 100 else '')
 
 def num_to_words(n: float) -> str:
-    """Convert a number to Indian words (e.g. 1,23,456 → One Lakh Twenty Three Thousand Four Hundred Fifty Six)"""
     n = int(round(n))
     if n == 0: return 'Zero'
     parts = []
@@ -173,7 +103,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     Generate a professional Indian-format payslip HTML matching the provided design.
     """
     company_name    = pdf_cfg.get('company_name', 'Konwert India Motors Private Limited')
-    company_address = pdf_cfg.get('header', 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108').replace('\n', '<br>')
+    company_address = pdf_cfg.get('header', 'Konwert India Motors Private Limited').replace('\n', '<br>')
     company_logo    = pdf_cfg.get('logo', '')
     footer_text     = pdf_cfg.get('footer', 'This is a computer-generated payslip. No signature required.')
 
@@ -190,113 +120,107 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     total_employer_cont = sum(float(v) for v in employer_cont.values())
     monthly_ctc = total_earnings + total_employer_cont
 
-    emp_name        = employee.name or '—'
-    emp_code        = employee.employee_id or '—'
-    designation     = employee.designation or '—'
-    department      = employee.department.name if employee.department else '—'
+    emp_name        = employee.name or '-'
+    emp_code        = employee.employee_id or '-'
+    designation     = employee.designation or '-'
+    department      = employee.department.name if employee.department else '-'
     
-    # Leave Balances logic
-    leave_rows = ""
-    # In a real scenario, we'd fetch HRLeaveBalance for the employee
-    # Assuming record or employee has balances attached or we fetch them elsewhere
-    # For now, we try to see if it's in record or we just show placeholders
+    # Leave Details logic - using simple key-value format instead of table
+    leave_items = []
     if hasattr(employee, 'leave_balances') and employee.leave_balances:
         for bal in employee.leave_balances:
-            leave_rows += f"<tr><td>{bal.leave_type.name}</td><td>{bal.allocated_days}</td><td>{bal.used_days}</td><td>{bal.allocated_days - bal.used_days}</td></tr>"
+            leave_items.append({
+                "name": bal.leave_type.name,
+                "op": bal.allocated_days,
+                "ed": bal.used_days,
+                "cl": bal.allocated_days - bal.used_days
+            })
     else:
-        # Better fallback: check if we can fetch some typical leave types
-        leave_rows = """
-        <tr><td>Casual Leave (CL)</td><td>—</td><td>—</td><td>—</td></tr>
-        <tr><td>Sick Leave (SL)</td><td>—</td><td>—</td><td>—</td></tr>
-        <tr><td>Earned Leave (EL)</td><td>—</td><td>—</td><td>—</td></tr>
+        leave_items = [
+            {"name": "Casual Leave (CL)", "op": 0, "ed": 0, "cl": 0},
+            {"name": "Sick Leave (SL)", "op": 0, "ed": 0, "cl": 0},
+            {"name": "Earned Leave (EL)", "op": 0, "ed": 0, "cl": 0}
+        ]
+
+    leave_html = ""
+    for item in leave_items:
+        leave_html += f"""
+        <tr>
+            <td style="padding: 4px 0; border-bottom: 1px solid #f3f4f6; width:30%;">{item['name']}</td>
+            <td style="padding: 4px 0; border-bottom: 1px solid #f3f4f6; width:15%; text-align:center;">{item['op']}</td>
+            <td style="padding: 4px 0; border-bottom: 1px solid #f3f4f6; width:15%; text-align:center;">{item['ed']}</td>
+            <td style="padding: 4px 0; border-bottom: 1px solid #f3f4f6; width:15%; text-align:center;">0</td>
+            <td style="padding: 4px 0; border-bottom: 1px solid #f3f4f6; width:25%; text-align:right;">{item['cl']}</td>
+        </tr>
         """
 
-    logo_html = f'<img src="{company_logo}" style="height:50px;" />' if company_logo else f'<div style="font-size:18pt; font-weight:bold; color:#1a3c5e;">{company_name}</div>'
+    logo_html = f'<img src="{company_logo}" style="height:45px;" />' if company_logo else f'<div style="font-size:16pt; font-weight:bold; color:#1a3c5e;">{company_name}</div>'
 
     css = """
     @page { size: A4; margin: 1cm; }
-    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
+    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.3; }
     .container { width: 100%; }
     
     /* Header */
-    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    .header-table td { vertical-align: top; }
-    .company-info { padding-left: 15px; }
-    .company-title { font-size: 16pt; font-weight: bold; color: #000; margin-bottom: 2px; }
-    .company-addr { font-size: 8.5pt; color: #555; }
-    .slip-badge { background: #1e3a8a; color: #fff; padding: 4px 12px; font-weight: bold; text-align: center; border-radius: 2px; font-size: 10pt; }
-    .slip-date { text-align: right; margin-top: 5px; font-weight: bold; font-size: 11pt; }
+    .hdr-tbl { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .company-title { font-size: 15pt; font-weight: bold; color: #000; }
+    .company-addr { font-size: 8pt; color: #666; }
+    .slip-badge { background: #1e3a8a; color: #fff; padding: 4px 10px; font-weight: bold; border-radius: 2px; }
     
-    /* Section Headers */
-    .section-hdr { background: #eff6ff; border: 1px solid #dbeafe; padding: 4px 10px; font-weight: bold; font-size: 8.5pt; color: #1e40af; text-transform: uppercase; margin-bottom: 5px; border-radius: 2px; }
+    /* Section Labels */
+    .section-hdr { background: #eff6ff; padding: 5px 10px; font-weight: bold; font-size: 8.5pt; color: #1e40af; border-radius: 3px; margin-bottom: 10px; margin-top: 15px; }
     
-    /* Info Table */
-    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 1px solid #e5e7eb; border-radius: 4px; }
-    .info-table td { padding: 4px 8px; border-bottom: 1px solid #f3f4f6; width: 25%; }
-    .info-table td.lbl { color: #6b7280; font-weight: normal; width: 15%; }
-    .info-table td.sep { width: 2%; text-align: center; color: #9ca3af; }
-    .info-table td.val { font-weight: 500; width: 33%; }
+    /* Info Grid (No borders) */
+    .info-grid { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .info-grid td { padding: 4px 5px; vertical-align: middle; }
+    .lbl { color: #6b7280; width: 18%; }
+    .sep { width: 2%; text-align: center; color: #9ca3af; }
+    .val { font-weight: bold; width: 30%; color: #111; }
     
-    /* Components Grid */
-    .comp-grid { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-    .comp-grid td { width: 50%; vertical-align: top; padding: 0; }
-    .comp-grid td:first-child { padding-right: 8px; }
-    .comp-grid td:last-child { padding-left: 8px; }
-    
-    .comp-box { border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; min-height: 150px; }
-    .box-hdr { padding: 4px 10px; font-weight: bold; font-size: 8.5pt; }
-    .box-hdr.earn { background: #dcfce7; color: #166534; }
-    .box-hdr.ded { background: #fee2e2; color: #991b1b; }
-    .box-hdr.cont { background: #f3e8ff; color: #6b21a8; }
-    .box-hdr.summ { background: #ffedd5; color: #9a3412; }
+    /* Components (Clean layout) */
+    .comp-wrap { width: 100%; margin-bottom: 15px; }
+    .comp-col { width: 49%; display: inline-block; vertical-align: top; }
+    .comp-hdr { padding: 5px 10px; font-weight: bold; font-size: 8pt; border-radius: 3px 3px 0 0; }
+    .earn-hdr { background: #dcfce7; color: #166534; }
+    .ded-hdr { background: #fee2e2; color: #991b1b; }
+    .cont-hdr { background: #f3e8ff; color: #6b21a8; }
+    .summ-hdr { background: #ffedd5; color: #9a3412; }
     
     .comp-tbl { width: 100%; border-collapse: collapse; }
     .comp-tbl td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; font-size: 8.5pt; }
-    .comp-tbl td.amt { text-align: right; }
-    .box-footer { background: #f9fafb; padding: 6px 10px; font-weight: bold; border-top: 1px solid #e5e7eb; }
-    .box-footer table { width: 100%; border-collapse: collapse; }
-    .box-footer td.amt { text-align: right; }
+    .comp-tbl .total-row { font-weight: bold; background: #fafafa; }
     
-    /* Leave Table */
-    .leave-tbl { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; margin-bottom: 20px; }
-    .leave-tbl th { background: #f9fafb; border: 1px solid #e5e7eb; padding: 5px; font-size: 8pt; color: #4b5563; text-align: left; }
-    .leave-tbl td { border: 1px solid #e5e7eb; padding: 5px; font-size: 8.5pt; }
-    
-    /* Net Pay Box */
-    .net-pay-box { border: 1px solid #1e40af; border-radius: 4px; overflow: hidden; display: table; width: 100%; margin-top: 10px; }
-    .net-lbl { display: table-cell; width: 30%; background: #eff6ff; padding: 15px; vertical-align: middle; border-right: 1px solid #dbeafe; }
-    .net-lbl div:first-child { font-weight: bold; font-size: 11pt; color: #1e3a8a; }
-    .net-lbl div:last-child { font-size: 8pt; color: #3b82f6; }
-    .net-val { display: table-cell; width: 70%; padding: 15px; text-align: center; vertical-align: middle; }
-    .net-amt { font-size: 18pt; font-weight: bold; color: #000; margin-bottom: 5px; }
-    .net-word-str { font-size: 8.5pt; color: #4b5563; font-weight: bold; }
+    /* Net Pay */
+    .net-box { background: #eff6ff; padding: 15px; border-radius: 4px; margin-top: 15px; }
+    .net-amt { font-size: 16pt; font-weight: bold; color: #1e3a8a; margin-bottom: 4px; }
+    .net-words { font-size: 8.5pt; color: #4b5563; font-weight: bold; }
     """
 
-    earn_rows = "".join([f"<tr><td>{k}</td><td class='amt'>{float(v):,.0f}</td></tr>" for k, v in earnings.items()])
-    ded_rows = "".join([f"<tr><td>{k}</td><td class='amt'>{float(v):,.0f}</td></tr>" for k, v in deductions.items()])
-    cont_rows = "".join([f"<tr><td>{k}</td><td class='amt'>{float(v):,.0f}</td></tr>" for k, v in employer_cont.items()])
+    earn_rows = "".join([f"<tr><td>{k}</td><td style='text-align:right;'>{float(v):,.0f}</td></tr>" for k, v in earnings.items()])
+    ded_rows = "".join([f"<tr><td>{k}</td><td style='text-align:right;'>{float(v):,.0f}</td></tr>" for k, v in deductions.items()])
+    cont_rows = "".join([f"<tr><td>{k}</td><td style='text-align:right;'>{float(v):,.0f}</td></tr>" for k, v in employer_cont.items()])
 
     html = f"""
     <html>
-    <head><style>{css}</style></head>
+    <head><meta charset="utf-8"/><style>{css}</style></head>
     <body>
         <div class="container">
-            <table class="header-table">
+            <table class="hdr-tbl">
                 <tr>
                     <td style="width:100px;">{logo_html}</td>
-                    <td class="company-info">
+                    <td style="padding-left:15px;">
                         <div class="company-title">{company_name}</div>
                         <div class="company-addr">{company_address}</div>
                     </td>
-                    <td style="width:150px; text-align:right;">
-                        <div class="slip-badge">PAYSLIP</div>
-                        <div class="slip-date">{month_name} {year}</div>
+                    <td style="text-align:right; vertical-align:middle;">
+                        <span class="slip-badge">PAYSLIP</span>
+                        <div style="font-weight:bold; font-size:11pt; margin-top:5px;">{month_name} {year}</div>
                     </td>
                 </tr>
             </table>
 
             <div class="section-hdr">Employee Details</div>
-            <table class="info-table">
+            <table class="info-grid">
                 <tr>
                     <td class="lbl">Employee Name</td><td class="sep">:</td><td class="val">{emp_name}</td>
                     <td class="lbl">Department</td><td class="sep">:</td><td class="val">{department}</td>
@@ -311,77 +235,61 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                 </tr>
             </table>
 
-            <table class="comp-grid">
-                <tr>
-                    <td>
-                        <div class="comp-box">
-                            <div class="box-hdr earn">EARNINGS <span style="float:right">Amount (₹)</span></div>
-                            <table class="comp-tbl">{earn_rows or "<tr><td colspan='2'>—</td></tr>"}</table>
-                            <div class="box-footer">
-                                <table><tr><td>GROSS EARNINGS</td><td class="amt">₹ {total_earnings:,.0f}</td></tr></table>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="comp-box">
-                            <div class="box-hdr ded">DEDUCTIONS <span style="float:right">Amount (₹)</span></div>
-                            <table class="comp-tbl">{ded_rows or "<tr><td colspan='2'>—</td></tr>"}</table>
-                            <div class="box-footer">
-                                <table><tr><td>TOTAL DEDUCTIONS</td><td class="amt">₹ {total_deductions:,.0f}</td></tr></table>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+            <div class="comp-wrap">
+                <div class="comp-col" style="margin-right:2%;">
+                    <div class="comp-hdr earn-hdr">EARNINGS <span style="float:right">Amount (Rs.)</span></div>
+                    <table class="comp-tbl">
+                        {earn_rows or "<tr><td colspan='2'>-</td></tr>"}
+                        <tr class="total-row"><td>GROSS EARNINGS</td><td style="text-align:right;">Rs. {total_earnings:,.0f}</td></tr>
+                    </table>
+                </div>
+                <div class="comp-col">
+                    <div class="comp-hdr ded-hdr">DEDUCTIONS <span style="float:right">Amount (Rs.)</span></div>
+                    <table class="comp-tbl">
+                        {ded_rows or "<tr><td colspan='2'>-</td></tr>"}
+                        <tr class="total-row"><td>TOTAL DEDUCTIONS</td><td style="text-align:right;">Rs. {total_deductions:,.0f}</td></tr>
+                    </table>
+                </div>
+            </div>
 
-            <table class="comp-grid">
-                <tr>
-                    <td>
-                        <div class="comp-box">
-                            <div class="box-hdr cont">EMPLOYER CONTRIBUTIONS (CTC COMPONENTS) <span style="float:right">Amount (₹)</span></div>
-                            <table class="comp-tbl">{cont_rows or "<tr><td colspan='2'>—</td></tr>"}</table>
-                            <div class="box-footer">
-                                <table><tr><td>TOTAL EMPLOYER CONTRIBUTIONS</td><td class="amt">₹ {total_employer_cont:,.0f}</td></tr></table>
-                            </div>
-                        </div>
-                    </td>
-                    <td>
-                        <div class="comp-box">
-                            <div class="box-hdr summ">CTC SUMMARY <span style="float:right">Amount (₹)</span></div>
-                            <table class="comp-tbl">
-                                <tr><td>Gross Salary</td><td class="amt">{total_earnings:,.0f}</td></tr>
-                                <tr><td>Employer Contributions</td><td class="amt">{total_employer_cont:,.0f}</td></tr>
-                            </table>
-                            <div class="box-footer">
-                                <table><tr><td>MONTHLY CTC</td><td class="amt">₹ {monthly_ctc:,.0f}</td></tr></table>
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-            </table>
+            <div class="comp-wrap">
+                <div class="comp-col" style="margin-right:2%;">
+                    <div class="comp-hdr cont-hdr">EMPLOYER CONTRIBUTIONS <span style="float:right">Amount (Rs.)</span></div>
+                    <table class="comp-tbl">
+                        {cont_rows or "<tr><td colspan='2'>-</td></tr>"}
+                        <tr class="total-row"><td>TOTAL CONTRIBUTIONS</td><td style="text-align:right;">Rs. {total_employer_cont:,.0f}</td></tr>
+                    </table>
+                </div>
+                <div class="comp-col">
+                    <div class="comp-hdr summ-hdr">CTC SUMMARY <span style="float:right">Amount (Rs.)</span></div>
+                    <table class="comp-tbl">
+                        <tr><td>Gross Salary</td><td style="text-align:right;">{total_earnings:,.0f}</td></tr>
+                        <tr><td>Employer Contributions</td><td style="text-align:right;">{total_employer_cont:,.0f}</td></tr>
+                        <tr class="total-row"><td>MONTHLY CTC</td><td style="text-align:right;">Rs. {monthly_ctc:,.0f}</td></tr>
+                    </table>
+                </div>
+            </div>
 
             <div class="section-hdr">Leave Details</div>
-            <table class="leave-tbl">
-                <thead>
-                    <tr><th>Leave Type</th><th>Opening Balance</th><th>Earned</th><th>Utilized</th><th>Closing Balance</th></tr>
-                </thead>
-                <tbody>{leave_rows}</tbody>
+            <table class="comp-tbl" style="width:100%;">
+                <tr style="font-weight:bold; color:#666; font-size:8pt;">
+                    <td style="width:30%;">Leave Type</td>
+                    <td style="width:15%; text-align:center;">Opening</td>
+                    <td style="width:15%; text-align:center;">Earned</td>
+                    <td style="width:15%; text-align:center;">Utilized</td>
+                    <td style="width:25%; text-align:right;">Closing Balance</td>
+                </tr>
+                {leave_html}
             </table>
 
-            <div class="net-pay-box">
-                <div class="net-lbl">
-                    <div>NET PAY</div>
-                    <div>(In-Hand Salary)</div>
-                </div>
-                <div class="net-val">
-                    <div class="net-amt">₹ {net_salary:,.0f}</div>
-                    <div class="net-word-str">({net_words})</div>
-                </div>
+            <div class="net-box">
+                <div style="font-weight:bold; color:#1e3a8a; font-size:10pt;">NET PAY (In-Hand Salary)</div>
+                <div class="net-amt">Rs. {net_salary:,.0f}</div>
+                <div class="net-words">({net_words})</div>
             </div>
             
             <div style="text-align:center; font-size:8pt; color:#999; margin-top:20px;">{footer_text}</div>
         </div>
-    </body>
-    </html>
+    </body></html>
     """
     return html
