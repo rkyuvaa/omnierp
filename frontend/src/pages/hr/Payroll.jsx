@@ -70,12 +70,28 @@ export default function Payroll() {
   }
 
   async function deleteRecord(id) {
-    if (!confirm('Delete this draft payroll record?')) return;
+    if (!confirm('Delete this payroll record? This action cannot be undone.')) return;
     try {
       await api.delete(`/hr/payroll/${id}`);
       toast.success('Record deleted');
       fetchPayroll();
     } catch { toast.error('Failed to delete'); }
+  }
+
+  async function bulkDelete() {
+    if (selected.length === 0) return;
+    const count = selected.length;
+    if (!confirm(`Are you sure you want to delete ${count} selected payroll records?`)) return;
+    
+    const recordIds = records.filter(r => selected.includes(r.employee_id)).map(r => r.id);
+    setLoading(true);
+    try {
+      await api.post('/hr/payroll/bulk-delete', { record_ids: recordIds });
+      toast.success(`${count} records deleted`);
+      setSelected([]);
+      fetchPayroll();
+    } catch { toast.error('Bulk delete failed'); }
+    finally { setLoading(false); }
   }
 
   async function downloadExcel() {
@@ -146,6 +162,11 @@ export default function Payroll() {
                 <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex' }}><ChevronRight size={16} /></button>
               </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+            {selected.length > 0 && (
+              <button onClick={bulkDelete} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                <Trash2 size={13} /> Bulk Delete ({selected.length})
+              </button>
+            )}
             <button onClick={generatePayroll} disabled={generating} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <Play size={13} /> {generating ? 'Generating...' : 'Generate Payroll'}
             </button>
@@ -216,7 +237,7 @@ export default function Payroll() {
                     </td>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-                        {r.status !== 'finalized' && (
+                        {r.status !== 'finalized' ? (
                           <>
                             <button onClick={() => finalizeRecord(r.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
                               <CheckCircle size={12} /> Finalize
@@ -225,6 +246,10 @@ export default function Payroll() {
                               <Trash2 size={12} />
                             </button>
                           </>
+                        ) : (
+                          <button onClick={() => deleteRecord(r.id)} title="Delete Finalized" style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <Trash2 size={12} /> Delete
+                          </button>
                         )}
                         <button 
                           onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears })}
