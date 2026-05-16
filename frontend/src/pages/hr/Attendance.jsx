@@ -248,9 +248,11 @@ export default function Attendance() {
                       <div style={{ fontSize: 13, fontWeight: 700 }}>{d.num}</div>
                     </th>
                   ))}
-                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 50, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>P</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 50, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>A</th>
-                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 50, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>L</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 40, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>P</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 40, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>A</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 40, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>LV</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 40, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>H</th>
+                  <th style={{ padding: '10px 8px', textAlign: 'center', minWidth: 40, fontWeight: 700, fontSize: 10, color: 'var(--text2)' }}>W</th>
                 </tr>
               </thead>
               <tbody>
@@ -258,13 +260,15 @@ export default function Attendance() {
                   <tr><td colSpan={days.length + 4} style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>No employees found</td></tr>
                 ) : employees.map(emp => {
                   const empRecs = records[String(emp.id)] || {};
-                  let pCount = 0, aCount = 0, lvCount = 0;
+                  let pCount = 0, aCount = 0, lvCount = 0, holCount = 0, woCount = 0;
                   days.forEach(d => {
                     const s = getEffStatus(d, empRecs, emp);
                     if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
                     else if (s === 'half_day') { pCount += 0.5; aCount += 0.5; }
                     else if (s === 'absent') aCount += 1;
                     else if (s === 'leave') lvCount += 1;
+                    else if (s === 'holiday') holCount += 1;
+                    else if (s === 'weekly_off') woCount += 1;
                   });
                   return (
                     <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)' }}>
@@ -305,9 +309,11 @@ export default function Attendance() {
                           </td>
                         );
                       })}
-                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#22c55e' }}>{pCount}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#ef4444' }}>{aCount}</td>
-                      <td style={{ textAlign: 'center', fontWeight: 700, color: '#6366f1' }}>{lvCount}</td>
+                       <td style={{ textAlign: 'center', fontWeight: 700, color: '#22c55e', fontSize: 11 }}>{pCount}</td>
+                       <td style={{ textAlign: 'center', fontWeight: 700, color: '#ef4444', fontSize: 11 }}>{aCount}</td>
+                       <td style={{ textAlign: 'center', fontWeight: 700, color: '#6366f1', fontSize: 11 }}>{lvCount}</td>
+                       <td style={{ textAlign: 'center', fontWeight: 700, color: '#8b5cf6', fontSize: 11 }}>{holCount}</td>
+                       <td style={{ textAlign: 'center', fontWeight: 700, color: '#64748b', fontSize: 11 }}>{woCount}</td>
                     </tr>
                   );
                 })}
