@@ -98,56 +98,58 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     logo_html = f'<img src="{company_logo}" style="width:140px;" />' if company_logo else ''
 
     css = """
-    @page { size: A4; margin: 1cm; }
-    body { font-family: Helvetica, Arial, sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
+    @page { size: A4; margin: 0.5cm; }
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 8.5pt; color: #333; line-height: 1.3; }
     .container { width: 100%; }
     
     /* Strict Table Header to fix xhtml2pdf bugs */
-    .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
-    .company-name { font-size: 16pt; font-weight: bold; color: #1a3c5e; margin-bottom: 3px; }
-    .company-info { font-size: 8.5pt; color: #4b5563; line-height: 1.3; margin-bottom: 2px; }
+    .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .company-name { font-size: 14pt; font-weight: bold; color: #1a3c5e; margin-bottom: 2px; }
+    .company-info { font-size: 8pt; color: #4b5563; line-height: 1.2; margin-bottom: 2px; }
     
     /* Badge styling using a nested table for strict width control in xhtml2pdf */
-    .badge-table { width: 110px; border-collapse: collapse; float: right; }
-    .badge-cell { background: #1a3c5e; color: #fff; padding: 6px; font-weight: bold; font-size: 10pt; text-align: center; border-radius: 3px; }
-    .month-year { font-weight: bold; font-size: 11pt; margin-top: 8px; color: #1e293b; text-align: right; }
+    .badge-table { width: 100px; border-collapse: collapse; float: right; }
+    .badge-cell { background: #1a3c5e; color: #fff; padding: 4px; font-weight: bold; font-size: 9pt; text-align: center; border-radius: 3px; }
+    .month-year { font-weight: bold; font-size: 10pt; margin-top: 6px; color: #1e293b; text-align: right; }
     
     /* Info Table - No vertical lines, just clean horizontal rows */
-    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-    .info-table td { padding: 8px 5px; border-bottom: 1px solid #f1f5f9; }
-    .lbl { color: #64748b; font-size: 8.5pt; width: 15%; }
+    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .info-table td { padding: 5px 4px; border-bottom: 1px solid #f1f5f9; }
+    .lbl { color: #64748b; font-size: 8pt; width: 15%; }
     .sep { width: 2%; text-align: center; color: #cbd5e1; }
-    .val { font-weight: bold; width: 33%; color: #1e293b; font-size: 9pt; }
+    .val { font-weight: bold; width: 33%; color: #1e293b; font-size: 8.5pt; }
     
-    .section-title { background: #f8fafc; border-left: 4px solid #1a3c5e; padding: 7px 12px; font-weight: bold; font-size: 9pt; color: #1a3c5e; margin-bottom: 10px; margin-top: 15px; }
+    .section-title { background: #f8fafc; border-left: 3px solid #1a3c5e; padding: 5px 10px; font-weight: bold; font-size: 8.5pt; color: #1a3c5e; margin-bottom: 8px; margin-top: 10px; }
     
     /* Component Layout Tables - Strict grid as requested */
-    .comp-layout { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .comp-layout { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
     .comp-cell { width: 49%; vertical-align: top; padding: 0; }
     .comp-spacer { width: 2%; }
     
-    .hdr-earn { background: #f0fdf4; color: #166534; font-weight: bold; padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 8.5pt; margin-bottom: 5px; }
-    .hdr-ded { background: #fef2f2; color: #991b1b; font-weight: bold; padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 8.5pt; margin-bottom: 5px; }
-    .hdr-cont { background: #f5f3ff; color: #5b21b6; font-weight: bold; padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 8.5pt; margin-bottom: 5px; }
-    .hdr-summ { background: #fff7ed; color: #9a3412; font-weight: bold; padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 8.5pt; margin-bottom: 5px; }
+    .hdr-earn { background: #f0fdf4; color: #166534; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-ded { background: #fef2f2; color: #991b1b; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-cont { background: #f5f3ff; color: #5b21b6; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-summ { background: #fff7ed; color: #9a3412; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
     
     .comp-tbl { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; }
-    .comp-tbl td { padding: 8px 10px; border: 1px solid #e2e8f0; font-size: 9pt; color: #334155; }
+    .comp-tbl td { padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8.5pt; color: #334155; }
+    .comp-tbl td.comp-name { width: 65%; }
+    .comp-tbl td.comp-val { width: 35%; text-align: right; }
     .comp-tbl .total-row { font-weight: bold; background: #f8fafc; color: #1e293b; }
     
     /* Net Pay Box */
-    .net-tbl { width: 100%; border-collapse: collapse; margin-top: 25px; }
-    .net-td { background: #1a3c5e; color: #fff; padding: 25px; text-align: center; border-radius: 5px; }
-    .net-title { font-size: 10pt; font-weight: bold; margin-bottom: 8px; opacity: 0.9; }
-    .net-val { font-size: 20pt; font-weight: bold; }
-    .net-words { font-size: 9pt; margin-top: 10px; font-style: italic; opacity: 0.85; }
+    .net-tbl { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    .net-td { background: #1a3c5e; color: #fff; padding: 15px; text-align: center; border-radius: 4px; }
+    .net-title { font-size: 9pt; font-weight: bold; margin-bottom: 5px; opacity: 0.9; }
+    .net-val { font-size: 18pt; font-weight: bold; }
+    .net-words { font-size: 8pt; margin-top: 8px; font-style: italic; opacity: 0.85; }
     
-    .footer-note { text-align: center; font-size: 8pt; color: #94a3b8; margin-top: 35px; border-top: 1px solid #f1f5f9; padding-top: 15px; }
+    .footer-note { text-align: center; font-size: 7.5pt; color: #94a3b8; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
     """
 
-    earn_rows = "".join([f"<tr><td>{k}</td><td style='text-align:right;'>{float(v):,.2f}</td></tr>" for k, v in earnings.items()])
-    ded_rows = "".join([f"<tr><td>{k}</td><td style='text-align:right;'>{float(v):,.2f}</td></tr>" for k, v in deductions.items()])
-    cont_rows = "".join([f"<tr><td>{k}</td><td style='text-align:right;'>{float(v):,.2f}</td></tr>" for k, v in employer_cont.items()])
+    earn_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in earnings.items()])
+    ded_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in deductions.items()])
+    cont_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in employer_cont.items()])
 
     html = f"""
     <html>
@@ -195,16 +197,16 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                     <td class="comp-cell">
                         <div class="hdr-earn">EARNINGS Amount (Rs.)</div>
                         <table class="comp-tbl">
-                            {earn_rows or "<tr><td colspan='2' style='text-align:center;'>-</td></tr>"}
-                            <tr class="total-row"><td>GROSS EARNINGS</td><td style="text-align:right;">Rs. {total_earnings:,.2f}</td></tr>
+                            {earn_rows or "<tr><td class='comp-name' colspan='2' style='text-align:center;'>-</td></tr>"}
+                            <tr class="total-row"><td class="comp-name">GROSS EARNINGS</td><td class="comp-val">Rs. {total_earnings:,.2f}</td></tr>
                         </table>
                     </td>
                     <td class="comp-spacer"></td>
                     <td class="comp-cell">
                         <div class="hdr-ded">DEDUCTIONS Amount (Rs.)</div>
                         <table class="comp-tbl">
-                            {ded_rows or "<tr><td colspan='2' style='text-align:center;'>-</td></tr>"}
-                            <tr class="total-row"><td>TOTAL DEDUCTIONS</td><td style="text-align:right;">Rs. {total_deductions:,.2f}</td></tr>
+                            {ded_rows or "<tr><td class='comp-name' colspan='2' style='text-align:center;'>-</td></tr>"}
+                            <tr class="total-row"><td class="comp-name">TOTAL DEDUCTIONS</td><td class="comp-val">Rs. {total_deductions:,.2f}</td></tr>
                         </table>
                     </td>
                 </tr>
@@ -216,17 +218,17 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                     <td class="comp-cell">
                         <div class="hdr-cont">EMPLOYER CONTRIBUTIONS Amount (Rs.)</div>
                         <table class="comp-tbl">
-                            {cont_rows or "<tr><td colspan='2' style='text-align:center;'>-</td></tr>"}
-                            <tr class="total-row"><td>TOTAL CONTRIBUTIONS</td><td style="text-align:right;">Rs. {total_employer_cont:,.2f}</td></tr>
+                            {cont_rows or "<tr><td class='comp-name' colspan='2' style='text-align:center;'>-</td></tr>"}
+                            <tr class="total-row"><td class="comp-name">TOTAL CONTRIBUTIONS</td><td class="comp-val">Rs. {total_employer_cont:,.2f}</td></tr>
                         </table>
                     </td>
                     <td class="comp-spacer"></td>
                     <td class="comp-cell">
                         <div class="hdr-summ">CTC SUMMARY Amount (Rs.)</div>
                         <table class="comp-tbl">
-                            <tr><td>Gross Salary</td><td style="text-align:right;">{total_earnings:,.2f}</td></tr>
-                            <tr><td>Employer Contributions</td><td style="text-align:right;">{total_employer_cont:,.2f}</td></tr>
-                            <tr class="total-row"><td>MONTHLY CTC</td><td style="text-align:right;">Rs. {monthly_ctc:,.2f}</td></tr>
+                            <tr><td class="comp-name">Gross Salary</td><td class="comp-val">{total_earnings:,.2f}</td></tr>
+                            <tr><td class="comp-name">Employer Contributions</td><td class="comp-val">{total_employer_cont:,.2f}</td></tr>
+                            <tr class="total-row"><td class="comp-name">MONTHLY CTC</td><td class="comp-val">Rs. {monthly_ctc:,.2f}</td></tr>
                         </table>
                     </td>
                 </tr>
