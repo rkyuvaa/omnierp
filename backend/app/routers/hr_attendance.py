@@ -177,7 +177,11 @@ def compute_record(db: Session, employee_id: int, target_date: date):
             record.left_early = True
             record.early_by_minutes = int((shift_end_dt - check_out).total_seconds() / 60)
     else:
-        record.status = "present"
+        # Default logic if no shift is assigned
+        if hours_worked > 0 and hours_worked < 4.0:
+            record.status = "half_day"
+        else:
+            record.status = "present"
 
     db.commit()
     return record
