@@ -94,6 +94,22 @@ export default function Payroll() {
     finally { setLoading(false); }
   }
 
+  async function bulkUpdateStatus(status) {
+    if (selected.length === 0) return;
+    const count = selected.length;
+    if (!confirm(`Are you sure you want to ${status === 'finalized' ? 'finalize' : 'reset to draft'} ${count} selected payroll records?`)) return;
+    
+    const recordIds = records.filter(r => selected.includes(r.employee_id)).map(r => r.id);
+    setLoading(true);
+    try {
+      await api.post('/hr/payroll/bulk-update-status', { record_ids: recordIds, status });
+      toast.success(`${count} records updated`);
+      setSelected([]);
+      fetchPayroll();
+    } catch { toast.error('Bulk update failed'); }
+    finally { setLoading(false); }
+  }
+
   async function downloadExcel() {
     try {
       const res = await api.get('/hr/reports/payroll-export/excel', {
@@ -163,9 +179,17 @@ export default function Payroll() {
               </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
             {selected.length > 0 && (
-              <button onClick={bulkDelete} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca' }}>
-                <Trash2 size={13} /> Bulk Delete ({selected.length})
-              </button>
+              <>
+                <button onClick={() => bulkUpdateStatus('finalized')} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#dcfce7', color: '#16a34a', border: '1px solid #bbf7d0' }}>
+                  <CheckCircle size={13} /> Bulk Finalize ({selected.length})
+                </button>
+                <button onClick={() => bulkUpdateStatus('draft')} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a' }}>
+                  <Clock size={13} /> Bulk Reset ({selected.length})
+                </button>
+                <button onClick={bulkDelete} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca' }}>
+                  <Trash2 size={13} /> Bulk Delete ({selected.length})
+                </button>
+              </>
             )}
             <button onClick={generatePayroll} disabled={generating} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <Play size={13} /> {generating ? 'Generating...' : 'Generate Payroll'}

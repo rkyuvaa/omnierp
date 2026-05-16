@@ -27,6 +27,10 @@ class PayrollFinalize(BaseModel):
 class BulkDeleteRequest(BaseModel):
     record_ids: List[int]
 
+class BulkUpdateRequest(BaseModel):
+    record_ids: List[int]
+    status: str
+
 
 def _resolve_components(db: Session, emp: HREmployee):
     """
@@ -395,6 +399,22 @@ def bulk_delete_payroll(data: BulkDeleteRequest, db: Session = Depends(get_db), 
     db.query(HRPayrollRecord).filter(HRPayrollRecord.id.in_(data.record_ids)).delete(synchronize_session=False)
     db.commit()
     return {"message": f"Deleted {len(data.record_ids)} records"}
+
+
+@router.post("/bulk-update-status")
+def bulk_update_payroll_status(data: BulkUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not data.record_ids:
+        return {"message": "No records selected"}
+    
+    update_vals = {"status": data.status}
+    if data.status == "finalized":
+        update_vals["finalized_at"] = datetime.utcnow()
+    else:
+        update_vals["finalized_at"] = None
+        
+    db.query(HRPayrollRecord).filter(HRPayrollRecord.id.in_(data.record_ids)).update(update_vals, synchronize_session=False)
+    db.commit()
+    return {"message": f"Updated {len(data.record_ids)} records to {data.status}"}
 
 
 @router.get("/{record_id}")
