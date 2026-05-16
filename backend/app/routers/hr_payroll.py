@@ -254,9 +254,15 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
 
     earnings = {}
     deductions = {}
+    employer_contributions = {}
     for r in result_list:
+        if r["component_type"] == "employer_contribution":
+            employer_contributions[r["name"]] = r["amount"]
+            continue
+            
         if not r.get("show_on_payslip", True):
             continue
+            
         if r["component_type"] == "earning":
             earnings[r["name"]] = r["amount"]
         else:
@@ -307,7 +313,11 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
         "net_salary": net_salary,
         "arrears_held": arrears_held_total,
         "arrears_paid": arrears_paid_total,
-        "components_breakdown": {"earnings": earnings, "deductions": deductions},
+        "components_breakdown": {
+            "earnings": earnings,
+            "deductions": deductions,
+            "employer_contributions": employer_contributions
+        },
     }
 
 

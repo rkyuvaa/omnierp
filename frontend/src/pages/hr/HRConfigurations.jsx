@@ -322,8 +322,8 @@ export default function HRConfigurations() {
                 <Card key={c.id}
                   title={`${c.name}`}
                   badge={c.code}
-                  badgeColor={c.component_type === 'earning' ? '#22c55e' : '#ef4444'}
-                  subtitle={`${c.component_type === 'earning' ? 'Earning' : 'Deduction'} · ${calcLabel}`}
+                  badgeColor={c.component_type === 'earning' ? '#22c55e' : c.component_type === 'employer_contribution' ? '#8b5cf6' : '#ef4444'}
+                  subtitle={`${c.component_type === 'earning' ? 'Earning' : c.component_type === 'employer_contribution' ? 'Employer Contribution' : 'Deduction'} · ${calcLabel}`}
                   extra={c.show_on_payslip ? '✓ Shows on payslip' : '✗ Hidden from payslip'}
                   onEdit={() => openModal('salary_component', c)}
                   onDelete={() => deleteItem('salary_component', c.id)}
@@ -513,6 +513,7 @@ export default function HRConfigurations() {
                     <select value={form.component_type || 'earning'} onChange={e => setForm({ ...form, component_type: e.target.value })} style={inputStyle}>
                       <option value="earning">Earning</option>
                       <option value="deduction">Deduction</option>
+                      <option value="employer_contribution">Employer Contribution</option>
                     </select></div>
                   <div><label style={labelStyle}>Calculation Type</label>
                     <select value={form.calc_type || 'percentage_of_ctc'} onChange={e => setForm({ ...form, calc_type: e.target.value, slabs: e.target.value === 'slab' ? (form.slabs?.length ? form.slabs : [{ min: 0, max: 10000, value: 0 }]) : form.slabs })} style={inputStyle}>

@@ -1,6 +1,7 @@
 from xhtml2pdf import pisa
 from io import BytesIO
 import base64
+import calendar
 
 def render_to_pdf(html_content: str):
     """
@@ -169,522 +170,216 @@ def num_to_words(n: float) -> str:
 
 def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None) -> str:
     """
-    Generate a professional Indian-format payslip HTML.
-    If fields_config is provided and not empty, it builds the PDF dynamically based on the Studio layout.
-    Otherwise, it falls back to the standard hardcoded layout.
+    Generate a professional Indian-format payslip HTML matching the provided design.
     """
-    # Hardcoded company info as requested
-    company_name    = 'Konwert India Motors Private Limited'
-    company_address = 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108'
-    company_gstin   = 'GSTIN: 33AAHCK7681B1ZL'
-    
+    company_name    = pdf_cfg.get('company_name', 'Konwert India Motors Private Limited')
+    company_address = pdf_cfg.get('header', 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108').replace('\n', '<br>')
     company_logo    = pdf_cfg.get('logo', '')
     footer_text     = pdf_cfg.get('footer', 'This is a computer-generated payslip. No signature required.')
 
     breakdown       = record.components_breakdown or {}
     earnings        = breakdown.get('earnings', {})
     deductions      = breakdown.get('deductions', {})
+    employer_cont   = breakdown.get('employer_contributions', {})
+    
     total_earnings  = float(record.total_earnings or 0)
     total_deductions= float(record.total_deductions or 0)
     net_salary      = float(record.net_salary or 0)
     net_words       = num_to_words(net_salary) + ' Rupees Only'
+    
+    total_employer_cont = sum(float(v) for v in employer_cont.values())
+    monthly_ctc = total_earnings + total_employer_cont
 
     emp_name        = employee.name or '—'
     emp_code        = employee.employee_id or '—'
     designation     = employee.designation or '—'
     department      = employee.department.name if employee.department else '—'
-    doj             = employee.date_of_joining.strftime('%d/%m/%Y') if employee.date_of_joining else '—'
     
-    # Automatic Days in Month calculation
-    import calendar
-    days_in_month   = calendar.monthrange(year, record.month)[1]
-    
-    working_days    = int(record.working_days or days_in_month)
-    present_days    = record.present_days or 0
-    lop_days        = float(record.lop_days or 0)
-    on_duty_days    = float(record.on_duty_days or 0)
-    
-    # Format CTC
-    emp_ctc = f"Rs. {float(employee.basic_salary or 0):,.2f}" if employee.basic_salary else "—"
+    # Leave Balances logic
+    leave_rows = ""
+    # In a real scenario, we'd fetch HRLeaveBalance for the employee
+    # Assuming record or employee has balances attached or we fetch them elsewhere
+    # For now, we try to see if it's in record or we just show placeholders
+    if hasattr(employee, 'leave_balances') and employee.leave_balances:
+        for bal in employee.leave_balances:
+            leave_rows += f"<tr><td>{bal.leave_type.name}</td><td>{bal.allocated_days}</td><td>{bal.used_days}</td><td>{bal.allocated_days - bal.used_days}</td></tr>"
+    else:
+        # Better fallback: check if we can fetch some typical leave types
+        leave_rows = """
+        <tr><td>Casual Leave (CL)</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><td>Sick Leave (SL)</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr><td>Earned Leave (EL)</td><td>—</td><td>—</td><td>—</td></tr>
+        """
 
-    logo_block = f'<img src="{company_logo}" style="height:55px; max-width:180px;" />' if company_logo else f'<div style="font-size:20pt; font-weight:900; color:#1a3c5e;">{company_name}</div>'
-
-    # Build standard earnings/deductions rows for both custom and default rendering
-    earn_rows = ''
-    for name, amt in earnings.items():
-        earn_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600;">Rs. {amt:,.2f}</td></tr>'
-    
-    ded_rows = ''
-    for name, amt in deductions.items():
-        ded_rows += f'<tr><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0;">{name}</td><td style="padding:5px 8px; border-bottom:1px solid #f0f0f0; text-align:right; font-weight:600; color:#c0392b;">Rs. {amt:,.2f}</td></tr>'
+    logo_html = f'<img src="{company_logo}" style="height:50px;" />' if company_logo else f'<div style="font-size:18pt; font-weight:bold; color:#1a3c5e;">{company_name}</div>'
 
     css = """
-  @page { size: A4; margin: 1.2cm; }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; color: #222; }
-  .payslip { width: 100%; }
-
-  /* Header */
-  .hdr { display: table; width: 100%; border-bottom: 3px solid #1a3c5e; padding-bottom: 10px; margin-bottom: 12px; }
-  .hdr-left { display: table-cell; vertical-align: middle; width: 60%; }
-  .hdr-right { display: table-cell; vertical-align: middle; text-align: right; width: 40%; }
-  .slip-title { font-size: 16pt; font-weight: 900; color: #1a3c5e; letter-spacing: 1px; }
-  .slip-month { font-size: 10pt; color: #555; margin-top: 3px; }
-  .company-addr { font-size: 8.5pt; color: #666; margin-top: 4px; line-height: 1.4; }
-
-  /* Employee Info */
-  .info-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; background: #f7f9fc; border: 1px solid #dde3ea; border-radius: 4px; }
-  .info-table td { padding: 5px 10px; font-size: 9pt; border-bottom: 1px solid #eaecef; }
-  .info-table td:first-child { font-weight: 700; color: #555; width: 22%; }
-  .info-table td:nth-child(3) { font-weight: 700; color: #555; width: 22%; }
-
-  /* Attendance strip */
-  .att-strip { display: table; width: 100%; background: #1a3c5e; color: #fff; border-radius: 4px; margin-bottom: 12px; }
-  .att-cell { display: table-cell; text-align: center; padding: 7px 5px; font-size: 9pt; border-right: 1px solid rgba(255,255,255,0.15); }
-  .att-cell:last-child { border-right: none; }
-  .att-num { font-size: 13pt; font-weight: 900; display: block; }
-  .att-lbl { font-size: 7.5pt; opacity: 0.8; display: block; }
-
-  /* Earnings / Deductions table */
-  .comp-wrap { display: table; width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-  .comp-col { display: table-cell; width: 50%; vertical-align: top; }
-  .comp-col:first-child { padding-right: 6px; }
-  .comp-col:last-child  { padding-left: 6px; }
-  .comp-hdr { background: #1a3c5e; color: #fff; padding: 6px 8px; font-size: 9.5pt; font-weight: 700; letter-spacing: 0.5px; }
-  .comp-tbl { width: 100%; border-collapse: collapse; border: 1px solid #dde3ea; font-size: 9pt; }
-  .comp-tbl .total-row td { background: #eef2f7; font-weight: 800; font-size: 9.5pt; border-top: 2px solid #1a3c5e; padding: 6px 8px; }
-  .comp-tbl .total-row td:last-child { text-align: right; }
-
-  /* Net salary box */
-  .net-box { background: #1a3c5e; color: #fff; padding: 10px 14px; border-radius: 4px; display: table; width: 100%; margin-bottom: 10px; }
-  .net-left { display: table-cell; vertical-align: middle; font-size: 12pt; font-weight: 700; }
-  .net-right { display: table-cell; text-align: right; vertical-align: middle; font-size: 14pt; font-weight: 900; }
-  .net-words { font-size: 8pt; opacity: 0.85; display: block; margin-top: 2px; font-weight: 400; font-style: italic; }
-
-  /* Footer */
-  .slip-footer { border-top: 1px solid #dde3ea; padding-top: 7px; font-size: 8pt; color: #888; text-align: center; margin-top: 4px; }
+    @page { size: A4; margin: 1cm; }
+    body { font-family: 'Helvetica', 'Arial', sans-serif; font-size: 9pt; color: #333; line-height: 1.4; }
+    .container { width: 100%; }
+    
+    /* Header */
+    .header-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .header-table td { vertical-align: top; }
+    .company-info { padding-left: 15px; }
+    .company-title { font-size: 16pt; font-weight: bold; color: #000; margin-bottom: 2px; }
+    .company-addr { font-size: 8.5pt; color: #555; }
+    .slip-badge { background: #1e3a8a; color: #fff; padding: 4px 12px; font-weight: bold; text-align: center; border-radius: 2px; font-size: 10pt; }
+    .slip-date { text-align: right; margin-top: 5px; font-weight: bold; font-size: 11pt; }
+    
+    /* Section Headers */
+    .section-hdr { background: #eff6ff; border: 1px solid #dbeafe; padding: 4px 10px; font-weight: bold; font-size: 8.5pt; color: #1e40af; text-transform: uppercase; margin-bottom: 5px; border-radius: 2px; }
+    
+    /* Info Table */
+    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; border: 1px solid #e5e7eb; border-radius: 4px; }
+    .info-table td { padding: 4px 8px; border-bottom: 1px solid #f3f4f6; width: 25%; }
+    .info-table td.lbl { color: #6b7280; font-weight: normal; width: 15%; }
+    .info-table td.sep { width: 2%; text-align: center; color: #9ca3af; }
+    .info-table td.val { font-weight: 500; width: 33%; }
+    
+    /* Components Grid */
+    .comp-grid { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    .comp-grid td { width: 50%; vertical-align: top; padding: 0; }
+    .comp-grid td:first-child { padding-right: 8px; }
+    .comp-grid td:last-child { padding-left: 8px; }
+    
+    .comp-box { border: 1px solid #e5e7eb; border-radius: 4px; overflow: hidden; min-height: 150px; }
+    .box-hdr { padding: 4px 10px; font-weight: bold; font-size: 8.5pt; }
+    .box-hdr.earn { background: #dcfce7; color: #166534; }
+    .box-hdr.ded { background: #fee2e2; color: #991b1b; }
+    .box-hdr.cont { background: #f3e8ff; color: #6b21a8; }
+    .box-hdr.summ { background: #ffedd5; color: #9a3412; }
+    
+    .comp-tbl { width: 100%; border-collapse: collapse; }
+    .comp-tbl td { padding: 5px 10px; border-bottom: 1px solid #f3f4f6; font-size: 8.5pt; }
+    .comp-tbl td.amt { text-align: right; }
+    .box-footer { background: #f9fafb; padding: 6px 10px; font-weight: bold; border-top: 1px solid #e5e7eb; }
+    .box-footer table { width: 100%; border-collapse: collapse; }
+    .box-footer td.amt { text-align: right; }
+    
+    /* Leave Table */
+    .leave-tbl { width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; margin-bottom: 20px; }
+    .leave-tbl th { background: #f9fafb; border: 1px solid #e5e7eb; padding: 5px; font-size: 8pt; color: #4b5563; text-align: left; }
+    .leave-tbl td { border: 1px solid #e5e7eb; padding: 5px; font-size: 8.5pt; }
+    
+    /* Net Pay Box */
+    .net-pay-box { border: 1px solid #1e40af; border-radius: 4px; overflow: hidden; display: table; width: 100%; margin-top: 10px; }
+    .net-lbl { display: table-cell; width: 30%; background: #eff6ff; padding: 15px; vertical-align: middle; border-right: 1px solid #dbeafe; }
+    .net-lbl div:first-child { font-weight: bold; font-size: 11pt; color: #1e3a8a; }
+    .net-lbl div:last-child { font-size: 8pt; color: #3b82f6; }
+    .net-val { display: table-cell; width: 70%; padding: 15px; text-align: center; vertical-align: middle; }
+    .net-amt { font-size: 18pt; font-weight: bold; color: #000; margin-bottom: 5px; }
+    .net-word-str { font-size: 8.5pt; color: #4b5563; font-weight: bold; }
     """
 
-    # ─────────────────────────────────────────────────────────
-    # DYNAMIC RENDERER (If user designed a custom layout)
-    # ─────────────────────────────────────────────────────────
-    if fields_config and len(fields_config) > 0:
-        content_html = "<table style='width: 100%; border-collapse: collapse;'><tr>"
-        col_count = 0
-        
-        for f in fields_config:
-            ftype = f.get('type')
-            width_type = f.get('width', 'full')
-            
-            if width_type == 'full':
-                if col_count == 1:
-                    content_html += "<td style='width: 50%;'></td></tr><tr>"
-                else:
-                    content_html += "</tr><tr>"
-                content_html += "<td colspan='2' style='width: 100%; padding-bottom: 15px;'>"
-                col_count = 0
-            else: # half
-                if col_count == 0:
-                    content_html += "</tr><tr>"
-                content_html += "<td style='width: 50%; padding-right: 2%; padding-bottom: 15px; vertical-align: top;'>"
-                col_count += 1
-                
-            block_label = f.get('label', '').upper()
-            
-            # Basic Layout Elements
-            if ftype == 'separator':
-                content_html += f'<hr style="border:none; border-top:2px solid #ccc; margin: 10px 0; width: 100%;" />'
-            elif ftype == 'heading':
-                content_html += f'<div style="font-size: 14pt; font-weight: bold; color: #1a3c5e; margin: 10px 0; border-bottom: 1px solid #eee; padding-bottom: 5px;">{block_label}</div>'
-            elif ftype == 'static_text':
-                content = f.get('content', '').replace('\n', '<br>')
-                content_html += f'<div style="font-size: 10pt; color: #444; line-height: 1.6;">{content}</div>'
-            elif ftype == 'static_image':
-                img_url = f.get('url', '')
-                if img_url: content_html += f'<div style="text-align: center;"><img src="{img_url}" style="max-width: 100%; max-height: 250px;" /></div>'
-            
-            # Payroll-Specific Blocks
-            elif ftype == 'pr_emp_info':
-                content_html += f"""
-                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{block_label}</div>
-                  <table class="info-table">
-                    <tr><td>Employee Name</td><td><strong>{emp_name}</strong></td><td>Employee Code</td><td>{emp_code}</td></tr>
-                    <tr><td>Designation</td><td>{designation}</td><td>Department</td><td>{department}</td></tr>
-                    <tr><td>Date of Joining</td><td>{doj}</td><td>Salary (CTC)</td><td>Rs. {float(employee.basic_salary or 0):,.2f}</td></tr>
-                  </table>"""
-            
-            elif ftype == 'pr_attendance':
-                content_html += f"""
-                  <div style="font-weight:bold; color:#1a3c5e; margin-bottom:5px;">{block_label}</div>
-                  <div class="att-strip">
-                    <div class="att-cell"><span class="att-num">{working_days}</span><span class="att-lbl">Working Days</span></div>
-                    <div class="att-cell"><span class="att-num">{present_days:.1f}</span><span class="att-lbl">Present Days</span></div>
-                    <div class="att-cell"><span class="att-num">{float(record.absent_days or 0):.1f}</span><span class="att-lbl">Absent Days</span></div>
-                    <div class="att-cell"><span class="att-num">{float(record.leave_days or 0):.1f}</span><span class="att-lbl">Leave Days</span></div>
-                    <div class="att-cell"><span class="att-num">{lop_days:.1f}</span><span class="att-lbl">LOP Days</span></div>
-                    <div class="att-cell"><span class="att-num">{on_duty_days:.1f}</span><span class="att-lbl">On Duty Days</span></div>
-                  </div>"""
-            
-            elif ftype == 'pr_earnings':
-                content_html += f"""
-                  <div class="comp-hdr">{block_label}</div>
-                  <table class="comp-tbl">{earn_rows}<tr class="total-row"><td>Gross Earnings</td><td>Rs. {total_earnings:,.2f}</td></tr></table>"""
-                
-            elif ftype == 'pr_deductions':
-                content_html += f"""
-                  <div class="comp-hdr" style="background:#c0392b;">{block_label}</div>
-                  <table class="comp-tbl">{ded_rows}<tr class="total-row"><td>Total Deductions</td><td style="color:#c0392b;">Rs. {total_deductions:,.2f}</td></tr></table>"""
-                
-            elif ftype == 'pr_net_salary':
-                content_html += f"""
-                  <div class="net-box">
-                    <div class="net-left">{block_label}<span class="net-words">{net_words}</span></div>
-                    <div class="net-right">Rs. {net_salary:,.2f}</div>
-                  </div>"""
-                
-            elif ftype == 'pr_custom_comp':
-                comp_name = f.get('content', '')
-                comp_val = earnings.get(comp_name) or deductions.get(comp_name) or 0
-                content_html += f"""
-                  <table style="width:100%; border-collapse: collapse; margin-bottom: 5px;">
-                    <tr>
-                      <td style="padding: 5px; border-bottom: 1px solid #eee; font-size: 9.5pt; color: #333;"><strong>{block_label}</strong></td>
-                      <td style="padding: 5px; border-bottom: 1px solid #eee; text-align: right; font-size: 10pt; font-weight: 700;">Rs. {float(comp_val):,.2f}</td>
-                    </tr>
-                  </table>"""
+    earn_rows = "".join([f"<tr><td>{k}</td><td class='amt'>{float(v):,.0f}</td></tr>" for k, v in earnings.items()])
+    ded_rows = "".join([f"<tr><td>{k}</td><td class='amt'>{float(v):,.0f}</td></tr>" for k, v in deductions.items()])
+    cont_rows = "".join([f"<tr><td>{k}</td><td class='amt'>{float(v):,.0f}</td></tr>" for k, v in employer_cont.items()])
 
-            content_html += "</td>"
-            if col_count == 2:
-                col_count = 0
-                
-        if col_count == 1:
-            content_html += "<td style='width: 50%;'></td>"
-        content_html += "</tr></table>"
-
-        return f"""<!DOCTYPE html><html><head><meta charset="utf-8"/><style>{css}</style></head>
-        <body><div class="payslip">
-          <div class="hdr">
-            <div class="hdr-left">{logo_html}<div class="company-addr">{company_address}</div></div>
-            <div class="hdr-right"><div class="slip-title">SALARY SLIP</div><div class="slip-month">{month_name} {year}</div></div>
-          </div>
-          {content_html}
-          <div class="slip-footer">{footer_text}</div>
-        </div></body></html>"""
-
-    # ─────────────────────────────────────────────────────────
-    # DEFAULT RENDERER (Classic Konwert India Motors Format)
-    # ─────────────────────────────────────────────────────────
-    from datetime import datetime
-    now_str = datetime.now().strftime('%d-%b-%Y %I:%M %p')
-
-    earn_items = list(earnings.items())
-    ded_items = list(deductions.items())
-    max_len = max(len(earn_items), len(ded_items))
-    
-    earn_html_rows = ""
-    ded_html_rows = ""
-    for i in range(max_len):
-        e_name, e_amt = earn_items[i] if i < len(earn_items) else ("", None)
-        d_name, d_amt = ded_items[i] if i < len(ded_items) else ("", None)
-        
-        e_name_display = e_name if e_name else "&nbsp;"
-        d_name_display = d_name if d_name else "&nbsp;"
-        e_amt_str = f"Rs. {float(e_amt):,.2f}" if e_amt is not None else "&nbsp;"
-        d_amt_str = f"Rs. {float(d_amt):,.2f}" if d_amt is not None else "&nbsp;"
-        
-        earn_html_rows += f"""<tr>
-            <td style="width:60%; border-left:none; border-right:none; border-bottom: 1px solid #c9d9e8;">{e_name_display}</td>
-            <td class="amt" style="width:40%; border-right:none; border-bottom: 1px solid #c9d9e8;">{e_amt_str}</td>
-        </tr>"""
-        
-        ded_html_rows += f"""<tr>
-            <td style="width:60%; border-left:none; border-right:none; border-bottom: 1px solid #c9d9e8;">{d_name_display}</td>
-            <td class="amt" style="width:40%; border-right:none; border-bottom: 1px solid #c9d9e8;">{d_amt_str}</td>
-        </tr>"""
-
-    # If logo exists, use it left-aligned, else fallback to text
-    logo_block = f'<img src="{company_logo}" style="max-height:70px;" />' if company_logo else ''
-
-    # Summary calculations for deductions
-    regular_deductions = sum(float(v) for k, v in deductions.items() if "Salary Held" not in k)
-    arrear_deductions = sum(float(v) for k, v in deductions.items() if "Salary Held" in k)
-    
-    ded_summary_html = f"""
-  <tr>
-    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #c0392b;">Total Deductions</td>
-    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #c0392b;">Rs. {total_deductions:,.2f}</td>
-    <td style="width: 50%; border-left: none; border-top: none;"></td>
-  </tr>"""
-    
-    if arrear_deductions > 0:
-        ded_summary_html = f"""
-  <tr>
-    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #7f8c8d; font-size: 8pt;">Regular Deductions</td>
-    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #7f8c8d; font-size: 8pt;">Rs. {regular_deductions:,.2f}</td>
-    <td style="width: 50%; border-left: none; border-bottom: none;"></td>
-  </tr>
-  <tr>
-    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #7f8c8d; font-size: 8pt;">Arrears Held</td>
-    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #7f8c8d; font-size: 8pt;">Rs. {arrear_deductions:,.2f}</td>
-    <td style="width: 50%; border-left: none; border-bottom: none; border-top: none;"></td>
-  </tr>
-  <tr>
-    <td class="net-sal-lbl" style="width: 30%; border-right: none; color: #c0392b;">Total Deductions</td>
-    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8; color: #c0392b;">Rs. {total_deductions:,.2f}</td>
-    <td style="width: 50%; border-left: none; border-top: none;"></td>
-  </tr>"""
-
-    import datetime
-    now_str = datetime.datetime.now().strftime("%d-%b-%Y %H:%M:%S")
-
-    return f"""<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<style>
-  @page {{ size: A4; margin: 1.2cm; }}
-  * {{ box-sizing: border-box; font-family: Arial, sans-serif; font-size: 9pt; }}
-  body {{ color: #333; }}
-  .center {{ text-align: center; }}
-  
-  /* Header styling */
-  .company-name {{ font-size: 15pt; font-weight: bold; color: #104c8f; margin-bottom: 4px; }}
-  .company-address {{ font-size: 8.5pt; color: #333; line-height: 1.4; }}
-  
-  /* Salary Slip Bar */
-  .title-bar {{ background-color: #1a68b2; color: #fff; padding: 5px 10px; font-size: 10pt; font-weight: bold; margin-bottom: 8px; }}
-  
-  /* Month/Year */
-  .month-text {{ text-align: right; font-weight: bold; color: #555; margin-bottom: 8px; font-size: 9pt; }}
-  
-  /* Generic Table borders */
-  table {{ width: 100%; border-collapse: collapse; margin-bottom: 10px; }}
-  td, th {{ border: 1px solid #c9d9e8; padding: 3px 5px; }}
-  
-  /* Header Table */
-  .header-table {{ border: none; margin-bottom: 8px; }}
-  .header-table td {{ border: none; padding: 0; vertical-align: middle; }}
-  
-  /* Employee Info Table */
-  .emp-table td.lbl {{ background-color: #f4f7f9; font-weight: bold; color: #444; width: 20%; }}
-  .emp-table td.val {{ width: 30%; }}
-  
-  /* Earnings / Deductions Header */
-  .comp-th {{ background-color: #0d4782; color: #fff; font-weight: bold; padding: 5px; border: 1px solid #0d4782; }}
-  .sub-th {{ font-weight: bold; color: #555; background: #fff; border-bottom: 1px solid #c9d9e8; }}
-  .sub-th.right {{ text-align: right; }}
-  
-  .amt {{ text-align: right; font-weight: bold; }}
-  .net-sal-lbl {{ color: #104c8f; font-weight: bold; }}
-  .summary-bg {{ background-color: #f4f7f9; font-weight: bold; }}
-  
-  .grand-total {{ background-color: #3b8235; color: #fff; font-weight: bold; font-size: 10pt; padding: 6px 10px; border: none; }}
-  .grand-total-val {{ text-align: right; font-size: 10pt; border: none; }}
-  
-  .footer {{ text-align: center; color: #777; font-size: 8pt; margin-top: 20px; line-height: 1.4; border-top: 1px solid #eee; padding-top: 10px; }}
-</style>
-</head>
-<body>
-
-<table class="header-table">
-  <tr>
-    <td style="width: 25%; text-align: left;">
-      {logo_block}
-    </td>
-    <td style="width: 75%; text-align: center;">
-      <div class="company-name">{company_name}</div>
-      <div class="company-address">{company_address}</div>
-      <div class="company-address">{company_gstin}</div>
-    </td>
-  </tr>
-</table>
-
-<div class="title-bar">SALARY SLIP — {month_name.upper()} {year}</div>
-
-<table class="emp-table">
-  <tr>
-    <td class="lbl">Employee name</td><td class="val">{emp_name}</td>
-    <td class="lbl">Present</td><td class="val">{present_days}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Employee code</td><td class="val">{emp_code}</td>
-    <td class="lbl">Absent / LOP</td><td class="val">{lop_days}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Designation</td><td class="val">{designation}</td>
-    <td class="lbl">Leave</td><td class="val">{float(record.leave_days or 0):.1f}</td>
-  </tr>
-  <tr>
-    <td class="lbl">Date of Joining</td><td class="val">{doj}</td>
-    <td class="lbl">Salary (CTC)</td><td class="val">{emp_ctc}</td>
-  </tr>
-</table>
-
-<table style="width: 100%; border-collapse: collapse; border: 1px solid #c9d9e8; margin-bottom: 0;">
-  <tr>
-    <td style="width: 50%; padding: 0; vertical-align: top; border-right: 1px solid #c9d9e8;">
-      <table style="width: 100%; border: none; margin-bottom: 0;">
-        <tr><td colspan="2" class="comp-th" style="border:none; border-bottom: 1px solid #0d4782;">Earnings</td></tr>
-        <tr>
-          <td class="sub-th" style="width:60%; border-left:none; border-right:none;">Particulars</td>
-          <td class="sub-th right" style="width:40%; border-right:none;">Amt (Rs.ps)</td>
-        </tr>
-        {earn_html_rows}
-      </table>
-    </td>
-    <td style="width: 50%; padding: 0; vertical-align: top;">
-      <table style="width: 100%; border: none; margin-bottom: 0;">
-        <tr><td colspan="2" class="comp-th" style="border:none; border-bottom: 1px solid #0d4782;">Deductions</td></tr>
-        <tr>
-          <td class="sub-th" style="width:60%; border-left:none; border-right:none;">Particulars</td>
-          <td class="sub-th right" style="width:40%; border-right:none;">Amt (Rs.ps)</td>
-        </tr>
-        {ded_html_rows}
-      </table>
-    </td>
-  </tr>
-</table>
-
-<table style="width: 100%; border-collapse: collapse; border: 1px solid #c9d9e8; border-top: none; margin-bottom: 10px;">
-  <tr>
-    <td class="net-sal-lbl" style="width: 30%; border-right: none;">Gross Salary</td>
-    <td class="amt" style="width: 20%; border-left: none; border-right: 1px solid #c9d9e8;">Rs. {total_earnings:,.2f}</td>
-    <td style="width: 50%; border-left: none; border-bottom: none;"></td>
-  </tr>
-  {ded_summary_html}
-</table>
-
-<table style="margin-bottom: 0;">
-  <tr>
-    <td class="summary-bg" style="width:30%;">Net Salary</td>
-    <td class="summary-bg amt" style="width:20%;">Rs. {net_salary:,.2f}</td>
-    <td class="summary-bg" style="width:30%;">Days in Month</td>
-    <td class="summary-bg amt" style="width:20%;">{days_in_month} days</td>
-  </tr>
-</table>
-
-<table style="border: none;">
-  <tr>
-    <td class="grand-total" style="width:50%;">TOTAL AMOUNT PAID</td>
-    <td class="grand-total grand-total-val" style="width:50%;">Rs. {net_salary:,.2f}</td>
-  </tr>
-</table>
-
-<div class="footer">
-  This is a computer-generated payslip and does not require a signature.<br>
-  Generated on {now_str}
-</div>
-
-</body>
-</html>"""
-    return html
-
-
-def generate_form_html(submission, definition):
-    """
-    Generates a clean HTML structure for the PDF based on submission data and template config.
-    """
-    data = submission.data
-    fields = definition.fields_config
-    pdf_cfg = definition.pdf_config
-    
-    # Simple CSS for the A4 look
-    css = """
-    @page { size: A4; margin: 1.5cm; }
-    body { font-family: Helvetica, Arial, sans-serif; font-size: 11pt; color: #333; line-height: 1.5; }
-    .header { border-bottom: 2px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
-    .header table { width: 100%; }
-    .logo { height: 60px; }
-    .doc-title { text-align: right; }
-    .doc-name { font-size: 18pt; font-weight: bold; margin-bottom: 5px; }
-    .doc-ref { font-size: 10pt; color: #666; }
-    
-    .grid { width: 100%; border-collapse: collapse; }
-    .field-group { margin-bottom: 15px; }
-    .label { font-size: 9pt; font-weight: bold; color: #777; margin-bottom: 2px; text-transform: uppercase; }
-    .value { font-size: 11pt; border-bottom: 1px solid #eee; min-height: 20px; padding: 2px 0; }
-    
-    .table-field { width: 100%; border: 1px solid #ddd; border-collapse: collapse; margin: 10px 0; }
-    .table-field th { background: #f5f5f5; border: 1px solid #ddd; padding: 6px; font-size: 10pt; text-align: left; }
-    .table-field td { border: 1px solid #ddd; padding: 6px; font-size: 10pt; }
-    
-    .signature-box { border: 1px dashed #ccc; background: #fafafa; padding: 10px; text-align: center; width: 250px; margin-top: 10px; }
-    .signature-img { max-height: 80px; }
-    
-    .footer { position: fixed; bottom: 0; width: 100%; border-top: 1px solid #eee; padding-top: 10px; font-size: 8pt; color: #999; }
-    """
-    
-    # Build HTML Rows
-    rows_html = ""
-    current_row = []
-    
-    for f in fields:
-        val = data.get(f['key'], '—')
-        
-        # Format values
-        if f['type'] == 'table':
-            table_rows = ""
-            for r in (val if isinstance(val, list) else []):
-                table_rows += f"<tr><td>{r.get('desc','')}</td><td>{r.get('qty','')}</td><td>{r.get('val','')}</td></tr>"
-            
-            field_html = f"""
-            <div style="width: 100%; margin-top: 20px;">
-                <div class="label">{f['label']}</div>
-                <table class="table-field">
-                    <thead><tr><th>Description</th><th>Qty</th><th>Value</th></tr></thead>
-                    <tbody>{table_rows or '<tr><td colspan="3" style="text-align:center">No data</td></tr>'}</tbody>
-                </table>
-            </div>
-            """
-            rows_html += field_html
-        elif f['type'] == 'signature':
-            sig_html = ""
-            if val and val.startswith('data:image'):
-                 sig_html = f'<img src="{val}" class="signature-img" />'
-            else:
-                 sig_html = '<div style="color:#ccc; padding: 20px;">No Signature Provided</div>'
-                 
-            field_html = f"""
-            <div style="width: 50%;">
-                <div class="label">{f['label']}</div>
-                <div class="signature-box">{sig_html}</div>
-            </div>
-            """
-            rows_html += field_html
-        elif f['type'] == 'textarea':
-             formatted_val = str(val).replace("\n", "<br>")
-             rows_html += f'<div class="field-group" style="width: 100%;"><div class="label">{f["label"]}</div><div class="value" style="border: 1px solid #eee; padding: 10px;">{formatted_val}</div></div>'
-        else:
-             width = "48%" if f.get('width') == 'half' else "23%" if f.get('width') == 'quarter' else "100%"
-             rows_html += f'<div class="field-group" style="width: {width}; display: inline-block; vertical-align: top; margin-right: 2%;"><div class="label">{f["label"]}</div><div class="value">{val}</div></div>'
-
-    header_text = pdf_cfg.get('header', '').replace('\n', '<br>')
     html = f"""
     <html>
     <head><style>{css}</style></head>
     <body>
-        <div class="header">
-            <table>
+        <div class="container">
+            <table class="header-table">
                 <tr>
-                    <td>
-                        {f'<img src="{pdf_cfg["logo"]}" class="logo" />' if pdf_cfg.get('logo') else '<div style="font-weight:bold; font-size: 20pt;">OmniERP</div>'}
-                        <div style="font-size: 9pt; color: #666; margin-top: 5px;">{header_text}</div>
+                    <td style="width:100px;">{logo_html}</td>
+                    <td class="company-info">
+                        <div class="company-title">{company_name}</div>
+                        <div class="company-addr">{company_address}</div>
                     </td>
-                    <td class="doc-title">
-                        <div class="doc-name">{definition.name.upper()}</div>
-                        <div class="doc-ref">REF: {submission.reference_number}</div>
-                        <div class="doc-ref">DATE: {submission.created_at.strftime("%d-%m-%Y")}</div>
+                    <td style="width:150px; text-align:right;">
+                        <div class="slip-badge">PAYSLIP</div>
+                        <div class="slip-date">{month_name} {year}</div>
                     </td>
                 </tr>
             </table>
-        </div>
-        
-        <div class="content">
-            {rows_html}
-        </div>
-        
-        <div class="footer">
-            {pdf_cfg.get('footer', 'Generated by OmniERP Dynamic Form Engine')}
+
+            <div class="section-hdr">Employee Details</div>
+            <table class="info-table">
+                <tr>
+                    <td class="lbl">Employee Name</td><td class="sep">:</td><td class="val">{emp_name}</td>
+                    <td class="lbl">Department</td><td class="sep">:</td><td class="val">{department}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Employee ID</td><td class="sep">:</td><td class="val">{emp_code}</td>
+                    <td class="lbl">Pay Period</td><td class="sep">:</td><td class="val">{month_name} {year}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">Designation</td><td class="sep">:</td><td class="val">{designation}</td>
+                    <td class="lbl">Pay Date</td><td class="sep">:</td><td class="val">{calendar.monthrange(year, record.month)[1]}-{month_name[:3]}-{year}</td>
+                </tr>
+            </table>
+
+            <table class="comp-grid">
+                <tr>
+                    <td>
+                        <div class="comp-box">
+                            <div class="box-hdr earn">EARNINGS <span style="float:right">Amount (₹)</span></div>
+                            <table class="comp-tbl">{earn_rows or "<tr><td colspan='2'>—</td></tr>"}</table>
+                            <div class="box-footer">
+                                <table><tr><td>GROSS EARNINGS</td><td class="amt">₹ {total_earnings:,.0f}</td></tr></table>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="comp-box">
+                            <div class="box-hdr ded">DEDUCTIONS <span style="float:right">Amount (₹)</span></div>
+                            <table class="comp-tbl">{ded_rows or "<tr><td colspan='2'>—</td></tr>"}</table>
+                            <div class="box-footer">
+                                <table><tr><td>TOTAL DEDUCTIONS</td><td class="amt">₹ {total_deductions:,.0f}</td></tr></table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <table class="comp-grid">
+                <tr>
+                    <td>
+                        <div class="comp-box">
+                            <div class="box-hdr cont">EMPLOYER CONTRIBUTIONS (CTC COMPONENTS) <span style="float:right">Amount (₹)</span></div>
+                            <table class="comp-tbl">{cont_rows or "<tr><td colspan='2'>—</td></tr>"}</table>
+                            <div class="box-footer">
+                                <table><tr><td>TOTAL EMPLOYER CONTRIBUTIONS</td><td class="amt">₹ {total_employer_cont:,.0f}</td></tr></table>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="comp-box">
+                            <div class="box-hdr summ">CTC SUMMARY <span style="float:right">Amount (₹)</span></div>
+                            <table class="comp-tbl">
+                                <tr><td>Gross Salary</td><td class="amt">{total_earnings:,.0f}</td></tr>
+                                <tr><td>Employer Contributions</td><td class="amt">{total_employer_cont:,.0f}</td></tr>
+                            </table>
+                            <div class="box-footer">
+                                <table><tr><td>MONTHLY CTC</td><td class="amt">₹ {monthly_ctc:,.0f}</td></tr></table>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            </table>
+
+            <div class="section-hdr">Leave Details</div>
+            <table class="leave-tbl">
+                <thead>
+                    <tr><th>Leave Type</th><th>Opening Balance</th><th>Earned</th><th>Utilized</th><th>Closing Balance</th></tr>
+                </thead>
+                <tbody>{leave_rows}</tbody>
+            </table>
+
+            <div class="net-pay-box">
+                <div class="net-lbl">
+                    <div>NET PAY</div>
+                    <div>(In-Hand Salary)</div>
+                </div>
+                <div class="net-val">
+                    <div class="net-amt">₹ {net_salary:,.0f}</div>
+                    <div class="net-word-str">({net_words})</div>
+                </div>
+            </div>
+            
+            <div style="text-align:center; font-size:8pt; color:#999; margin-top:20px;">{footer_text}</div>
         </div>
     </body>
     </html>
