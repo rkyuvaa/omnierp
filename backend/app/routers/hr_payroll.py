@@ -7,9 +7,13 @@ from calendar import monthrange
 from app.database import get_db
 from app.models import User, FormDefinition
 from app.auth import get_current_user
-from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord
+from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord, HRConfig
+from app.routers.hr_config import get_hr_config
 from app.utils.pdf import generate_payslip_html, render_to_pdf
 from sqlalchemy import extract
+from datetime import date
+
+DAY_MAP = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
 
 router = APIRouter()
 
@@ -169,7 +173,20 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     ).all()
 
     days_in_month = monthrange(year, month)[1]
-    working_days = len([r for r in records if r.status not in ["holiday", "weekly_off"]])
+    
+    # Global Configs
+    global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+    lop_calculation_base = get_hr_config(db, "lop_calculation_base", "gross") # gross or ctc
+
+    working_days_count = len([r for r in records if r.status not in ["holiday", "weekly_off"]])
+    # If no attendance records found (e.g. month just started or not processed), 
+    # fallback to global working days calculation for the month
+    if working_days_count == 0:
+        for d in range(1, days_in_month + 1):
+            dt = date(year, month, d)
+            if DAY_MAP[dt.weekday()] in global_working_days:
+                working_days_count += 1
+
     present_days = len([r for r in records if r.status in ["present", "late"]])
     half_days = len([r for r in records if r.status == "half_day"])
     leave_days = len([r for r in records if r.status == "leave"])
@@ -203,7 +220,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             deductions[r["name"]] = r["amount"]
 
     full_gross_earnings = sum(earnings.values())
-    total_payable_days = working_days if working_days > 0 else days_in_month
+    total_payable_days = working_days_count if working_days_count > 0 else days_in_month
     
     # Calculate LOP Deduction based on chosen base
     lop_deduction = 0
@@ -235,7 +252,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     net_salary = round(total_earnings - total_deductions, 2)
 
     return {
-        "working_days": working_days,
+        "working_days": working_days_count,
         "present_days": present_days + (half_days * 0.5),
         "absent_days": absent_days,
         "leave_days": leave_days,

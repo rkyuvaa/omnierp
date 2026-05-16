@@ -332,3 +332,12 @@ class HRSalaryComponent(Base):
     sort_order = Column(Integer, default=0)  # Controls payslip display order
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class HRConfig(Base):
+    __tablename__ = "hr_configs"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, index=True) # e.g. "working_days"
+    value = Column(JSON)                              # e.g. ["Mon","Tue","Wed","Thu","Fri","Sat"]
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

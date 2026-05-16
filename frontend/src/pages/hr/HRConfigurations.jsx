@@ -24,6 +24,7 @@ export default function HRConfigurations() {
   const [importing, setImporting] = useState(false);
   const [year, setYear] = useState(new Date().getFullYear());
   const [importFile, setImportFile] = useState(null);
+  const [configs, setConfigs] = useState({});
 
   useEffect(() => {
     api.get('/branches/').then(r => setBranches(r.data));
@@ -42,6 +43,7 @@ export default function HRConfigurations() {
         setSalaryTemplates(rt.data); setSalaryComponents(rc.data);
       }
       else if (tab === 'salary_components') { const r = await api.get('/hr/salary-components/'); setSalaryComponents(r.data); }
+      else if (tab === 'salary_rules') { const r = await api.get('/hr/config/'); setConfigs(r.data); }
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   }
@@ -116,6 +118,20 @@ export default function HRConfigurations() {
     } catch { toast.error('Sync failed'); }
   }
 
+  async function updateConfig(key, value) {
+    setConfigs(prev => ({ ...prev, [key]: value }));
+    try {
+      await api.post('/hr/config/', { key, value });
+      toast.success('Rule updated');
+    } catch { toast.error('Failed to update rule'); }
+  }
+
+  const toggleWorkingDay = (d) => {
+    const current = configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat'];
+    const updated = current.includes(d) ? current.filter(x => x !== d) : [...current, d];
+    updateConfig('working_days', updated);
+  };
+
   async function testConnection() {
     if (!form.ip_address) return toast.error('Enter IP address first');
     setTesting(true);
@@ -186,6 +202,7 @@ export default function HRConfigurations() {
           <button style={tabStyle(tab === 'biometric')} onClick={() => setTab('biometric')}><Wifi size={14} /> Biometric Machines</button>
           <button style={tabStyle(tab === 'salary_templates')} onClick={() => setTab('salary_templates')}><FileText size={14} /> Salary Templates</button>
           <button style={tabStyle(tab === 'salary_components')} onClick={() => setTab('salary_components')}><Settings size={14} /> Salary Components</button>
+          <button style={tabStyle(tab === 'salary_rules')} onClick={() => setTab('salary_rules')}><Settings size={14} /> Salary Rules</button>
         </div>
 
         {/* SHIFTS */}
@@ -314,6 +331,42 @@ export default function HRConfigurations() {
               );
             })}
           </Section>
+        )}
+
+        {/* SALARY RULES */}
+        {tab === 'salary_rules' && (
+          <div style={{ maxWidth: 700 }}>
+            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Attendance & Payroll Rules</h3>
+            <div style={{ display: 'grid', gap: 20 }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+                <div style={{ fontWeight: 700, marginBottom: 4 }}>Global Working Days</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>Define which days are considered standard working days for the organization.</div>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  {DAYS.map(d => (
+                    <button key={d} onClick={() => toggleWorkingDay(d)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: (configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat']).includes(d) ? 'var(--accent)' : 'var(--bg3)', color: (configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat']).includes(d) ? '#fff' : 'var(--text2)' }}>
+                      {d}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Sandwich Policy Highlighting</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Flag Sundays/Holidays as potential LOP if preceded and followed by absences.</div>
+                </div>
+                <input type="checkbox" checked={configs.enable_sandwich_highlight !== false} onChange={e => updateConfig('enable_sandwich_highlight', e.target.checked)} style={{ width: 20, height: 20 }} />
+              </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Regular Employee Check</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Highlight employees who take non-allocated leaves as "Irregular" for holiday pay decisions.</div>
+                </div>
+                <input type="checkbox" checked={configs.regular_employee_check !== false} onChange={e => updateConfig('regular_employee_check', e.target.checked)} style={{ width: 20, height: 20 }} />
+              </div>
+            </div>
+          </div>
         )}
       </div>
 

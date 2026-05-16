@@ -31,11 +31,15 @@ export default function Attendance() {
   const [tooltip, setTooltip] = useState(null);
   const [correcting, setCorrecting] = useState(null);
   const [correctForm, setCorrectForm] = useState({});
+  const [violations, setViolations] = useState({});
+  const [configs, setConfigs] = useState({});
+  const [scanning, setScanning] = useState(false);
 
   useEffect(() => { fetchData(); }, [month, year, filterBranch, filterDept]);
   useEffect(() => {
     api.get('/branches/').then(r => setBranches(r.data));
     api.get('/departments/').then(r => setDepartments(r.data));
+    api.get('/hr/config/').then(r => setConfigs(r.data));
   }, []);
 
   async function fetchData() {
@@ -97,6 +101,59 @@ export default function Attendance() {
     } catch { toast.error('Failed to save correction'); }
   }
 
+  function runViolationScan() {
+    if (configs.enable_sandwich_highlight === false) return;
+    setScanning(true);
+    const v = {};
+    employees.forEach(emp => {
+      const empRecs = records[String(emp.id)] || {};
+      const empVs = [];
+      let isIrregular = false;
+      
+      // Regularity Check: Has any LOP (Absent or Unpaid Leave)?
+      if (configs.regular_employee_check !== false) {
+        Object.values(empRecs).forEach(r => {
+          if (r.status === 'absent' || (r.status === 'leave' && r.is_paid === false)) {
+            isIrregular = true;
+          }
+        });
+      }
+
+      // Sandwich Scan
+      for (let i = 1; i < days.length - 1; i++) {
+        const d = days[i];
+        const status = empRecs[d.dayStr]?.status;
+        if (status === 'weekly_off' || status === 'holiday') {
+          // If irregular, flag all holidays as potential LOP
+          if (isIrregular && status === 'holiday') {
+             empVs.push({ dayStr: d.dayStr, type: 'irregular', label: 'Non-regular employee: Review holiday pay' });
+          }
+
+          // Check before
+          let before = null;
+          for (let j = i - 1; j >= 0; j--) {
+            const s = empRecs[days[j].dayStr]?.status;
+            if (s !== 'weekly_off' && s !== 'holiday') { before = s; break; }
+          }
+          // Check after
+          let after = null;
+          for (let j = i + 1; j < days.length; j++) {
+            const s = empRecs[days[j].dayStr]?.status;
+            if (s !== 'weekly_off' && s !== 'holiday') { after = s; break; }
+          }
+          
+          if (before === 'absent' && after === 'absent') {
+            empVs.push({ dayStr: d.dayStr, type: 'sandwich', label: 'Potential Sandwich LOP' });
+          }
+        }
+      }
+      if (empVs.length > 0) v[emp.id] = empVs;
+    });
+    setViolations(v);
+    setScanning(false);
+    toast.success('Violation scan complete');
+  }
+
   const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' };
 
   return (
@@ -117,6 +174,9 @@ export default function Attendance() {
             <option value="">All Departments</option>
             {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
           </select>
+          <button onClick={runViolationScan} disabled={scanning} className="btn" style={{ background: 'var(--bg2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13 }}>
+            <AlertCircle size={14} color="#f59e0b" /> {scanning ? 'Scanning...' : 'Scan for Violations'}
+          </button>
         </div>
 
         {/* Legend */}
@@ -171,17 +231,21 @@ export default function Attendance() {
                         const rec = empRecs[d.dayStr];
                         const status = rec?.status || null;
                         const cfg = status ? STATUS_CONFIG[status] : null;
+                        const v = (violations[emp.id] || []).find(x => x.dayStr === d.dayStr);
+
                         return (
-                          <td key={d.num} style={{ padding: '3px', textAlign: 'center', borderRight: '1px solid var(--border)' }}>
+                          <td key={d.num} style={{ padding: '3px', textAlign: 'center', borderRight: '1px solid var(--border)', background: v ? '#fff7ed' : 'transparent' }}>
                             <div
-                              title={cfg ? `${cfg.full}\nIn: ${rec.check_in || '—'}\nOut: ${rec.check_out || '—'}` : 'Click to correct'}
+                              title={v ? v.label : (cfg ? `${cfg.full}\nIn: ${rec.check_in || '—'}\nOut: ${rec.check_out || '—'}` : 'Click to correct')}
                               onClick={() => openCorrect(emp, d)}
                               style={{
                                 width: 28, height: 28, margin: '0 auto', borderRadius: 6, cursor: 'pointer',
                                 background: cfg ? cfg.bg : 'var(--bg3)',
                                 color: cfg ? cfg.color : 'var(--text3)',
                                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontWeight: 700, fontSize: 9, transition: 'opacity 0.1s'
+                                fontWeight: 700, fontSize: 9, transition: 'opacity 0.1s',
+                                border: v ? '2px solid #f97316' : 'none',
+                                boxSizing: 'border-box'
                               }}
                               onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
                               onMouseLeave={e => e.currentTarget.style.opacity = '1'}
