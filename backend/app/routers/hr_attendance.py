@@ -328,6 +328,28 @@ def get_punches(employee_id: int, target_date: date = None,
         "location_name": p.location_name,
     } for p in punches]
 
+class RecomputeRequest(BaseModel):
+    month: int
+    year: int
+
+@router.post("/recompute")
+def recompute_month(data: RecomputeRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    # Get all active employees
+    employees = db.query(HREmployee).filter(HREmployee.is_active == True).all()
+    
+    import calendar
+    _, last_day = calendar.monthrange(data.year, data.month)
+    
+    for emp in employees:
+        for day in range(1, last_day + 1):
+            target_date = date(data.year, data.month, day)
+            # Only recompute if it's not in the future
+            if target_date > date.today():
+                continue
+            compute_record(db, emp.id, target_date)
+            
+    return {"message": "Recomputation complete"}
+
 @router.post("/sync/bulk")
 def bulk_sync(data: BulkSync, db: Session = Depends(get_db)):
     """Bulk upload punches from a local sync agent"""

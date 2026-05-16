@@ -35,6 +35,7 @@ export default function Attendance() {
   const [configs, setConfigs] = useState({});
   const [scanning, setScanning] = useState(false);
   const [holidays, setHolidays] = useState([]);
+  const [hoveredCol, setHoveredCol] = useState(null);
 
   useEffect(() => { fetchData(); }, [month, year, filterBranch, filterDept]);
   useEffect(() => {
@@ -59,6 +60,16 @@ export default function Attendance() {
       setHolidays(hols.data || []);
     } catch { toast.error('Failed to load attendance'); }
     finally { setLoading(false); }
+  }
+
+  async function recomputeRecords() {
+    if (!window.confirm('Recompute all records for this month? This will update statuses based on current shift rules.')) return;
+    setLoading(true);
+    try {
+      await api.post('/hr/attendance/recompute', { month, year });
+      toast.success('Month recomputed successfully');
+      fetchData();
+    } catch { toast.error('Failed to recompute'); setLoading(false); }
   }
 
   const workDays = configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat'];
@@ -202,6 +213,9 @@ export default function Attendance() {
           <button onClick={runViolationScan} disabled={scanning} className="btn" style={{ background: 'var(--bg2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13 }}>
             <AlertCircle size={14} color="#f59e0b" /> {scanning ? 'Scanning...' : 'Scan for Violations'}
           </button>
+          <button onClick={recomputeRecords} className="btn" style={{ background: 'var(--bg2)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, fontWeight: 700, fontSize: 13 }}>
+            Recompute month
+          </button>
         </div>
 
         {/* Legend */}
@@ -224,7 +238,12 @@ export default function Attendance() {
                 <tr style={{ background: 'var(--bg2)', position: 'sticky', top: 0 }}>
                   <th style={{ padding: '10px 14px', textAlign: 'left', minWidth: 180, position: 'sticky', left: 0, background: 'var(--bg2)', borderRight: '1px solid var(--border)', fontWeight: 700, zIndex: 2 }}>Employee</th>
                   {days.map(d => (
-                    <th key={d.num} style={{ padding: '6px 4px', minWidth: 34, textAlign: 'center', fontWeight: 600, color: d.dayOfWeek === 'Sun' ? '#ef4444' : 'var(--text2)', borderBottom: '1px solid var(--border)' }}>
+                    <th 
+                      key={d.num} 
+                      onMouseEnter={() => setHoveredCol(d.num)}
+                      onMouseLeave={() => setHoveredCol(null)}
+                      style={{ padding: '6px 4px', minWidth: 34, textAlign: 'center', fontWeight: 600, color: d.dayOfWeek === 'Sun' ? '#ef4444' : 'var(--text2)', borderBottom: '1px solid var(--border)', background: hoveredCol === d.num ? 'var(--bg3)' : 'transparent' }}
+                    >
                       <div style={{ fontSize: 11 }}>{d.dayOfWeek}</div>
                       <div style={{ fontSize: 13, fontWeight: 700 }}>{d.num}</div>
                     </th>
@@ -259,9 +278,14 @@ export default function Attendance() {
                         const v = (violations[emp.id] || []).find(x => x.dayStr === d.dayStr);
 
                         return (
-                          <td key={d.num} style={{ padding: '3px', textAlign: 'center', borderRight: '1px solid var(--border)', background: v ? '#fff7ed' : 'transparent' }}>
+                          <td 
+                            key={d.num} 
+                            onMouseEnter={() => setHoveredCol(d.num)}
+                            onMouseLeave={() => setHoveredCol(null)}
+                            style={{ padding: '3px', textAlign: 'center', borderRight: '1px solid var(--border)', background: v ? '#fff7ed' : (hoveredCol === d.num ? 'var(--bg2)' : 'transparent') }}
+                          >
                             <div
-                              title={v ? v.label : (cfg ? `${cfg.full}\nIn: ${rec?.check_in || '—'}\nOut: ${rec?.check_out || '—'}` : 'Click to correct')}
+                              title={v ? v.label : (cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in || '—'}\nOut: ${rec?.check_out || '—'}` : `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct`)}
                               onClick={() => openCorrect(emp, d)}
                               style={{
                                 width: 28, height: 28, margin: '0 auto', borderRadius: 6, cursor: 'pointer',
