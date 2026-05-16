@@ -105,6 +105,17 @@ export default function Attendance() {
     if (configs.enable_sandwich_highlight === false) return;
     setScanning(true);
     const v = {};
+    const workDays = configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat'];
+    const today = new Date().setHours(0,0,0,0);
+
+    const getEffStatus = (d, recs) => {
+      const r = recs[d.dayStr];
+      if (r?.status) return r.status;
+      if (!workDays.includes(d.dayOfWeek)) return 'weekly_off';
+      if (new Date(d.dayStr) < today) return 'absent';
+      return null;
+    };
+
     employees.forEach(emp => {
       const empRecs = records[String(emp.id)] || {};
       const empVs = [];
@@ -112,8 +123,12 @@ export default function Attendance() {
       
       // Regularity Check: Has any LOP (Absent or Unpaid Leave)?
       if (configs.regular_employee_check !== false) {
-        Object.values(empRecs).forEach(r => {
-          if (r.status === 'absent' || (r.status === 'leave' && r.is_paid === false)) {
+        // Check both actual records and effective absences
+        days.forEach(d => {
+          if (new Date(d.dayStr) >= today) return;
+          const status = getEffStatus(d, empRecs);
+          const r = empRecs[d.dayStr];
+          if (status === 'absent' || (status === 'leave' && r?.is_paid === false)) {
             isIrregular = true;
           }
         });
@@ -122,23 +137,24 @@ export default function Attendance() {
       // Sandwich Scan
       for (let i = 1; i < days.length - 1; i++) {
         const d = days[i];
-        const status = empRecs[d.dayStr]?.status;
+        const status = getEffStatus(d, empRecs);
+        
         if (status === 'weekly_off' || status === 'holiday') {
           // If irregular, flag all holidays as potential LOP
           if (isIrregular && status === 'holiday') {
              empVs.push({ dayStr: d.dayStr, type: 'irregular', label: 'Non-regular employee: Review holiday pay' });
           }
 
-          // Check before
+          // Check before: last working day
           let before = null;
           for (let j = i - 1; j >= 0; j--) {
-            const s = empRecs[days[j].dayStr]?.status;
+            const s = getEffStatus(days[j], empRecs);
             if (s !== 'weekly_off' && s !== 'holiday') { before = s; break; }
           }
-          // Check after
+          // Check after: next working day
           let after = null;
           for (let j = i + 1; j < days.length; j++) {
-            const s = empRecs[days[j].dayStr]?.status;
+            const s = getEffStatus(days[j], empRecs);
             if (s !== 'weekly_off' && s !== 'holiday') { after = s; break; }
           }
           
