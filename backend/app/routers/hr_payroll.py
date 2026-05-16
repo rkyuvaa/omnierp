@@ -376,6 +376,16 @@ def finalize_payroll(record_id: int, db: Session = Depends(get_db), current_user
     return {"message": "Payroll finalized"}
 
 
+@router.delete("/{record_id}")
+def delete_payroll_record(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
+    if not record: raise HTTPException(404, "Payroll record not found")
+    if record.status == "finalized": raise HTTPException(400, "Cannot delete finalized payroll record")
+    db.delete(record)
+    db.commit()
+    return {"message": "Payroll record deleted"}
+
+
 @router.get("/{record_id}")
 def get_payroll_detail(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()

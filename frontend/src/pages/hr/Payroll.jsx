@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight, Trash2 } from 'lucide-react';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -67,6 +67,15 @@ export default function Payroll() {
       toast.success('Payroll finalized');
       fetchPayroll();
     } catch { toast.error('Failed'); }
+  }
+
+  async function deleteRecord(id) {
+    if (!confirm('Delete this draft payroll record?')) return;
+    try {
+      await api.delete(`/hr/payroll/${id}`);
+      toast.success('Record deleted');
+      fetchPayroll();
+    } catch { toast.error('Failed to delete'); }
   }
 
   async function downloadExcel() {
@@ -208,9 +217,14 @@ export default function Payroll() {
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                         {r.status !== 'finalized' && (
-                          <button onClick={() => finalizeRecord(r.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <CheckCircle size={12} /> Finalize
-                          </button>
+                          <>
+                            <button onClick={() => finalizeRecord(r.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <CheckCircle size={12} /> Finalize
+                            </button>
+                            <button onClick={() => deleteRecord(r.id)} title="Delete Draft" style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
+                              <Trash2 size={12} />
+                            </button>
+                          </>
                         )}
                         <button 
                           onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears })}
