@@ -455,64 +455,49 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
             if (rawComponents.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No salary structure defined</div>;
             if (salaryComponents.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>Loading components...</div>;
 
-            const components = hydrateComponents(rawComponents);
-            const ctc = parseFloat(emp.basic_salary) || 0;
-            let computed = { CTC: ctc };
             const results = [];
+            const ctc = parseFloat(emp.basic_salary) || 0;
+            const components = hydrateComponents(emp.salary_components || []);
             const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
             sorted.forEach(comp => {
               let amount = 0;
               const val = parseFloat(comp.value) || 0;
               const calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
-              const compType = comp.type || comp.component_type || 'earning';
+              const compType = comp.component_type || comp.type || 'earning';
               
-              if (calcType === 'percentage_of_ctc') {
-                amount = (ctc * val) / 100;
-              } else if (calcType === 'percentage_of_basic') {
-                let base = computed['BASIC'] || computed['BASIC_SALARY'] || 0;
-                if (!base) {
-                  const basicComp = results.find(r => r.name.toLowerCase().includes('basic'));
-                  if (basicComp) base = basicComp.amount;
-                }
-                if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+              if (calcType === 'percentage_of_ctc') amount = (ctc * val) / 100;
+              else if (calcType === 'percentage_of_basic') {
+                const basic = results.find(r => r.code === 'BASIC' || r.name?.toLowerCase().includes('basic'))?.amount || 0;
+                const base = comp.cap_amount ? Math.min(basic, comp.cap_amount) : basic;
                 amount = (base * val) / 100;
               } else if (calcType === 'percentage_of_gross') {
-                let base = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+                const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                const base = comp.cap_amount ? Math.min(gross, comp.cap_amount) : gross;
                 amount = (base * val) / 100;
               } else if (calcType === 'slab') {
                 const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
                 if (comp.slabs) {
-                  for (const slab of comp.slabs) {
-                    const min = parseFloat(slab.min) || 0;
-                    const max = slab.max === null || slab.max === undefined ? Infinity : parseFloat(slab.max);
-                    if (gross >= min && gross <= max) {
-                      amount = parseFloat(slab.value) || 0;
-                      break;
-                    }
+                  for (const s of comp.slabs) {
+                    if (gross >= (s.min || 0) && gross <= (s.max || Infinity)) { amount = s.value || 0; break; }
                   }
                 }
-              } else {
-                amount = val;
-              }
-              
-              // Gross threshold checks (ESI / TDS compliance)
+              } else amount = val;
+
+              // Thresholds
               const currentGross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
               if (comp.apply_if_gross_below > 0 && currentGross > comp.apply_if_gross_below) amount = 0;
               if (comp.apply_if_gross_above > 0 && currentGross < comp.apply_if_gross_above) amount = 0;
 
-              const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
-              computed[code] = amount;
-              results.push({ ...comp, amount, calcType, _compType: compType });
+              results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
             });
 
             return results.map((comp, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: 13 }}>
                 <span style={{ color: 'var(--text2)' }}>
                   {comp.name} 
-                  {comp.calcType !== 'fixed' && comp.calcType !== 'slab' ? ` (${comp.value}%)` : 
-                   comp.calcType === 'slab' ? ' (Slab)' : ''}
+                  {comp._calcType !== 'fixed' && comp._calcType !== 'slab' ? ` (${comp.value}%)` : 
+                   comp._calcType === 'slab' ? ' (Slab)' : ''}
                 </span>
                 <span style={{ 
                   color: comp._compType === 'earning' ? '#22c55e' : 
@@ -596,57 +581,41 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               if (!salaryForm.salary_components?.length) return null;
               if (salaryComponents.length === 0) return <div style={{ textAlign: 'center', padding: 20, color: 'var(--text3)' }}>Loading master components...</div>;
               
-              // Hydrate with master data for correct types
-              const components = hydrateComponents(salaryForm.salary_components);
-              const ctc = parseFloat(salaryForm.basic_salary) || 0;
-              let computed = { CTC: ctc };
               const results = [];
+              const ctc = parseFloat(salaryForm.basic_salary) || 0;
+              const components = hydrateComponents(salaryForm.salary_components || []);
               const sorted = [...components].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0));
 
               sorted.forEach(comp => {
                 let amount = 0;
                 const val = parseFloat(comp.value) || 0;
                 const calcType = comp.calc_type || (comp.is_percentage ? 'percentage_of_ctc' : 'fixed');
-                const compType = comp.type || comp.component_type || 'earning';
+                const compType = comp.component_type || comp.type || 'earning';
                 
-                if (calcType === 'percentage_of_ctc') {
-                  amount = (ctc * val) / 100;
-                } else if (calcType === 'percentage_of_basic') {
-                  let base = computed['BASIC'] || computed['BASIC_SALARY'] || 0;
-                  if (!base) {
-                    const basicComp = results.find(r => r.name.toLowerCase().includes('basic'));
-                    if (basicComp) base = basicComp.amount;
-                  }
-                  if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+                if (calcType === 'percentage_of_ctc') amount = (ctc * val) / 100;
+                else if (calcType === 'percentage_of_basic') {
+                  const basic = results.find(r => r.code === 'BASIC' || r.name?.toLowerCase().includes('basic'))?.amount || 0;
+                  const base = comp.cap_amount ? Math.min(basic, comp.cap_amount) : basic;
                   amount = (base * val) / 100;
                 } else if (calcType === 'percentage_of_gross') {
-                  let base = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
-                  if (comp.cap_amount) base = Math.min(base, comp.cap_amount);
+                  const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
+                  const base = comp.cap_amount ? Math.min(gross, comp.cap_amount) : gross;
                   amount = (base * val) / 100;
                 } else if (calcType === 'slab') {
                   const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
                   if (comp.slabs) {
-                    for (const slab of comp.slabs) {
-                      const min = parseFloat(slab.min) || 0;
-                      const max = slab.max === null || slab.max === undefined ? Infinity : parseFloat(slab.max);
-                      if (gross >= min && gross <= max) {
-                        amount = parseFloat(slab.value) || 0;
-                        break;
-                      }
+                    for (const s of comp.slabs) {
+                      if (gross >= (s.min || 0) && gross <= (s.max || Infinity)) { amount = s.value || 0; break; }
                     }
                   }
-                } else {
-                  amount = val;
-                }
-                
-                // Gross threshold checks (ESI / TDS compliance)
+                } else amount = val;
+
+                // Thresholds
                 const currentGross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
                 if (comp.apply_if_gross_below > 0 && currentGross > comp.apply_if_gross_below) amount = 0;
                 if (comp.apply_if_gross_above > 0 && currentGross < comp.apply_if_gross_above) amount = 0;
 
-                const code = comp.code || comp.name.toUpperCase().replace(/\s+/g, '_');
-                computed[code] = amount;
-                results.push({ ...comp, amount, calcType, _compType: compType });
+                results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
               });
 
               const totalEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
@@ -660,8 +629,8 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
                       <span style={{ color: 'var(--text2)' }}>
                         {comp.name} 
-                        {comp.calcType !== 'fixed' && comp.calcType !== 'slab' ? ` (${comp.value}%)` : 
-                         comp.calcType === 'slab' ? ' (Slab)' : ''}
+                        {comp._calcType !== 'fixed' && comp._calcType !== 'slab' ? ` (${comp.value}%)` : 
+                         comp._calcType === 'slab' ? ' (Slab)' : ''}
                       </span>
                       <span style={{ 
                         color: comp._compType === 'earning' ? '#22c55e' : 
