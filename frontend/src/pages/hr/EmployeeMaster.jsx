@@ -453,6 +453,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
           {(() => {
             const rawComponents = emp.salary_components || [];
             if (rawComponents.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>No salary structure defined</div>;
+            if (salaryComponents.length === 0) return <div style={{ fontSize: 12, color: 'var(--text3)', textAlign: 'center', padding: 20 }}>Loading components...</div>;
 
             const components = hydrateComponents(rawComponents);
             const ctc = emp.basic_salary || 0;
@@ -593,6 +594,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
 
             {(() => {
               if (!salaryForm.salary_components?.length) return null;
+              if (salaryComponents.length === 0) return <div style={{ textAlign: 'center', padding: 20, color: 'var(--text3)' }}>Loading master components...</div>;
               
               // Hydrate with master data for correct types
               const components = hydrateComponents(salaryForm.salary_components);
