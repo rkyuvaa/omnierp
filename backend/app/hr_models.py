@@ -26,6 +26,7 @@ class HREmployee(Base):
     salary_components = Column(JSON, default=[])          # [{"name":"HRA","type":"earning","is_percentage":True,"value":40}]
     salary_template_id = Column(Integer, ForeignKey("hr_salary_templates.id"), nullable=True)
     biometric_id = Column(String(50), nullable=True)      # ID on the biometric machine
+    salary_category = Column(String(50), default="regular")  # "regular" or "fixed"
     photo_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

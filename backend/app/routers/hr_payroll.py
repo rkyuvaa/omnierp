@@ -282,6 +282,10 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 lop_days += 1
                 absent_days_count += 1
 
+    # Overrule LOP deduction for fixed salary employees
+    if getattr(emp, "salary_category", "regular") == "fixed":
+        lop_days = 0
+
     # 3. Calculate Salary based on chosen Method
     calc_method = get_hr_config(db, "salary_calculation_method", "pro_rata")
     

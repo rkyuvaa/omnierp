@@ -30,6 +30,7 @@ class EmployeeCreate(BaseModel):
     biometric_id: Optional[str] = None
     salary_template_id: Optional[int] = None
     user_id: Optional[int] = None
+    salary_category: Optional[str] = "regular"
 
 class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
@@ -48,6 +49,7 @@ class EmployeeUpdate(BaseModel):
     salary_template_id: Optional[int] = None
     user_id: Optional[int] = None
     is_active: Optional[bool] = None
+    salary_category: Optional[str] = None
 
 # ── Serializer ────────────────────────────────────────────────────────────────
 def serialize(e: HREmployee):
@@ -72,6 +74,7 @@ def serialize(e: HREmployee):
         "salary_components": e.salary_components or [],
         "biometric_id": e.biometric_id,
         "salary_template_id": e.salary_template_id,
+        "salary_category": e.salary_category or "regular",
         "is_active": e.is_active,
         "created_at": str(e.created_at),
     }

@@ -265,11 +265,18 @@ export default function EmployeeMaster() {
                   <option value="false">Inactive</option>
                 </select>
               </div>
-              <div>
+               <div>
                 <label style={labelStyle}>Reporting Manager</label>
                 <select value={form.manager_id || ''} onChange={e => setForm({ ...form, manager_id: e.target.value ? parseInt(e.target.value) : null })} style={inputStyle}>
                   <option value="">— Select Manager —</option>
                   {employees.filter(emp => emp.id !== form.id).map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Salary Category</label>
+                <select value={form.salary_category || 'regular'} onChange={e => setForm({ ...form, salary_category: e.target.value })} style={inputStyle}>
+                  <option value="regular">Regular Employee (Attendance-based)</option>
+                  <option value="fixed">Fixed Salary (No Attendance Deductions)</option>
                 </select>
               </div>
             </div>
@@ -498,7 +505,19 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
               <div style={{ width: 60, height: 60, background: 'var(--accent)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 22, fontWeight: 700 }}>{emp.name?.[0]}</div>
               <div>
                 <div style={{ fontSize: 20, fontWeight: 700 }}>{emp.name}</div>
-                <div style={{ color: 'var(--text2)', fontSize: 14 }}>{emp.designation} · {emp.employee_id}</div>
+                <div style={{ color: 'var(--text2)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span>{emp.designation} · {emp.employee_id}</span>
+                  <span style={{ 
+                    fontSize: 11, 
+                    padding: '2px 8px', 
+                    borderRadius: 999, 
+                    fontWeight: 700, 
+                    background: emp.salary_category === 'fixed' ? '#fee2e2' : '#e0e7ff', 
+                    color: emp.salary_category === 'fixed' ? '#dc2626' : '#4f46e5' 
+                  }}>
+                    {emp.salary_category === 'fixed' ? 'FIXED SALARY' : 'REGULAR'}
+                  </span>
+                </div>
               </div>
             </div>
             <button onClick={onEdit} className="btn btn-primary" style={{ fontSize: 13 }}>Edit Profile</button>
