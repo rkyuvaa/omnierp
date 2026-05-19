@@ -75,7 +75,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     company_gstin   = '33AAHCK7681B1ZL'
     
     company_logo    = pdf_cfg.get('logo', '')
-    footer_text     = pdf_cfg.get('footer', 'This is a computer-generated payslip. No signature required.')
+    footer_text     = pdf_cfg.get('footer', 'This payslip is system generated and does not require a signature.')
 
     breakdown       = record.components_breakdown or {}
     earnings        = breakdown.get('earnings', {})
