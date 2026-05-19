@@ -131,41 +131,51 @@ def compute_record(db: Session, employee_id: int, target_date: date):
 
     # Check weekly off
     shift = emp.shift
-    if shift:
+    from app.routers.hr_config import get_hr_config
+    global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+    
+    is_wo = False
+    if shift and shift.working_days:
         day_abbr = DAY_MAP[target_date.weekday()]
-        if day_abbr not in (shift.working_days or []):
-            from app.routers.hr_config import get_hr_config
-            enable_sandwich = get_hr_config(db, "enable_sandwich_highlight", True)
-            auto_deduct = get_hr_config(db, "auto_deduct_sandwich", False)
-            
-            is_sandwich = _is_sandwich_day(db, employee_id, target_date)
-            
-            # Holiday Check: if Sunday is marked as holiday, sandwich doesn't apply
-            holiday = db.query(HRHoliday).filter(
-                HRHoliday.date == target_date,
-                HRHoliday.is_active == True,
-                (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
-            ).first()
-            
-            if not holiday and enable_sandwich and is_sandwich:
-                if auto_deduct:
-                    # Automatically deduct unless HR manually ignored it
-                    if not record.correction_reason or "Ignored" not in (record.correction_reason or ""):
-                        record.status = "sandwich_lop"
-                else:
-                    # Sandwich detected but auto-deduct off. Keep as weekly_off (revert from sandwich_lop if it was one)
-                    if record.status == "sandwich_lop":
-                        record.status = "weekly_off"
+        if day_abbr not in shift.working_days:
+            is_wo = True
+    else:
+        day_abbr = DAY_MAP[target_date.weekday()]
+        if day_abbr not in global_working_days:
+            is_wo = True
+
+    if is_wo:
+        enable_sandwich = get_hr_config(db, "enable_sandwich_highlight", True)
+        auto_deduct = get_hr_config(db, "auto_deduct_sandwich", False)
+        
+        is_sandwich = _is_sandwich_day(db, employee_id, target_date)
+        
+        # Holiday Check: if Sunday is marked as holiday, sandwich doesn't apply
+        holiday = db.query(HRHoliday).filter(
+            HRHoliday.date == target_date,
+            HRHoliday.is_active == True,
+            (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
+        ).first()
+        
+        if not holiday and enable_sandwich and is_sandwich:
+            if auto_deduct:
+                # Automatically deduct unless HR manually ignored it
+                if not record.correction_reason or "Ignored" not in (record.correction_reason or ""):
+                    record.status = "sandwich_lop"
             else:
-                # Not a sandwich day, revert status to weekly_off if it was sandwich_lop
+                # Sandwich detected but auto-deduct off. Keep as weekly_off (revert from sandwich_lop if it was one)
                 if record.status == "sandwich_lop":
                     record.status = "weekly_off"
-            
-            if record.status != "sandwich_lop":
+        else:
+            # Not a sandwich day, revert status to weekly_off if it was sandwich_lop
+            if record.status == "sandwich_lop":
                 record.status = "weekly_off"
-                
-            db.commit()
-            return record
+        
+        if record.status != "sandwich_lop":
+            record.status = "weekly_off"
+            
+        db.commit()
+        return record
 
     # Get punches for the day
     day_start = datetime.combine(target_date, datetime.min.time())
