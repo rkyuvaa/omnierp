@@ -17,6 +17,8 @@ export default function Approvals() {
   const [sandwichMonth, setSandwichMonth] = useState(new Date().getMonth() + 1);
   const [sandwichYear, setSandwichYear] = useState(new Date().getFullYear());
   const [sandwichReason, setSandwichReason] = useState({});
+  const [bulkReason, setBulkReason] = useState('');
+  const [bulkLoading, setBulkLoading] = useState(false);
   const [remarkModal, setRemarkModal] = useState(null);
   const [remark, setRemark] = useState('');
   const [action, setAction] = useState('');
@@ -73,6 +75,32 @@ export default function Approvals() {
       fetchData();
     } catch {
       toast.error('Failed to apply decision');
+    }
+  }
+
+  async function handleBulkSandwichDecision(action) {
+    if (!confirm(`Are you sure you want to bulk ${action === 'deduct' ? 'deduct LOP for' : 'ignore'} all ${sandwichLeaves.length} sandwich Sundays?`)) {
+      return;
+    }
+    setBulkLoading(true);
+    try {
+      await Promise.all(sandwichLeaves.map(item => {
+        const reason = bulkReason || (action === 'deduct' ? 'Deducted as Sandwich LOP' : 'Ignored sandwich LOP');
+        return api.post('/hr/attendance/sandwich-decision', {
+          employee_id: item.employee_id,
+          date: item.date,
+          action,
+          reason
+        });
+      }));
+      toast.success(`Successfully bulk ${action === 'deduct' ? 'deducted' : 'ignored'} all items.`);
+      setBulkReason('');
+      fetchData();
+    } catch {
+      toast.error('Failed to complete some bulk decisions');
+      fetchData();
+    } finally {
+      setBulkLoading(false);
     }
   }
 
@@ -237,7 +265,56 @@ export default function Approvals() {
                 No sandwich leaves detected for this month
               </div>
             ) : (
-              <div style={{ display: 'grid', gap: 12 }}>
+              <div>
+                {/* Bulk Actions Panel */}
+                <div style={{
+                  background: 'var(--bg2)',
+                  borderRadius: 12,
+                  padding: 16,
+                  marginBottom: 16,
+                  border: '1px dashed var(--accent)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  gap: 12
+                }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>Bulk Decisions ({sandwichLeaves.length} items)</div>
+                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>Apply deduction or exemption to all detected sandwich Sundays in one click.</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                      type="text"
+                      placeholder="Bulk reason (optional)..."
+                      value={bulkReason}
+                      onChange={e => setBulkReason(e.target.value)}
+                      style={{ ...inputStyle, width: 220 }}
+                    />
+                    <button
+                      onClick={() => handleBulkSandwichDecision('deduct')}
+                      disabled={bulkLoading}
+                      style={{
+                        background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8,
+                        padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
+                      }}
+                    >
+                      {bulkLoading ? 'Processing...' : 'Bulk Deduct LOP'}
+                    </button>
+                    <button
+                      onClick={() => handleBulkSandwichDecision('ignore')}
+                      disabled={bulkLoading}
+                      style={{
+                        background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 8,
+                        padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
+                      }}
+                    >
+                      {bulkLoading ? 'Processing...' : 'Bulk Ignore'}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gap: 12 }}>
                 {sandwichLeaves.map(item => {
                   const key = `${item.employee_id}-${item.date}`;
                   const isDeducted = item.current_status === 'sandwich_lop';
@@ -311,6 +388,7 @@ export default function Approvals() {
                     </div>
                   );
                 })}
+              </div>
               </div>
             )}
           </div>
