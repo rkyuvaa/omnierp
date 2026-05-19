@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi } from 'lucide-react';
+import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight } from 'lucide-react';
 
 const STATUS_BADGE = { true: { bg: '#dcfce7', color: '#16a34a', label: 'Active' }, false: { bg: '#fee2e2', color: '#dc2626', label: 'Inactive' } };
 
@@ -132,6 +132,24 @@ export default function EmployeeMaster() {
     } catch { toast.error('Failed to load employee'); }
   }
 
+  function handleNextEmployee() {
+    if (!selectedEmp || employees.length === 0) return;
+    const list = [...employees].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const currIndex = list.findIndex(e => e.id === selectedEmp.id);
+    if (currIndex === -1) return;
+    const nextIndex = (currIndex + 1) % list.length;
+    openDetail(list[nextIndex]);
+  }
+
+  function handlePrevEmployee() {
+    if (!selectedEmp || employees.length === 0) return;
+    const list = [...employees].sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    const currIndex = list.findIndex(e => e.id === selectedEmp.id);
+    if (currIndex === -1) return;
+    const prevIndex = (currIndex - 1 + list.length) % list.length;
+    openDetail(list[prevIndex]);
+  }
+
   const filtered = employees.filter(e =>
     e.name?.toLowerCase().includes(search.toLowerCase()) ||
     e.employee_id?.toLowerCase().includes(search.toLowerCase()) ||
@@ -142,7 +160,14 @@ export default function EmployeeMaster() {
     <Layout title="Employee Master">
       <div style={{ padding: '0 24px 24px' }}>
         {activeTab === 'detail' && selectedEmp ? (
-          <EmployeeDetail emp={selectedEmp} onBack={() => setActiveTab('list')} onEdit={() => openEdit(selectedEmp)} shifts={shifts} />
+          <EmployeeDetail 
+            emp={selectedEmp} 
+            onBack={() => setActiveTab('list')} 
+            onEdit={() => openEdit(selectedEmp)} 
+            shifts={shifts}
+            onNext={handleNextEmployee}
+            onPrev={handlePrevEmployee}
+          />
         ) : (
           <>
             {/* Header */}
@@ -348,7 +373,7 @@ export default function EmployeeMaster() {
   );
 }
 
-function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
+function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev }) {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -368,6 +393,16 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
     api.get('/hr/salary-templates/').then(r => setSalaryTemplates(r.data));
     api.get('/hr/salary-components/').then(r => setSalaryComponents(r.data));
   }, []);
+
+  useEffect(() => {
+    function handleKeyDown(e) {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
+      if (e.key === 'ArrowRight') onNext();
+      if (e.key === 'ArrowLeft') onPrev();
+    }
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onNext, onPrev]);
 
   // Hydrate components: enrich stored JSON with master data for correct types
   function hydrateComponents(components) {
@@ -494,9 +529,28 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
 
   return (
     <div>
-      <button onClick={onBack} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'var(--text2)', marginBottom: 20, fontSize: 13 }}>
-        ← Back to List
-      </button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <button onClick={onBack} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'var(--text2)', fontSize: 13 }}>
+          ← Back to List
+        </button>
+        
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onPrev} title="Previous Employee (Left Arrow)" style={{ 
+            background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--bg2)'}>
+            <ChevronLeft size={16} />
+          </button>
+          <button onClick={onNext} title="Next Employee (Right Arrow)" style={{ 
+            background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+          }}
+          onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
+          onMouseLeave={e => e.currentTarget.style.background = 'var(--bg2)'}>
+            <ChevronRight size={16} />
+          </button>
+        </div>
+      </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
         <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 24, border: '1px solid var(--border)', gridColumn: '1 / -1' }}>
