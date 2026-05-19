@@ -139,6 +139,7 @@ def get_balances(
         "allocated_days": b.allocated_days,
         "used_days": b.used_days,
         "remaining_days": b.allocated_days - b.used_days,
+        "monthly_limit": b.monthly_limit or 0.0,
     } for b in balances]
 
 @router.post("/allocate")
@@ -164,6 +165,7 @@ def allocate_balances(data: AllocateBalance, db: Session = Depends(get_db), curr
 class SingleBalanceUpdate(BaseModel):
     leave_type_id: int
     allocated_days: float
+    monthly_limit: Optional[float] = 0.0
 
 @router.post("/balances/{employee_id}")
 def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -176,9 +178,11 @@ def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], 
         ).first()
         if existing:
             existing.allocated_days = item.allocated_days
+            existing.monthly_limit = item.monthly_limit or 0.0
         else:
             b = HRLeaveBalance(employee_id=employee_id, leave_type_id=item.leave_type_id,
-                               year=year, allocated_days=item.allocated_days)
+                               year=year, allocated_days=item.allocated_days,
+                               monthly_limit=item.monthly_limit or 0.0)
             db.add(b)
     db.commit()
     return {"message": "Balances updated"}

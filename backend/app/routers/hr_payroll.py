@@ -206,9 +206,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     ).all()
     balance_map = {b.leave_type_id: b for b in balances}
     
-    monthly_paid_leave_limit = get_hr_config(db, "monthly_paid_leave_limit", 0.0)
     paid_leaves_by_type = {}
-    paid_leave_days_taken = 0
 
     # 2. Calculate LOP Days (Numerator subtraction)
     # We look at every day of the month.
@@ -252,15 +250,17 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                     lt_id = rec.leave_request.leave_type_id if rec.leave_request else None
                     bal = balance_map.get(lt_id) if lt_id else None
                     
-                    paid_leave_days_taken += 1
+                    if lt_id:
+                        paid_leaves_by_type[lt_id] = paid_leaves_by_type.get(lt_id, 0) + 1
                     
-                    # Check 1: Exceeded monthly paid leave limit?
-                    exceeds_monthly = (monthly_paid_leave_limit > 0 and paid_leave_days_taken > monthly_paid_leave_limit)
+                    # Check 1: Exceeded monthly limit for this specific leave type?
+                    exceeds_monthly = False
+                    if bal and bal.monthly_limit and bal.monthly_limit > 0:
+                        exceeds_monthly = (paid_leaves_by_type.get(lt_id, 0) > bal.monthly_limit)
                     
                     # Check 2: Exceeded yearly balance?
                     exceeds_yearly = False
                     if bal:
-                        paid_leaves_by_type[lt_id] = paid_leaves_by_type.get(lt_id, 0) + 1
                         total_this_month = len([
                             r for r in records 
                             if r.status == "leave" 

@@ -106,6 +106,7 @@ class HRLeaveBalance(Base):
     allocated_days = Column(Float, default=0)
     used_days = Column(Float, default=0)
     carry_forwarded = Column(Float, default=0)
+    monthly_limit = Column(Float, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

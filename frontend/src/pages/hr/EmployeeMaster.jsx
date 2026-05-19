@@ -507,11 +507,14 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
           {balances.map(b => (
             <div key={b.id} style={{ marginBottom: 12 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
-                <span>{b.leave_type_name}</span>
+                <span>
+                  {b.leave_type_name}
+                  {b.monthly_limit > 0 ? ` (Max ${b.monthly_limit}/mo)` : ''}
+                </span>
                 <span style={{ color: 'var(--text2)' }}>{b.used_days} / {b.allocated_days} used</span>
               </div>
               <div style={{ background: 'var(--border)', borderRadius: 999, height: 6 }}>
-                <div style={{ width: `${(b.used_days/b.allocated_days)*100}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
+                <div style={{ width: `${b.allocated_days > 0 ? (b.used_days/b.allocated_days)*100 : 0}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
               </div>
             </div>
           ))}
@@ -558,23 +561,39 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
       {/* Balance Modal */}
       {showBalanceModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 440, maxWidth: '100%' }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 500, maxWidth: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontWeight: 700 }}>Manage Leave Balances</h3>
               <button onClick={() => setShowBalanceModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            
+            {/* Headers */}
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Leave Type</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Total Days</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Monthly Limit</div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '50vh', overflowY: 'auto', paddingRight: 4 }}>
               {leaveTypes.map(lt => {
-                const b = balances.find(x => x.leave_type_id === lt.id) || { leave_type_id: lt.id, allocated_days: 0 };
+                const b = balances.find(x => x.leave_type_id === lt.id) || { leave_type_id: lt.id, allocated_days: 0, monthly_limit: 0 };
                 return (
-                  <div key={lt.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12, alignItems: 'center' }}>
+                  <div key={lt.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12, alignItems: 'center' }}>
                     <div style={{ fontSize: 13, fontWeight: 600 }}>{lt.name}</div>
                     <input type="number" step="0.5" value={b.allocated_days} 
                       onChange={e => {
                         const newB = [...balances];
                         const idx = newB.findIndex(x => x.leave_type_id === lt.id);
                         if (idx >= 0) newB[idx].allocated_days = parseFloat(e.target.value) || 0;
-                        else newB.push({ leave_type_id: lt.id, allocated_days: parseFloat(e.target.value) || 0 });
+                        else newB.push({ leave_type_id: lt.id, allocated_days: parseFloat(e.target.value) || 0, monthly_limit: 0 });
+                        setBalances(newB);
+                      }} style={inputStyle} />
+                    <input type="number" step="0.5" placeholder="unlimited" value={b.monthly_limit || ''} 
+                      onChange={e => {
+                        const newB = [...balances];
+                        const idx = newB.findIndex(x => x.leave_type_id === lt.id);
+                        if (idx >= 0) newB[idx].monthly_limit = parseFloat(e.target.value) || 0;
+                        else newB.push({ leave_type_id: lt.id, allocated_days: 0, monthly_limit: parseFloat(e.target.value) || 0 });
                         setBalances(newB);
                       }} style={inputStyle} />
                   </div>
