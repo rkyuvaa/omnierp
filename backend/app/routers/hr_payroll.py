@@ -199,6 +199,17 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             if DAY_MAP[dt.weekday()] in global_working_days:
                 total_working_days_in_month += 1
 
+    # Fetch leave balances for the employee for the current year
+    balances = db.query(HRLeaveBalance).filter(
+        HRLeaveBalance.employee_id == emp.id,
+        HRLeaveBalance.year == year
+    ).all()
+    balance_map = {b.leave_type_id: b for b in balances}
+    
+    monthly_paid_leave_limit = get_hr_config(db, "monthly_paid_leave_limit", 0.0)
+    paid_leaves_by_type = {}
+    paid_leave_days_taken = 0
+
     # 2. Calculate LOP Days (Numerator subtraction)
     # We look at every day of the month.
     # If it's a working day and no record or absent -> LOP
@@ -232,8 +243,38 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             elif rec.status == "half_day":
                 lop_days += 0.5
             elif rec.status == "leave":
-                # Check if it's unpaid leave
-                if rec.leave_request and rec.leave_request.leave_type and not rec.leave_request.leave_type.is_paid:
+                # Check if it's paid leave
+                is_paid_leave = True
+                if rec.leave_request and rec.leave_request.leave_type:
+                    is_paid_leave = rec.leave_request.leave_type.is_paid
+                
+                if is_paid_leave:
+                    lt_id = rec.leave_request.leave_type_id if rec.leave_request else None
+                    bal = balance_map.get(lt_id) if lt_id else None
+                    
+                    paid_leave_days_taken += 1
+                    
+                    # Check 1: Exceeded monthly paid leave limit?
+                    exceeds_monthly = (monthly_paid_leave_limit > 0 and paid_leave_days_taken > monthly_paid_leave_limit)
+                    
+                    # Check 2: Exceeded yearly balance?
+                    exceeds_yearly = False
+                    if bal:
+                        paid_leaves_by_type[lt_id] = paid_leaves_by_type.get(lt_id, 0) + 1
+                        total_this_month = len([
+                            r for r in records 
+                            if r.status == "leave" 
+                            and r.leave_request 
+                            and r.leave_request.leave_type_id == lt_id 
+                            and (r.leave_request.leave_type.is_paid if r.leave_request.leave_type else False)
+                        ])
+                        prior_used = max(0, bal.used_days - total_this_month)
+                        allocated = bal.allocated_days
+                        exceeds_yearly = (prior_used + paid_leaves_by_type[lt_id] > allocated)
+                    
+                    if exceeds_monthly or exceeds_yearly:
+                        lop_days += 1
+                else:
                     lop_days += 1
         else:
             # No record. If it's a working day in the past, it's LOP

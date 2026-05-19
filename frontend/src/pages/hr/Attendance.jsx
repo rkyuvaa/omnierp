@@ -463,23 +463,6 @@ export default function Attendance() {
                           boxShadow: '4px 0 8px -4px rgba(0, 0, 0, 0.05)'
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            {/* Avatar */}
-                            <div style={{
-                              width: '32px',
-                              height: '32px',
-                              borderRadius: '50%',
-                              background: getAvatarBg(emp.name),
-                              color: '#fff',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                              fontSize: '11px',
-                              fontWeight: '700',
-                              boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-                              flexShrink: 0
-                            }}>
-                              {getInitials(emp.name)}
-                            </div>
                             {/* Name & ID */}
                             <div style={{ overflow: 'hidden' }}>
                               <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '13px', color: 'var(--text)' }}>{emp.name}</div>

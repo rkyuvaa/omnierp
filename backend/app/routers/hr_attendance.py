@@ -94,6 +94,10 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         HRAttendanceRecord.employee_id == employee_id,
         HRAttendanceRecord.date == target_date
     ).first()
+    
+    if record and record.corrected_by is not None:
+        return record
+        
     if not record:
         record = HRAttendanceRecord(employee_id=employee_id, date=target_date)
         db.add(record)

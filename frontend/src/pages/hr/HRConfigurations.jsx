@@ -414,6 +414,21 @@ export default function HRConfigurations() {
                   <option value="calendar_days">Whole Month's Days (e.g. 30 Days)</option>
                 </select>
               </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Monthly Paid Leave Limit</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Specify maximum paid leaves allowed per month (leaves beyond this are treated as LOP). Set to 0 for unlimited.</div>
+                </div>
+                <input 
+                  type="number" 
+                  step="0.5" 
+                  min="0" 
+                  value={configs.monthly_paid_leave_limit ?? 0} 
+                  onChange={e => updateConfig('monthly_paid_leave_limit', parseFloat(e.target.value) || 0)} 
+                  style={{ width: 100, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600, textAlign: 'right' }} 
+                />
+              </div>
             </div>
           </div>
         )}
