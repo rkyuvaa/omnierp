@@ -90,7 +90,7 @@ def my_onduty_requests(employee_id: int, status: Optional[str] = None,
 @router.get("/pending")
 def pending_onduty(approver_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     reqs = db.query(HROnDutyRequest).filter(
-        HROnDutyRequest.approver_id == approver_id,
+        (HROnDutyRequest.approver_id == approver_id) | (HROnDutyRequest.approver_id == None),
         HROnDutyRequest.status == "pending"
     ).all()
     return [_serialize(r) for r in reqs]

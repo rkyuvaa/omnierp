@@ -344,7 +344,7 @@ def pending_approvals(
     current_user: User = Depends(get_current_user)
 ):
     reqs = db.query(HRLeaveRequest).filter(
-        HRLeaveRequest.approver_id == approver_id,
+        (HRLeaveRequest.approver_id == approver_id) | (HRLeaveRequest.approver_id == None),
         HRLeaveRequest.status == "pending"
     ).order_by(HRLeaveRequest.created_at).all()
     return [_serialize_request(r) for r in reqs]

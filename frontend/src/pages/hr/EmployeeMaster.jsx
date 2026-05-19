@@ -265,6 +265,13 @@ export default function EmployeeMaster() {
                   <option value="false">Inactive</option>
                 </select>
               </div>
+              <div>
+                <label style={labelStyle}>Reporting Manager</label>
+                <select value={form.manager_id || ''} onChange={e => setForm({ ...form, manager_id: e.target.value ? parseInt(e.target.value) : null })} style={inputStyle}>
+                  <option value="">— Select Manager —</option>
+                  {employees.filter(emp => emp.id !== form.id).map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                </select>
+              </div>
             </div>
 
             {/* Salary Components */}
