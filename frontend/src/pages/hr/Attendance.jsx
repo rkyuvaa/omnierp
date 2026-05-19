@@ -566,7 +566,7 @@ export default function Attendance() {
       {/* Correction Modal */}
       {correcting && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.35)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-          <div style={{ background: 'var(--bg2)', borderRadius: 16, padding: 28, width: 420, maxWidth: '95vw', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+          <div style={{ background: 'var(--bg2)', borderRadius: 16, padding: 28, width: 440, maxWidth: '95vw', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(25, 84, 2, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <Calendar size={18} />
@@ -586,15 +586,13 @@ export default function Attendance() {
                   {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.full}</option>)}
                 </select>
               </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check In</label>
-                  <input type="datetime-local" value={correctForm.check_in} onChange={e => setCorrectForm({ ...correctForm, check_in: e.target.value })} style={{ ...inputStyle, background: 'var(--bg3)', border: '1px solid var(--border)' }} />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Out</label>
-                  <input type="datetime-local" value={correctForm.check_out} onChange={e => setCorrectForm({ ...correctForm, check_out: e.target.value })} style={{ ...inputStyle, background: 'var(--bg3)', border: '1px solid var(--border)' }} />
-                </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check In</label>
+                <input type="datetime-local" value={correctForm.check_in} onChange={e => setCorrectForm({ ...correctForm, check_in: e.target.value })} style={{ ...inputStyle, background: 'var(--bg3)', border: '1px solid var(--border)' }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Out</label>
+                <input type="datetime-local" value={correctForm.check_out} onChange={e => setCorrectForm({ ...correctForm, check_out: e.target.value })} style={{ ...inputStyle, background: 'var(--bg3)', border: '1px solid var(--border)' }} />
               </div>
               <div>
                 <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reason for Correction *</label>
