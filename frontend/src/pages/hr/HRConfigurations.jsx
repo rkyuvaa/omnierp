@@ -360,6 +360,22 @@ export default function HRConfigurations() {
 
               <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Auto-Deduct Sandwich Sundays</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Automatically deduct sandwich Sundays as LOP days without waiting for manual confirmation.</div>
+                </div>
+                <input type="checkbox" checked={configs.auto_deduct_sandwich === true} onChange={e => updateConfig('auto_deduct_sandwich', e.target.checked)} style={{ width: 20, height: 20 }} />
+              </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Treat Excess Leaves as LOP</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Automatically split leave requests into LOP if they exceed the employee's available paid leave balance.</div>
+                </div>
+                <input type="checkbox" checked={configs.lop_overflow !== false} onChange={e => updateConfig('lop_overflow', e.target.checked)} style={{ width: 20, height: 20 }} />
+              </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
                   <div style={{ fontWeight: 700, marginBottom: 4 }}>Regular Employee Check</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Highlight employees who take non-allocated leaves as "Irregular" for holiday pay decisions.</div>
                 </div>

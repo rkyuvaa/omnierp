@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta
 from app.database import get_db
 from app.models import User
 from app.auth import get_current_user
+from app.routers.hr_config import get_hr_config
 from app.hr_models import (
     HRLeaveType, HRLeaveBalance, HRLeaveRequest,
     HREmployee, HRAttendanceRecord, HRNotification
@@ -194,16 +195,104 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
     total_days = 0.5 if data.is_half_day else _working_days_count(data.from_date, data.to_date)
 
     # Check balance (skip for LOP)
-    if leave_type.code != "LOP":
+    if leave_type.code != "LOP" and leave_type.is_paid:
         year = data.from_date.year
         balance = db.query(HRLeaveBalance).filter(
             HRLeaveBalance.employee_id == data.employee_id,
             HRLeaveBalance.leave_type_id == data.leave_type_id,
             HRLeaveBalance.year == year
         ).first()
-        if not balance or (balance.allocated_days - balance.used_days) < total_days:
-            raise HTTPException(400, f"Insufficient {leave_type.name} balance. Available: {(balance.allocated_days - balance.used_days) if balance else 0} days")
+        available = (balance.allocated_days - balance.used_days) if balance else 0.0
+        
+        if available < total_days:
+            lop_overflow = get_hr_config(db, "lop_overflow", True)
+            if not lop_overflow:
+                raise HTTPException(400, f"Insufficient {leave_type.name} balance. Available: {available} days")
+            
+            # Auto-split!
+            paid_days = max(0.0, available)
+            unpaid_days = total_days - paid_days
+            
+            if paid_days == 0:
+                lop_type = db.query(HRLeaveType).filter(HRLeaveType.code == "LOP").first()
+                if not lop_type:
+                    raise HTTPException(400, "LOP leave type not configured in master.")
+                leave_type = lop_type
+                data.leave_type_id = lop_type.id
+                # Proceeds to save a full LOP request
+            else:
+                # Split dates precisely skipping Sundays (weekday == 6)
+                current = data.from_date
+                days_counted = 0.0
+                while days_counted < paid_days:
+                    if current.weekday() != 6:
+                        if data.is_half_day:
+                            days_counted += 0.5
+                        else:
+                            days_counted += 1.0
+                    if days_counted == paid_days:
+                        break
+                    current += timedelta(days=1)
+                
+                paid_to_date = current
+                unpaid_from_date = paid_to_date + timedelta(days=1)
+                while unpaid_from_date.weekday() == 6:
+                    unpaid_from_date += timedelta(days=1)
+                
+                lop_type = db.query(HRLeaveType).filter(HRLeaveType.code == "LOP").first()
+                if not lop_type:
+                    raise HTTPException(400, "LOP leave type not configured in master.")
+                
+                auto_approve_at = datetime.utcnow() + timedelta(hours=6)
+                ref_paid = _next_leave_ref(db)
+                req_paid = HRLeaveRequest(
+                    reference=ref_paid,
+                    employee_id=data.employee_id,
+                    leave_type_id=data.leave_type_id,
+                    from_date=data.from_date,
+                    to_date=paid_to_date,
+                    total_days=paid_days,
+                    is_half_day=data.is_half_day,
+                    half_day_session=data.half_day_session,
+                    reason=data.reason,
+                    approver_id=emp.manager_id,
+                    auto_approve_at=auto_approve_at,
+                )
+                db.add(req_paid)
+                db.flush()
+                
+                ref_unpaid = _next_leave_ref(db)
+                req_unpaid = HRLeaveRequest(
+                    reference=ref_unpaid,
+                    employee_id=data.employee_id,
+                    leave_type_id=lop_type.id,
+                    from_date=unpaid_from_date,
+                    to_date=data.to_date,
+                    total_days=unpaid_days,
+                    is_half_day=data.is_half_day,
+                    half_day_session=data.half_day_session,
+                    reason=f"{data.reason or ''} (Overflow from {leave_type.code})".strip(),
+                    approver_id=emp.manager_id,
+                    auto_approve_at=auto_approve_at,
+                )
+                db.add(req_unpaid)
+                
+                if emp.manager_id:
+                    manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
+                    if manager and manager.user_id:
+                        _notify(db, manager.user_id,
+                                "Leave Split Submitted",
+                                f"{emp.name} requested leave which was split: {paid_days}d of {leave_type.name} and {unpaid_days}d of LOP.",
+                                "leave", req_paid.id)
+                db.commit()
+                return {
+                    "id": req_paid.id,
+                    "reference": req_paid.reference,
+                    "status": "pending",
+                    "message": f"Applied successfully. Split into {paid_days} days of {leave_type.name} (Paid) and {unpaid_days} days of LOP (Unpaid) due to insufficient balance."
+                }
 
+    # Normal single request creation
     auto_approve_at = datetime.utcnow() + timedelta(hours=6)
     req = HRLeaveRequest(
         reference=_next_leave_ref(db),

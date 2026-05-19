@@ -51,6 +51,31 @@ class AttendanceCorrect(BaseModel):
     check_out: Optional[datetime] = None
     correction_reason: str
 
+def _is_sandwich_day(db: Session, employee_id: int, target_date: date) -> bool:
+    # preceding date & following date
+    prev_date = target_date - timedelta(days=1)
+    next_date = target_date + timedelta(days=1)
+    
+    rec_prev = db.query(HRAttendanceRecord).filter(
+        HRAttendanceRecord.employee_id == employee_id,
+        HRAttendanceRecord.date == prev_date
+    ).first()
+    rec_next = db.query(HRAttendanceRecord).filter(
+        HRAttendanceRecord.employee_id == employee_id,
+        HRAttendanceRecord.date == next_date
+    ).first()
+    
+    def is_absent_or_leave(rec, dt):
+        if rec:
+            return rec.status in ["absent", "leave", "sandwich_lop"]
+        today = date.today()
+        if dt < today:
+            # Past working days without records default to absent
+            return True
+        return False
+        
+    return is_absent_or_leave(rec_prev, prev_date) and is_absent_or_leave(rec_next, next_date)
+
 # ── Core: compute attendance status for one employee on one date ──────────────
 def compute_record(db: Session, employee_id: int, target_date: date):
     emp = db.query(HREmployee).filter(HREmployee.id == employee_id).first()
@@ -109,7 +134,36 @@ def compute_record(db: Session, employee_id: int, target_date: date):
     if shift:
         day_abbr = DAY_MAP[target_date.weekday()]
         if day_abbr not in (shift.working_days or []):
-            record.status = "weekly_off"
+            from app.routers.hr_config import get_hr_config
+            enable_sandwich = get_hr_config(db, "enable_sandwich_highlight", True)
+            auto_deduct = get_hr_config(db, "auto_deduct_sandwich", False)
+            
+            is_sandwich = _is_sandwich_day(db, employee_id, target_date)
+            
+            # Holiday Check: if Sunday is marked as holiday, sandwich doesn't apply
+            holiday = db.query(HRHoliday).filter(
+                HRHoliday.date == target_date,
+                HRHoliday.is_active == True,
+                (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
+            ).first()
+            
+            if not holiday and enable_sandwich and is_sandwich:
+                if auto_deduct:
+                    # Automatically deduct unless HR manually ignored it
+                    if not record.correction_reason or "Ignored" not in (record.correction_reason or ""):
+                        record.status = "sandwich_lop"
+                else:
+                    # Sandwich detected but auto-deduct off. Keep as weekly_off (revert from sandwich_lop if it was one)
+                    if record.status == "sandwich_lop":
+                        record.status = "weekly_off"
+            else:
+                # Not a sandwich day, revert status to weekly_off if it was sandwich_lop
+                if record.status == "sandwich_lop":
+                    record.status = "weekly_off"
+            
+            if record.status != "sandwich_lop":
+                record.status = "weekly_off"
+                
             db.commit()
             return record
 
@@ -396,4 +450,106 @@ def bulk_sync(data: BulkSync, db: Session = Depends(get_db)):
         compute_record(db, emp_id, target_date)
         
     return {"message": "Bulk sync complete", "imported": imported, "skipped": skipped}
+
+
+# ── Sandwich Leave Endpoints ───────────────────────────────────────────────
+class SandwichDecision(BaseModel):
+    employee_id: int
+    date: date
+    action: str  # deduct or ignore
+    reason: Optional[str] = None
+
+@router.get("/sandwich-leaves")
+def get_sandwich_leaves(
+    month: int,
+    year: int,
+    branch_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    import calendar
+    _, last_day = calendar.monthrange(year, month)
+    sundays = []
+    for d in range(1, last_day + 1):
+        dt = date(year, month, d)
+        if dt.weekday() == 6: # Sunday
+            sundays.append(dt)
+            
+    q = db.query(HREmployee).filter(HREmployee.is_active == True)
+    if branch_id:
+        q = q.filter(HREmployee.branch_id == branch_id)
+    employees = q.all()
+    
+    sandwich_list = []
+    for emp in employees:
+        for sun in sundays:
+            sat = sun - timedelta(days=1)
+            mon = sun + timedelta(days=1)
+            
+            rec_sun = db.query(HRAttendanceRecord).filter(
+                HRAttendanceRecord.employee_id == emp.id,
+                HRAttendanceRecord.date == sun
+            ).first()
+            
+            rec_sat = db.query(HRAttendanceRecord).filter(
+                HRAttendanceRecord.employee_id == emp.id,
+                HRAttendanceRecord.date == sat
+            ).first()
+            rec_mon = db.query(HRAttendanceRecord).filter(
+                HRAttendanceRecord.employee_id == emp.id,
+                HRAttendanceRecord.date == mon
+            ).first()
+            
+            sat_status = rec_sat.status if rec_sat else ("absent" if sat < date.today() else "no_record")
+            mon_status = rec_mon.status if rec_mon else ("absent" if mon < date.today() else "no_record")
+            
+            is_pot = sat_status in ["absent", "leave", "sandwich_lop"] and mon_status in ["absent", "leave", "sandwich_lop"]
+            
+            if is_pot:
+                sandwich_list.append({
+                    "employee_id": emp.id,
+                    "employee_name": emp.name,
+                    "employee_code": emp.employee_id,
+                    "date": str(sun),
+                    "sat_status": sat_status,
+                    "mon_status": mon_status,
+                    "current_status": rec_sun.status if rec_sun else "weekly_off",
+                    "reason": rec_sun.correction_reason if rec_sun else None,
+                    "decided_by": rec_sun.corrected_by if rec_sun else None,
+                })
+                
+    return sandwich_list
+
+
+@router.post("/sandwich-decision")
+def post_sandwich_decision(
+    data: SandwichDecision,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    record = db.query(HRAttendanceRecord).filter(
+        HRAttendanceRecord.employee_id == data.employee_id,
+        HRAttendanceRecord.date == data.date
+    ).first()
+    
+    if not record:
+        record = HRAttendanceRecord(
+            employee_id=data.employee_id,
+            date=data.date,
+            status="weekly_off"
+        )
+        db.add(record)
+        
+    if data.action == "deduct":
+        record.status = "sandwich_lop"
+        record.correction_reason = data.reason or "Deducted as Sandwich LOP"
+        record.corrected_by = current_user.id
+    elif data.action == "ignore":
+        record.status = "weekly_off"
+        record.correction_reason = data.reason or "Ignored sandwich LOP"
+        record.corrected_by = current_user.id
+        
+    db.commit()
+    return {"message": f"Deduction {data.action}ed successfully."}
+
 

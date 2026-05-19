@@ -220,10 +220,10 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             elif rec.status == "half_day": half_days += 1
             elif rec.status == "leave": leave_days += 1
             elif rec.status == "on_duty": on_duty_days += 1
-            elif rec.status == "absent": absent_days_count += 1
+            elif rec.status in ["absent", "sandwich_lop"]: absent_days_count += 1
             
             # LOP Logic
-            if rec.status == "absent":
+            if rec.status in ["absent", "sandwich_lop"]:
                 lop_days += 1
             elif rec.status == "half_day":
                 lop_days += 0.5
