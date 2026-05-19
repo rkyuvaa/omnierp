@@ -453,7 +453,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts }) {
     for (let i = 0; i < 50; i++) {
       const mid = (low + high) / 2;
       const details = calculateSalaryDetails(mid, compList);
-      if (Math.abs(details.netPay - targetNet) < 0.1) {
+      if (Math.abs(details.netPay - targetNet) < 0.00001) {
         bestGross = mid;
         break;
       }
