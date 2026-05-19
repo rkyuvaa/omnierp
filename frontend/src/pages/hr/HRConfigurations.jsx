@@ -403,6 +403,17 @@ export default function HRConfigurations() {
                   <option value="ctc">Total CTC</option>
                 </select>
               </div>
+
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>LOP Denominator Basis</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Set the monthly divisor to include the whole calendar month (e.g. 30 days) or exclude week-offs (e.g. 26 days).</div>
+                </div>
+                <select value={configs.lop_denominator_basis || 'working_days'} onChange={e => updateConfig('lop_denominator_basis', e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
+                  <option value="working_days">Exclude Week Offs (e.g. 26 Days)</option>
+                  <option value="calendar_days">Whole Month's Days (e.g. 30 Days)</option>
+                </select>
+              </div>
             </div>
           </div>
         )}

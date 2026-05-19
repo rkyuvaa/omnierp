@@ -177,6 +177,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     # Global Configs
     global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
     lop_calculation_base = get_hr_config(db, "lop_calculation_base", "gross") # gross or ctc
+    lop_denominator_basis = get_hr_config(db, "lop_denominator_basis", "working_days") # calendar_days or working_days
 
     working_days_count = len([r for r in records if r.status not in ["holiday", "weekly_off"]])
     # If no attendance records found (e.g. month just started or not processed), 
@@ -189,11 +190,14 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
 
 
     # 1. Calculate Total Working Days in Month (Denominator)
-    total_working_days_in_month = 0
-    for d in range(1, days_in_month + 1):
-        dt = date(year, month, d)
-        if DAY_MAP[dt.weekday()] in global_working_days:
-            total_working_days_in_month += 1
+    if lop_denominator_basis == "calendar_days":
+        total_working_days_in_month = days_in_month
+    else:
+        total_working_days_in_month = 0
+        for d in range(1, days_in_month + 1):
+            dt = date(year, month, d)
+            if DAY_MAP[dt.weekday()] in global_working_days:
+                total_working_days_in_month += 1
 
     # 2. Calculate LOP Days (Numerator subtraction)
     # We look at every day of the month.
