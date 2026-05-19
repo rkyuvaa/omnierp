@@ -489,6 +489,7 @@ def list_payroll(
             "status": r.status,
         })
     
+    response_data.sort(key=lambda x: (x["employee_name"] or "").lower())
     return response_data
 
 
