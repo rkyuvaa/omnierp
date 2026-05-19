@@ -150,6 +150,7 @@ def get_employee(emp_id: int, db: Session = Depends(get_db), current_user: User 
             "allocated_days": b.allocated_days,
             "used_days": b.used_days,
             "remaining_days": b.allocated_days - b.used_days,
+            "monthly_limit": b.monthly_limit or 0.0,
         }
         for b in balances
     ]
