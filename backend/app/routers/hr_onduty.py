@@ -90,8 +90,10 @@ def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user:
 def my_onduty_requests(employee_id: int, status: Optional[str] = None,
                        db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
+        from app.auth import get_current_employee_optional
+        emp = get_current_employee_optional(current_user, db)
+        if not emp:
+            return []
         if employee_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own requests.")
         employee_id = emp.id
@@ -103,8 +105,10 @@ def my_onduty_requests(employee_id: int, status: Optional[str] = None,
 @router.get("/pending")
 def pending_onduty(approver_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
+        from app.auth import get_current_employee_optional
+        emp = get_current_employee_optional(current_user, db)
+        if not emp:
+            return []
         if approver_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own pending approvals.")
         reqs = db.query(HROnDutyRequest).filter(

@@ -314,10 +314,10 @@ def manual_punch(data: PunchManual, db: Session = Depends(get_db), current_user:
 @router.get("/today/{employee_id}")
 def today_status(employee_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp_resolved = get_current_employee(current_user, db)
-        if employee_id != emp_resolved.id:
-            raise HTTPException(status_code=403, detail="Access denied.")
+        from app.auth import get_current_employee_optional
+        emp_resolved = get_current_employee_optional(current_user, db)
+        if not emp_resolved or employee_id != emp_resolved.id:
+            return {"status": "no_record"}
 
     today = datetime.utcnow().date()
     record = compute_record(db, employee_id, today)
@@ -348,8 +348,10 @@ def get_records(
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp_resolved = get_current_employee(current_user, db)
+        from app.auth import get_current_employee_optional
+        emp_resolved = get_current_employee_optional(current_user, db)
+        if not emp_resolved:
+            return {}
         if employee_id and employee_id != emp_resolved.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own records.")
         employee_id = emp_resolved.id
@@ -409,10 +411,10 @@ def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), c
 def get_punches(employee_id: int, target_date: date = None,
                 db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp_resolved = get_current_employee(current_user, db)
-        if employee_id != emp_resolved.id:
-            raise HTTPException(status_code=403, detail="Access denied.")
+        from app.auth import get_current_employee_optional
+        emp_resolved = get_current_employee_optional(current_user, db)
+        if not emp_resolved or employee_id != emp_resolved.id:
+            return []
 
     q = db.query(HRAttendancePunch).filter(HRAttendancePunch.employee_id == employee_id)
     if target_date:

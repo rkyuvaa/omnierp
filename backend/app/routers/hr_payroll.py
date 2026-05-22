@@ -450,8 +450,10 @@ def list_payroll(
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp_resolved = get_current_employee(current_user, db)
+        from app.auth import get_current_employee_optional
+        emp_resolved = get_current_employee_optional(current_user, db)
+        if not emp_resolved:
+            return []
         q = db.query(HRPayrollRecord).filter(
             HRPayrollRecord.month == month,
             HRPayrollRecord.year == year,
@@ -702,10 +704,10 @@ def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Dep
 @router.get("/arrears/{employee_id}")
 def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp_resolved = get_current_employee(current_user, db)
-        if employee_id != emp_resolved.id:
-            raise HTTPException(status_code=403, detail="Access denied.")
+        from app.auth import get_current_employee_optional
+        emp_resolved = get_current_employee_optional(current_user, db)
+        if not emp_resolved or employee_id != emp_resolved.id:
+            return []
     q = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == employee_id)
     if status:
         q = q.filter(HRArrearRecord.status == status)

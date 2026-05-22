@@ -125,8 +125,10 @@ def get_balances(
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
+        from app.auth import get_current_employee_optional
+        emp = get_current_employee_optional(current_user, db)
+        if not emp:
+            return []
         if employee_id and employee_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own balance.")
         employee_id = emp.id
@@ -345,8 +347,10 @@ def my_requests(
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
+        from app.auth import get_current_employee_optional
+        emp = get_current_employee_optional(current_user, db)
+        if not emp:
+            return []
         if employee_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own requests.")
         employee_id = emp.id
@@ -364,8 +368,10 @@ def pending_approvals(
     current_user: User = Depends(get_current_user)
 ):
     if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
+        from app.auth import get_current_employee_optional
+        emp = get_current_employee_optional(current_user, db)
+        if not emp:
+            return []
         if approver_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own pending approvals.")
         reqs = db.query(HRLeaveRequest).filter(
