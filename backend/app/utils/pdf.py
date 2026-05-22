@@ -155,24 +155,16 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     has_active_leaves = False
     if leave_summary:
         for ls in leave_summary:
-            # Safely parse values as float (handling None/Null and float matching)
-            allocated = float(ls.get('allocated') or 0)
-            used = float(ls.get('used') or 0)
-            taken_this_month = float(ls.get('taken_this_month') or 0)
-            balance = float(ls.get('balance') or 0)
-            
-            # Skip if allocated, used, taken_this_month, and balance are all 0 or less
-            if allocated <= 0 and used <= 0 and taken_this_month <= 0 and balance <= 0:
+            code = (ls.get('code') or '').upper()
+            if code not in ['CL', 'SL']:
                 continue
                 
+            taken_this_month = float(ls.get('taken_this_month') or 0)
             has_active_leaves = True
             leave_rows += f"""
             <tr>
                 <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0;">{ls['name']} ({ls['code']})</td>
-                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center;">{allocated:.1f}</td>
-                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center;">{used:.1f}</td>
                 <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center;">{taken_this_month:.1f}</td>
-                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">{balance:.1f}</td>
             </tr>
             """
 
@@ -184,11 +176,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             <table class="comp-tbl" style="width: 100%; border-collapse: collapse;">
                 <thead>
                     <tr style="background: #f8fafc; font-weight: bold; color: #1a3c5e;">
-                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; width: 40%;">Leave Type</td>
-                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Allocated</td>
-                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Used (Year)</td>
-                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Taken This Month</td>
-                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Remaining Balance</td>
+                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; width: 60%;">Leave Type</td>
+                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 40%;">Taken This Month</td>
                     </tr>
                 </thead>
                 <tbody>
