@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.database import get_db
@@ -16,6 +16,8 @@ def get_notifications(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not current_user.is_superadmin:
+        user_id = current_user.id
     q = db.query(HRNotification).filter(HRNotification.user_id == user_id)
     if unread_only:
         q = q.filter(HRNotification.is_read == False)
@@ -29,6 +31,8 @@ def get_notifications(
 
 @router.get("/unread-count")
 def unread_count(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        user_id = current_user.id
     count = db.query(HRNotification).filter(
         HRNotification.user_id == user_id,
         HRNotification.is_read == False
@@ -39,12 +43,16 @@ def unread_count(user_id: int, db: Session = Depends(get_db), current_user: User
 def mark_read(notif_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     notif = db.query(HRNotification).filter(HRNotification.id == notif_id).first()
     if notif:
+        if not current_user.is_superadmin and notif.user_id != current_user.id:
+            raise HTTPException(403, "Not authorized to read this notification")
         notif.is_read = True
         db.commit()
     return {"message": "Marked as read"}
 
 @router.post("/mark-all-read")
 def mark_all_read(user_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        user_id = current_user.id
     db.query(HRNotification).filter(
         HRNotification.user_id == user_id,
         HRNotification.is_read == False
