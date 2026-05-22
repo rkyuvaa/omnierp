@@ -69,7 +69,7 @@ def num_to_words(n: float) -> str:
     return ' '.join(parts)
 
 
-def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None) -> str:
+def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None, uan: str = '-', leave_summary: list = None) -> str:
     company_name    = 'Konwert India Motors Private Limited'
     company_address = 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108'
     company_gstin   = '33AAHCK7681B1ZL'
@@ -151,6 +151,21 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     ded_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in deductions.items()])
     cont_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in employer_cont.items()])
 
+    leave_rows = ""
+    if leave_summary:
+        for ls in leave_summary:
+            leave_rows += f"""
+            <tr>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0;">{ls['name']} ({ls['code']})</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center;">{ls['allocated']:.1f}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center;">{ls['used']:.1f}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center;">{ls['taken_this_month']:.1f}</td>
+                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">{ls['balance']:.1f}</td>
+            </tr>
+            """
+    else:
+        leave_rows = "<tr><td colspan='5' style='text-align: center; color: #94a3b8; padding: 10px;'>No leave records available</td></tr>"
+
     html = f"""
     <html>
     <head><meta charset="utf-8"/><style>{css}</style></head>
@@ -188,6 +203,10 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                 <tr>
                     <td class="lbl">Designation</td><td class="sep">:</td><td class="val">{designation}</td>
                     <td class="lbl">Pay Date</td><td class="sep">:</td><td class="val">{calendar.monthrange(year, record.month)[1]}-{month_name[:3]}-{year}</td>
+                </tr>
+                <tr>
+                    <td class="lbl">UAN</td><td class="sep">:</td><td class="val">{uan}</td>
+                    <td class="lbl"></td><td class="sep"></td><td class="val"></td>
                 </tr>
             </table>
 
@@ -243,6 +262,23 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                         <div class="net-words">({net_words})</div>
                     </td>
                 </tr>
+            </table>
+
+            <!-- LEAVE SUMMARY -->
+            <div class="section-title">Leave Details</div>
+            <table class="comp-tbl" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8fafc; font-weight: bold; color: #1a3c5e;">
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; width: 40%;">Leave Type</td>
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Allocated</td>
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Used (Year)</td>
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Taken This Month</td>
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Remaining Balance</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {leave_rows}
+                </tbody>
             </table>
             
             <div class="footer-note">

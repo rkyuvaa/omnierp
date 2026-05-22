@@ -7,7 +7,7 @@ from calendar import monthrange
 from app.database import get_db
 from app.models import User, FormDefinition
 from app.auth import get_current_user, require_admin
-from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord, HRConfig
+from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord, HRConfig, HRLeaveRequest
 from app.routers.hr_config import get_hr_config
 from app.utils.pdf import generate_payslip_html, render_to_pdf
 from sqlalchemy import extract
@@ -594,7 +594,68 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
     fields_config = payroll_template.fields_config if payroll_template else []
 
     month_name = MONTH_NAMES[record.month]
-    html = generate_payslip_html(record, employee, month_name, record.year, pdf_cfg, fields_config)
+
+    # Calculate leave details for the current month
+    start_date = date(record.year, record.month, 1)
+    end_date = date(record.year, record.month, monthrange(record.year, record.month)[1])
+
+    # Fetch all active leave types
+    leave_types = db.query(HRLeaveType).filter(HRLeaveType.is_active == True).all()
+
+    leave_summary = []
+    for lt in leave_types:
+        bal = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == employee.id,
+            HRLeaveBalance.leave_type_id == lt.id,
+            HRLeaveBalance.year == record.year
+        ).first()
+
+        allocated = bal.allocated_days if bal else 0.0
+        used = bal.used_days if bal else 0.0
+        remaining = (allocated - used) if bal else 0.0
+
+        # Calculate leaves taken in the current month
+        month_leaves = db.query(HRLeaveRequest).filter(
+            HRLeaveRequest.employee_id == employee.id,
+            HRLeaveRequest.leave_type_id == lt.id,
+            HRLeaveRequest.status.in_(["approved", "auto_approved"]),
+            HRLeaveRequest.from_date <= end_date,
+            HRLeaveRequest.to_date >= start_date
+        ).all()
+
+        taken_this_month = 0.0
+        for req in month_leaves:
+            overlap_start = max(req.from_date, start_date)
+            overlap_end = min(req.to_date, end_date)
+            overlap_days = (overlap_end - overlap_start).days + 1
+            if req.is_half_day:
+                if overlap_days > 0:
+                    taken_this_month += 0.5
+            else:
+                if req.from_date >= start_date and req.to_date <= end_date:
+                    taken_this_month += req.total_days
+                else:
+                    taken_this_month += min(req.total_days, float(overlap_days))
+
+        leave_summary.append({
+            "name": lt.name,
+            "code": lt.code,
+            "allocated": allocated,
+            "used": used,
+            "taken_this_month": taken_this_month,
+            "balance": remaining
+        })
+
+    html = generate_payslip_html(
+        record, 
+        employee, 
+        month_name, 
+        record.year, 
+        pdf_cfg, 
+        fields_config, 
+        uan=employee.uan or "-", 
+        leave_summary=leave_summary
+    )
     pdf_bytes = render_to_pdf(html)
 
     if not pdf_bytes:
