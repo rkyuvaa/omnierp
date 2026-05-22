@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models import User
 from app.auth import get_current_user, require_admin
 from app.hr_models import HROnDutyRequest, HREmployee, HRAttendanceRecord, HRNotification
+from app.routers.hr_config import get_hr_config
 
 router = APIRouter()
 
@@ -63,7 +64,8 @@ def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user:
     emp = db.query(HREmployee).filter(HREmployee.id == data.employee_id).first()
     if not emp: raise HTTPException(404, "Employee not found")
 
-    auto_approve_at = datetime.utcnow() + timedelta(hours=6)
+    auto_approve_hours = get_hr_config(db, "leave_auto_approve_hours", 6)
+    auto_approve_at = datetime.utcnow() + timedelta(hours=float(auto_approve_hours))
     req = HROnDutyRequest(
         reference=_next_od_ref(db),
         employee_id=data.employee_id,

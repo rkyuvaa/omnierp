@@ -338,6 +338,33 @@ export default function HRConfigurations() {
           <div style={{ maxWidth: 700 }}>
             <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Attendance & Payroll Rules</h3>
             <div style={{ display: 'grid', gap: 20 }}>
+
+              {/* ── Leave Auto-Approval ────────────────────────────── */}
+              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+                <div>
+                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Leave / On-Duty Auto-Approval Time</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>
+                    If a manager doesn't act on a pending request within this many hours, it will be <strong>automatically approved</strong> by the system.
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6 }}>
+                    ⏱ Current: <strong>{configs.leave_auto_approve_hours ?? 6} hour{(configs.leave_auto_approve_hours ?? 6) !== 1 ? 's' : ''}</strong> — applies to both Leave and On-Duty requests
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  <input
+                    type="number"
+                    min="1"
+                    max="168"
+                    step="1"
+                    value={configs.leave_auto_approve_hours ?? 6}
+                    onChange={e => setConfigs(prev => ({ ...prev, leave_auto_approve_hours: parseInt(e.target.value) || 6 }))}
+                    onBlur={e => updateConfig('leave_auto_approve_hours', parseInt(e.target.value) || 6)}
+                    style={{ width: 80, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, fontWeight: 700, textAlign: 'center' }}
+                  />
+                  <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>hrs</span>
+                </div>
+              </div>
+
               <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
                 <div style={{ fontWeight: 700, marginBottom: 4 }}>Global Working Days</div>
                 <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>Define which days are considered standard working days for the organization.</div>

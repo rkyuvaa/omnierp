@@ -262,7 +262,8 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
                 if not lop_type:
                     raise HTTPException(400, "LOP leave type not configured in master.")
                 
-                auto_approve_at = datetime.utcnow() + timedelta(hours=6)
+                auto_approve_hours = get_hr_config(db, "leave_auto_approve_hours", 6)
+                auto_approve_at = datetime.utcnow() + timedelta(hours=float(auto_approve_hours))
                 ref_paid = _next_leave_ref(db)
                 req_paid = HRLeaveRequest(
                     reference=ref_paid,
@@ -312,7 +313,8 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
                 }
 
     # Normal single request creation
-    auto_approve_at = datetime.utcnow() + timedelta(hours=6)
+    auto_approve_hours = get_hr_config(db, "leave_auto_approve_hours", 6)
+    auto_approve_at = datetime.utcnow() + timedelta(hours=float(auto_approve_hours))
     req = HRLeaveRequest(
         reference=_next_leave_ref(db),
         employee_id=data.employee_id,
