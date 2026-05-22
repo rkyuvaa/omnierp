@@ -12,7 +12,8 @@ import {
   Search, 
   Calendar, 
   RefreshCw, 
-  Check 
+  Check,
+  Users
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
