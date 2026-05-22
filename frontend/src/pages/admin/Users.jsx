@@ -18,7 +18,8 @@ const ALL_MODULES = [
   { key: 'service', name: 'Service' },
   { key: 'studio', name: 'Studio' },
   { key: 'warranty', name: 'Product & Warranty' },
-  { key: 'konwertcare', name: 'Konwert Care+' }
+  { key: 'konwertcare', name: 'Konwert Care+' },
+  { key: 'hr', name: 'Attendance & HR' }
 ];
 
 export default function AdminUsers() {
