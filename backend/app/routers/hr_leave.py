@@ -5,7 +5,7 @@ from typing import Optional, List
 from datetime import date, datetime, timedelta
 from app.database import get_db
 from app.models import User
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin
 from app.routers.hr_config import get_hr_config
 from app.hr_models import (
     HRLeaveType, HRLeaveBalance, HRLeaveRequest,
@@ -92,7 +92,7 @@ def list_leave_types(db: Session = Depends(get_db), current_user: User = Depends
              "is_active": t.is_active} for t in types]
 
 @router.post("/types")
-def create_leave_type(data: LeaveTypeCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def create_leave_type(data: LeaveTypeCreate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     if db.query(HRLeaveType).filter(HRLeaveType.code == data.code).first():
         raise HTTPException(400, "Leave type code already exists")
     lt = HRLeaveType(**data.model_dump())
@@ -100,7 +100,7 @@ def create_leave_type(data: LeaveTypeCreate, db: Session = Depends(get_db), curr
     return {"id": lt.id, "name": lt.name, "code": lt.code}
 
 @router.put("/types/{type_id}")
-def update_leave_type(type_id: int, data: LeaveTypeUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_leave_type(type_id: int, data: LeaveTypeUpdate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     lt = db.query(HRLeaveType).filter(HRLeaveType.id == type_id).first()
     if not lt: raise HTTPException(404, "Not found")
     for k, v in data.model_dump(exclude_none=True).items():
@@ -109,7 +109,7 @@ def update_leave_type(type_id: int, data: LeaveTypeUpdate, db: Session = Depends
     return {"id": lt.id, "name": lt.name}
 
 @router.delete("/types/{type_id}")
-def delete_leave_type(type_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def delete_leave_type(type_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     lt = db.query(HRLeaveType).filter(HRLeaveType.id == type_id).first()
     if not lt: raise HTTPException(404, "Not found")
     lt.is_active = False
@@ -124,6 +124,13 @@ def get_balances(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if employee_id and employee_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only view your own balance.")
+        employee_id = emp.id
+
     year = year or datetime.now().year
     q = db.query(HRLeaveBalance).filter(HRLeaveBalance.year == year)
     if employee_id:
@@ -143,7 +150,7 @@ def get_balances(
     } for b in balances]
 
 @router.post("/allocate")
-def allocate_balances(data: AllocateBalance, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def allocate_balances(data: AllocateBalance, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     created, updated = 0, 0
     for emp_id in data.employee_ids:
         existing = db.query(HRLeaveBalance).filter(
@@ -168,7 +175,7 @@ class SingleBalanceUpdate(BaseModel):
     monthly_limit: Optional[float] = 0.0
 
 @router.post("/balances/{employee_id}")
-def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     year = datetime.now().year
     for item in data:
         existing = db.query(HRLeaveBalance).filter(
@@ -190,6 +197,12 @@ def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], 
 # ── Leave Application Routes ─────────────────────────────────────────────────
 @router.post("/apply")
 def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if data.employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only apply leave for yourself.")
+
     emp = db.query(HREmployee).filter(HREmployee.id == data.employee_id).first()
     if not emp: raise HTTPException(404, "Employee not found")
 
@@ -331,6 +344,13 @@ def my_requests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if employee_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only view your own requests.")
+        employee_id = emp.id
+
     q = db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == employee_id)
     if status:
         q = q.filter(HRLeaveRequest.status == status)
@@ -343,10 +363,20 @@ def pending_approvals(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    reqs = db.query(HRLeaveRequest).filter(
-        (HRLeaveRequest.approver_id == approver_id) | (HRLeaveRequest.approver_id == None),
-        HRLeaveRequest.status == "pending"
-    ).order_by(HRLeaveRequest.created_at).all()
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if approver_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only view your own pending approvals.")
+        reqs = db.query(HRLeaveRequest).filter(
+            HRLeaveRequest.approver_id == emp.id,
+            HRLeaveRequest.status == "pending"
+        ).order_by(HRLeaveRequest.created_at).all()
+    else:
+        reqs = db.query(HRLeaveRequest).filter(
+            (HRLeaveRequest.approver_id == approver_id) | (HRLeaveRequest.approver_id == None),
+            HRLeaveRequest.status == "pending"
+        ).order_by(HRLeaveRequest.created_at).all()
     return [_serialize_request(r) for r in reqs]
 
 @router.get("/all")
@@ -354,7 +384,7 @@ def all_requests(
     status: Optional[str] = None,
     employee_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     q = db.query(HRLeaveRequest)
     if status: q = q.filter(HRLeaveRequest.status == status)
@@ -365,6 +395,11 @@ def all_requests(
 def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if req.approver_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to approve this request.")
     if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
 
     req.status = "approved"
@@ -400,6 +435,11 @@ def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db),
 def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if req.approver_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to reject this request.")
     if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
     req.status = "rejected"
     req.approver_remarks = data.remarks
@@ -416,6 +456,11 @@ def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), 
 def cancel_leave(req_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if req.employee_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only cancel your own requests.")
     if req.status != "pending": raise HTTPException(400, "Only pending requests can be cancelled")
     req.status = "cancelled"
     db.commit()

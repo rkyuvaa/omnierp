@@ -66,3 +66,20 @@ def next_sequence(db: Session, module: str) -> str:
     if prefix:
         return f"{prefix}/{year}/{num}{suffix}"
     return f"{year}/{num}{suffix}"
+
+
+def get_current_employee(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.hr_models import HREmployee
+    emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    if not emp:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Current user is not linked to an Employee record"
+        )
+    return emp
+
+
+def get_current_employee_optional(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.hr_models import HREmployee
+    return db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+

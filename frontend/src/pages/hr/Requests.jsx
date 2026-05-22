@@ -3,6 +3,7 @@ import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { PlusCircle, Clock, X, ChevronDown } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 const STATUS_BADGE = {
   pending:       { bg: '#fef3c7', color: '#d97706', label: 'Pending' },
@@ -26,10 +27,21 @@ export default function Requests() {
   const [saving, setSaving] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState('');
 
+  const { user } = useAuth();
+
   useEffect(() => {
-    api.get('/hr/employees/', { params: { is_active: true } }).then(r => { setEmployees(r.data); if (r.data[0]) setSelectedEmp(r.data[0].id); });
+    if (user?.is_superadmin) {
+      api.get('/hr/employees/', { params: { is_active: true } })
+        .then(r => {
+          setEmployees(r.data);
+          if (r.data[0]) setSelectedEmp(r.data[0].id);
+        })
+        .catch(e => console.error(e));
+    } else {
+      setSelectedEmp(user?.employee_id || '');
+    }
     api.get('/hr/leave/types').then(r => setLeaveTypes(r.data.filter(t => t.is_active)));
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     if (!selectedEmp) return;
@@ -50,11 +62,15 @@ export default function Requests() {
   }
 
   async function applyLeave() {
-    if (!leaveForm.employee_id || !leaveForm.leave_type_id || !leaveForm.from_date || !leaveForm.to_date)
+    const finalForm = { ...leaveForm };
+    if (!user?.is_superadmin && user?.employee_id) {
+      finalForm.employee_id = user.employee_id;
+    }
+    if (!finalForm.employee_id || !finalForm.leave_type_id || !finalForm.from_date || !finalForm.to_date)
       return toast.error('Please fill all required fields');
     setSaving(true);
     try {
-      await api.post('/hr/leave/apply', leaveForm);
+      await api.post('/hr/leave/apply', finalForm);
       toast.success('Leave request submitted');
       setShowLeaveModal(false);
       setLeaveForm({ is_half_day: false });
@@ -64,11 +80,15 @@ export default function Requests() {
   }
 
   async function applyOD() {
-    if (!odForm.employee_id || !odForm.date || !odForm.from_time || !odForm.to_time)
+    const finalForm = { ...odForm };
+    if (!user?.is_superadmin && user?.employee_id) {
+      finalForm.employee_id = user.employee_id;
+    }
+    if (!finalForm.employee_id || !finalForm.date || !finalForm.from_time || !finalForm.to_time)
       return toast.error('Please fill all required fields');
     setSaving(true);
     try {
-      await api.post('/hr/onduty/apply', odForm);
+      await api.post('/hr/onduty/apply', finalForm);
       toast.success('On-Duty request submitted');
       setShowODModal(false);
       setODForm({});
@@ -110,9 +130,11 @@ export default function Requests() {
       <div style={{ padding: '0 24px 24px' }}>
         {/* Employee selector (for HR view) */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={selectedEmp} onChange={e => setSelectedEmp(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 200 }}>
-            {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
-          </select>
+          {user?.is_superadmin && (
+            <select value={selectedEmp} onChange={e => setSelectedEmp(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 200 }}>
+              {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
+            </select>
+          )}
           <div style={{ display: 'flex', gap: 8 }}>
             <button style={tabStyle(tab === 'leave')} onClick={() => setTab('leave')}>Leave Requests</button>
             <button style={tabStyle(tab === 'od')} onClick={() => setTab('od')}>On-Duty Requests</button>
@@ -197,13 +219,15 @@ export default function Requests() {
               <button onClick={() => setShowLeaveModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={labelStyle}>Employee</label>
-                <select value={leaveForm.employee_id || ''} onChange={e => setLeaveForm({ ...leaveForm, employee_id: parseInt(e.target.value) })} style={inputStyle}>
-                  <option value="">— Select —</option>
-                  {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
-                </select>
-              </div>
+              {user?.is_superadmin && (
+                <div>
+                  <label style={labelStyle}>Employee</label>
+                  <select value={leaveForm.employee_id || ''} onChange={e => setLeaveForm({ ...leaveForm, employee_id: parseInt(e.target.value) })} style={inputStyle}>
+                    <option value="">— Select —</option>
+                    {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
+                  </select>
+                </div>
+              )}
               <div>
                 <label style={labelStyle}>Leave Type</label>
                 <select value={leaveForm.leave_type_id || ''} onChange={e => setLeaveForm({ ...leaveForm, leave_type_id: parseInt(e.target.value) })} style={inputStyle}>
@@ -244,13 +268,15 @@ export default function Requests() {
               <button onClick={() => setShowODModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              <div>
-                <label style={labelStyle}>Employee</label>
-                <select value={odForm.employee_id || ''} onChange={e => setODForm({ ...odForm, employee_id: parseInt(e.target.value) })} style={inputStyle}>
-                  <option value="">— Select —</option>
-                  {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
-                </select>
-              </div>
+              {user?.is_superadmin && (
+                <div>
+                  <label style={labelStyle}>Employee</label>
+                  <select value={odForm.employee_id || ''} onChange={e => setODForm({ ...odForm, employee_id: parseInt(e.target.value) })} style={inputStyle}>
+                    <option value="">— Select —</option>
+                    {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
+                  </select>
+                </div>
+              )}
               <div><label style={labelStyle}>Date</label><input type="date" value={odForm.date || ''} onChange={e => setODForm({ ...odForm, date: e.target.value })} style={inputStyle} /></div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div><label style={labelStyle}>From Time</label><input type="time" value={odForm.from_time || ''} onChange={e => setODForm({ ...odForm, from_time: e.target.value })} style={inputStyle} /></div>

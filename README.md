@@ -130,3 +130,32 @@ erp/
 - `GET  /api/audit/`
 
 Full Swagger docs: http://localhost:8000/docs
+
+---
+
+## Biometric Integration & Deployment Modes
+
+OmniERP supports two sync models for biometric attendance machines (e.g. eSSL/ZKTeco):
+
+### Mode 1: Local / On-Premise Deployment (Direct Cloud-Pull)
+* **Setup**: If your OmniERP server is hosted on the same local network as your physical biometric machines.
+* **Mechanism**: The backend scheduler connects directly to the machine IPs.
+* **Configuration**: Set `DISABLE_BIOMETRIC_SCHEDULER=false` (default) in `backend/.env`.
+
+### Mode 2: Cloud Deployment (Push-Agent) - Recommended for AWS/Azure
+* **Setup**: If your OmniERP server is hosted in the cloud (e.g., AWS, DigitalOcean) and your biometric machines are on private office networks behind firewalls.
+* **Mechanism**: Use the `scripts/local_sync_agent.py` client on an office PC to securely connect to the local machines and push logs to the cloud API endpoint `/api/hr/attendance/sync/bulk`.
+* **Configuration**: Disable the server-side connection scheduler to prevent connection timeouts and database pool exhaustion:
+  ```env
+  DISABLE_BIOMETRIC_SCHEDULER=true
+  ```
+
+---
+
+## Production Security Best Practices
+
+Before deploying OmniERP to a production environment, implement these security hardening measures:
+
+1. **Restrict CORS Origins**: In `backend/main.py`, restrict `allow_origins` to your specific domain rather than `["*"]`.
+2. **Enforce HTTPS**: Serve the API and frontend behind a secure reverse proxy (like Nginx with Let's Encrypt certificates).
+3. **Database Security**: Ensure the database port `5432` is not publicly exposed; only allow access from the backend container.

@@ -6,7 +6,7 @@ from datetime import datetime
 from calendar import monthrange
 from app.database import get_db
 from app.models import User, FormDefinition
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin
 from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord, HRConfig
 from app.routers.hr_config import get_hr_config
 from app.utils.pdf import generate_payslip_html, render_to_pdf
@@ -371,7 +371,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
 
 
 @router.get("/debug/{emp_id}")
-def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Debug endpoint to inspect salary component resolution for an employee"""
     emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
     if not emp:
@@ -394,7 +394,7 @@ def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_
 
 
 @router.post("/generate")
-def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     results = []
     for emp_id in data.employee_ids:
         emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
@@ -449,10 +449,19 @@ def list_payroll(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    q = db.query(HRPayrollRecord).filter(
-        HRPayrollRecord.month == month,
-        HRPayrollRecord.year == year,
-    )
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        q = db.query(HRPayrollRecord).filter(
+            HRPayrollRecord.month == month,
+            HRPayrollRecord.year == year,
+            HRPayrollRecord.employee_id == emp_resolved.id
+        )
+    else:
+        q = db.query(HRPayrollRecord).filter(
+            HRPayrollRecord.month == month,
+            HRPayrollRecord.year == year,
+        )
     records = q.all()
     
     # Filter out orphaned records where employee was deleted
@@ -494,7 +503,7 @@ def list_payroll(
 
 
 @router.post("/{record_id}/finalize")
-def finalize_payroll(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def finalize_payroll(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Payroll record not found")
     record.status = "finalized"
@@ -504,7 +513,7 @@ def finalize_payroll(record_id: int, db: Session = Depends(get_db), current_user
 
 
 @router.delete("/{record_id}")
-def delete_payroll_record(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def delete_payroll_record(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Payroll record not found")
     db.delete(record)
@@ -513,7 +522,7 @@ def delete_payroll_record(record_id: int, db: Session = Depends(get_db), current
 
 
 @router.post("/bulk-delete")
-def bulk_delete_payroll(data: BulkDeleteRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def bulk_delete_payroll(data: BulkDeleteRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     if not data.record_ids:
         return {"message": "No records selected"}
     db.query(HRPayrollRecord).filter(HRPayrollRecord.id.in_(data.record_ids)).delete(synchronize_session=False)
@@ -522,7 +531,7 @@ def bulk_delete_payroll(data: BulkDeleteRequest, db: Session = Depends(get_db), 
 
 
 @router.post("/bulk-update-status")
-def bulk_update_payroll_status(data: BulkUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def bulk_update_payroll_status(data: BulkUpdateRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     if not data.record_ids:
         return {"message": "No records selected"}
     
@@ -541,6 +550,11 @@ def bulk_update_payroll_status(data: BulkUpdateRequest, db: Session = Depends(ge
 def get_payroll_detail(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if record.employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied.")
     return {
         "id": record.id,
         "employee_name": record.employee.name if record.employee else None,
@@ -559,6 +573,11 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
     """Generate and return a payslip PDF for a payroll record."""
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Payroll record not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if record.employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied.")
     
     employee = record.employee
     if not employee: raise HTTPException(404, "Employee not found")
@@ -600,7 +619,7 @@ class ArrearPayRequest(BaseModel):
     pay_year: int
 
 @router.post("/arrears/hold")
-def hold_arrear(data: ArrearHoldRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def hold_arrear(data: ArrearHoldRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     arrear = HRArrearRecord(
         employee_id=data.employee_id,
         held_month=data.month,
@@ -614,7 +633,7 @@ def hold_arrear(data: ArrearHoldRequest, db: Session = Depends(get_db), current_
     return {"message": "Arrear held successfully", "arrear_id": arrear.id}
 
 @router.post("/arrears/pay")
-def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     arrear = db.query(HRArrearRecord).filter(HRArrearRecord.id == data.arrear_id).first()
     if not arrear: raise HTTPException(404, "Arrear record not found")
     if arrear.status != "held": raise HTTPException(400, "Arrear is already paid or cancelled")
@@ -659,7 +678,7 @@ def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_u
     return {"message": "Arrear payout processed", "amount_paid": pay_amt}
 
 @router.get("/arrears/pending-list")
-def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Return all employees who have pending arrears balance."""
     # Group by employee to show total pending per person
     from sqlalchemy import func
@@ -682,6 +701,11 @@ def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Dep
 
 @router.get("/arrears/{employee_id}")
 def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied.")
     q = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == employee_id)
     if status:
         q = q.filter(HRArrearRecord.status == status)
@@ -696,7 +720,7 @@ def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Ses
     } for a in arrears]
 
 @router.post("/arrears/revert/{arrear_id}")
-def revert_arrear_payout(arrear_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def revert_arrear_payout(arrear_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     arrear = db.query(HRArrearRecord).filter(HRArrearRecord.id == arrear_id).first()
     if not arrear: raise HTTPException(404, "Arrear not found")
     if arrear.status != "paid": raise HTTPException(400, "Only paid arrears can be reverted")
@@ -707,7 +731,7 @@ def revert_arrear_payout(arrear_id: int, db: Session = Depends(get_db), current_
     return {"message": "Payout reverted to held status"}
 
 @router.delete("/arrears/{arrear_id}")
-def delete_arrear(arrear_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def delete_arrear(arrear_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     arrear = db.query(HRArrearRecord).filter(HRArrearRecord.id == arrear_id).first()
     if not arrear: raise HTTPException(404, "Arrear not found")
     db.delete(arrear)

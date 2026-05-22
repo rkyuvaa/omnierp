@@ -32,8 +32,17 @@ const adminItems = [
 const NavItem=({to,label,icon:Icon,active,onClick})=>(<Link to={to} onClick={onClick} className={`nav-item ${active?'active':''}`} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,textDecoration:'none',fontSize:14,fontWeight:active?600:500,color:active?'#ffffff':'var(--text2)',background:active?'var(--accent)':'transparent'}} onMouseEnter={e=>{if(!active){e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)';}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)';}}}><Icon size={18} style={{opacity:active?1:0.8}}/>{label}</Link>);
 
 function HRModule({ isActive, handleNav }) {
+  const { user } = useAuth();
   const [expanded, setExpanded] = useState(true);
-  const isHRActive = hrSubItems.some(i => isActive(i.to));
+  
+  const filteredHRItems = hrSubItems.filter(i => {
+    if (user?.is_superadmin) return true;
+    if (i.to === '/hr/employees' || i.to === '/hr/configurations') return false;
+    if (i.to === '/hr/approvals') return !!user?.is_manager;
+    return true;
+  });
+
+  const isHRActive = filteredHRItems.some(i => isActive(i.to));
   return (
     <div>
       <button
@@ -46,7 +55,7 @@ function HRModule({ isActive, handleNav }) {
       </button>
       {expanded && (
         <div style={{paddingLeft:16}}>
-          {hrSubItems.map(i => (
+          {filteredHRItems.map(i => (
             <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>
           ))}
         </div>

@@ -6,7 +6,7 @@ from datetime import date, datetime, timedelta
 import os, shutil, uuid
 from app.database import get_db
 from app.models import User
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin
 from app.hr_models import (
     HRAttendancePunch, HRAttendanceRecord, HREmployee,
     HRShift, HRHoliday, HRLeaveRequest, HROnDutyRequest
@@ -265,6 +265,12 @@ async def mobile_punch(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only punch for yourself.")
+
     emp = db.query(HREmployee).filter(HREmployee.id == employee_id).first()
     if not emp: raise HTTPException(404, "Employee not found")
 
@@ -295,7 +301,7 @@ async def mobile_punch(
     return {"message": "Punch recorded", "punch_time": str(punch_time), "location": location_name}
 
 @router.post("/punch/manual")
-def manual_punch(data: PunchManual, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def manual_punch(data: PunchManual, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     punch = HRAttendancePunch(
         employee_id=data.employee_id,
         punch_time=data.punch_time,
@@ -307,6 +313,12 @@ def manual_punch(data: PunchManual, db: Session = Depends(get_db), current_user:
 
 @router.get("/today/{employee_id}")
 def today_status(employee_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied.")
+
     today = datetime.utcnow().date()
     record = compute_record(db, employee_id, today)
     if not record:
@@ -335,6 +347,15 @@ def get_records(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if employee_id and employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only view your own records.")
+        employee_id = emp_resolved.id
+        branch_id = None
+        department_id = None
+
     from sqlalchemy import extract
     q = db.query(HRAttendanceRecord).filter(
         extract('month', HRAttendanceRecord.date) == month,
@@ -366,7 +387,7 @@ def get_records(
     return result
 
 @router.post("/correct")
-def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     record = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == data.employee_id,
         HRAttendanceRecord.date == data.date
@@ -387,6 +408,12 @@ def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), c
 @router.get("/punches/{employee_id}")
 def get_punches(employee_id: int, target_date: date = None,
                 db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied.")
+
     q = db.query(HRAttendancePunch).filter(HRAttendancePunch.employee_id == employee_id)
     if target_date:
         day_start = datetime.combine(target_date, datetime.min.time())
@@ -405,7 +432,7 @@ class RecomputeRequest(BaseModel):
     year: int
 
 @router.post("/recompute")
-def recompute_month(data: RecomputeRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def recompute_month(data: RecomputeRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     # Get all active employees
     employees = db.query(HREmployee).filter(HREmployee.is_active == True).all()
     
@@ -479,7 +506,7 @@ def get_sandwich_leaves(
     year: int,
     branch_id: Optional[int] = None,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     import calendar
     _, last_day = calendar.monthrange(year, month)
@@ -539,7 +566,7 @@ def get_sandwich_leaves(
 def post_sandwich_decision(
     data: SandwichDecision,
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: User = Depends(require_admin)
 ):
     record = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == data.employee_id,

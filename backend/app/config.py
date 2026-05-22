@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "changeme-secret-key"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 480
+    DISABLE_BIOMETRIC_SCHEDULER: bool = False
 
     class Config:
         env_file = ".env"

@@ -139,8 +139,15 @@ def start_scheduler():
         scheduler = BackgroundScheduler()
         # Auto-approve check every 5 minutes
         scheduler.add_job(auto_approve_leaves, 'interval', minutes=5, id='auto_approve_leaves')
-        # Biometric sync every 10 minutes
-        scheduler.add_job(sync_all_biometric_machines, 'interval', minutes=10, id='biometric_sync')
+        
+        # Biometric sync every 10 minutes (only if not disabled)
+        from app.config import settings
+        if not settings.DISABLE_BIOMETRIC_SCHEDULER:
+            scheduler.add_job(sync_all_biometric_machines, 'interval', minutes=10, id='biometric_sync')
+            print("[Scheduler] Biometric sync job scheduled")
+        else:
+            print("[Scheduler] Biometric sync job is DISABLED via environment variable")
+            
         scheduler.start()
         print("[Scheduler] HR background jobs started")
         return scheduler

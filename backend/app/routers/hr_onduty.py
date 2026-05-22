@@ -5,7 +5,7 @@ from typing import Optional
 from datetime import date, datetime, timedelta
 from app.database import get_db
 from app.models import User
-from app.auth import get_current_user
+from app.auth import get_current_user, require_admin
 from app.hr_models import HROnDutyRequest, HREmployee, HRAttendanceRecord, HRNotification
 
 router = APIRouter()
@@ -54,6 +54,12 @@ def _serialize(r: HROnDutyRequest):
 
 @router.post("/apply")
 def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if data.employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only apply On-Duty for yourself.")
+
     emp = db.query(HREmployee).filter(HREmployee.id == data.employee_id).first()
     if not emp: raise HTTPException(404, "Employee not found")
 
@@ -83,21 +89,38 @@ def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user:
 @router.get("/my-requests")
 def my_onduty_requests(employee_id: int, status: Optional[str] = None,
                        db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if employee_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only view your own requests.")
+        employee_id = emp.id
+
     q = db.query(HROnDutyRequest).filter(HROnDutyRequest.employee_id == employee_id)
     if status: q = q.filter(HROnDutyRequest.status == status)
     return [_serialize(r) for r in q.order_by(HROnDutyRequest.created_at.desc()).all()]
 
 @router.get("/pending")
 def pending_onduty(approver_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    reqs = db.query(HROnDutyRequest).filter(
-        (HROnDutyRequest.approver_id == approver_id) | (HROnDutyRequest.approver_id == None),
-        HROnDutyRequest.status == "pending"
-    ).all()
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if approver_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You can only view your own pending approvals.")
+        reqs = db.query(HROnDutyRequest).filter(
+            HROnDutyRequest.approver_id == emp.id,
+            HROnDutyRequest.status == "pending"
+        ).all()
+    else:
+        reqs = db.query(HROnDutyRequest).filter(
+            (HROnDutyRequest.approver_id == approver_id) | (HROnDutyRequest.approver_id == None),
+            HROnDutyRequest.status == "pending"
+        ).all()
     return [_serialize(r) for r in reqs]
 
 @router.get("/all")
 def all_onduty(status: Optional[str] = None, employee_id: Optional[int] = None,
-               db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+               db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     q = db.query(HROnDutyRequest)
     if status: q = q.filter(HROnDutyRequest.status == status)
     if employee_id: q = q.filter(HROnDutyRequest.employee_id == employee_id)
@@ -107,6 +130,11 @@ def all_onduty(status: Optional[str] = None, employee_id: Optional[int] = None,
 def approve_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if req.approver_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to approve this request.")
     if req.status != "pending": raise HTTPException(400, f"Already {req.status}")
     req.status = "approved"
     req.approver_remarks = data.remarks
@@ -133,6 +161,11 @@ def approve_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db
 def reject_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+        if req.approver_id != emp.id:
+            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to reject this request.")
     if req.status != "pending": raise HTTPException(400, f"Already {req.status}")
     req.status = "rejected"
     req.approver_remarks = data.remarks

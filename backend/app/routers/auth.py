@@ -32,7 +32,12 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
     return {"access_token": token, "token_type": "bearer"}
 
 @router.get("/me")
-def me(current_user: User = Depends(get_current_user)):
+def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from app.hr_models import HREmployee
+    emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    is_manager = False
+    if emp:
+        is_manager = db.query(HREmployee).filter(HREmployee.manager_id == emp.id).first() is not None
     return {
         "id": current_user.id,
         "name": current_user.name,
@@ -42,8 +47,12 @@ def me(current_user: User = Depends(get_current_user)):
         "role_id": current_user.role_id,
         "branch_id": current_user.branch_id,
         "department_id": current_user.department_id,
-        "allowed_branches": current_user.allowed_branches or []
+        "allowed_branches": current_user.allowed_branches or [],
+        "employee_id": emp.id if emp else None,
+        "employee_code": emp.employee_id if emp else None,
+        "is_manager": is_manager
     }
+
 
 @router.post("/setup")
 def initial_setup(db: Session = Depends(get_db)):

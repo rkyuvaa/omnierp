@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
+import { useAuth } from '../../hooks/useAuth';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -50,6 +51,7 @@ function getAvatarBg(name) {
 }
 
 export default function Attendance() {
+  const { user } = useAuth();
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
@@ -88,7 +90,11 @@ export default function Attendance() {
         api.get('/hr/attendance/records', { params }),
         api.get('/hr/holidays/', { params: { month, year } }),
       ]);
-      setEmployees(emps.data);
+      let empsData = emps.data;
+      if (!user?.is_superadmin && user?.employee_id) {
+        empsData = empsData.filter(e => e.id === user.employee_id);
+      }
+      setEmployees(empsData);
       setRecords(recs.data);
       setHolidays(hols.data || []);
     } catch { toast.error('Failed to load attendance'); }
@@ -260,68 +266,78 @@ export default function Attendance() {
           </div>
 
           {/* Search Box */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '6px 12px', minWidth: 220, flex: '1 1 200px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-            <Search size={15} style={{ color: 'var(--text3)' }} />
-            <input 
-              type="text" 
-              placeholder="Search employee..." 
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: 'var(--text)', width: '100%', fontFamily: 'inherit' }}
-            />
-          </div>
+          {user?.is_superadmin && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '6px 12px', minWidth: 220, flex: '1 1 200px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <Search size={15} style={{ color: 'var(--text3)' }} />
+              <input 
+                type="text" 
+                placeholder="Search employee..." 
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: 'var(--text)', width: '100%', fontFamily: 'inherit' }}
+              />
+            </div>
+          )}
 
           {/* Branch Select */}
-          <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-            <option value="">All Branches</option>
-            {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-          </select>
+          {user?.is_superadmin && (
+            <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <option value="">All Branches</option>
+              {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          )}
 
           {/* Dept Select */}
-          <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-            <option value="">All Departments</option>
-            {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-          </select>
+          {user?.is_superadmin && (
+            <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <option value="">All Departments</option>
+              {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          )}
 
           {/* Action Buttons */}
-          <button 
-            onClick={runViolationScan} 
-            disabled={scanning} 
-            className="btn" 
-            style={{ 
-              background: 'var(--bg2)', 
-              border: '1px solid rgba(226, 232, 240, 0.8)', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6, 
-              fontWeight: 700, 
-              fontSize: 13,
-              borderRadius: 10,
-              boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-              transition: 'all 0.2s'
-            }}
-            onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
-            onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
-          >
-            <AlertCircle size={14} color="#f59e0b" /> {scanning ? 'Scanning...' : 'Scan Violations'}
-          </button>
+          {user?.is_superadmin && (
+            <>
+              <button 
+                onClick={runViolationScan} 
+                disabled={scanning} 
+                className="btn" 
+                style={{ 
+                  background: 'var(--bg2)', 
+                  border: '1px solid rgba(226, 232, 240, 0.8)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 6, 
+                  fontWeight: 700, 
+                  fontSize: 13,
+                  borderRadius: 10,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
+              >
+                <AlertCircle size={14} color="#f59e0b" /> {scanning ? 'Scanning...' : 'Scan Violations'}
+              </button>
 
-          <button 
-            onClick={recomputeRecords} 
-            className="btn btn-primary" 
-            style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 6, 
-              fontWeight: 700, 
-              fontSize: 13,
-              borderRadius: 10,
-              boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
-              transition: 'all 0.2s'
-            }}
-          >
-            <RefreshCw size={14} /> Recompute Month
-          </button>
+              <button 
+                onClick={recomputeRecords} 
+                className="btn btn-primary" 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 6, 
+                  fontWeight: 700, 
+                  fontSize: 13,
+                  borderRadius: 10,
+                  boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <RefreshCw size={14} /> Recompute Month
+              </button>
+            </>
+          )}
         </div>
 
         {/* Status Legend capsules shelf */}
@@ -492,10 +508,10 @@ export default function Attendance() {
                               }}
                             >
                               <div
-                                title={v ? v.label : (cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}` : `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct`)}
-                                onClick={() => openCorrect(emp, d)}
+                                title={v ? v.label : (cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}` : (user?.is_superadmin ? `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct` : `Empty (${d.num} ${MONTH_NAMES[month-1]})`))}
+                                onClick={() => user?.is_superadmin && openCorrect(emp, d)}
                                 style={{
-                                  width: 28, height: 28, margin: '0 auto', borderRadius: 8, cursor: 'pointer',
+                                  width: 28, height: 28, margin: '0 auto', borderRadius: 8, cursor: user?.is_superadmin ? 'pointer' : 'default',
                                   background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
                                   color: cfg ? cfg.color : 'var(--text3)',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -506,12 +522,16 @@ export default function Attendance() {
                                   boxSizing: 'border-box'
                                 }}
                                 onMouseEnter={e => {
-                                  e.currentTarget.style.transform = 'scale(1.08)';
-                                  if (cfg) e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+                                  if (user?.is_superadmin) {
+                                    e.currentTarget.style.transform = 'scale(1.08)';
+                                    if (cfg) e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+                                  }
                                 }}
                                 onMouseLeave={e => {
-                                  e.currentTarget.style.transform = 'scale(1)';
-                                  e.currentTarget.style.boxShadow = cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
+                                  if (user?.is_superadmin) {
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                    e.currentTarget.style.boxShadow = cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
+                                  }
                                 }}
                               >
                                 {cfg ? cfg.label : '·'}
