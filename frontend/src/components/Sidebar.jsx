@@ -43,7 +43,7 @@ function HRModule({ isActive, handleNav }) {
   
   const filteredHRItems = hrSubItems.filter(i => {
     if (user?.is_superadmin) return true;
-    if (i.to === '/hr/employees' || i.to === '/hr/configurations') return false;
+    if (i.to === '/hr/employees' || i.to === '/hr/configurations' || i.to === '/hr/attendance' || i.to === '/hr/payroll') return false;
     if (i.to === '/hr/approvals') return !!user?.is_manager;
     return true;
   });
