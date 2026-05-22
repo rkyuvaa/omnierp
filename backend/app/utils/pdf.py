@@ -138,11 +138,11 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     .comp-tbl .total-row { font-weight: bold; background: #f8fafc; color: #1e293b; }
     
     /* Net Pay Box */
-    .net-tbl { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .net-td { background: #1a3c5e; color: #fff; padding: 15px; text-align: center; border-radius: 4px; }
-    .net-title { font-size: 9pt; font-weight: bold; margin-bottom: 5px; opacity: 0.9; }
+    .net-tbl { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    .net-td { background: #1a3c5e; color: #fff; padding: 9px; text-align: center; border-radius: 4px; }
+    .net-title { font-size: 9pt; font-weight: bold; margin-bottom: 3px; opacity: 0.9; }
     .net-val { font-size: 18pt; font-weight: bold; }
-    .net-words { font-size: 8pt; margin-top: 8px; font-style: italic; opacity: 0.85; }
+    .net-words { font-size: 8pt; margin-top: 4px; font-style: italic; opacity: 0.85; }
     
     .footer-note { text-align: center; font-size: 7.5pt; color: #94a3b8; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
     """
