@@ -195,44 +195,30 @@ export default function PunchButton() {
           top: 14,
           right: 16,
           zIndex: 9999,
-          width: 46,
-          height: 46,
-          borderRadius: '50%',
-          border: `2.5px solid ${cfg.ring}`,
+          height: 38,
+          padding: '0 16px',
+          borderRadius: 9999,
+          border: `2px solid ${cfg.ring}`,
           background: cfg.gradient,
           boxShadow: cfg.shadow,
           cursor: state === 'done' ? 'not-allowed' : 'pointer',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          transition: 'transform 0.2s, box-shadow 0.2s',
-          transform: pulse ? 'scale(1.25)' : 'scale(1)',
+          gap: 8,
           outline: 'none',
+          color: '#fff',
+          fontWeight: 700,
+          fontSize: 13.5,
+          letterSpacing: '0.3px',
+          transition: 'all 0.2s ease',
         }}
-        onMouseEnter={e => { if (state !== 'done') e.currentTarget.style.transform = 'scale(1.1)'; }}
-        onMouseLeave={e => { e.currentTarget.style.transform = 'scale(1)'; }}
+        onMouseEnter={e => { if (state !== 'done') e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'; }}
+        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
       >
-        <cfg.Icon size={20} color="#fff" strokeWidth={2.5} />
-
-        {/* Pulse ring when checked-in */}
-        {state === 'in' && (
-          <span style={{
-            position: 'absolute', inset: -6, borderRadius: '50%',
-            border: '2px solid #22c55e', opacity: 0.5,
-            animation: 'punch-ping 1.8s ease-out infinite',
-            pointerEvents: 'none',
-          }} />
-        )}
+        <cfg.Icon size={16} color="#fff" strokeWidth={2.5} />
+        <span>{cfg.label}</span>
       </button>
-
-      {/* ── CSS for pulse animation ───────────────────────────────────── */}
-      <style>{`
-        @keyframes punch-ping {
-          0%   { transform: scale(1);   opacity: 0.6; }
-          70%  { transform: scale(1.5); opacity: 0; }
-          100% { transform: scale(1.5); opacity: 0; }
-        }
-      `}</style>
 
       {/* ── Modal ───────────────────────────────────────────────────────── */}
       {showModal && (
