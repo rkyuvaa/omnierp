@@ -265,6 +265,19 @@ class HRNotification(Base):
     user = relationship("User")
 
 
+class HRPushSubscription(Base):
+    __tablename__ = "hr_push_subscriptions"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    endpoint = Column(Text, unique=True, index=True)
+    p256dh = Column(String(200))
+    auth = Column(String(100))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User")
+
+
+
 # ─────────────────────────────────────────────
 # PAYROLL RECORDS (monthly)
 # ─────────────────────────────────────────────

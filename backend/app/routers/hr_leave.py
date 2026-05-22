@@ -11,6 +11,7 @@ from app.hr_models import (
     HRLeaveType, HRLeaveBalance, HRLeaveRequest,
     HREmployee, HRAttendanceRecord, HRNotification
 )
+from app.utils.push_service import send_push_to_user
 
 router = APIRouter()
 
@@ -69,6 +70,11 @@ def _notify(db: Session, user_id: int, title: str, message: str, ref_type: str =
     notif = HRNotification(user_id=user_id, title=title, message=message,
                            reference_type=ref_type, reference_id=ref_id)
     db.add(notif)
+    try:
+        send_push_to_user(user_id, title, message, ref_type, ref_id, db)
+    except Exception as e:
+        print(f"Failed to send push: {e}")
+
 
 def _recompute_attendance(db: Session, employee_id: int, target_date: date):
     """Mark attendance record as 'leave' when leave is approved"""

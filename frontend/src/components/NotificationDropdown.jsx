@@ -1,13 +1,55 @@
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
-import { Bell, Check, Info, AlertTriangle } from 'lucide-react';
+import { Bell, BellOff, Check, Info, AlertTriangle } from 'lucide-react';
+import {
+  isPushSupported,
+  subscribeUser,
+  unsubscribeUser,
+  getSubscriptionStatus
+} from '../utils/pushNotifications';
+
 
 export default function NotificationDropdown() {
   const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pushStatus, setPushStatus] = useState('unsupported');
+  const [isTogglingPush, setIsTogglingPush] = useState(false);
+
+  useEffect(() => {
+    async function loadPushStatus() {
+      if (isPushSupported()) {
+        const status = await getSubscriptionStatus();
+        setPushStatus(status);
+      }
+    }
+    loadPushStatus();
+  }, []);
+
+  const handleTogglePush = async () => {
+    if (isTogglingPush) return;
+    setIsTogglingPush(true);
+    try {
+      if (pushStatus === 'subscribed') {
+        await unsubscribeUser();
+        setPushStatus('unsubscribed');
+      } else {
+        await subscribeUser();
+        setPushStatus('subscribed');
+      }
+    } catch (e) {
+      console.error('Failed to toggle push notifications:', e);
+      if (isPushSupported()) {
+        const status = await getSubscriptionStatus();
+        setPushStatus(status);
+      }
+    } finally {
+      setIsTogglingPush(false);
+    }
+  };
+
 
   useEffect(() => {
     if (!user) return;
@@ -154,26 +196,119 @@ export default function NotificationDropdown() {
               background: 'var(--bg3)',
             }}>
               <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: 14 }}>Notifications</span>
-              {unreadCount > 0 && (
-                <button 
-                  onClick={handleMarkAllRead}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: 'var(--accent2)',
-                    fontSize: 12,
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <Check size={14} />
-                  Mark all read
-                </button>
-              )}
+              
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {pushStatus !== 'unsupported' && (
+                  <button
+                    onClick={handleTogglePush}
+                    disabled={isTogglingPush || pushStatus === 'denied'}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: pushStatus === 'subscribed' ? 'var(--accent)' : 'var(--text3)',
+                      cursor: pushStatus === 'denied' ? 'not-allowed' : 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      outline: 'none',
+                      padding: '2px 4px',
+                      borderRadius: 4,
+                    }}
+                    title={
+                      pushStatus === 'denied'
+                        ? 'Desktop notifications are blocked by browser settings'
+                        : pushStatus === 'subscribed'
+                        ? 'Disable Desktop/Mobile Alerts'
+                        : 'Enable Desktop/Mobile Alerts'
+                    }
+                  >
+                    {pushStatus === 'subscribed' ? (
+                      <Bell size={14} style={{ fill: 'var(--accent)' }} />
+                    ) : (
+                      <BellOff size={14} />
+                    )}
+                    <span style={{ fontSize: 10 }}>Alerts</span>
+                  </button>
+                )}
+
+                {unreadCount > 0 && (
+                  <button 
+                    onClick={handleMarkAllRead}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--accent2)',
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <Check size={14} />
+                    Mark all read
+                  </button>
+                )}
+              </div>
             </div>
+
+            {/* Push Banner Option */}
+            {(pushStatus === 'default' || pushStatus === 'unsubscribed') && (
+              <div style={{
+                padding: '10px 16px',
+                background: 'rgba(25, 84, 2, 0.04)',
+                borderBottom: '1px solid var(--border)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 6,
+              }}>
+                <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500, lineHeight: 1.4 }}>
+                  Enable desktop and mobile push alerts to get real-time notifications even when the app is closed.
+                </div>
+                <button
+                  onClick={handleTogglePush}
+                  disabled={isTogglingPush}
+                  style={{
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: 6,
+                    padding: '5px 10px',
+                    fontSize: 10,
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    alignSelf: 'flex-start',
+                    transition: 'opacity 0.2s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.9'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                >
+                  {isTogglingPush ? 'Enabling...' : '🔔 Enable Push Alerts'}
+                </button>
+              </div>
+            )}
+
+            {/* Blocked Permission Warning */}
+            {pushStatus === 'denied' && (
+              <div style={{
+                padding: '8px 16px',
+                background: 'rgba(239, 68, 68, 0.05)',
+                borderBottom: '1px solid var(--border)',
+                fontSize: 10,
+                color: 'var(--red)',
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}>
+                <AlertTriangle size={12} />
+                <span>Push alerts are blocked. Enable them in your browser settings.</span>
+              </div>
+            )}
+
 
             {/* List */}
             <div style={{

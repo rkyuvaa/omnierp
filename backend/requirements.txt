@@ -13,3 +13,5 @@ python-dotenv==1.0.1
 xhtml2pdf==0.2.11
 pyzk==0.9
 APScheduler==3.10.4
+pywebpush==1.14.0
+

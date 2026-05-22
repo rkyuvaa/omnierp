@@ -8,6 +8,7 @@ from app.models import User
 from app.auth import get_current_user, require_admin
 from app.hr_models import HROnDutyRequest, HREmployee, HRAttendanceRecord, HRNotification
 from app.routers.hr_config import get_hr_config
+from app.utils.push_service import send_push_to_user
 
 router = APIRouter()
 
@@ -30,6 +31,11 @@ def _notify(db, user_id, title, message, ref_type=None, ref_id=None):
     notif = HRNotification(user_id=user_id, title=title, message=message,
                            reference_type=ref_type, reference_id=ref_id)
     db.add(notif)
+    try:
+        send_push_to_user(user_id, title, message, ref_type, ref_id, db)
+    except Exception as e:
+        print(f"Failed to send push: {e}")
+
 
 def _serialize(r: HROnDutyRequest):
     remaining = None

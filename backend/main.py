@@ -4,9 +4,10 @@ from app.database import engine, Base
 from fastapi.staticfiles import StaticFiles
 import os
 from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin
-from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config
+from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions
 from app.hr_models import *  # register HR models with Base
 from app.hr_scheduler import start_scheduler
+
 
 app = FastAPI(title="OmniERP API", version="1.0.0")
 
@@ -88,7 +89,10 @@ app.include_router(hr_salary_components.router, prefix="/api/hr/salary-component
 app.include_router(hr_reports.router, prefix="/api/hr/reports", tags=["HR-Reports"])
 app.include_router(hr_payroll.router, prefix="/api/hr/payroll", tags=["HR-Payroll"])
 app.include_router(hr_notifications.router, prefix="/api/hr/notifications", tags=["HR-Notifications"])
+
+app.include_router(hr_push_subscriptions.router, prefix="/api/hr/push-subscriptions", tags=["HR-Push-Subscriptions"])
 app.include_router(hr_config.router, prefix="/api/hr/config", tags=["HR-Config"])
+
 
 
 from fastapi.responses import FileResponse

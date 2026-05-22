@@ -6,6 +6,8 @@ Background jobs for Attendance & HR module.
 from datetime import datetime
 from app.database import SessionLocal
 from app.hr_models import HRLeaveRequest, HROnDutyRequest, HRBiometricMachine, HRNotification, HRAttendanceRecord, HRLeaveBalance
+from app.utils.push_service import send_push_to_user
+
 
 
 def auto_approve_leaves():
@@ -50,23 +52,36 @@ def auto_approve_leaves():
 
             # Notify employee
             if req.employee and req.employee.user_id:
+                title = "Leave Auto-Approved ⏰"
+                msg = f"Your {req.leave_type.name if req.leave_type else 'leave'} from {req.from_date} to {req.to_date} was auto-approved as no action was taken within 6 hours."
                 notif = HRNotification(
                     user_id=req.employee.user_id,
-                    title="Leave Auto-Approved ⏰",
-                    message=f"Your {req.leave_type.name if req.leave_type else 'leave'} from {req.from_date} to {req.to_date} was auto-approved as no action was taken within 6 hours.",
+                    title=title,
+                    message=msg,
                     reference_type="leave", reference_id=req.id
                 )
                 db.add(notif)
+                try:
+                    send_push_to_user(req.employee.user_id, title, msg, "leave", req.id, db)
+                except Exception as e:
+                    print(f"Failed to send push: {e}")
 
             # Notify approver
             if req.approver and req.approver.user_id:
+                title = "Leave Auto-Approved ⏰"
+                msg = f"{req.employee.name if req.employee else 'An employee'}'s leave request was auto-approved because no action was taken within 6 hours."
                 notif = HRNotification(
                     user_id=req.approver.user_id,
-                    title="Leave Auto-Approved ⏰",
-                    message=f"{req.employee.name if req.employee else 'An employee'}'s leave request was auto-approved because no action was taken within 6 hours.",
+                    title=title,
+                    message=msg,
                     reference_type="leave", reference_id=req.id
                 )
                 db.add(notif)
+                try:
+                    send_push_to_user(req.approver.user_id, title, msg, "leave", req.id, db)
+                except Exception as e:
+                    print(f"Failed to send push: {e}")
+
 
             print(f"[AutoApprove] Leave {req.reference} auto-approved")
 
@@ -93,12 +108,19 @@ def auto_approve_leaves():
             record.onduty_request_id = req.id
 
             if req.employee and req.employee.user_id:
+                title = "On-Duty Auto-Approved ⏰"
+                msg = f"Your On-Duty for {req.date} was auto-approved (no action in 6 hours)."
                 db.add(HRNotification(
                     user_id=req.employee.user_id,
-                    title="On-Duty Auto-Approved ⏰",
-                    message=f"Your On-Duty for {req.date} was auto-approved (no action in 6 hours).",
+                    title=title,
+                    message=msg,
                     reference_type="onduty", reference_id=req.id
                 ))
+                try:
+                    send_push_to_user(req.employee.user_id, title, msg, "onduty", req.id, db)
+                except Exception as e:
+                    print(f"Failed to send push: {e}")
+
             print(f"[AutoApprove] On-Duty {req.reference} auto-approved")
 
         db.commit()
