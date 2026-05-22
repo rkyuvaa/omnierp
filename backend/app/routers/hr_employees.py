@@ -33,6 +33,7 @@ class EmployeeCreate(BaseModel):
     salary_category: Optional[str] = "regular"
     enable_mobile_punch: Optional[bool] = False
     uan: Optional[str] = None
+    esi_number: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
     name: Optional[str] = None
@@ -54,6 +55,7 @@ class EmployeeUpdate(BaseModel):
     salary_category: Optional[str] = None
     enable_mobile_punch: Optional[bool] = None
     uan: Optional[str] = None
+    esi_number: Optional[str] = None
 
 # ── Serializer ────────────────────────────────────────────────────────────────
 def serialize(e: HREmployee):
@@ -81,6 +83,7 @@ def serialize(e: HREmployee):
         "salary_category": e.salary_category or "regular",
         "enable_mobile_punch": e.enable_mobile_punch or False,
         "uan": e.uan or "",
+        "esi_number": e.esi_number or "",
         "is_active": e.is_active,
         "created_at": str(e.created_at),
     }

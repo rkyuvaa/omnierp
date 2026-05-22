@@ -256,6 +256,7 @@ export default function EmployeeMaster() {
                 { key: 'biometric_id', label: 'Biometric ID (eSSL)', type: 'text' },
                 { key: 'basic_salary', label: 'Gross Salary (₹)', type: 'number' },
                 { key: 'uan', label: 'UAN (Universal Account Number)', type: 'text' },
+                { key: 'esi_number', label: 'ESI Number', type: 'text' },
               ].map(f => (
                 <div key={f.key}>
                   <label style={labelStyle}>{f.label}</label>

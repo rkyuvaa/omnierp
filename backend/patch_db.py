@@ -39,6 +39,7 @@ def patch_db():
             # HR module
             ("hr", "hr_employees", "enable_mobile_punch", "BOOLEAN DEFAULT FALSE"),
             ("hr", "hr_employees", "uan", "VARCHAR(50)"),
+            ("hr", "hr_employees", "esi_number", "VARCHAR(50)"),
         ]
         
         for module, table, col, col_type in patches:

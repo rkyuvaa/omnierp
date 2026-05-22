@@ -654,7 +654,8 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
         pdf_cfg, 
         fields_config, 
         uan=employee.uan or "-", 
-        leave_summary=leave_summary
+        leave_summary=leave_summary,
+        esi_number=employee.esi_number or "-"
     )
     pdf_bytes = render_to_pdf(html)
 

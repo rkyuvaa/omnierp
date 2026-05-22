@@ -29,6 +29,7 @@ class HREmployee(Base):
     salary_category = Column(String(50), default="regular")  # "regular" or "fixed"
     enable_mobile_punch = Column(Boolean, default=False)     # allow floating punch button
     uan = Column(String(50), nullable=True)                  # Universal Account Number
+    esi_number = Column(String(50), nullable=True)           # Employee State Insurance Number
     photo_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

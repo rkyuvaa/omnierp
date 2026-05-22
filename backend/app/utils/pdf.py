@@ -69,7 +69,7 @@ def num_to_words(n: float) -> str:
     return ' '.join(parts)
 
 
-def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None, uan: str = '-', leave_summary: list = None) -> str:
+def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None, uan: str = '-', leave_summary: list = None, esi_number: str = '-') -> str:
     company_name    = 'Konwert India Motors Private Limited'
     company_address = 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108'
     company_gstin   = '33AAHCK7681B1ZL'
@@ -226,7 +226,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                 </tr>
                 <tr>
                     <td class="lbl">UAN</td><td class="sep">:</td><td class="val">{uan}</td>
-                    <td class="lbl"></td><td class="sep"></td><td class="val"></td>
+                    <td class="lbl">ESI Number</td><td class="sep">:</td><td class="val">{esi_number}</td>
                 </tr>
             </table>
 
