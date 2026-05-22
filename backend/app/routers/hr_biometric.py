@@ -39,7 +39,7 @@ def serialize(m: HRBiometricMachine):
 # ── Machine CRUD ──────────────────────────────────────────────────────────────
 @router.get("/machines")
 def list_machines(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    return [serialize(m) for m in db.query(HRBiometricMachine).all()]
+    return [serialize(m) for m in db.query(HRBiometricMachine).filter(HRBiometricMachine.is_active == True).all()]
 
 @router.post("/machines")
 def add_machine(data: MachineCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -166,7 +166,7 @@ def test_connection(data: MachineCreate, db: Session = Depends(get_db), current_
 
 @router.get("/sync-log")
 def sync_log(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    machines = db.query(HRBiometricMachine).all()
+    machines = db.query(HRBiometricMachine).filter(HRBiometricMachine.is_active == True).all()
     return [{
         "id": m.id, "name": m.name, "ip_address": m.ip_address,
         "last_sync_at": str(m.last_sync_at) if m.last_sync_at else None,
