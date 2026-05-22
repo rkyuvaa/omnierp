@@ -33,10 +33,11 @@ def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get
 
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
-    from app.hr_models import HREmployee
-    emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    from app.auth import get_current_employee_optional
+    emp = get_current_employee_optional(current_user, db)
     is_manager = False
     if emp:
+        from app.hr_models import HREmployee
         is_manager = db.query(HREmployee).filter(HREmployee.manager_id == emp.id).first() is not None
     return {
         "id": current_user.id,

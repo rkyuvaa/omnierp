@@ -70,7 +70,17 @@ def next_sequence(db: Session, module: str) -> str:
 
 def get_current_employee(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     from app.hr_models import HREmployee
+    # 1. Try to find by direct user_id link
     emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    
+    # 2. Self-healing fallback: Match by email and auto-link user_id
+    if not emp and current_user.email:
+        emp = db.query(HREmployee).filter(HREmployee.email == current_user.email).first()
+        if emp:
+            emp.user_id = current_user.id
+            db.commit()
+            db.refresh(emp)
+            
     if not emp:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -81,5 +91,14 @@ def get_current_employee(current_user: User = Depends(get_current_user), db: Ses
 
 def get_current_employee_optional(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     from app.hr_models import HREmployee
-    return db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    
+    # Self-healing fallback: Match by email and auto-link user_id
+    if not emp and current_user.email:
+        emp = db.query(HREmployee).filter(HREmployee.email == current_user.email).first()
+        if emp and not emp.user_id:
+            emp.user_id = current_user.id
+            db.commit()
+            db.refresh(emp)
+    return emp
 
