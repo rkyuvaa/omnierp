@@ -111,7 +111,19 @@ export default function Sidebar({ isOpen, onClose }) {
         <button className="btn btn-ghost" onClick={() => { logout(); handleNav(); }} style={{width:'100%', display:'flex', alignItems:'center', gap:12, padding:'10px 14px', borderRadius:8, background:'transparent', border:'none', color:'var(--text2)', cursor:'pointer', fontSize:14, fontWeight:600}} onMouseEnter={e=>{e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)'}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)'}}>
           <LogOut size={18} /> Logout
         </button>
+        {user?.name && (
+          <div style={{display:'flex', alignItems:'center', gap:10, padding:'8px 14px 2px 14px'}}>
+            <div style={{width:28, height:28, borderRadius:'50%', background:'var(--accent)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:13, flexShrink:0}}>
+              {user.name.charAt(0).toUpperCase()}
+            </div>
+            <div style={{flex:1, minWidth:0}}>
+              <div style={{fontSize:13, fontWeight:600, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis'}}>{user.name}</div>
+              <div style={{fontSize:11, color:'var(--text3)', marginTop:1}}>{user.is_superadmin ? 'Admin' : 'Employee'}</div>
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );
 }
+

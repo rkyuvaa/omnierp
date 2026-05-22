@@ -186,17 +186,13 @@ export default function PunchButton() {
 
   return (
     <>
-      {/* ── Floating Button ──────────────────────────────────────────── */}
+      {/* ── Inline Topbar Button ─────────────────────────────────────── */}
       <button
         onClick={openFlow}
         title={cfg.label}
         style={{
-          position: 'fixed',
-          top: 14,
-          right: 16,
-          zIndex: 9999,
-          height: 38,
-          padding: '0 16px',
+          height: 36,
+          padding: '0 14px',
           borderRadius: 9999,
           border: `2px solid ${cfg.ring}`,
           background: cfg.gradient,
@@ -205,18 +201,19 @@ export default function PunchButton() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 8,
+          gap: 7,
           outline: 'none',
           color: '#fff',
           fontWeight: 700,
-          fontSize: 13.5,
+          fontSize: 13,
           letterSpacing: '0.3px',
+          flexShrink: 0,
           transition: 'all 0.2s ease',
         }}
         onMouseEnter={e => { if (state !== 'done') e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
       >
-        <cfg.Icon size={16} color="#fff" strokeWidth={2.5} />
+        <cfg.Icon size={15} color="#fff" strokeWidth={2.5} />
         <span>{cfg.label}</span>
       </button>
 

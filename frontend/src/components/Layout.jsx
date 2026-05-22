@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../hooks/useAuth';
-import { User, Menu } from 'lucide-react';
+import { Menu } from 'lucide-react';
 import PunchButton from './PunchButton';
 import NotificationDropdown from './NotificationDropdown';
 
@@ -22,18 +22,14 @@ export default function Layout({ children, title, headerTabs }) {
             <span className="topbar-title">{title}</span>
             {headerTabs && <div style={{ display: 'flex', gap: 4 }}>{headerTabs}</div>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Right side: notification bell + punch button */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <NotificationDropdown />
-            <div className="topbar-user">
-              <User size={14} />
-              <span>{user?.name}</span>
-            </div>
+            <PunchButton />
           </div>
         </div>
         <div className="page-body">{children}</div>
       </div>
-      {/* Global punch button — only visible for employees with enable_mobile_punch */}
-      <PunchButton />
     </div>
   );
 }
