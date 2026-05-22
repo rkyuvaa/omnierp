@@ -44,7 +44,10 @@ export default function Requests() {
   }, [user]);
 
   useEffect(() => {
-    if (!selectedEmp) return;
+    if (!selectedEmp) {
+      setLoading(false);
+      return;
+    }
     fetchRequests();
   }, [selectedEmp]);
 
@@ -66,7 +69,14 @@ export default function Requests() {
     if (!user?.is_superadmin && user?.employee_id) {
       finalForm.employee_id = user.employee_id;
     }
-    if (!finalForm.employee_id || !finalForm.leave_type_id || !finalForm.from_date || !finalForm.to_date)
+    if (!finalForm.employee_id) {
+      return toast.error(
+        user?.is_superadmin
+          ? "Please select an employee."
+          : "Your user account is not linked to an Employee record. Please contact your administrator."
+      );
+    }
+    if (!finalForm.leave_type_id || !finalForm.from_date || !finalForm.to_date)
       return toast.error('Please fill all required fields');
     setSaving(true);
     try {
@@ -84,7 +94,14 @@ export default function Requests() {
     if (!user?.is_superadmin && user?.employee_id) {
       finalForm.employee_id = user.employee_id;
     }
-    if (!finalForm.employee_id || !finalForm.date || !finalForm.from_time || !finalForm.to_time)
+    if (!finalForm.employee_id) {
+      return toast.error(
+        user?.is_superadmin
+          ? "Please select an employee."
+          : "Your user account is not linked to an Employee record. Please contact your administrator."
+      );
+    }
+    if (!finalForm.date || !finalForm.from_time || !finalForm.to_time)
       return toast.error('Please fill all required fields');
     setSaving(true);
     try {
