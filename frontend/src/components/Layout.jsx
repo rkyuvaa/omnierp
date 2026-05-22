@@ -2,6 +2,7 @@ import { useState } from 'react';
 import Sidebar from './Sidebar';
 import { useAuth } from '../hooks/useAuth';
 import { User, Menu } from 'lucide-react';
+import PunchButton from './PunchButton';
 
 export default function Layout({ children, title, headerTabs }) {
   const { user } = useAuth();
@@ -27,6 +28,8 @@ export default function Layout({ children, title, headerTabs }) {
         </div>
         <div className="page-body">{children}</div>
       </div>
+      {/* Global punch button — only visible for employees with enable_mobile_punch */}
+      <PunchButton />
     </div>
   );
 }

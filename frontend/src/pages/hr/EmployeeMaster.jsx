@@ -306,6 +306,41 @@ export default function EmployeeMaster() {
               </div>
             </div>
 
+            {/* Mobile Punch Toggle */}
+            <div style={{
+              marginTop: 16, background: form.enable_mobile_punch ? 'rgba(99,102,241,0.06)' : 'var(--bg2)',
+              border: `1.5px solid ${form.enable_mobile_punch ? '#6366f1' : 'var(--border)'}`,
+              borderRadius: 12, padding: '14px 18px',
+              display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+              transition: 'all 0.2s',
+            }}>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 16 }}>📱</span> Enable Mobile Punch Button
+                  {form.enable_mobile_punch && (
+                    <span style={{ background: '#6366f1', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999 }}>ACTIVE</span>
+                  )}
+                </div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>
+                  Shows a fixed floating Check-In / Check-Out button on every page for this employee.
+                </div>
+              </div>
+              <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, flexShrink: 0, cursor: 'pointer' }}>
+                <input type="checkbox" checked={form.enable_mobile_punch || false}
+                  onChange={e => setForm({ ...form, enable_mobile_punch: e.target.checked })}
+                  style={{ opacity: 0, width: 0, height: 0 }} />
+                <span style={{
+                  position: 'absolute', inset: 0, borderRadius: 999, transition: '0.25s',
+                  background: form.enable_mobile_punch ? '#6366f1' : 'var(--border)',
+                }} />
+                <span style={{
+                  position: 'absolute', top: 3, left: form.enable_mobile_punch ? 23 : 3,
+                  width: 18, height: 18, borderRadius: '50%', background: '#fff',
+                  boxShadow: '0 1px 4px rgba(0,0,0,0.3)', transition: '0.25s',
+                }} />
+              </label>
+            </div>
+
             {/* Salary Components */}
             <div style={{ marginTop: 20 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>

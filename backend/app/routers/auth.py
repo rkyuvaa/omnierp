@@ -51,7 +51,8 @@ def me(current_user: User = Depends(get_current_user), db: Session = Depends(get
         "allowed_branches": current_user.allowed_branches or [],
         "employee_id": emp.id if emp else None,
         "employee_code": emp.employee_id if emp else None,
-        "is_manager": is_manager
+        "is_manager": is_manager,
+        "enable_mobile_punch": emp.enable_mobile_punch if emp else False
     }
 
 

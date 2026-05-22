@@ -27,6 +27,7 @@ class HREmployee(Base):
     salary_template_id = Column(Integer, ForeignKey("hr_salary_templates.id"), nullable=True)
     biometric_id = Column(String(50), nullable=True)      # ID on the biometric machine
     salary_category = Column(String(50), default="regular")  # "regular" or "fixed"
+    enable_mobile_punch = Column(Boolean, default=False)     # allow floating punch button
     photo_url = Column(String(500), nullable=True)
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)

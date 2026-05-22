@@ -35,6 +35,9 @@ def patch_db():
 
             ("konwertcare", "konwert_care_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
             ("konwertcare", "konwert_care_fields", "form_template_id", "INTEGER"),
+
+            # HR module
+            ("hr", "hr_employees", "enable_mobile_punch", "BOOLEAN DEFAULT FALSE"),
         ]
         
         for module, table, col, col_type in patches:
