@@ -98,53 +98,53 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     logo_html = f'<img src="{company_logo}" style="width:140px;" />' if company_logo else ''
 
     css = """
-    @page { size: A4; margin: 0.5cm; }
-    body { font-family: Helvetica, Arial, sans-serif; font-size: 8.5pt; color: #333; line-height: 1.3; }
+    @page { size: A4; margin: 0.3cm; }
+    body { font-family: Helvetica, Arial, sans-serif; font-size: 7.5pt; color: #333; line-height: 1.2; }
     .container { width: 100%; }
     
     /* Strict Table Header to fix xhtml2pdf bugs */
-    .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-    .company-name { font-size: 14pt; font-weight: bold; color: #1a3c5e; margin-bottom: 2px; }
-    .company-info { font-size: 8pt; color: #4b5563; line-height: 1.2; margin-bottom: 2px; }
+    .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 6px; }
+    .company-name { font-size: 11.5pt; font-weight: bold; color: #1a3c5e; margin-bottom: 1px; }
+    .company-info { font-size: 7pt; color: #4b5563; line-height: 1.1; margin-bottom: 1px; }
     
     /* Badge styling using a nested table for strict width control in xhtml2pdf */
-    .badge-table { width: 100px; border-collapse: collapse; float: right; }
-    .badge-cell { background: #1a3c5e; color: #fff; padding: 4px; font-weight: bold; font-size: 9pt; text-align: center; border-radius: 3px; }
-    .month-year { font-weight: bold; font-size: 10pt; margin-top: 6px; color: #1e293b; text-align: right; }
+    .badge-table { width: 90px; border-collapse: collapse; float: right; }
+    .badge-cell { background: #1a3c5e; color: #fff; padding: 2px; font-weight: bold; font-size: 8pt; text-align: center; border-radius: 2px; }
+    .month-year { font-weight: bold; font-size: 8.5pt; margin-top: 3px; color: #1e293b; text-align: right; }
     
     /* Info Table - No vertical lines, just clean horizontal rows */
-    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-    .info-table td { padding: 5px 4px; border-bottom: 1px solid #f1f5f9; }
-    .lbl { color: #64748b; font-size: 8pt; width: 15%; }
+    .info-table { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
+    .info-table td { padding: 2px 3px; border-bottom: 1px solid #f1f5f9; }
+    .lbl { color: #64748b; font-size: 7pt; width: 15%; }
     .sep { width: 2%; text-align: center; color: #cbd5e1; }
-    .val { font-weight: bold; width: 33%; color: #1e293b; font-size: 8.5pt; }
+    .val { font-weight: bold; width: 33%; color: #1e293b; font-size: 7.5pt; }
     
-    .section-title { background: #f8fafc; border-left: 3px solid #1a3c5e; padding: 5px 10px; font-weight: bold; font-size: 8.5pt; color: #1a3c5e; margin-bottom: 8px; margin-top: 10px; }
+    .section-title { background: #f8fafc; border-left: 3px solid #1a3c5e; padding: 2px 6px; font-weight: bold; font-size: 7.5pt; color: #1a3c5e; margin-bottom: 2px; margin-top: 4px; }
     
     /* Component Layout Tables - Strict grid as requested */
-    .comp-layout { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .comp-layout { width: 100%; border-collapse: collapse; margin-bottom: 4px; }
     .comp-cell { width: 49%; vertical-align: top; padding: 0; }
     .comp-spacer { width: 2%; }
     
-    .hdr-earn { background: #f0fdf4; color: #166534; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-ded { background: #fef2f2; color: #991b1b; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-cont { background: #f5f3ff; color: #5b21b6; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-summ { background: #fff7ed; color: #9a3412; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-earn { background: #f0fdf4; color: #166534; font-weight: bold; padding: 2.5px 5px; border: 1px solid #e2e8f0; font-size: 7pt; margin-bottom: 1px; }
+    .hdr-ded { background: #fef2f2; color: #991b1b; font-weight: bold; padding: 2.5px 5px; border: 1px solid #e2e8f0; font-size: 7pt; margin-bottom: 1px; }
+    .hdr-cont { background: #f5f3ff; color: #5b21b6; font-weight: bold; padding: 2.5px 5px; border: 1px solid #e2e8f0; font-size: 7pt; margin-bottom: 1px; }
+    .hdr-summ { background: #fff7ed; color: #9a3412; font-weight: bold; padding: 2.5px 5px; border: 1px solid #e2e8f0; font-size: 7pt; margin-bottom: 1px; }
     
     .comp-tbl { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; }
-    .comp-tbl td { padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8.5pt; color: #334155; }
+    .comp-tbl td { padding: 2.5px 5px; border: 1px solid #e2e8f0; font-size: 7.5pt; color: #334155; }
     .comp-tbl td.comp-name { width: 65%; }
     .comp-tbl td.comp-val { width: 35%; text-align: right; }
     .comp-tbl .total-row { font-weight: bold; background: #f8fafc; color: #1e293b; }
     
     /* Net Pay Box */
-    .net-tbl { width: 100%; border-collapse: collapse; margin-top: 15px; }
-    .net-td { background: #1a3c5e; color: #fff; padding: 15px; text-align: center; border-radius: 4px; }
-    .net-title { font-size: 9pt; font-weight: bold; margin-bottom: 5px; opacity: 0.9; }
-    .net-val { font-size: 18pt; font-weight: bold; }
-    .net-words { font-size: 8pt; margin-top: 8px; font-style: italic; opacity: 0.85; }
+    .net-tbl { width: 100%; border-collapse: collapse; margin-top: 5px; }
+    .net-td { background: #1a3c5e; color: #fff; padding: 6px; text-align: center; border-radius: 3px; }
+    .net-title { font-size: 8pt; font-weight: bold; margin-bottom: 2px; opacity: 0.9; }
+    .net-val { font-size: 13pt; font-weight: bold; }
+    .net-words { font-size: 7pt; margin-top: 3px; font-style: italic; opacity: 0.85; }
     
-    .footer-note { text-align: center; font-size: 7.5pt; color: #94a3b8; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
+    .footer-note { text-align: center; font-size: 6.5pt; color: #94a3b8; margin-top: 5px; border-top: 1px solid #f1f5f9; padding-top: 3px; }
     """
 
     earn_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in earnings.items()])
@@ -152,19 +152,50 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     cont_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in employer_cont.items()])
 
     leave_rows = ""
+    has_active_leaves = False
     if leave_summary:
         for ls in leave_summary:
+            # Safely parse values as float (handling None/Null and float matching)
+            allocated = float(ls.get('allocated') or 0)
+            used = float(ls.get('used') or 0)
+            taken_this_month = float(ls.get('taken_this_month') or 0)
+            balance = float(ls.get('balance') or 0)
+            
+            # Skip if allocated, used, taken_this_month, and balance are all 0 or less
+            if allocated <= 0 and used <= 0 and taken_this_month <= 0 and balance <= 0:
+                continue
+                
+            has_active_leaves = True
             leave_rows += f"""
             <tr>
-                <td style="padding: 5px 8px; border: 1px solid #e2e8f0;">{ls['name']} ({ls['code']})</td>
-                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center;">{ls['allocated']:.1f}</td>
-                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center;">{ls['used']:.1f}</td>
-                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center;">{ls['taken_this_month']:.1f}</td>
-                <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">{ls['balance']:.1f}</td>
+                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0;">{ls['name']} ({ls['code']})</td>
+                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center;">{allocated:.1f}</td>
+                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center;">{used:.1f}</td>
+                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center;">{taken_this_month:.1f}</td>
+                <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; text-align: center; font-weight: bold;">{balance:.1f}</td>
             </tr>
             """
-    else:
-        leave_rows = "<tr><td colspan='5' style='text-align: center; color: #94a3b8; padding: 10px;'>No leave records available</td></tr>"
+
+    leave_section_html = ""
+    if has_active_leaves:
+        leave_section_html = f"""
+            <!-- LEAVE SUMMARY -->
+            <div class="section-title">Leave Details</div>
+            <table class="comp-tbl" style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: #f8fafc; font-weight: bold; color: #1a3c5e;">
+                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; width: 40%;">Leave Type</td>
+                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Allocated</td>
+                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Used (Year)</td>
+                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Taken This Month</td>
+                        <td style="padding: 2.5px 5px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Remaining Balance</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {leave_rows}
+                </tbody>
+            </table>
+        """
 
     html = f"""
     <html>
@@ -264,22 +295,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                 </tr>
             </table>
 
-            <!-- LEAVE SUMMARY -->
-            <div class="section-title">Leave Details</div>
-            <table class="comp-tbl" style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #f8fafc; font-weight: bold; color: #1a3c5e;">
-                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; width: 40%;">Leave Type</td>
-                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Allocated</td>
-                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Used (Year)</td>
-                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Taken This Month</td>
-                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 15%;">Remaining Balance</td>
-                    </tr>
-                </thead>
-                <tbody>
-                    {leave_rows}
-                </tbody>
-            </table>
+            {leave_section_html}
             
             <div class="footer-note">
                 {footer_text}<br>
