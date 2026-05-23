@@ -81,14 +81,20 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     earnings        = breakdown.get('earnings', {})
     deductions      = breakdown.get('deductions', {})
     employer_cont   = breakdown.get('employer_contributions', {})
-    
-    total_earnings  = float(record.total_earnings or 0)
-    total_deductions= float(record.total_deductions or 0)
-    net_salary      = float(record.net_salary or 0)
-    net_words       = num_to_words(net_salary) + ' Rupees Only'
-    
+
+    # Separate regular earnings from arrear payouts (Indian payroll standard)
+    regular_earnings = {k: v for k, v in earnings.items() if 'Arrear' not in k}
+    arrear_payouts   = {k: v for k, v in earnings.items() if 'Arrear' in k}
+
+    total_regular_earnings = sum(float(v) for v in regular_earnings.values())
+    total_arrears          = sum(float(v) for v in arrear_payouts.values())
+    total_deductions       = float(record.total_deductions or 0)
+    net_salary             = float(record.net_salary or 0)
+    net_words              = num_to_words(net_salary) + ' Rupees Only'
+
     total_employer_cont = sum(float(v) for v in employer_cont.values())
-    monthly_ctc = total_earnings + total_employer_cont
+    # CTC = regular gross only (arrears are NOT part of CTC per Indian standard)
+    monthly_ctc = total_regular_earnings + total_employer_cont
 
     emp_name        = employee.name or '-'
     emp_code        = employee.employee_id or '-'
@@ -147,9 +153,38 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     .footer-note { text-align: center; font-size: 7.5pt; color: #94a3b8; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
     """
 
-    earn_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in earnings.items()])
-    ded_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in deductions.items()])
+    # Regular earnings rows (excluding arrears)
+    earn_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in regular_earnings.items()])
+    ded_rows  = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in deductions.items()])
     cont_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in employer_cont.items()])
+
+    # Arrear rows (separate section)
+    arrear_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in arrear_payouts.items()])
+
+    # Arrear section HTML (only shown if arrears exist)
+    arrear_section_html = ""
+    if arrear_payouts:
+        arrear_section_html = f"""
+            <!-- ARREAR PAYOUTS -->
+            <div class="section-title" style="border-left-color: #b45309; color: #b45309;">Arrear Payouts (Not included in CTC)</div>
+            <table class="comp-tbl" style="width: 100%; border-collapse: collapse; margin-bottom: 10px;">
+                <thead>
+                    <tr style="background: #fffbeb; font-weight: bold; color: #b45309;">
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; width: 65%;">Description</td>
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: right; width: 35%;">Amount (Rs.)</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {arrear_rows}
+                </tbody>
+                <tfoot>
+                    <tr style="font-weight: bold; background: #fef9c3;">
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0;">TOTAL ARREARS</td>
+                        <td style="padding: 5px 8px; border: 1px solid #e2e8f0; text-align: right;">Rs. {total_arrears:,.2f}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        """
 
     leave_rows = ""
     has_active_leaves = False
@@ -237,7 +272,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                         <div class="hdr-earn">EARNINGS Amount (Rs.)</div>
                         <table class="comp-tbl">
                             {earn_rows or "<tr><td class='comp-name' colspan='2' style='text-align:center;'>-</td></tr>"}
-                            <tr class="total-row"><td class="comp-name">GROSS EARNINGS</td><td class="comp-val">Rs. {total_earnings:,.2f}</td></tr>
+                            <tr class="total-row"><td class="comp-name">GROSS EARNINGS</td><td class="comp-val">Rs. {total_regular_earnings:,.2f}</td></tr>
                         </table>
                     </td>
                     <td class="comp-spacer"></td>
@@ -265,13 +300,15 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                     <td class="comp-cell">
                         <div class="hdr-summ">CTC SUMMARY Amount (Rs.)</div>
                         <table class="comp-tbl">
-                            <tr><td class="comp-name">Gross Salary</td><td class="comp-val">{total_earnings:,.2f}</td></tr>
+                            <tr><td class="comp-name">Gross Salary</td><td class="comp-val">{total_regular_earnings:,.2f}</td></tr>
                             <tr><td class="comp-name">Employer Contributions</td><td class="comp-val">{total_employer_cont:,.2f}</td></tr>
                             <tr class="total-row"><td class="comp-name">MONTHLY CTC</td><td class="comp-val">Rs. {monthly_ctc:,.2f}</td></tr>
                         </table>
                     </td>
                 </tr>
             </table>
+
+            {arrear_section_html}
 
             <!-- NET PAY -->
             <table class="net-tbl">
