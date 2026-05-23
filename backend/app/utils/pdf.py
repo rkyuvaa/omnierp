@@ -278,7 +278,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                 <tr>
                     <td class="net-td">
                         <div class="net-title">TOTAL IN-HAND SALARY (NET PAY)</div>
-                        <div class="net-val">Rs. {net_salary:,.2f}</div>
+                        <div class="net-val">Rs. {round(net_salary):,}</div>
                         <div class="net-words">({net_words})</div>
                     </td>
                 </tr>
