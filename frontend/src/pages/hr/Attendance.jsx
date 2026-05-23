@@ -13,7 +13,8 @@ import {
   Calendar, 
   RefreshCw, 
   Check,
-  Users
+  Users,
+  Upload
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -72,6 +73,10 @@ export default function Attendance() {
   const [scanning, setScanning] = useState(false);
   const [holidays, setHolidays] = useState([]);
   const [hoveredCol, setHoveredCol] = useState(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [importResults, setImportResults] = useState(null);
 
   useEffect(() => { fetchData(); }, [month, year, filterBranch, filterDept]);
   useEffect(() => {
@@ -171,6 +176,53 @@ export default function Attendance() {
       setCorrecting(null);
       fetchData();
     } catch { toast.error('Failed to save correction'); }
+  }
+
+  async function downloadTemplate() {
+    try {
+      toast.loading('Generating template...', { id: 'template-download' });
+      const response = await api.get('/hr/attendance/import/template', { responseType: 'blob' });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `attendance_import_template.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      toast.success('Template downloaded successfully!', { id: 'template-download' });
+    } catch (err) {
+      toast.error('Failed to download template', { id: 'template-download' });
+    }
+  }
+
+  async function handleUpload(e) {
+    e.preventDefault();
+    if (!selectedFile) {
+      toast.error('Please select an Excel file first');
+      return;
+    }
+
+    setUploading(true);
+    setImportResults(null);
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const res = await api.post('/hr/attendance/import/excel', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setImportResults(res.data);
+      if (res.data.errors && res.data.errors.length > 0) {
+        toast.error(`Imported ${res.data.imported} records, but encountered ${res.data.errors.length} errors`);
+      } else {
+        toast.success(`Successfully imported ${res.data.imported} attendance records!`);
+      }
+      fetchData();
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to upload attendance file');
+    } finally {
+      setUploading(false);
+    }
   }
 
   function runViolationScan() {
@@ -301,6 +353,31 @@ export default function Attendance() {
           {/* Action Buttons */}
           {user?.is_superadmin && (
             <>
+              <button 
+                onClick={() => {
+                  setImportOpen(true);
+                  setSelectedFile(null);
+                  setImportResults(null);
+                }} 
+                className="btn" 
+                style={{ 
+                  background: 'var(--bg2)', 
+                  border: '1px solid rgba(226, 232, 240, 0.8)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 6, 
+                  fontWeight: 700, 
+                  fontSize: 13,
+                  borderRadius: 10,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
+              >
+                <Upload size={14} style={{ color: 'var(--accent)' }} /> Import Attendance
+              </button>
+
               <button 
                 onClick={runViolationScan} 
                 disabled={scanning} 
@@ -610,6 +687,163 @@ export default function Attendance() {
               <button onClick={saveCorrection} className="btn btn-primary" style={{ flex: 1, borderRadius: 8, fontWeight: 600, boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)' }}>Save Changes</button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Bulk Import Modal */}
+      {importOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.35)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
+          <div style={{ background: 'var(--bg2)', borderRadius: 16, padding: 28, width: 550, maxWidth: '95vw', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(25, 84, 2, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Upload size={18} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Import Attendance Sheets</h3>
+                <p style={{ margin: 0, color: 'var(--text3)', fontSize: 12 }}>Bulk record attendance for remote branches and historical logs</p>
+              </div>
+            </div>
+            
+            <div style={{ height: '1px', background: 'rgba(226, 232, 240, 0.8)', margin: '16px 0' }} />
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              {/* Step 1: Download pre-populated template */}
+              <div style={{ background: 'rgba(25, 84, 2, 0.03)', border: '1px dashed rgba(25, 84, 2, 0.15)', borderRadius: 12, padding: 14 }}>
+                <h4 style={{ margin: '0 0 6px 0', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Step 1: Download Attendance Template</h4>
+                <p style={{ margin: '0 0 10px 0', fontSize: 12, color: 'var(--text2)' }}>
+                  Get an Excel sheet pre-populated with all your active employees' IDs and names.
+                </p>
+                <button 
+                  onClick={downloadTemplate} 
+                  className="btn"
+                  style={{
+                    background: 'var(--accent)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: 8,
+                    padding: '8px 14px',
+                    fontSize: 12,
+                    fontWeight: 600,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    cursor: 'pointer',
+                    boxShadow: '0 2px 4px rgba(25, 84, 2, 0.1)'
+                  }}
+                >
+                  <Download size={14} /> Download Template
+                </button>
+              </div>
+
+              {/* Step 2: Upload Excel File */}
+              <div>
+                <h4 style={{ margin: '0 0 6px 0', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Step 2: Upload Filled Template</h4>
+                <p style={{ margin: '0 0 10px 0', fontSize: 12, color: 'var(--text2)' }}>
+                  Upload the Excel file with completed date, status, check-in, and check-out times.
+                </p>
+                
+                <div style={{
+                  border: '2px dashed var(--border)',
+                  borderRadius: 12,
+                  padding: '20px 10px',
+                  textAlign: 'center',
+                  background: 'var(--bg3)',
+                  cursor: 'pointer',
+                  position: 'relative'
+                }}>
+                  <input 
+                    type="file" 
+                    accept=".xlsx, .xls"
+                    onChange={e => setSelectedFile(e.target.files[0])}
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      opacity: 0,
+                      cursor: 'pointer'
+                    }}
+                  />
+                  <Upload size={24} style={{ color: 'var(--text3)', marginBottom: 8, opacity: 0.7 }} />
+                  {selectedFile ? (
+                    <div>
+                      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: 'var(--accent)' }}>{selectedFile.name}</p>
+                      <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text3)' }}>{(selectedFile.size / 1024).toFixed(1)} KB - Click or drag to replace</p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ margin: 0, fontSize: 12, fontWeight: 500, color: 'var(--text2)' }}>Click to select or drag & drop Excel sheet</p>
+                      <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text3)' }}>Supports .xlsx or .xls</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Step 3: Results Display */}
+              {importResults && (
+                <div style={{ 
+                  background: 'var(--bg3)', 
+                  border: `1px solid ${importResults.errors?.length > 0 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(34, 197, 94, 0.2)'}`, 
+                  borderRadius: 12, 
+                  padding: 14,
+                  maxHeight: 180,
+                  overflowY: 'auto'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <Check size={14} color="#16a34a" />
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                      Successfully Imported: {importResults.imported} records
+                    </span>
+                  </div>
+                  
+                  {importResults.errors && importResults.errors.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, color: '#dc2626' }}>
+                        <AlertCircle size={14} />
+                        <span style={{ fontSize: 12, fontWeight: 700 }}>Errors ({importResults.errors.length}):</span>
+                      </div>
+                      <ul style={{ margin: 0, paddingLeft: 18, fontSize: 11, color: '#dc2626', display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {importResults.errors.map((err, idx) => (
+                          <li key={idx}>{err}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <button 
+                onClick={() => {
+                  setImportOpen(false);
+                  setSelectedFile(null);
+                  setImportResults(null);
+                }} 
+                className="btn" 
+                style={{ flex: 1, background: 'var(--bg3)', border: 'none', borderRadius: 8, fontWeight: 600 }}
+              >
+                Close
+              </button>
+              <button 
+                onClick={handleUpload} 
+                disabled={uploading || !selectedFile}
+                className="btn btn-primary" 
+                style={{ 
+                  flex: 1, 
+                  borderRadius: 8, 
+                  fontWeight: 600, 
+                  boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
+                }}
+              >
+                {uploading ? 'Uploading...' : 'Upload & Import'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       )}
     </Layout>

@@ -596,3 +596,147 @@ def post_sandwich_decision(
     return {"message": f"Deduction {data.action}ed successfully."}
 
 
+@router.get("/import/template")
+def get_attendance_template(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    import openpyxl
+    import io
+    from fastapi.responses import StreamingResponse
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Attendance Import Template"
+    headers = ["employee_id", "employee_name", "date", "status", "check_in", "check_out"]
+    for col_idx, h in enumerate(headers, 1):
+        ws.cell(row=1, column=col_idx, value=h)
+
+    # Pre-populate active employees
+    employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.employee_id).all()
+    for row_idx, emp in enumerate(employees, 2):
+        ws.cell(row=row_idx, column=1, value=emp.employee_id)
+        ws.cell(row=row_idx, column=2, value=emp.name)
+        ws.cell(row=row_idx, column=3, value=str(date.today() - timedelta(days=1)))
+        ws.cell(row=row_idx, column=4, value="present")
+        ws.cell(row=row_idx, column=5, value="09:00:00")
+        ws.cell(row=row_idx, column=6, value="18:00:00")
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+    return StreamingResponse(
+        buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=attendance_import_template.xlsx"}
+    )
+
+
+@router.post("/import/excel")
+async def import_attendance_excel(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin)
+):
+    import openpyxl
+    import io
+    from datetime import time
+
+    try:
+        contents = await file.read()
+        wb = openpyxl.load_workbook(io.BytesIO(contents), data_only=True)
+        ws = wb.active
+        
+        imported = 0
+        errors = []
+        
+        def safe_date(val):
+            if isinstance(val, (date, datetime)): return val
+            if val is None or str(val).strip() == "": return None
+            try:
+                for fmt in ("%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y", "%Y/%m/%d"):
+                    try: return datetime.strptime(str(val).strip(), fmt).date()
+                    except: continue
+                return None
+            except: return None
+
+        def safe_datetime(target_date, val):
+            if isinstance(val, datetime): return val
+            if isinstance(val, time): return datetime.combine(target_date, val)
+            if val is None or str(val).strip() == "": return None
+            val_str = str(val).strip()
+            # Try parsing as time string
+            for fmt in ("%H:%M:%S", "%H:%M", "%I:%M:%S %p", "%I:%M %p"):
+                try:
+                    t = datetime.strptime(val_str, fmt).time()
+                    return datetime.combine(target_date, t)
+                except: continue
+            # Try parsing as full datetime string
+            for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M", "%d-%m-%Y %H:%M:%S", "%d/%m/%Y %H:%M:%S"):
+                try:
+                    return datetime.strptime(val_str, fmt)
+                except: continue
+            return None
+
+        valid_statuses = ["present", "absent", "half_day", "weekly_off", "holiday", "leave", "on_duty", "late"]
+
+        for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), 2):
+            # Skip completely empty rows
+            if not row[0] or str(row[0]).strip() == "":
+                continue
+                
+            emp_code = str(row[0]).strip()
+            emp = db.query(HREmployee).filter(HREmployee.employee_id == emp_code).first()
+            if not emp:
+                errors.append(f"Row {row_idx}: Employee with ID '{emp_code}' not found")
+                continue
+
+            # Parse date
+            record_date = safe_date(row[2])
+            if not record_date:
+                errors.append(f"Row {row_idx} ({emp.name}): Invalid date format")
+                continue
+
+            # Parse status
+            status = str(row[3]).strip().lower() if row[3] else "present"
+            if status not in valid_statuses:
+                errors.append(f"Row {row_idx} ({emp.name}): Invalid status '{status}'")
+                continue
+
+            # Parse check-in / check-out
+            check_in = safe_datetime(record_date, row[4]) if len(row) > 4 else None
+            check_out = safe_datetime(record_date, row[5]) if len(row) > 5 else None
+
+            try:
+                # Find existing record or create new
+                record = db.query(HRAttendanceRecord).filter(
+                    HRAttendanceRecord.employee_id == emp.id,
+                    HRAttendanceRecord.date == record_date
+                ).first()
+
+                if not record:
+                    record = HRAttendanceRecord(employee_id=emp.id, date=record_date)
+                    db.add(record)
+
+                record.status = status
+                record.check_in = check_in
+                record.check_out = check_out
+                record.correction_reason = "Imported via bulk Excel"
+                record.corrected_by = current_user.id
+
+                # Auto calculate hours worked
+                hours_worked = 0
+                if check_in and check_out:
+                    hours_worked = (check_out - check_in).total_seconds() / 3600
+                record.hours_worked = round(max(0.0, hours_worked), 2)
+
+                db.flush()
+                imported += 1
+            except Exception as e:
+                db.rollback()
+                errors.append(f"Row {row_idx} ({emp.name}): {str(e)}")
+                continue
+
+        db.commit()
+        return {"imported": imported, "errors": errors}
+    except Exception as e:
+        raise HTTPException(400, f"Critical failure parsing Excel file: {str(e)}")
+
+
+
