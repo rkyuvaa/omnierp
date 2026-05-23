@@ -308,10 +308,10 @@ export default function Attendance() {
     <Layout title="Attendance">
       <div style={{ padding: '0 16px 24px' }}>
         {/* Controls / Filter Bar */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'nowrap', overflowX: 'auto', alignItems: 'center', paddingBottom: '6px', width: '100%' }}>
           
           {/* Month Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', flexShrink: 0 }}>
             <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronLeft size={16} /></button>
             <span style={{ fontWeight: 700, fontSize: 14, minWidth: 130, textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
               <Calendar size={14} style={{ color: 'var(--accent)' }} />
@@ -322,7 +322,7 @@ export default function Attendance() {
 
           {/* Search Box */}
           {user?.is_superadmin && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '6px 12px', minWidth: 220, flex: '1 1 200px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '6px 12px', minWidth: 160, flex: '0 1 180px', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <Search size={15} style={{ color: 'var(--text3)' }} />
               <input 
                 type="text" 
@@ -336,7 +336,7 @@ export default function Attendance() {
 
           {/* Branch Select */}
           {user?.is_superadmin && (
-            <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 120, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <option value="">All Branches</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
@@ -344,7 +344,7 @@ export default function Attendance() {
 
           {/* Dept Select */}
           {user?.is_superadmin && (
-            <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 150, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 120, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <option value="">All Departments</option>
               {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
@@ -370,7 +370,8 @@ export default function Attendance() {
                   fontSize: 13,
                   borderRadius: 10,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  flexShrink: 0
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
@@ -392,7 +393,8 @@ export default function Attendance() {
                   fontSize: 13,
                   borderRadius: 10,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  flexShrink: 0
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
@@ -411,7 +413,8 @@ export default function Attendance() {
                   fontSize: 13,
                   borderRadius: 10,
                   boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
-                  transition: 'all 0.2s'
+                  transition: 'all 0.2s',
+                  flexShrink: 0
                 }}
               >
                 <RefreshCw size={14} /> Recompute Month
