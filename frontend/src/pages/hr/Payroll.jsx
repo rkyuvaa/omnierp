@@ -297,19 +297,19 @@ export default function Payroll() {
                 {user?.is_superadmin ? 'No payroll generated for this month. Click "Generate Payroll" to start.' : 'No payroll record found for this month.'}
               </div>
             ) : (
-              <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <table style={{ minWidth: '100%', width: 'max-content', borderCollapse: 'collapse', fontSize: 13 }}>
+              <div style={{ borderRadius: 12, border: '1px solid var(--border)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg2)' }}>
                       {user?.is_superadmin && (
-                        <th style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>
                           <input type="checkbox" onChange={e => setSelected(e.target.checked ? records.map(r => r.employee_id) : [])} checked={selected.length === records.length && records.length > 0} />
                         </th>
                       )}
                       {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
-                        if (!user?.is_superadmin && h === 'Actions') return <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>Download</th>;
+                        if (!user?.is_superadmin && h === 'Actions') return <th key={h} style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>Download</th>;
                         return (
-                          <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Actions' ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap', minWidth: h === 'Actions' && user?.is_superadmin ? '440px' : undefined, width: h === 'Actions' && user?.is_superadmin ? '440px' : undefined }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 6px', textAlign: h === 'Actions' ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>{h}</th>
                         );
                       })}
                     </tr>
@@ -318,89 +318,104 @@ export default function Payroll() {
                     {records.map(r => (
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                         {user?.is_superadmin && (
-                          <td style={{ padding: '10px 12px' }}>
+                          <td style={{ padding: '10px 6px' }}>
                             <input type="checkbox" checked={selected.includes(r.employee_id)} onChange={e => setSelected(s => e.target.checked ? [...s, r.employee_id] : s.filter(id => id !== r.employee_id))} />
                           </td>
                         )}
-                        <td style={{ padding: '10px 12px' }}>
+                        <td style={{ padding: '10px 6px' }}>
                           <div style={{ fontWeight: 700 }}>{r.employee_name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text3)' }}>{r.employee_code} · {r.designation}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{r.employee_code} · {r.designation}</div>
                         </td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center' }}>{r.working_days}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{r.present_days}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#ef4444', fontWeight: 600 }}>{r.absent_days}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#6366f1', fontWeight: 600 }}>{r.leave_days}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#f59e0b', fontWeight: 600 }}>{r.lop_days}</td>
-                        <td style={{ padding: '10px 12px', textAlign: 'center', color: '#06b6d4', fontWeight: 600 }}>{r.on_duty_days}</td>
-                        <td style={{ padding: '10px 12px', color: '#22c55e', fontWeight: 600, textAlign: 'center' }}>₹{Number(r.total_earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                        <td style={{ padding: '10px 12px', color: '#6366f1', fontWeight: 600, textAlign: 'center' }}>₹{Number(r.arrears_paid || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                        <td style={{ padding: '10px 12px', color: '#ef4444', fontWeight: 600, textAlign: 'center' }}>₹{Number(r.total_deductions).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                        <td style={{ padding: '10px 12px', fontWeight: 800, fontSize: 15, textAlign: 'center' }}>₹{Number(r.net_salary).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ fontSize: 11, padding: '3px 8px', borderRadius: 999, fontWeight: 700, background: r.status === 'finalized' ? '#dcfce7' : '#fef3c7', color: r.status === 'finalized' ? '#16a34a' : '#d97706' }}>
+                        <td style={{ padding: '10px 4px', textAlign: 'center' }}>{r.working_days}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{r.present_days}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'center', color: '#ef4444', fontWeight: 600 }}>{r.absent_days}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'center', color: '#6366f1', fontWeight: 600 }}>{r.leave_days}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'center', color: '#f59e0b', fontWeight: 600 }}>{r.lop_days}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'center', color: '#06b6d4', fontWeight: 600 }}>{r.on_duty_days}</td>
+                        <td style={{ padding: '10px 4px', color: '#22c55e', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.total_earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td style={{ padding: '10px 4px', color: '#6366f1', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.arrears_paid || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td style={{ padding: '10px 4px', color: '#ef4444', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.total_deductions).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td style={{ padding: '10px 4px', fontWeight: 800, fontSize: 15, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.net_salary).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'center' }}>
+                          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 999, fontWeight: 700, background: r.status === 'finalized' ? '#dcfce7' : '#fef3c7', color: r.status === 'finalized' ? '#16a34a' : '#d97706' }}>
                             {r.status === 'finalized' ? 'Finalized' : 'Draft'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', minWidth: user?.is_superadmin ? '440px' : undefined, width: user?.is_superadmin ? '440px' : undefined }}>
-                          <div style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap', width: 'max-content' }}>
+                        <td style={{ padding: '10px 6px' }}>
+                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                             {user?.is_superadmin && (
                               <>
                                 {r.status !== 'finalized' ? (
                                   <>
-                                    <button onClick={() => finalizeRecord(r.id)} style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <CheckCircle size={12} /> Finalize
+                                    <button 
+                                      onClick={() => finalizeRecord(r.id)} 
+                                      title="Finalize Payroll"
+                                      style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                      <CheckCircle size={13} />
                                     </button>
-                                    <button onClick={() => deleteRecord(r.id)} title="Delete Draft" style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                      <Trash2 size={12} />
+                                    <button 
+                                      onClick={() => deleteRecord(r.id)} 
+                                      title="Delete Draft" 
+                                      style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    >
+                                      <Trash2 size={13} />
                                     </button>
                                   </>
                                 ) : (
-                                  <button onClick={() => deleteRecord(r.id)} title="Delete Finalized" style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                                    <Trash2 size={12} /> Delete
+                                  <button 
+                                    onClick={() => deleteRecord(r.id)} 
+                                    title="Delete Record" 
+                                    style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  >
+                                    <Trash2 size={13} />
                                   </button>
                                 )}
                                 <button 
                                   onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears, arrears_paid: r.arrears_paid })}
-                                  style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                                  title={`Arrears (Paid: ₹${r.arrears_paid || 0} | Held: ₹${r.pending_arrears || 0})`}
+                                  style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                 >
-                                  <Wallet size={12} /> Arrears (₹{r.arrears_paid || 0} P | ₹{r.pending_arrears || 0} H)
+                                  <Wallet size={13} />
                                 </button>
                               </>
                             )}
                             {user?.is_superadmin && (
                               <button 
                                 onClick={() => emailPayslip(r.id, r.employee_name)} 
-                                title="Email Payslip PDF to Employee" 
+                                title="Email Payslip to Employee" 
                                 disabled={emailingId === r.id}
                                 style={{ 
                                   background: '#e0e7ff', 
                                   color: '#4338ca', 
                                   border: 'none', 
                                   borderRadius: 6, 
-                                  padding: '5px 10px', 
+                                  padding: '6px', 
                                   cursor: emailingId === r.id ? 'not-allowed' : 'pointer', 
-                                  fontWeight: 700, 
-                                  fontSize: 12, 
                                   display: 'flex', 
                                   alignItems: 'center', 
-                                  gap: 4,
+                                  justifyContent: 'center',
                                   opacity: emailingId === r.id ? 0.7 : 1
                                 }}
                               >
-                                <Mail size={12} /> {emailingId === r.id ? 'Sending...' : 'Email'}
+                                <Mail size={13} />
                               </button>
                             )}
-                            <button onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} title="Download Payslip PDF" style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <Download size={12} /> Payslip
+                            <button 
+                              onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} 
+                              title="Download Payslip PDF" 
+                              style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                            >
+                              <Download size={13} />
                             </button>
                           </div>
                         </td>
                       </tr>
                     ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </>
         ) : (
           <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
