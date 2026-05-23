@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Response
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
@@ -621,9 +621,9 @@ def get_attendance_template(db: Session = Depends(get_db), current_user: User = 
 
     buf = io.BytesIO()
     wb.save(buf)
-    buf.seek(0)
-    return StreamingResponse(
-        buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    return Response(
+        content=buf.getvalue(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=attendance_import_template.xlsx"}
     )
 
