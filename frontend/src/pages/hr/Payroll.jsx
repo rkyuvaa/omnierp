@@ -298,7 +298,7 @@ export default function Payroll() {
               </div>
             ) : (
               <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <table style={{ minWidth: '100%', width: 'max-content', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg2)' }}>
                       {user?.is_superadmin && (
