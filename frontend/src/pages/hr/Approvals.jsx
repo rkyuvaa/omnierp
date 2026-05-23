@@ -27,12 +27,11 @@ export default function Approvals() {
   useEffect(() => {
     api.get('/hr/employees/', { params: { is_active: true } }).then(r => {
       setApprovers(r.data);
-      if (r.data[0]) setSelectedApprover(r.data[0].id);
+      // Start with empty = All Employees
     });
   }, []);
 
   useEffect(() => {
-    if (!selectedApprover && tab !== 'sandwich') return;
     fetchData();
   }, [selectedApprover, tab, sandwichMonth, sandwichYear]);
 
@@ -40,9 +39,10 @@ export default function Approvals() {
     setLoading(true);
     try {
       if (tab === 'pending') {
+        const params = selectedApprover ? { approver_id: selectedApprover } : {};
         const [lv, od] = await Promise.all([
-          api.get('/hr/leave/pending', { params: { approver_id: selectedApprover } }),
-          api.get('/hr/onduty/pending', { params: { approver_id: selectedApprover } }),
+          api.get('/hr/leave/pending', { params }),
+          api.get('/hr/onduty/pending', { params }),
         ]);
         setPendingLeave(lv.data);
         setPendingOD(od.data);
@@ -207,6 +207,7 @@ export default function Approvals() {
       <div style={{ padding: '0 24px 24px' }}>
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
           <select value={selectedApprover} onChange={e => setSelectedApprover(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 220 }}>
+            <option value=''>All Employees</option>
             {approvers.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
           </select>
           <div style={{ display: 'flex', gap: 8 }}>
