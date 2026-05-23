@@ -240,7 +240,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                         <div class="hdr-earn">EARNINGS Amount (Rs.)</div>
                         <table class="comp-tbl">
                             {earn_rows or "<tr><td class='comp-name' colspan='2' style='text-align:center;'>-</td></tr>"}
-                            <tr class="total-row"><td class="comp-name">GROSS EARNINGS</td><td class="comp-val">Rs. {total_earnings:,.2f}</td></tr>
+                            <tr class="total-row"><td class="comp-name">GROSS EARNINGS</td><td class="comp-val">Rs. {regular_gross:,.2f}</td></tr>
+                            <tr class="total-row"><td class="comp-name">GROSS WITH ARREAR</td><td class="comp-val">Rs. {total_earnings:,.2f}</td></tr>
                         </table>
                     </td>
                     <td class="comp-spacer"></td>
