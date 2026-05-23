@@ -309,7 +309,7 @@ export default function Payroll() {
                       {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
                         if (!user?.is_superadmin && h === 'Actions') return <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>Download</th>;
                         return (
-                          <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Actions' ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap', minWidth: h === 'Actions' && user?.is_superadmin ? '440px' : undefined }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 12px', textAlign: h === 'Actions' ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap', minWidth: h === 'Actions' && user?.is_superadmin ? '440px' : undefined, width: h === 'Actions' && user?.is_superadmin ? '440px' : undefined }}>{h}</th>
                         );
                       })}
                     </tr>
@@ -341,7 +341,7 @@ export default function Payroll() {
                             {r.status === 'finalized' ? 'Finalized' : 'Draft'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px', minWidth: user?.is_superadmin ? '440px' : undefined }}>
+                        <td style={{ padding: '10px 12px', minWidth: user?.is_superadmin ? '440px' : undefined, width: user?.is_superadmin ? '440px' : undefined }}>
                           <div style={{ display: 'flex', gap: 6, alignItems: 'center', whiteSpace: 'nowrap', width: 'max-content' }}>
                             {user?.is_superadmin && (
                               <>
