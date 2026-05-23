@@ -308,8 +308,9 @@ export default function Payroll() {
                       )}
                       {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
                         if (!user?.is_superadmin && h === 'Actions') return <th key={h} style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>Download</th>;
+                        const isEmp = h === 'Employee';
                         return (
-                          <th key={h} style={{ padding: '10px 6px', textAlign: h === 'Actions' ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 6px', textAlign: h === 'Actions' || isEmp ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap', width: isEmp ? '180px' : h === 'Actions' && user?.is_superadmin ? '380px' : undefined, maxWidth: isEmp ? '180px' : undefined }}>{h}</th>
                         );
                       })}
                     </tr>
@@ -322,9 +323,9 @@ export default function Payroll() {
                             <input type="checkbox" checked={selected.includes(r.employee_id)} onChange={e => setSelected(s => e.target.checked ? [...s, r.employee_id] : s.filter(id => id !== r.employee_id))} />
                           </td>
                         )}
-                        <td style={{ padding: '10px 6px' }}>
-                          <div style={{ fontWeight: 700 }}>{r.employee_name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text3)', whiteSpace: 'nowrap' }}>{r.employee_code} · {r.designation}</div>
+                        <td style={{ padding: '10px 6px', width: '180px', maxWidth: '180px', overflow: 'hidden' }}>
+                          <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.employee_name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.employee_code} · {r.designation}</div>
                         </td>
                         <td style={{ padding: '10px 4px', textAlign: 'center' }}>{r.working_days}</td>
                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{r.present_days}</td>
@@ -341,8 +342,8 @@ export default function Payroll() {
                             {r.status === 'finalized' ? 'Finalized' : 'Draft'}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 6px' }}>
-                          <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+                        <td style={{ padding: '10px 6px', width: '380px', maxWidth: '380px' }}>
+                          <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'nowrap' }}>
                             {user?.is_superadmin && (
                               <>
                                 {r.status !== 'finalized' ? (
@@ -350,33 +351,33 @@ export default function Payroll() {
                                     <button 
                                       onClick={() => finalizeRecord(r.id)} 
                                       title="Finalize Payroll"
-                                      style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                      style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
                                     >
-                                      <CheckCircle size={13} />
+                                      <CheckCircle size={12} /> Finalize
                                     </button>
                                     <button 
                                       onClick={() => deleteRecord(r.id)} 
                                       title="Delete Draft" 
-                                      style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                      style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
                                     >
-                                      <Trash2 size={13} />
+                                      <Trash2 size={12} /> Delete
                                     </button>
                                   </>
                                 ) : (
                                   <button 
                                     onClick={() => deleteRecord(r.id)} 
                                     title="Delete Record" 
-                                    style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                    style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
                                   >
-                                    <Trash2 size={13} />
+                                    <Trash2 size={12} /> Delete
                                   </button>
                                 )}
                                 <button 
                                   onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears, arrears_paid: r.arrears_paid })}
                                   title={`Arrears (Paid: ₹${r.arrears_paid || 0} | Held: ₹${r.pending_arrears || 0})`}
-                                  style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                  style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
                                 >
-                                  <Wallet size={13} />
+                                  <Wallet size={12} /> Arrears
                                 </button>
                               </>
                             )}
@@ -390,23 +391,26 @@ export default function Payroll() {
                                   color: '#4338ca', 
                                   border: 'none', 
                                   borderRadius: 6, 
-                                  padding: '6px', 
+                                  padding: '5px 8px', 
                                   cursor: emailingId === r.id ? 'not-allowed' : 'pointer', 
+                                  fontWeight: 700, 
+                                  fontSize: 11, 
                                   display: 'flex', 
                                   alignItems: 'center', 
-                                  justifyContent: 'center',
+                                  gap: 4,
+                                  whiteSpace: 'nowrap',
                                   opacity: emailingId === r.id ? 0.7 : 1
                                 }}
                               >
-                                <Mail size={13} />
+                                <Mail size={12} /> Email
                               </button>
                             )}
                             <button 
                               onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} 
                               title="Download Payslip PDF" 
-                              style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '6px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                              style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
                             >
-                              <Download size={13} />
+                              <Download size={12} /> Payslip
                             </button>
                           </div>
                         </td>
