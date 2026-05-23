@@ -19,6 +19,7 @@ export default function Approvals() {
   const [sandwichReason, setSandwichReason] = useState({});
   const [bulkReason, setBulkReason] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [showProcessedSandwich, setShowProcessedSandwich] = useState(false);
   const [remarkModal, setRemarkModal] = useState(null);
   const [remark, setRemark] = useState('');
   const [action, setAction] = useState('');
@@ -241,158 +242,177 @@ export default function Approvals() {
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
               .map(r => <RequestCard key={`${r._type}-${r.id}`} req={r} type={r._type} showActions={false} />)}
           </div>
-        ) : (
-          <div>
-            <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center' }}>
-              <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>Select Month/Year:</span>
-              <select value={sandwichMonth} onChange={e => setSandwichMonth(Number(e.target.value))} style={{ ...inputStyle, width: 'auto' }}>
-                {Array.from({ length: 12 }, (_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {new Date(2026, i, 1).toLocaleString('default', { month: 'long' })}
-                  </option>
-                ))}
-              </select>
-              <select value={sandwichYear} onChange={e => setSandwichYear(Number(e.target.value))} style={{ ...inputStyle, width: 'auto' }}>
-                {[2025, 2026, 2027].map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
+        ) : (() => {
+            const filteredSandwich = sandwichLeaves.filter(item => {
+              if (showProcessedSandwich) return true;
+              const isDeducted = item.current_status === 'sandwich_lop';
+              const isIgnored = item.current_status === 'weekly_off' && item.reason && item.reason.includes('Ignored');
+              return !isDeducted && !isIgnored;
+            });
 
-            {sandwichLeaves.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>
-                <CheckCircle size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
-                No sandwich leaves detected for this month
-              </div>
-            ) : (
+            return (
               <div>
-                {/* Bulk Actions Panel */}
-                <div style={{
-                  background: 'var(--bg2)',
-                  borderRadius: 12,
-                  padding: 16,
-                  marginBottom: 16,
-                  border: '1px dashed var(--accent)',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center',
-                  flexWrap: 'wrap',
-                  gap: 12
-                }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>Bulk Decisions ({sandwichLeaves.length} items)</div>
-                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>Apply deduction or exemption to all detected sandwich Sundays in one click.</div>
-                  </div>
-                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-                    <input
-                      type="text"
-                      placeholder="Bulk reason (optional)..."
-                      value={bulkReason}
-                      onChange={e => setBulkReason(e.target.value)}
-                      style={{ ...inputStyle, width: 220 }}
+                <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>Select Month/Year:</span>
+                  <select value={sandwichMonth} onChange={e => setSandwichMonth(Number(e.target.value))} style={{ ...inputStyle, width: 'auto' }}>
+                    {Array.from({ length: 12 }, (_, i) => (
+                      <option key={i + 1} value={i + 1}>
+                        {new Date(2026, i, 1).toLocaleString('default', { month: 'long' })}
+                      </option>
+                    ))}
+                  </select>
+                  <select value={sandwichYear} onChange={e => setSandwichYear(Number(e.target.value))} style={{ ...inputStyle, width: 'auto' }}>
+                    {[2025, 2026, 2027].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 13, color: 'var(--text2)', marginLeft: 'auto' }}>
+                    <input 
+                      type="checkbox" 
+                      checked={showProcessedSandwich} 
+                      onChange={e => setShowProcessedSandwich(e.target.checked)} 
+                      style={{ cursor: 'pointer' }}
                     />
-                    <button
-                      onClick={() => handleBulkSandwichDecision('deduct')}
-                      disabled={bulkLoading}
-                      style={{
-                        background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8,
-                        padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
-                      }}
-                    >
-                      {bulkLoading ? 'Processing...' : 'Bulk Deduct LOP'}
-                    </button>
-                    <button
-                      onClick={() => handleBulkSandwichDecision('ignore')}
-                      disabled={bulkLoading}
-                      style={{
-                        background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 8,
-                        padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
-                      }}
-                    >
-                      {bulkLoading ? 'Processing...' : 'Bulk Ignore'}
-                    </button>
-                  </div>
+                    Show processed Sundays
+                  </label>
                 </div>
 
-                <div style={{ display: 'grid', gap: 12 }}>
-                {sandwichLeaves.map(item => {
-                  const key = `${item.employee_id}-${item.date}`;
-                  const isDeducted = item.current_status === 'sandwich_lop';
-                  const isIgnored = item.current_status === 'weekly_off' && item.reason && item.reason.includes('Ignored');
-                  
-                  return (
-                    <div key={key} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
-                        <div>
-                          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                            <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
-                              {item.employee_name?.[0] || 'E'}
-                            </div>
-                            <div>
-                              <div style={{ fontWeight: 700, fontSize: 14 }}>{item.employee_name} ({item.employee_code})</div>
-                              <div style={{ fontSize: 12, color: 'var(--text3)' }}>
-                                Sandwich Date: <strong>{item.date}</strong> (Sunday)
-                              </div>
-                            </div>
-                            <span style={{
-                              fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 700,
-                              background: isDeducted ? '#fee2e2' : isIgnored ? '#dcfce7' : 'var(--bg3)',
-                              color: isDeducted ? '#dc2626' : isIgnored ? '#16a34a' : 'var(--text2)'
-                            }}>
-                              {isDeducted ? 'DEDUCTED (LOP)' : isIgnored ? 'PAID (EXEMPTED)' : 'PENDING DECISION'}
-                            </span>
-                          </div>
-                          <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>
-                            Saturday: <span style={{ color: '#ef4444', fontWeight: 600 }}>{item.sat_status.toUpperCase()}</span> · 
-                            Monday: <span style={{ color: '#ef4444', fontWeight: 600 }}> {item.mon_status.toUpperCase()}</span>
-                          </div>
-                          {item.reason && (
-                            <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>
-                              Audit Log: {item.reason}
-                            </div>
-                          )}
-                        </div>
-
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 240 }}>
-                          <input
-                            type="text"
-                            placeholder="Reason for exemption (optional)..."
-                            value={sandwichReason[key] || ''}
-                            onChange={e => setSandwichReason(prev => ({ ...prev, [key]: e.target.value }))}
-                            style={inputStyle}
-                          />
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button
-                              onClick={() => handleSandwichDecision(item.employee_id, item.date, 'deduct')}
-                              style={{
-                                flex: 1, background: isDeducted ? '#fca5a5' : '#fee2e2', color: '#dc2626',
-                                border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
-                                fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-                              }}
-                            >
-                              Deduct LOP
-                            </button>
-                            <button
-                              onClick={() => handleSandwichDecision(item.employee_id, item.date, 'ignore')}
-                              style={{
-                                flex: 1, background: isIgnored ? '#86efac' : '#dcfce7', color: '#16a34a',
-                                border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
-                                fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
-                              }}
-                            >
-                              Ignore
-                            </button>
-                          </div>
-                        </div>
+                {filteredSandwich.length === 0 ? (
+                  <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>
+                    <CheckCircle size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
+                    No pending sandwich leaves for this month
+                  </div>
+                ) : (
+                  <div>
+                    {/* Bulk Actions Panel */}
+                    <div style={{
+                      background: 'var(--bg2)',
+                      borderRadius: 12,
+                      padding: 16,
+                      marginBottom: 16,
+                      border: '1px dashed var(--accent)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 12
+                    }}>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>Bulk Decisions ({filteredSandwich.length} items)</div>
+                        <div style={{ fontSize: 12, color: 'var(--text3)' }}>Apply deduction or exemption to all detected sandwich Sundays in one click.</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <input
+                          type="text"
+                          placeholder="Bulk reason (optional)..."
+                          value={bulkReason}
+                          onChange={e => setBulkReason(e.target.value)}
+                          style={{ ...inputStyle, width: 220 }}
+                        />
+                        <button
+                          onClick={() => handleBulkSandwichDecision('deduct')}
+                          disabled={bulkLoading}
+                          style={{
+                            background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8,
+                            padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
+                          }}
+                        >
+                          {bulkLoading ? 'Processing...' : 'Bulk Deduct LOP'}
+                        </button>
+                        <button
+                          onClick={() => handleBulkSandwichDecision('ignore')}
+                          disabled={bulkLoading}
+                          style={{
+                            background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 8,
+                            padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
+                          }}
+                        >
+                          {bulkLoading ? 'Processing...' : 'Bulk Ignore'}
+                        </button>
                       </div>
                     </div>
-                  );
-                })}
+
+                    <div style={{ display: 'grid', gap: 12 }}>
+                      {filteredSandwich.map(item => {
+                        const key = `${item.employee_id}-${item.date}`;
+                        const isDeducted = item.current_status === 'sandwich_lop';
+                        const isIgnored = item.current_status === 'weekly_off' && item.reason && item.reason.includes('Ignored');
+                        
+                        return (
+                          <div key={key} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                              <div>
+                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
+                                  <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
+                                    {item.employee_name?.[0] || 'E'}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 700, fontSize: 14 }}>{item.employee_name} ({item.employee_code})</div>
+                                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>
+                                      Sandwich Date: <strong>{item.date}</strong> (Sunday)
+                                    </div>
+                                  </div>
+                                  <span style={{
+                                    fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 700,
+                                    background: isDeducted ? '#fee2e2' : isIgnored ? '#dcfce7' : 'var(--bg3)',
+                                    color: isDeducted ? '#dc2626' : isIgnored ? '#16a34a' : 'var(--text2)'
+                                  }}>
+                                    {isDeducted ? 'DEDUCTED (LOP)' : isIgnored ? 'PAID (EXEMPTED)' : 'PENDING DECISION'}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>
+                                  Saturday: <span style={{ color: '#ef4444', fontWeight: 600 }}>{item.sat_status.toUpperCase()}</span> · 
+                                  Monday: <span style={{ color: '#ef4444', fontWeight: 600 }}> {item.mon_status.toUpperCase()}</span>
+                                </div>
+                                {item.reason && (
+                                  <div style={{ fontSize: 12, color: 'var(--text3)', fontStyle: 'italic' }}>
+                                    Audit Log: {item.reason}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 240 }}>
+                                <input
+                                  type="text"
+                                  placeholder="Reason for exemption (optional)..."
+                                  value={sandwichReason[key] || ''}
+                                  onChange={e => setSandwichReason(prev => ({ ...prev, [key]: e.target.value }))}
+                                  style={inputStyle}
+                                />
+                                <div style={{ display: 'flex', gap: 8 }}>
+                                  <button
+                                    onClick={() => handleSandwichDecision(item.employee_id, item.date, 'deduct')}
+                                    style={{
+                                      flex: 1, background: isDeducted ? '#fca5a5' : '#fee2e2', color: '#dc2626',
+                                      border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
+                                      fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                                    }}
+                                  >
+                                    Deduct LOP
+                                  </button>
+                                  <button
+                                    onClick={() => handleSandwichDecision(item.employee_id, item.date, 'ignore')}
+                                    style={{
+                                      flex: 1, background: isIgnored ? '#86efac' : '#dcfce7', color: '#16a34a',
+                                      border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
+                                      fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
+                                    }}
+                                  >
+                                    Ignore
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-              </div>
-            )}
-          </div>
-        )}
+            );
+          })()
+        }
       </div>
 
       {/* Remark Modal */}
