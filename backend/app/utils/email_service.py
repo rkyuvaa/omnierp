@@ -100,13 +100,28 @@ def send_email(
         msg.attach(part_html)
 
     # Establish SMTP connection
+    import ssl
     try:
         if config["use_ssl"]:
-            server = smtplib.SMTP_SSL(config["host"], config["port"], timeout=15)
+            try:
+                context = ssl.create_default_context()
+                server = smtplib.SMTP_SSL(config["host"], config["port"], context=context, timeout=15)
+            except Exception as ssl_err:
+                logger.warning(f"Secure SSL context failed, trying unverified context: {ssl_err}")
+                context = ssl._create_unverified_context()
+                server = smtplib.SMTP_SSL(config["host"], config["port"], context=context, timeout=15)
         else:
             server = smtplib.SMTP(config["host"], config["port"], timeout=15)
+            server.ehlo()
             if config["use_tls"]:
-                server.starttls()
+                try:
+                    context = ssl.create_default_context()
+                    server.starttls(context=context)
+                except Exception as tls_err:
+                    logger.warning(f"Secure STARTTLS context failed, trying unverified context: {tls_err}")
+                    context = ssl._create_unverified_context()
+                    server.starttls(context=context)
+                server.ehlo()
         
         # Authenticate if credentials are provided
         if config["username"] and config["password"]:
@@ -118,7 +133,15 @@ def send_email(
         return True
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {str(e)}")
-        raise Exception(f"SMTP Error: {str(e)}")
+        # Provide clean, descriptive error messages
+        err_msg = str(e)
+        if "Authentication failed" in err_msg or "Username and Password not accepted" in err_msg or "authentication failed" in err_msg.lower():
+            raise Exception("Invalid SMTP username or password.")
+        elif "timed out" in err_msg or "timeout" in err_msg.lower():
+            raise Exception(f"Connection timed out. Check host '{config['host']}' and port {config['port']}.")
+        elif "Connection refused" in err_msg or "connection refused" in err_msg.lower():
+            raise Exception(f"Connection refused. Port {config['port']} might be blocked on host '{config['host']}'.")
+        raise Exception(f"{type(e).__name__}: {err_msg}")
 
 
 def send_template_email(
