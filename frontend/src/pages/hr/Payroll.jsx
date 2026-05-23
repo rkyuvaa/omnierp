@@ -358,27 +358,34 @@ export default function Payroll() {
                                     <button 
                                       onClick={() => deleteRecord(r.id)} 
                                       title="Delete Draft" 
-                                      style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+                                      style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                     >
-                                      <Trash2 size={12} /> Delete
+                                      <Trash2 size={13} />
                                     </button>
                                   </>
                                 ) : (
                                   <button 
                                     onClick={() => deleteRecord(r.id)} 
                                     title="Delete Record" 
-                                    style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+                                    style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '7px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                                   >
-                                    <Trash2 size={12} /> Delete
+                                    <Trash2 size={13} />
                                   </button>
                                 )}
-                                <button 
-                                  onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears, arrears_paid: r.arrears_paid })}
-                                  title={`Arrears (Paid: ₹${r.arrears_paid || 0} | Held: ₹${r.pending_arrears || 0})`}
-                                  style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
-                                >
-                                  <Wallet size={12} /> Arrears
-                                </button>
+                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                  <button 
+                                    onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears, arrears_paid: r.arrears_paid })}
+                                    title={`Arrears (Paid: ₹${r.arrears_paid || 0} | Held: ₹${r.pending_arrears || 0})`}
+                                    style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
+                                  >
+                                    <Wallet size={12} /> Arrears
+                                  </button>
+                                  {(Number(r.arrears_paid) > 0 || Number(r.pending_arrears) > 0) && (
+                                    <div style={{ fontSize: '9px', color: '#d97706', fontWeight: 700, marginTop: '2px', whiteSpace: 'nowrap' }}>
+                                      ₹{r.arrears_paid || 0} P | ₹{r.pending_arrears || 0} H
+                                    </div>
+                                  )}
+                                </div>
                               </>
                             )}
                             {user?.is_superadmin && (
