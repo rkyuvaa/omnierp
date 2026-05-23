@@ -424,6 +424,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev }) {
   });
   const [saving, setSaving] = useState(false);
   const [netPayInput, setNetPayInput] = useState('');
+  const [lastEmpId, setLastEmpId] = useState(emp.id);
 
   useEffect(() => {
     api.get('/hr/leave/types').then(r => setLeaveTypes(r.data));
@@ -536,11 +537,26 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev }) {
   }
 
   useEffect(() => {
-    if (salaryComponents.length > 0 && emp.basic_salary > 0 && !netPayInput) {
+    // Reset form and netPayInput whenever employee changes (e.g. prev/next navigation)
+    if (emp.id !== lastEmpId) {
+      setLastEmpId(emp.id);
+      setNetPayInput('');
+      setSalaryForm({
+        basic_salary: emp.basic_salary,
+        salary_template_id: emp.salary_template_id || '',
+        salary_components: emp.salary_components || []
+      });
+      setBalances(emp.leave_balances || []);
+    }
+  }, [emp.id]);
+
+  useEffect(() => {
+    // Always recalculate net pay for the current employee when components are loaded
+    if (salaryComponents.length > 0 && emp.basic_salary > 0) {
        const details = calculateSalaryDetails(emp.basic_salary, emp.salary_components);
        setNetPayInput(Math.round(details.netPay));
     }
-  }, [salaryComponents, emp]);
+  }, [salaryComponents, emp.id]);
 
   async function saveBalances() {
     setSaving(true);
