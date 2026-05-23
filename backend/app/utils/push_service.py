@@ -45,11 +45,17 @@ def send_push_to_user(
             }
         }
 
+        # pywebpush Vapid.from_string expects base64-encoded DER string (no PEM headers/footers)
+        private_key = settings.VAPID_PRIVATE_KEY.strip()
+        if private_key.startswith("-----BEGIN"):
+            lines = private_key.splitlines()
+            private_key = "".join([l.strip() for l in lines if l and not l.startswith("-----")])
+
         try:
             webpush(
                 subscription_info=subscription_info,
                 data=payload,
-                vapid_private_key=settings.VAPID_PRIVATE_KEY,
+                vapid_private_key=private_key,
                 vapid_claims={"sub": settings.VAPID_EMAIL}
             )
             logger.info(f"Successfully sent push notification to subscription {sub.id} of user {user_id}")
