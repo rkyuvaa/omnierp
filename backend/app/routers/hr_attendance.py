@@ -599,8 +599,8 @@ def post_sandwich_decision(
 @router.get("/import/template")
 def get_attendance_template(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     import openpyxl
+    from openpyxl.worksheet.datavalidation import DataValidation
     import io
-    from fastapi.responses import StreamingResponse
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -608,6 +608,19 @@ def get_attendance_template(db: Session = Depends(get_db), current_user: User = 
     headers = ["employee_id", "employee_name", "date", "status", "check_in", "check_out"]
     for col_idx, h in enumerate(headers, 1):
         ws.cell(row=1, column=col_idx, value=h)
+
+    # Add standard status dropdown list validation in column D
+    dv = DataValidation(
+        type="list", 
+        formula1='"present,absent,half_day,weekly_off,holiday,leave,on_duty,late"', 
+        allow_blank=True
+    )
+    dv.prompt = "Select status"
+    dv.promptTitle = "Allowed Statuses"
+    dv.error = "Must be present, absent, half_day, weekly_off, holiday, leave, on_duty, or late"
+    dv.errorTitle = "Invalid Status"
+    ws.add_data_validation(dv)
+    dv.add("D2:D1000")
 
     # Pre-populate active employees
     employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.employee_id).all()
