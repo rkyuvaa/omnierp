@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail } from 'lucide-react';
 import { useState } from 'react';
 
 const mainItems = [{to:'/',label:'Dashboard',icon:LayoutDashboard}];
@@ -25,6 +25,7 @@ const adminItems = [
   {to:'/warranty/bom',label:'BOM Master',icon:Package},
   {to:'/studio',label:'Studio',icon:Settings},
   {to:'/admin/backups',label:'System Backup',icon:Database},
+  {to:'/admin/settings',label:'Mailing Settings',icon:Mail},
   {to:'/audit',label:'Audit Log',icon:ClipboardList}
 ];
 

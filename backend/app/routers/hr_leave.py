@@ -393,6 +393,29 @@ def pending_approvals(
         ).order_by(HRLeaveRequest.created_at).all()
     return [_serialize_request(r) for r in reqs]
 
+def _send_leave_email_notification(db: Session, req: HRLeaveRequest):
+    if not req.employee or not req.employee.email or "@" not in req.employee.email:
+        return
+    try:
+        from app.utils.email_service import send_template_email
+        variables = {
+            "employee_name": req.employee.name,
+            "leave_type": req.leave_type.name if req.leave_type else "Leave",
+            "from_date": str(req.from_date),
+            "to_date": str(req.to_date),
+            "status": req.status,
+            "approver_name": req.approver.name if req.approver else "HR/Manager",
+            "reason": req.approver_remarks or "No remarks provided"
+        }
+        send_template_email(
+            db=db,
+            to_email=req.employee.email,
+            template_name="leave_status_update",
+            variables=variables
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send leave approval email to {req.employee.email}: {e}")
+
 @router.get("/all")
 def all_requests(
     status: Optional[str] = None,
@@ -443,6 +466,7 @@ def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db),
                 f"Your {req.leave_type.name if req.leave_type else 'leave'} from {req.from_date} to {req.to_date} has been approved.",
                 "leave", req.id)
     db.commit()
+    _send_leave_email_notification(db, req)
     return {"message": "Approved", "id": req.id}
 
 @router.post("/{req_id}/reject")
@@ -464,6 +488,7 @@ def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), 
                 f"Your leave from {req.from_date} to {req.to_date} was rejected. Reason: {data.remarks or 'No reason given'}",
                 "leave", req.id)
     db.commit()
+    _send_leave_email_notification(db, req)
     return {"message": "Rejected"}
 
 @router.post("/{req_id}/cancel")

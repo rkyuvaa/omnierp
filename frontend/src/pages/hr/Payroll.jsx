@@ -3,7 +3,7 @@ import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
-import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight, Trash2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight, Trash2, Mail } from 'lucide-react';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -21,6 +21,8 @@ export default function Payroll() {
   const [selected, setSelected] = useState([]);
   const [detail, setDetail] = useState(null);
   const [arrearModal, setArrearModal] = useState(null); // { employee_id, employee_name, pending_arrears }
+  const [emailingId, setEmailingId] = useState(null);
+  const [emailingBulk, setEmailingBulk] = useState(false);
 
   useEffect(() => {
     if (user?.is_superadmin) {
@@ -137,6 +139,50 @@ export default function Payroll() {
     } catch { toast.error('Failed to download payslip'); }
   }
 
+  async function emailPayslip(recordId, empName) {
+    setEmailingId(recordId);
+    const toastId = toast.loading(`Sending payslip to ${empName}...`);
+    try {
+      const res = await api.post(`/hr/payroll/${recordId}/send-payslip`);
+      toast.success(res.data.message || `Payslip successfully emailed to ${empName}`, { id: toastId });
+    } catch (err) {
+      const errMsg = err.response?.data?.detail || 'Failed to send email';
+      toast.error(errMsg, { id: toastId });
+    } finally {
+      setEmailingId(null);
+    }
+  }
+
+  async function bulkEmailPayslips() {
+    if (selected.length === 0) return;
+    const count = selected.length;
+    if (!confirm(`Are you sure you want to email payslips to the ${count} selected employees?`)) return;
+    
+    const recordIds = records.filter(r => selected.includes(r.employee_id)).map(r => r.id);
+    setEmailingBulk(true);
+    const toastId = toast.loading(`Bulk sending ${count} payslips...`);
+    try {
+      const res = await api.post('/hr/payroll/bulk-send-payslips', { record_ids: recordIds });
+      const { sent, failed, errors } = res.data;
+      
+      if (failed === 0) {
+        toast.success(`Successfully sent ${sent} payslip emails!`, { id: toastId });
+      } else {
+        toast.success(`Sent: ${sent}, Failed: ${failed}`, { id: toastId });
+        if (errors && errors.length > 0) {
+          console.error('Bulk email errors:', errors);
+          toast.error(`Errors: ${errors.slice(0, 3).join(', ')}${errors.length > 3 ? '...' : ''}`, { duration: 6000 });
+        }
+      }
+      setSelected([]);
+    } catch (err) {
+      const errMsg = err.response?.data?.detail || 'Failed to bulk send emails';
+      toast.error(errMsg, { id: toastId });
+    } finally {
+      setEmailingBulk(false);
+    }
+  }
+
   function prevMonth() { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); }
   function nextMonth() { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); }
 
@@ -192,6 +238,24 @@ export default function Payroll() {
                       </button>
                       <button onClick={() => bulkUpdateStatus('draft')} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#fef3c7', color: '#d97706', border: '1px solid #fde68a' }}>
                         <Clock size={13} /> Bulk Reset ({selected.length})
+                      </button>
+                      <button 
+                        onClick={bulkEmailPayslips} 
+                        disabled={emailingBulk}
+                        className="btn" 
+                        style={{ 
+                          display: 'flex', 
+                          alignItems: 'center', 
+                          gap: 6, 
+                          fontSize: 13, 
+                          background: '#e0e7ff', 
+                          color: '#4338ca', 
+                          border: '1px solid #c7d2fe',
+                          cursor: emailingBulk ? 'not-allowed' : 'pointer',
+                          opacity: emailingBulk ? 0.7 : 1
+                        }}
+                      >
+                        <Mail size={13} /> {emailingBulk ? 'Sending...' : `Bulk Email (${selected.length})`}
                       </button>
                       <button onClick={bulkDelete} className="btn" style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: '#fee2e2', color: '#dc2626', border: '1px solid #fecaca' }}>
                         <Trash2 size={13} /> Bulk Delete ({selected.length})
@@ -302,6 +366,29 @@ export default function Payroll() {
                                   <Wallet size={12} /> Arrears (₹{r.arrears_paid || 0} P | ₹{r.pending_arrears || 0} H)
                                 </button>
                               </>
+                            )}
+                            {user?.is_superadmin && (
+                              <button 
+                                onClick={() => emailPayslip(r.id, r.employee_name)} 
+                                title="Email Payslip PDF to Employee" 
+                                disabled={emailingId === r.id}
+                                style={{ 
+                                  background: '#e0e7ff', 
+                                  color: '#4338ca', 
+                                  border: 'none', 
+                                  borderRadius: 6, 
+                                  padding: '5px 10px', 
+                                  cursor: emailingId === r.id ? 'not-allowed' : 'pointer', 
+                                  fontWeight: 700, 
+                                  fontSize: 12, 
+                                  display: 'flex', 
+                                  alignItems: 'center', 
+                                  gap: 4,
+                                  opacity: emailingId === r.id ? 0.7 : 1
+                                }}
+                              >
+                                <Mail size={12} /> {emailingId === r.id ? 'Sending...' : 'Email'}
+                              </button>
                             )}
                             <button onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} title="Download Payslip PDF" style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}>
                               <Download size={12} /> Payslip

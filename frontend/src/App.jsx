@@ -25,6 +25,7 @@ import Branches from './pages/admin/Branches';
 import Modules from './pages/admin/Modules';
 import AuditLog from './pages/admin/AuditLog';
 import BackupManagement from './pages/admin/BackupManagement';
+import MailingSettings from './pages/admin/MailingSettings';
 import EmployeeMaster from './pages/hr/EmployeeMaster';
 import Attendance from './pages/hr/Attendance';
 import Requests from './pages/hr/Requests';
@@ -65,6 +66,7 @@ export default function App() {
           <Route path="/admin/roles" element={<PrivateRoute><Roles /></PrivateRoute>} />
           <Route path="/admin/modules" element={<PrivateRoute><Modules /></PrivateRoute>} />
           <Route path="/admin/backups" element={<PrivateRoute><BackupManagement /></PrivateRoute>} />
+          <Route path="/admin/settings" element={<PrivateRoute><MailingSettings /></PrivateRoute>} />
           <Route path="/audit" element={<PrivateRoute><AuditLog /></PrivateRoute>} />
           <Route path="/studio" element={<PrivateRoute><Studio /></PrivateRoute>} />
           <Route path="/hr/employees" element={<PrivateRoute><EmployeeMaster /></PrivateRoute>} />

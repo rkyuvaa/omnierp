@@ -547,3 +547,23 @@ class FormSubmission(Base):
     author = relationship("User")
     definition = relationship("FormDefinition")
 
+
+class SystemSetting(Base):
+    __tablename__ = "system_settings"
+    id = Column(Integer, primary_key=True, index=True)
+    key = Column(String(100), unique=True, index=True)
+    value = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class EmailTemplate(Base):
+    __tablename__ = "email_templates"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(100), unique=True, index=True)
+    subject = Column(String(200))
+    body_html = Column(Text)
+    placeholders = Column(JSON, nullable=True)  # List of placeholders, e.g. ["employee_name", "month"]
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+

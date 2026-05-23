@@ -570,19 +570,9 @@ def get_payroll_detail(record_id: int, db: Session = Depends(get_db), current_us
 MONTH_NAMES = ["","January","February","March","April","May","June",
                "July","August","September","October","November","December"]
 
-@router.get("/{record_id}/payslip")
-def download_payslip(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Generate and return a payslip PDF for a payroll record."""
-    record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
-    if not record: raise HTTPException(404, "Payroll record not found")
-    if not current_user.is_superadmin:
-        from app.auth import get_current_employee
-        emp_resolved = get_current_employee(current_user, db)
-        if record.employee_id != emp_resolved.id:
-            raise HTTPException(status_code=403, detail="Access denied.")
-    
+def _generate_payslip_pdf_bytes(record, db: Session):
     employee = record.employee
-    if not employee: raise HTTPException(404, "Employee not found")
+    if not employee: return None
 
     # Load payslip branding from Studio → Documents → payroll module
     payroll_template = db.query(FormDefinition).filter(
@@ -657,17 +647,134 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
         leave_summary=leave_summary,
         esi_number=employee.esi_number or "-"
     )
-    pdf_bytes = render_to_pdf(html)
+    return render_to_pdf(html)
 
+
+class BulkSendPayslipsSchema(BaseModel):
+    record_ids: List[int]
+
+
+@router.get("/{record_id}/payslip")
+def download_payslip(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Generate and return a payslip PDF for a payroll record."""
+    record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
+    if not record: raise HTTPException(404, "Payroll record not found")
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee
+        emp_resolved = get_current_employee(current_user, db)
+        if record.employee_id != emp_resolved.id:
+            raise HTTPException(status_code=403, detail="Access denied.")
+    
+    employee = record.employee
+    if not employee: raise HTTPException(404, "Employee not found")
+
+    pdf_bytes = _generate_payslip_pdf_bytes(record, db)
     if not pdf_bytes:
         raise HTTPException(500, "PDF generation failed")
 
-    filename = f"Payslip_{employee.employee_id}_{month_name}_{record.year}.pdf"
+    filename = f"Payslip_{employee.employee_id}_{MONTH_NAMES[record.month]}_{record.year}.pdf"
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'}
     )
+
+
+@router.post("/{record_id}/send-payslip")
+def email_payslip(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """Generate and email payslip PDF to the employee."""
+    record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
+    if not record: raise HTTPException(404, "Payroll record not found")
+    
+    employee = record.employee
+    if not employee: raise HTTPException(404, "Employee not found")
+    if not employee.email or "@" not in employee.email:
+        raise HTTPException(400, f"Employee '{employee.name}' does not have a valid email address configured.")
+
+    pdf_bytes = _generate_payslip_pdf_bytes(record, db)
+    if not pdf_bytes:
+        raise HTTPException(500, "PDF generation failed")
+
+    from app.utils.email_service import send_template_email
+    
+    variables = {
+        "employee_name": employee.name,
+        "month": MONTH_NAMES[record.month],
+        "year": str(record.year),
+        "net_salary": f"{record.net_salary:,.2f}"
+    }
+    
+    try:
+        filename = f"Payslip_{employee.employee_id}_{MONTH_NAMES[record.month]}_{record.year}.pdf"
+        send_template_email(
+            db=db,
+            to_email=employee.email,
+            template_name="payslip_notification",
+            variables=variables,
+            attachment_bytes=pdf_bytes,
+            attachment_filename=filename
+        )
+        return {"message": f"Payslip successfully emailed to {employee.email}"}
+    except Exception as e:
+        raise HTTPException(400, f"Failed to send email: {str(e)}")
+
+
+@router.post("/bulk-send-payslips")
+def bulk_email_payslips(data: BulkSendPayslipsSchema, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """Bulk email payslips to multiple selected employees."""
+    sent = 0
+    failed = 0
+    errors = []
+
+    from app.utils.email_service import send_template_email
+
+    for rid in data.record_ids:
+        record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == rid).first()
+        if not record:
+            failed += 1
+            errors.append(f"Record #{rid}: Not found")
+            continue
+
+        employee = record.employee
+        if not employee:
+            failed += 1
+            errors.append(f"Record #{rid}: Employee not found")
+            continue
+
+        if not employee.email or "@" not in employee.email:
+            failed += 1
+            errors.append(f"{employee.name} ({employee.employee_id}): Missing email address")
+            continue
+
+        try:
+            pdf_bytes = _generate_payslip_pdf_bytes(record, db)
+            if not pdf_bytes:
+                failed += 1
+                errors.append(f"{employee.name} ({employee.employee_id}): PDF generation failed")
+                continue
+
+            variables = {
+                "employee_name": employee.name,
+                "month": MONTH_NAMES[record.month],
+                "year": str(record.year),
+                "net_salary": f"{record.net_salary:,.2f}"
+            }
+            
+            filename = f"Payslip_{employee.employee_id}_{MONTH_NAMES[record.month]}_{record.year}.pdf"
+            send_template_email(
+                db=db,
+                to_email=employee.email,
+                template_name="payslip_notification",
+                variables=variables,
+                attachment_bytes=pdf_bytes,
+                attachment_filename=filename
+            )
+            sent += 1
+        except Exception as e:
+            failed += 1
+            errors.append(f"{employee.name} ({employee.employee_id}): {str(e)}")
+
+    return {"sent": sent, "failed": failed, "errors": errors}
 
 class ArrearHoldRequest(BaseModel):
     employee_id: int

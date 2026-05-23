@@ -138,6 +138,28 @@ def all_onduty(status: Optional[str] = None, employee_id: Optional[int] = None,
     if employee_id: q = q.filter(HROnDutyRequest.employee_id == employee_id)
     return [_serialize(r) for r in q.order_by(HROnDutyRequest.created_at.desc()).all()]
 
+def _send_onduty_email_notification(db: Session, req: HROnDutyRequest):
+    if not req.employee or not req.employee.email or "@" not in req.employee.email:
+        return
+    try:
+        from app.utils.email_service import send_template_email
+        variables = {
+            "employee_name": req.employee.name,
+            "date": str(req.date),
+            "status": req.status,
+            "approver_name": req.approver.name if req.approver else "HR/Manager",
+            "reason": req.approver_remarks or "No remarks provided"
+        }
+        send_template_email(
+            db=db,
+            to_email=req.employee.email,
+            template_name="onduty_status_update",
+            variables=variables
+        )
+    except Exception as e:
+        print(f"⚠️ Failed to send On-Duty email to {req.employee.email}: {e}")
+
+
 @router.post("/{req_id}/approve")
 def approve_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
@@ -167,6 +189,7 @@ def approve_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db
         _notify(db, req.employee.user_id, "On-Duty Approved ✓",
                 f"Your On-Duty request for {req.date} has been approved.", "onduty", req.id)
     db.commit()
+    _send_onduty_email_notification(db, req)
     return {"message": "Approved"}
 
 @router.post("/{req_id}/reject")
@@ -185,4 +208,5 @@ def reject_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db)
         _notify(db, req.employee.user_id, "On-Duty Rejected ✗",
                 f"Your On-Duty for {req.date} was rejected. Reason: {data.remarks or 'No reason'}", "onduty", req.id)
     db.commit()
+    _send_onduty_email_notification(db, req)
     return {"message": "Rejected"}
