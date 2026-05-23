@@ -14,4 +14,4 @@ xhtml2pdf==0.2.11
 pyzk==0.9
 APScheduler==3.10.4
 pywebpush==1.14.0
-
+py-vapid>=1.9.4
