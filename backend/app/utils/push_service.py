@@ -1,6 +1,34 @@
 import json
 import logging
 from sqlalchemy.orm import Session
+
+# MONKEY PATCH: Resolve cryptography class vs instance compatibility bug in older py-vapid versions
+try:
+    from cryptography.hazmat.primitives.asymmetric import ec
+    _orig_derive = ec.derive_private_key
+    _orig_generate = ec.generate_private_key
+
+    def patched_derive_private_key(private_value, curve, *args, **kwargs):
+        if isinstance(curve, type):
+            try:
+                curve = curve()
+            except Exception:
+                pass
+        return _orig_derive(private_value, curve, *args, **kwargs)
+
+    def patched_generate_private_key(curve, *args, **kwargs):
+        if isinstance(curve, type):
+            try:
+                curve = curve()
+            except Exception:
+                pass
+        return _orig_generate(curve, *args, **kwargs)
+
+    ec.derive_private_key = patched_derive_private_key
+    ec.generate_private_key = patched_generate_private_key
+except Exception as e:
+    pass
+
 from pywebpush import webpush, WebPushException
 from app.config import settings
 from app.hr_models import HRPushSubscription
