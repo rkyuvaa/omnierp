@@ -167,6 +167,7 @@ export default function EmployeeMaster() {
             shifts={shifts}
             onNext={handleNextEmployee}
             onPrev={handlePrevEmployee}
+            onRefresh={() => openDetail(selectedEmp)}
           />
         ) : (
           <>
@@ -410,7 +411,7 @@ export default function EmployeeMaster() {
   );
 }
 
-function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev }) {
+function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh }) {
   const [showBalanceModal, setShowBalanceModal] = useState(false);
   const [showSalaryModal, setShowSalaryModal] = useState(false);
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -564,7 +565,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev }) {
       await api.post(`/hr/leave/balances/${emp.id}`, balances);
       toast.success('Balances updated');
       setShowBalanceModal(false);
-      window.location.reload();
+      onRefresh();
     } catch { toast.error('Failed to update balances'); }
     finally { setSaving(false); }
   }
@@ -575,7 +576,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev }) {
       await api.put(`/hr/employees/${emp.id}`, salaryForm);
       toast.success('Salary structure updated');
       setShowSalaryModal(false);
-      window.location.reload();
+      onRefresh();
     } catch { toast.error('Failed to update salary'); }
     finally { setSaving(false); }
   }
