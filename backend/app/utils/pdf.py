@@ -150,7 +150,11 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     .footer-note { text-align: center; font-size: 7.5pt; color: #94a3b8; margin-top: 20px; border-top: 1px solid #f1f5f9; padding-top: 10px; }
     """
 
-    earn_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in earnings.items()])
+    regular_earnings = {k: v for k, v in earnings.items() if 'Arrear' not in k}
+    arrear_earnings = {k: v for k, v in earnings.items() if 'Arrear' in k}
+
+    earn_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in regular_earnings.items()])
+    arrear_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in arrear_earnings.items()])
     ded_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in deductions.items()])
     cont_rows = "".join([f"<tr><td class='comp-name'>{k}</td><td class='comp-val'>{float(v):,.2f}</td></tr>" for k, v in employer_cont.items()])
 
@@ -241,7 +245,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                         <table class="comp-tbl">
                             {earn_rows or "<tr><td class='comp-name' colspan='2' style='text-align:center;'>-</td></tr>"}
                             <tr class="total-row"><td class="comp-name">GROSS EARNINGS</td><td class="comp-val">Rs. {regular_gross:,.2f}</td></tr>
-                            <tr class="total-row"><td class="comp-name">GROSS WITH ARREAR</td><td class="comp-val">Rs. {total_earnings:,.2f}</td></tr>
+                            {arrear_rows}
+                            {f'<tr class="total-row"><td class="comp-name">GROSS WITH ARREAR</td><td class="comp-val">Rs. {total_earnings:,.2f}</td></tr>' if arrear_earnings else ''}
                         </table>
                     </td>
                     <td class="comp-spacer"></td>
