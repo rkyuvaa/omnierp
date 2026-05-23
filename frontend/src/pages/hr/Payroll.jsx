@@ -19,6 +19,7 @@ export default function Payroll() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [selected, setSelected] = useState([]);
+  const [filterEmployee, setFilterEmployee] = useState('');
   const [detail, setDetail] = useState(null);
   const [arrearModal, setArrearModal] = useState(null); // { employee_id, employee_name, pending_arrears }
   const [emailingId, setEmailingId] = useState(null);
@@ -229,6 +230,18 @@ export default function Payroll() {
                 <span style={{ fontWeight: 700, fontSize: 15, minWidth: 140, textAlign: 'center' }}>{MONTH_NAMES[month - 1]} {year}</span>
                 <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex' }}><ChevronRight size={16} /></button>
               </div>
+              {user?.is_superadmin && employees.length > 0 && (
+                <select
+                  value={filterEmployee}
+                  onChange={e => setFilterEmployee(e.target.value)}
+                  style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, minWidth: 180, cursor: 'pointer' }}
+                >
+                  <option value=''>All Employees</option>
+                  {employees.map(e => (
+                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} ({e.employee_code})</option>
+                  ))}
+                </select>
+              )}
               {user?.is_superadmin && (
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                   {selected.length > 0 && (
@@ -316,7 +329,7 @@ export default function Payroll() {
                     </tr>
                   </thead>
                   <tbody>
-                    {records.map(r => (
+                    {records.filter(r => !filterEmployee || String(r.employee_id) === String(filterEmployee)).map(r => (
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                         {user?.is_superadmin && (
                           <td style={{ padding: '10px 6px' }}>
