@@ -111,23 +111,29 @@ def my_onduty_requests(employee_id: int, status: Optional[str] = None,
     return [_serialize(r) for r in q.order_by(HROnDutyRequest.created_at.desc()).all()]
 
 @router.get("/pending")
-def pending_onduty(approver_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def pending_onduty(approver_id: Optional[int] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not current_user.is_superadmin:
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
             return []
-        if approver_id != emp.id:
+        if approver_id and approver_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own pending approvals.")
         reqs = db.query(HROnDutyRequest).filter(
             HROnDutyRequest.approver_id == emp.id,
             HROnDutyRequest.status == "pending"
         ).all()
     else:
-        reqs = db.query(HROnDutyRequest).filter(
-            (HROnDutyRequest.approver_id == approver_id) | (HROnDutyRequest.approver_id == None),
-            HROnDutyRequest.status == "pending"
-        ).all()
+        if approver_id is None:
+            # Superadmin with no filter — return ALL pending
+            reqs = db.query(HROnDutyRequest).filter(
+                HROnDutyRequest.status == "pending"
+            ).all()
+        else:
+            reqs = db.query(HROnDutyRequest).filter(
+                (HROnDutyRequest.approver_id == approver_id) | (HROnDutyRequest.approver_id == None),
+                HROnDutyRequest.status == "pending"
+            ).all()
     return [_serialize(r) for r in reqs]
 
 @router.get("/all")

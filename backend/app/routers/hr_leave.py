@@ -371,7 +371,7 @@ def my_requests(
 
 @router.get("/pending")
 def pending_approvals(
-    approver_id: int,
+    approver_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -380,17 +380,23 @@ def pending_approvals(
         emp = get_current_employee_optional(current_user, db)
         if not emp:
             return []
-        if approver_id != emp.id:
+        if approver_id and approver_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only view your own pending approvals.")
         reqs = db.query(HRLeaveRequest).filter(
             HRLeaveRequest.approver_id == emp.id,
             HRLeaveRequest.status == "pending"
         ).order_by(HRLeaveRequest.created_at).all()
     else:
-        reqs = db.query(HRLeaveRequest).filter(
-            (HRLeaveRequest.approver_id == approver_id) | (HRLeaveRequest.approver_id == None),
-            HRLeaveRequest.status == "pending"
-        ).order_by(HRLeaveRequest.created_at).all()
+        if approver_id is None:
+            # Superadmin with no filter — return ALL pending
+            reqs = db.query(HRLeaveRequest).filter(
+                HRLeaveRequest.status == "pending"
+            ).order_by(HRLeaveRequest.created_at).all()
+        else:
+            reqs = db.query(HRLeaveRequest).filter(
+                (HRLeaveRequest.approver_id == approver_id) | (HRLeaveRequest.approver_id == None),
+                HRLeaveRequest.status == "pending"
+            ).order_by(HRLeaveRequest.created_at).all()
     return [_serialize_request(r) for r in reqs]
 
 def _send_leave_email_notification(db: Session, req: HRLeaveRequest):
