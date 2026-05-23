@@ -54,9 +54,9 @@ def _serialize(r: HROnDutyRequest):
         "approver_name": r.approver.name if r.approver else None,
         "approver_remarks": r.approver_remarks,
         "is_auto_approved": r.is_auto_approved,
-        "auto_approve_at": str(r.auto_approve_at) if r.auto_approve_at else None,
+        "auto_approve_at": r.auto_approve_at.isoformat() + "Z" if r.auto_approve_at else None,
         "seconds_until_auto_approve": remaining,
-        "created_at": str(r.created_at),
+        "created_at": r.created_at.isoformat() + "Z" if r.created_at else None,
     }
 
 @router.post("/apply")

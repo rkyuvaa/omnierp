@@ -345,7 +345,7 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
                     f"{emp.name} has applied for {leave_type.name} from {data.from_date} to {data.to_date}.",
                     "leave", req.id)
     db.commit()
-    return {"id": req.id, "reference": req.reference, "status": req.status, "auto_approve_at": str(auto_approve_at)}
+    return {"id": req.id, "reference": req.reference, "status": req.status, "auto_approve_at": auto_approve_at.isoformat() + "Z"}
 
 @router.get("/my-requests")
 def my_requests(
@@ -504,7 +504,7 @@ def _serialize_request(r: HRLeaveRequest):
         "approver_name": r.approver.name if r.approver else None,
         "approver_remarks": r.approver_remarks,
         "is_auto_approved": r.is_auto_approved,
-        "auto_approve_at": str(r.auto_approve_at) if r.auto_approve_at else None,
+        "auto_approve_at": r.auto_approve_at.isoformat() + "Z" if r.auto_approve_at else None,
         "seconds_until_auto_approve": remaining,
-        "created_at": str(r.created_at),
+        "created_at": r.created_at.isoformat() + "Z" if r.created_at else None,
     }

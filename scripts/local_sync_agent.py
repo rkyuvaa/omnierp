@@ -10,7 +10,7 @@ except ImportError:
 
 # CONFIGURATION
 # ---------------------------------------------------------
-ERP_URL = "http://54.83.86.12/api/hr/attendance/sync/bulk" # Your AWS ERP URL
+ERP_URL = "https://kimerp.ddns.net/api/hr/attendance/sync/bulk" # Your AWS ERP URL
 MACHINE_IP = "192.168.31.4"
 MACHINE_PORT = 4370
 MACHINE_ID = 1  # The ID of this machine in your ERP (usually 1 if it's the first)

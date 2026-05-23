@@ -26,7 +26,7 @@ def get_notifications(
         "id": n.id, "title": n.title, "message": n.message,
         "notif_type": n.notif_type, "reference_type": n.reference_type,
         "reference_id": n.reference_id, "is_read": n.is_read,
-        "created_at": str(n.created_at),
+        "created_at": n.created_at.isoformat() + "Z" if n.created_at else None,
     } for n in notifications]
 
 @router.get("/unread-count")
