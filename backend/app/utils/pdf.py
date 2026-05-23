@@ -89,6 +89,9 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     
     total_employer_cont = sum(float(v) for v in employer_cont.values())
     monthly_ctc = total_earnings + total_employer_cont
+    # CTC SUMMARY uses regular gross only (arrears excluded per Indian standard)
+    regular_gross = sum(float(v) for k, v in earnings.items() if 'Arrear' not in k)
+    regular_ctc   = regular_gross + total_employer_cont
 
     emp_name        = employee.name or '-'
     emp_code        = employee.employee_id or '-'
@@ -265,9 +268,9 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                     <td class="comp-cell">
                         <div class="hdr-summ">CTC SUMMARY Amount (Rs.)</div>
                         <table class="comp-tbl">
-                            <tr><td class="comp-name">Gross Salary</td><td class="comp-val">{total_earnings:,.2f}</td></tr>
+                            <tr><td class="comp-name">Gross Salary</td><td class="comp-val">{regular_gross:,.2f}</td></tr>
                             <tr><td class="comp-name">Employer Contributions</td><td class="comp-val">{total_employer_cont:,.2f}</td></tr>
-                            <tr class="total-row"><td class="comp-name">MONTHLY CTC</td><td class="comp-val">Rs. {monthly_ctc:,.2f}</td></tr>
+                            <tr class="total-row"><td class="comp-name">MONTHLY CTC</td><td class="comp-val">Rs. {regular_ctc:,.2f}</td></tr>
                         </table>
                     </td>
                 </tr>
