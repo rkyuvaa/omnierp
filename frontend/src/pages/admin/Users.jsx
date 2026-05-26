@@ -121,12 +121,21 @@ export default function AdminUsers() {
     if (!modalForm.name) return toast.error('Name is required');
     try {
       let url = '';
+      let payload = { ...modalForm };
       if (modalMode === 'dept') url = '/departments/';
-      if (modalMode === 'branch') url = '/branches/';
+      if (modalMode === 'branch') {
+        url = '/branches/';
+        payload = {
+          ...modalForm,
+          latitude: modalForm.latitude === '' || modalForm.latitude === undefined || modalForm.latitude === null ? null : parseFloat(modalForm.latitude),
+          longitude: modalForm.longitude === '' || modalForm.longitude === undefined || modalForm.longitude === null ? null : parseFloat(modalForm.longitude),
+          radius: modalForm.radius === '' || modalForm.radius === undefined || modalForm.radius === null ? 100.0 : parseFloat(modalForm.radius)
+        };
+      }
       if (modalMode === 'role') url = '/roles/';
 
-      if (modalEditing) await api.put(`${url}${modalEditing}/`, modalForm);
-      else await api.post(`${url}`, modalForm);
+      if (modalEditing) await api.put(`${url}${modalEditing}/`, payload);
+      else await api.post(`${url}`, payload);
 
       toast.success('Record saved'); setModal(false); load();
     } catch (e) { toast.error(`Error saving data: ${e.message}`); }
@@ -442,7 +451,7 @@ export default function AdminUsers() {
         <div className="toolbar-right">
           {view === 'users' && <button className="btn btn-primary btn-sm" onClick={openNew}><Plus size={14} /> New User</button>}
           {view === 'departments' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', is_active: true }); setModalEditing(null); setModalMode('dept'); setModal(true); }}><Plus size={14} /> New Dept</button>}
-          {view === 'branches' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', address: '', is_active: true }); setModalEditing(null); setModalMode('branch'); setModal(true); }}><Plus size={14} /> New Branch</button>}
+          {view === 'branches' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', address: '', latitude: '', longitude: '', radius: 100, is_active: true }); setModalEditing(null); setModalMode('branch'); setModal(true); }}><Plus size={14} /> New Branch</button>}
           {view === 'roles' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false } }); setModalEditing(null); setModalMode('role'); setModal(true); }}><Plus size={14} /> New Role</button>}
         </div>
       </div>
@@ -560,6 +569,8 @@ export default function AdminUsers() {
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
                   <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Branch Name</th>
                   <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Location / Address</th>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Office GPS Coordinates</th>
+                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Allowed Radius</th>
                   <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Status</th>
                   <th style={{ padding: '12px' }}></th>
                 </tr>
@@ -570,11 +581,37 @@ export default function AdminUsers() {
                     <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{b.name}</td>
                     <td style={{ padding: '12px', fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>{b.address || 'Standard Location'}</td>
                     <td style={{ padding: '12px' }}>
+                      {b.latitude !== null && b.longitude !== null ? (
+                        <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>
+                          Lat: {parseFloat(b.latitude).toFixed(5)}, Lon: {parseFloat(b.longitude).toFixed(5)}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text3)', fontSize: 11, fontStyle: 'italic' }}>Not Configured</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '12px' }}>
+                      <span className="fw-600" style={{ fontSize: 12, color: 'var(--text2)' }}>
+                        {b.radius !== null ? `${b.radius}m` : '100m'}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px' }}>
                       <Badge color={b.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10, fontWeight: 800 }}>{b.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
                       <div className="flex gap-2 justify-end">
-                        <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { setModalForm({ name: b.name, address: b.address || '', is_active: b.is_active }); setModalEditing(b.id); setModalMode('branch'); setModal(true); }}><Pencil size={13} /></button>
+                        <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { 
+                          setModalForm({ 
+                            name: b.name, 
+                            address: b.address || '', 
+                            latitude: b.latitude !== null && b.latitude !== undefined ? b.latitude : '',
+                            longitude: b.longitude !== null && b.longitude !== undefined ? b.longitude : '',
+                            radius: b.radius !== null && b.radius !== undefined ? b.radius : 100,
+                            is_active: b.is_active 
+                          }); 
+                          setModalEditing(b.id); 
+                          setModalMode('branch'); 
+                          setModal(true); 
+                        }}><Pencil size={13} /></button>
                         <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.7 }} onClick={() => setConfirming({ type: 'branch', id: b.id, name: b.name })}><Trash2 size={13} /></button>
                       </div>
                     </td>
@@ -633,10 +670,24 @@ export default function AdminUsers() {
             </div>
 
             {modalMode === 'branch' && (
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Location Address</label>
-                <textarea className="form-input" value={modalForm.address || ''} onChange={e => setModalForm({...modalForm, address: e.target.value})} placeholder="Full address details..." />
-              </div>
+              <>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Location Address</label>
+                  <textarea className="form-input" value={modalForm.address || ''} onChange={e => setModalForm({...modalForm, address: e.target.value})} placeholder="Full address details..." />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Latitude</label>
+                  <input className="form-input" type="number" step="any" placeholder="e.g. 11.04609" value={modalForm.latitude !== null && modalForm.latitude !== undefined ? modalForm.latitude : ''} onChange={e => setModalForm({...modalForm, latitude: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Longitude</label>
+                  <input className="form-input" type="number" step="any" placeholder="e.g. 76.89994" value={modalForm.longitude !== null && modalForm.longitude !== undefined ? modalForm.longitude : ''} onChange={e => setModalForm({...modalForm, longitude: e.target.value})} />
+                </div>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Proximity Radius (Meters)</label>
+                  <input className="form-input" type="number" placeholder="e.g. 100" value={modalForm.radius !== null && modalForm.radius !== undefined ? modalForm.radius : 100} onChange={e => setModalForm({...modalForm, radius: e.target.value})} />
+                </div>
+              </>
             )}
 
             {modalMode === 'role' && (
