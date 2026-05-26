@@ -184,6 +184,16 @@ export default function PunchButton() {
 
   const cfg = STATES[state];
 
+  function formatTime(isoStr) {
+    if (!isoStr) return '--:--';
+    try {
+      const d = new Date(isoStr);
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    } catch {
+      return isoStr.slice(11, 16);
+    }
+  }
+
   return (
     <>
       {/* ── Inline Topbar Button ─────────────────────────────────────── */}
@@ -191,30 +201,54 @@ export default function PunchButton() {
         onClick={openFlow}
         title={cfg.label}
         style={{
-          height: 36,
-          padding: '0 14px',
-          borderRadius: 9999,
+          padding: '4px 16px',
+          borderRadius: 12,
           border: `2px solid ${cfg.ring}`,
           background: cfg.gradient,
           boxShadow: cfg.shadow,
           cursor: state === 'done' ? 'not-allowed' : 'pointer',
           display: 'flex',
+          flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: 7,
           outline: 'none',
           color: '#fff',
-          fontWeight: 700,
-          fontSize: 13,
-          letterSpacing: '0.3px',
           flexShrink: 0,
           transition: 'all 0.2s ease',
+          lineHeight: '1.25',
+          minWidth: 120,
         }}
         onMouseEnter={e => { if (state !== 'done') e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
       >
-        <cfg.Icon size={15} color="#fff" strokeWidth={2.5} />
-        <span>{cfg.label}</span>
+        {state === 'none' && (
+          <>
+            <span style={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <LogIn size={12} color="#fff" strokeWidth={2.5} /> Check In
+            </span>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: 600, marginTop: 1 }}>--:--</span>
+          </>
+        )}
+        {state === 'in' && (
+          <>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+              In: {formatTime(todayData?.check_in)}
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 800, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <LogOut size={12} color="#fff" strokeWidth={2.5} /> Check Out
+            </span>
+          </>
+        )}
+        {state === 'done' && (
+          <>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+              In: {formatTime(todayData?.check_in)}
+            </span>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 1 }}>
+              Out: {formatTime(todayData?.check_out)}
+            </span>
+          </>
+        )}
       </button>
 
       {/* ── Modal ───────────────────────────────────────────────────────── */}
