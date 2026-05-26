@@ -133,10 +133,17 @@ def serve_upload(filename: str):
 @app.get("/api/static/uploads/attendance/{filename}")
 @app.get("/uploads/attendance/{filename}")
 def serve_attendance_upload(filename: str):
+    # 1. Primary path: backend/static/uploads/attendance/{filename}
     file_path = os.path.join(upload_dir, "attendance", filename)
-    if not os.path.isfile(file_path):
-        raise HTTPException(status_code=404, detail="Selfie file not found on disk")
-    return FileResponse(file_path)
+    if os.path.isfile(file_path):
+        return FileResponse(file_path)
+    
+    # 2. Fallback path: backend/app/static/uploads/attendance/{filename}
+    fallback_path = os.path.join(BASE_DIR, "app", "static", "uploads", "attendance", filename)
+    if os.path.isfile(fallback_path):
+        return FileResponse(fallback_path)
+        
+    raise HTTPException(status_code=404, detail="Selfie file not found on disk")
 
 # Keep the general static mount for other things
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")

@@ -275,7 +275,7 @@ async def mobile_punch(
     if not emp: raise HTTPException(404, "Employee not found")
 
     # Save photo
-    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     upload_dir = os.path.join(BASE_DIR, "static", "uploads", "attendance")
     os.makedirs(upload_dir, exist_ok=True)
     ext = os.path.splitext(photo.filename)[1] or ".jpg"
