@@ -129,6 +129,15 @@ def serve_upload(filename: str):
         raise HTTPException(status_code=404, detail="File not found on disk")
     return FileResponse(file_path)
 
+@app.get("/api/uploads/attendance/{filename}")
+@app.get("/api/static/uploads/attendance/{filename}")
+@app.get("/uploads/attendance/{filename}")
+def serve_attendance_upload(filename: str):
+    file_path = os.path.join(upload_dir, "attendance", filename)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Selfie file not found on disk")
+    return FileResponse(file_path)
+
 # Keep the general static mount for other things
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
