@@ -75,6 +75,9 @@ export default function Attendance() {
   const [tooltip, setTooltip] = useState(null);
   const [correcting, setCorrecting] = useState(null);
   const [correctForm, setCorrectForm] = useState({});
+  const [dayPunches, setDayPunches] = useState([]);
+  const [loadingPunches, setLoadingPunches] = useState(false);
+  const [existingRecord, setExistingRecord] = useState(null);
   const [violations, setViolations] = useState({});
   const [configs, setConfigs] = useState({});
   const [scanning, setScanning] = useState(false);
@@ -161,6 +164,7 @@ export default function Attendance() {
 
   async function openCorrect(emp, day) {
     const existing = records[String(emp.id)]?.[day.dayStr];
+    setExistingRecord(existing || null);
     setCorrecting({ emp, day });
     setCorrectForm({
       status: existing?.status || 'present',
@@ -168,7 +172,63 @@ export default function Attendance() {
       check_out: existing?.check_out ? existing.check_out.slice(0, 16) : '',
       correction_reason: '',
     });
+
+    // Fetch raw punches for this day as a helpful reference
+    setDayPunches([]);
+    setLoadingPunches(true);
+    try {
+      const res = await api.get(`/hr/attendance/punches/${emp.id}?target_date=${day.dayStr}`);
+      setDayPunches(res.data || []);
+    } catch (e) {
+      console.error("Failed to load raw punches", e);
+    } finally {
+      setLoadingPunches(false);
+    }
   }
+
+  const handleAutofillPunches = () => {
+    if (dayPunches.length === 0) return;
+    const first = dayPunches[0].punch_time;
+    const formatToLocalInput = (dtStr) => {
+      if (!dtStr) return '';
+      const [datePart, timePart] = dtStr.split(' ');
+      if (!timePart) return dtStr.slice(0, 16).replace(' ', 'T');
+      return `${datePart}T${timePart.slice(0, 5)}`;
+    };
+
+    const checkInVal = formatToLocalInput(first);
+    let checkOutVal = '';
+    if (dayPunches.length > 1) {
+      const firstTime = new Date(first.replace(' ', 'T'));
+      const lastTime = new Date(dayPunches[dayPunches.length - 1].punch_time.replace(' ', 'T'));
+      if ((lastTime - firstTime) >= 300000) { // 5 minutes check
+        checkOutVal = formatToLocalInput(dayPunches[dayPunches.length - 1].punch_time);
+      }
+    }
+    
+    setCorrectForm({
+      ...correctForm,
+      check_in: checkInVal,
+      check_out: checkOutVal,
+      correction_reason: 'Autofilled from raw punches',
+    });
+    toast.success('Times autofilled from raw punches!');
+  };
+
+  const handleRecalculateAuto = async () => {
+    if (!confirm('This will clear the manual override and automatically calculate this day based on active leave, holiday, and raw punches. Proceed?')) return;
+    try {
+      await api.post('/hr/attendance/recalculate-day', {
+        employee_id: correcting.emp.id,
+        date: correcting.day.dayStr,
+      });
+      toast.success('Attendance recomputed automatically!');
+      setCorrecting(null);
+      fetchData();
+    } catch (e) {
+      toast.error('Failed to recalculate attendance');
+    }
+  };
 
   async function saveCorrection() {
     if (!correctForm.correction_reason) { toast.error('Please enter a reason'); return; }
@@ -893,10 +953,57 @@ export default function Attendance() {
                 <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reason for Correction *</label>
                 <textarea value={correctForm.correction_reason} onChange={e => setCorrectForm({ ...correctForm, correction_reason: e.target.value })} style={{ ...inputStyle, minHeight: 70, resize: 'vertical', background: 'var(--bg3)', border: '1px solid var(--border)' }} placeholder="e.g. Card not swiped / Forgot to punch..." />
               </div>
+
+              {/* Raw Punches reference */}
+              <div style={{ background: 'var(--bg3)', padding: 12, borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Raw Punch Logs</span>
+                  {dayPunches.length > 0 && (
+                    <button 
+                      onClick={handleAutofillPunches}
+                      style={{
+                        background: 'var(--accent)',
+                        color: '#fff',
+                        border: 'none',
+                        borderRadius: 6,
+                        padding: '3px 8px',
+                        fontSize: 10,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4
+                      }}
+                    >
+                      ⚡ Autofill Times
+                    </button>
+                  )}
+                </div>
+                {loadingPunches ? (
+                  <span style={{ fontSize: 11, color: 'var(--text3)' }}>Loading punches...</span>
+                ) : dayPunches.length === 0 ? (
+                  <span style={{ fontSize: 11, color: 'var(--text3)', fontStyle: 'italic' }}>No raw punches found for this day</span>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 80, overflowY: 'auto' }}>
+                    {dayPunches.map((p, idx) => {
+                      const pTime = new Date(p.punch_time.replace(' ', 'T')).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+                      return (
+                        <div key={p.id} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 11, color: 'var(--text)' }}>
+                          <span>Punch #{idx + 1}: <strong>{pTime}</strong></span>
+                          <span style={{ color: 'var(--text3)', fontSize: 10 }}>({p.source} - {p.location_name || 'No Location'})</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
               <button onClick={() => setCorrecting(null)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none', borderRadius: 8, fontWeight: 600 }}>Cancel</button>
+              {existingRecord?.corrected_by && (
+                <button onClick={handleRecalculateAuto} className="btn" style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, fontWeight: 600 }}>Reset to Auto</button>
+              )}
               <button onClick={saveCorrection} className="btn btn-primary" style={{ flex: 1, borderRadius: 8, fontWeight: 600, boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)' }}>Save Changes</button>
             </div>
           </div>

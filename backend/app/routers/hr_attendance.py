@@ -78,6 +78,10 @@ class AttendanceCorrect(BaseModel):
     check_out: Optional[datetime] = None
     correction_reason: str
 
+class RecalculateRequest(BaseModel):
+    employee_id: int
+    date: date
+
 def _is_sandwich_day(db: Session, employee_id: int, target_date: date) -> bool:
     # preceding date & following date
     prev_date = target_date - timedelta(days=1)
@@ -447,6 +451,7 @@ def get_records(
             "hours_worked": r.hours_worked,
             "is_late": r.is_late,
             "late_minutes": r.late_minutes,
+            "corrected_by": r.corrected_by,
         }
     return result
 
@@ -468,6 +473,22 @@ def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), c
         record.hours_worked = round((data.check_out - data.check_in).total_seconds() / 3600, 2)
     db.commit()
     return {"message": "Attendance corrected"}
+
+@router.post("/recalculate-day")
+def recalculate_day(data: RecalculateRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    record = db.query(HRAttendanceRecord).filter(
+        HRAttendanceRecord.employee_id == data.employee_id,
+        HRAttendanceRecord.date == data.date
+    ).first()
+    if record:
+        record.corrected_by = None
+        record.correction_reason = None
+        record.check_in = None
+        record.check_out = None
+        record.hours_worked = 0
+        db.commit()
+    compute_record(db, data.employee_id, data.date)
+    return {"message": "Recalculated successfully"}
 
 @router.get("/punches/{employee_id}")
 def get_punches(employee_id: int, target_date: date = None,
