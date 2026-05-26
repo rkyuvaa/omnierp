@@ -161,7 +161,17 @@ export default function Requests() {
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <PlusCircle size={14} /> Apply Leave
             </button>
-            <button className="btn" onClick={() => { setODForm({ employee_id: selectedEmp }); setShowODModal(true); }}
+            <button className="btn" onClick={() => { 
+              const now = new Date();
+              const hh = String(now.getHours()).padStart(2, '0');
+              const mm = String(now.getMinutes()).padStart(2, '0');
+              setODForm({ 
+                employee_id: selectedEmp,
+                date: new Date().toLocaleDateString('en-CA'), // YYYY-MM-DD format in local timezone
+                from_time: `${hh}:${mm}`
+              }); 
+              setShowODModal(true); 
+            }}
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
               <PlusCircle size={14} /> Apply On-Duty
             </button>
