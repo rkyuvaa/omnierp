@@ -108,7 +108,7 @@ export default function AdminUsers() {
       };
       if (!payload.password) delete payload.password;
       
-      if (editing) await api.put(`/users/${editing}/`, payload);
+      if (editing) await api.put(`/users/${editing}`, payload);
       else await api.post('/users/', payload);
       
       toast.success(editing ? 'User updated' : 'User created');
@@ -134,7 +134,7 @@ export default function AdminUsers() {
       }
       if (modalMode === 'role') url = '/roles/';
 
-      if (modalEditing) await api.put(`${url}${modalEditing}/`, payload);
+      if (modalEditing) await api.put(`${url}${modalEditing}`, payload);
       else await api.post(`${url}`, payload);
 
       toast.success('Record saved'); setModal(false); load();
@@ -149,7 +149,7 @@ export default function AdminUsers() {
       if (confirming.type === 'branch') url = '/branches/';
       if (confirming.type === 'role') url = '/roles/';
 
-      await api.delete(`${url}${confirming.id}/`);
+      await api.delete(`${url}${confirming.id}`);
       toast.success('Deleted successfully');
       setConfirming(null); load();
     } catch (e) { toast.error(`Error deleting record: ${e.message}`); }
