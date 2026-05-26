@@ -8,6 +8,7 @@ services:
       POSTGRES_USER: ${DB_USER:-erp_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-erp_pass}
       POSTGRES_DB: ${DB_NAME:-erp_db}
+      TZ: Asia/Kolkata
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -29,12 +30,15 @@ services:
       - SECRET_KEY=${SECRET_KEY:-omni-erp-secret-2024}
       - ALGORITHM=HS256
       - ACCESS_TOKEN_EXPIRE_MINUTES=480
+      - TZ=Asia/Kolkata
     ports:
       - "8000:8000"
 
   frontend:
     build: ./frontend
     container_name: erp_frontend
+    environment:
+      - TZ=Asia/Kolkata
     ports:
       - "80:80"
       - "443:443"
