@@ -109,13 +109,6 @@ def compute_record(db: Session, employee_id: int, target_date: date):
     if not emp:
         return None
 
-    # Check holiday
-    holiday = db.query(HRHoliday).filter(
-        HRHoliday.date == target_date,
-        HRHoliday.is_active == True,
-        (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
-    ).first()
-
     # Get or create record
     record = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == employee_id,
@@ -129,9 +122,95 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         record = HRAttendanceRecord(employee_id=employee_id, date=target_date)
         db.add(record)
 
-    # Holiday
+    # 1. Check for physical punches first
+    day_start = datetime.combine(target_date, datetime.min.time())
+    day_end = datetime.combine(target_date, datetime.max.time())
+    punches = db.query(HRAttendancePunch).filter(
+        HRAttendancePunch.employee_id == employee_id,
+        HRAttendancePunch.punch_time >= day_start,
+        HRAttendancePunch.punch_time <= day_end
+    ).order_by(HRAttendancePunch.punch_time).all()
+
+    if punches:
+        check_in = punches[0].punch_time
+        check_out = None
+        if len(punches) > 1:
+            # Avoid treating accidental double-punches (within 5 minutes) as check-out
+            if (punches[-1].punch_time - check_in).total_seconds() >= 300:
+                check_out = punches[-1].punch_time
+                
+        record.check_in = check_in
+        record.check_out = check_out
+        record.check_in_photo = punches[0].photo_url
+        record.check_in_location = punches[0].location_name
+
+        hours_worked = 0
+        if check_out and check_out != check_in:
+            hours_worked = (check_out - check_in).total_seconds() / 3600
+        record.hours_worked = round(hours_worked, 2)
+
+        # Clear active leave/on-duty references since the employee worked physically
+        record.leave_request_id = None
+        record.onduty_request_id = None
+
+        shift = emp.shift
+        # Compare against shift
+        if shift:
+            shift_start_h, shift_start_m = map(int, shift.start_time.split(":"))
+            shift_end_h, shift_end_m = map(int, shift.end_time.split(":"))
+            shift_start_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_start_h, minute=shift_start_m))
+            shift_end_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_end_h, minute=shift_end_m))
+            shift_duration = (shift_end_dt - shift_start_dt).total_seconds() / 3600
+
+            grace_dt = shift_start_dt + timedelta(minutes=shift.grace_minutes)
+            is_late = check_in > grace_dt
+            late_minutes = max(0, int((check_in - grace_dt).total_seconds() / 60)) if is_late else 0
+
+            record.is_late = is_late
+            record.late_minutes = late_minutes
+
+            # Half day thresholds
+            half_day_late_dt = shift_start_dt + timedelta(minutes=shift.half_day_late_minutes or 240)
+            half_day_early_dt = shift_end_dt - timedelta(minutes=shift.half_day_early_minutes or 240)
+
+            if check_out and hours_worked < shift.half_day_hours:
+                record.status = "half_day"
+            elif check_in > half_day_late_dt:
+                record.status = "half_day"
+            elif check_out and check_out < half_day_early_dt:
+                record.status = "half_day"
+            elif is_late:
+                record.status = "late"
+            else:
+                record.status = "present"
+
+            # Early departure
+            if check_out and check_out < shift_end_dt:
+                record.left_early = True
+                record.early_by_minutes = int((shift_end_dt - check_out).total_seconds() / 60)
+        else:
+            # Default logic if no shift is assigned
+            if hours_worked > 0 and hours_worked < 4.0:
+                record.status = "half_day"
+            else:
+                record.status = "present"
+
+        db.commit()
+        return record
+
+    # 2. If NO punches exist, fall back to passive statuses in priority order
+    # Check holiday
+    holiday = db.query(HRHoliday).filter(
+        HRHoliday.date == target_date,
+        HRHoliday.is_active == True,
+        (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
+    ).first()
+
     if holiday:
         record.status = "holiday"
+        record.check_in = None
+        record.check_out = None
+        record.hours_worked = 0
         db.commit()
         return record
 
@@ -145,6 +224,9 @@ def compute_record(db: Session, employee_id: int, target_date: date):
     if leave_req:
         record.status = "leave"
         record.leave_request_id = leave_req.id
+        record.check_in = None
+        record.check_out = None
+        record.hours_worked = 0
         db.commit()
         return record
 
@@ -157,6 +239,9 @@ def compute_record(db: Session, employee_id: int, target_date: date):
     if od_req:
         record.status = "on_duty"
         record.onduty_request_id = od_req.id
+        record.check_in = None
+        record.check_out = None
+        record.hours_worked = 0
         db.commit()
         return record
 
@@ -205,84 +290,17 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         if record.status != "sandwich_lop":
             record.status = "weekly_off"
             
-        db.commit()
-        return record
-
-    # Get punches for the day
-    day_start = datetime.combine(target_date, datetime.min.time())
-    day_end = datetime.combine(target_date, datetime.max.time())
-    punches = db.query(HRAttendancePunch).filter(
-        HRAttendancePunch.employee_id == employee_id,
-        HRAttendancePunch.punch_time >= day_start,
-        HRAttendancePunch.punch_time <= day_end
-    ).order_by(HRAttendancePunch.punch_time).all()
-
-    if not punches:
-        record.status = "absent"
         record.check_in = None
         record.check_out = None
         record.hours_worked = 0
         db.commit()
         return record
 
-    check_in = punches[0].punch_time
-    check_out = None
-    if len(punches) > 1:
-        # Avoid treating accidental double-punches (within 5 minutes) as check-out
-        if (punches[-1].punch_time - check_in).total_seconds() >= 300:
-            check_out = punches[-1].punch_time
-            
-    record.check_in = check_in
-    record.check_out = check_out
-    record.check_in_photo = punches[0].photo_url
-    record.check_in_location = punches[0].location_name
-
-    hours_worked = 0
-    if check_out and check_out != check_in:
-        hours_worked = (check_out - check_in).total_seconds() / 3600
-    record.hours_worked = round(hours_worked, 2)
-
-    # Compare against shift
-    if shift:
-        shift_start_h, shift_start_m = map(int, shift.start_time.split(":"))
-        shift_end_h, shift_end_m = map(int, shift.end_time.split(":"))
-        shift_start_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_start_h, minute=shift_start_m))
-        shift_end_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_end_h, minute=shift_end_m))
-        shift_duration = (shift_end_dt - shift_start_dt).total_seconds() / 3600
-
-        grace_dt = shift_start_dt + timedelta(minutes=shift.grace_minutes)
-        is_late = check_in > grace_dt
-        late_minutes = max(0, int((check_in - grace_dt).total_seconds() / 60)) if is_late else 0
-
-        record.is_late = is_late
-        record.late_minutes = late_minutes
-
-        # Half day thresholds
-        half_day_late_dt = shift_start_dt + timedelta(minutes=shift.half_day_late_minutes or 240)
-        half_day_early_dt = shift_end_dt - timedelta(minutes=shift.half_day_early_minutes or 240)
-
-        if check_out and hours_worked < shift.half_day_hours:
-            record.status = "half_day"
-        elif check_in > half_day_late_dt:
-            record.status = "half_day"
-        elif check_out and check_out < half_day_early_dt:
-            record.status = "half_day"
-        elif is_late:
-            record.status = "late"
-        else:
-            record.status = "present"
-
-        # Early departure
-        if check_out and check_out < shift_end_dt:
-            record.left_early = True
-            record.early_by_minutes = int((shift_end_dt - check_out).total_seconds() / 60)
-    else:
-        # Default logic if no shift is assigned
-        if hours_worked > 0 and hours_worked < 4.0:
-            record.status = "half_day"
-        else:
-            record.status = "present"
-
+    # Reaching here means no punches and not a holiday/leave/on-duty/weekly-off -> absent
+    record.status = "absent"
+    record.check_in = None
+    record.check_out = None
+    record.hours_worked = 0
     db.commit()
     return record
 
