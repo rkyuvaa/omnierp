@@ -284,7 +284,7 @@ async def mobile_punch(
     with open(filepath, "wb") as f:
         shutil.copyfileobj(photo.file, f)
 
-    punch_time = datetime.utcnow()
+    punch_time = datetime.now()
     punch = HRAttendancePunch(
         employee_id=employee_id,
         punch_time=punch_time,
@@ -319,7 +319,7 @@ def today_status(employee_id: int, db: Session = Depends(get_db), current_user: 
         if not emp_resolved or employee_id != emp_resolved.id:
             return {"status": "no_record"}
 
-    today = datetime.utcnow().date()
+    today = datetime.now().date()
     record = compute_record(db, employee_id, today)
     if not record:
         return {"status": "no_record"}
