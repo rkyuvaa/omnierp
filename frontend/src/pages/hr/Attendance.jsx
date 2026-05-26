@@ -685,8 +685,9 @@ export default function Attendance() {
               </table>
             </div>
           </div>
-          </>
         )}
+      </>
+    )}
 
         {tab === 'punches' && (
           loading ? (
