@@ -58,6 +58,7 @@ function getAvatarBg(name) {
 
 export default function Attendance() {
   const { user } = useAuth();
+  const isHRAdmin = user?.is_superadmin || !!user?.module_permissions?.hr?.can_edit || !!user?.module_permissions?.hr?.can_delete;
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
@@ -108,7 +109,7 @@ export default function Attendance() {
         api.get('/hr/attendance/punches', { params }),
       ]);
       let empsData = emps.data;
-      if (!user?.is_superadmin && user?.employee_id) {
+      if (!isHRAdmin && user?.employee_id) {
         empsData = empsData.filter(e => e.id === user.employee_id);
       }
       setEmployees(empsData);
@@ -382,7 +383,7 @@ export default function Attendance() {
     <Layout title="Attendance">
       <div style={{ padding: '0 16px 24px' }}>
         {/* Tab Switcher */}
-        {user?.is_superadmin && (
+        {isHRAdmin && (
           <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
             {['grid', 'punches'].map(t => (
               <button 
@@ -420,7 +421,7 @@ export default function Attendance() {
           </div>
 
           {/* Search Box */}
-          {user?.is_superadmin && (
+          {isHRAdmin && (
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '6px 12px', minWidth: 160, flex: '0 1 180px', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <Search size={15} style={{ color: 'var(--text3)' }} />
               <input 
@@ -434,7 +435,7 @@ export default function Attendance() {
           )}
 
           {/* Branch Select */}
-          {user?.is_superadmin && (
+          {isHRAdmin && (
             <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 120, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <option value="">All Branches</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
@@ -442,7 +443,7 @@ export default function Attendance() {
           )}
 
           {/* Dept Select */}
-          {user?.is_superadmin && (
+          {isHRAdmin && (
             <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 120, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <option value="">All Departments</option>
               {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
@@ -450,7 +451,7 @@ export default function Attendance() {
           )}
 
           {/* Action Buttons */}
-          {user?.is_superadmin && (
+          {isHRAdmin && (
             <>
               <button 
                 onClick={() => {
@@ -691,10 +692,10 @@ export default function Attendance() {
                               }}
                             >
                               <div
-                                title={v ? v.label : (cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}` : (user?.is_superadmin ? `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct` : `Empty (${d.num} ${MONTH_NAMES[month-1]})`))}
-                                onClick={() => user?.is_superadmin && openCorrect(emp, d)}
+                                title={v ? v.label : (cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}` : (isHRAdmin ? `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct` : `Empty (${d.num} ${MONTH_NAMES[month-1]})`))}
+                                onClick={() => isHRAdmin && openCorrect(emp, d)}
                                 style={{
-                                  width: 28, height: 28, margin: '0 auto', borderRadius: 8, cursor: user?.is_superadmin ? 'pointer' : 'default',
+                                  width: 28, height: 28, margin: '0 auto', borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
                                   background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
                                   color: cfg ? cfg.color : 'var(--text3)',
                                   display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -705,13 +706,13 @@ export default function Attendance() {
                                   boxSizing: 'border-box'
                                 }}
                                 onMouseEnter={e => {
-                                  if (user?.is_superadmin) {
+                                  if (isHRAdmin) {
                                     e.currentTarget.style.transform = 'scale(1.08)';
                                     if (cfg) e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
                                   }
                                 }}
                                 onMouseLeave={e => {
-                                  if (user?.is_superadmin) {
+                                  if (isHRAdmin) {
                                     e.currentTarget.style.transform = 'scale(1)';
                                     e.currentTarget.style.boxShadow = cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
                                   }

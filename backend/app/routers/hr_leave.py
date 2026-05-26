@@ -130,7 +130,8 @@ def get_balances(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
@@ -205,7 +206,8 @@ def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], 
 # ── Leave Application Routes ─────────────────────────────────────────────────
 @router.post("/apply")
 def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp_resolved = get_current_employee(current_user, db)
         if data.employee_id != emp_resolved.id:
@@ -354,7 +356,8 @@ def my_requests(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
@@ -375,7 +378,8 @@ def pending_approvals(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
@@ -430,7 +434,8 @@ def all_requests(
     current_user: User = Depends(get_current_user)
 ):
     q = db.query(HRLeaveRequest)
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
@@ -445,7 +450,8 @@ def all_requests(
 def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp = get_current_employee(current_user, db)
         if req.approver_id != emp.id:
@@ -486,7 +492,8 @@ def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db),
 def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp = get_current_employee(current_user, db)
         if req.approver_id != emp.id:
@@ -508,7 +515,8 @@ def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), 
 def cancel_leave(req_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp = get_current_employee(current_user, db)
         if req.employee_id != emp.id:

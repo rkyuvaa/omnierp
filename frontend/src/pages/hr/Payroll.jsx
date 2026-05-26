@@ -9,6 +9,7 @@ const MONTH_NAMES = ['January','February','March','April','May','June','July','A
 
 export default function Payroll() {
   const { user } = useAuth();
+  const isHRAdmin = user?.is_superadmin || !!user?.module_permissions?.hr?.can_edit || !!user?.module_permissions?.hr?.can_delete;
   const today = new Date();
   const [month, setMonth] = useState(today.getMonth() + 1);
   const [year, setYear] = useState(today.getFullYear());
@@ -26,10 +27,10 @@ export default function Payroll() {
   const [emailingBulk, setEmailingBulk] = useState(false);
 
   useEffect(() => {
-    if (user?.is_superadmin) {
+    if (isHRAdmin) {
       api.get('/hr/employees/', { params: { is_active: true } }).then(r => setEmployees(r.data));
     }
-  }, [user]);
+  }, [user, isHRAdmin]);
 
   async function fetchPendingList() {
     setLoading(true);
@@ -197,7 +198,7 @@ export default function Payroll() {
     <Layout title="Payroll">
       <div style={{ padding: '0 24px 24px' }}>
         {/* Tab Switcher */}
-        {user?.is_superadmin && (
+        {isHRAdmin && (
           <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
             {['payroll', 'arrears'].map(t => (
               <button 
@@ -230,7 +231,7 @@ export default function Payroll() {
                 <span style={{ fontWeight: 700, fontSize: 15, minWidth: 140, textAlign: 'center' }}>{MONTH_NAMES[month - 1]} {year}</span>
                 <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex' }}><ChevronRight size={16} /></button>
               </div>
-              {user?.is_superadmin && employees.length > 0 && (
+              {isHRAdmin && employees.length > 0 && (
                 <select
                   value={filterEmployee}
                   onChange={e => setFilterEmployee(e.target.value)}
@@ -242,7 +243,7 @@ export default function Payroll() {
                   ))}
                 </select>
               )}
-              {user?.is_superadmin && (
+              {isHRAdmin && (
                 <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                   {selected.length > 0 && (
                     <>
@@ -286,7 +287,7 @@ export default function Payroll() {
             </div>
 
             {/* Summary Cards */}
-            {user?.is_superadmin && (
+            {isHRAdmin && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
                 {[
                   { label: 'Total Earnings', value: `₹${totalEarnings.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: '#22c55e' },
@@ -307,23 +308,23 @@ export default function Payroll() {
             ) : records.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>
                 <Play size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
-                {user?.is_superadmin ? 'No payroll generated for this month. Click "Generate Payroll" to start.' : 'No payroll record found for this month.'}
+                {isHRAdmin ? 'No payroll generated for this month. Click "Generate Payroll" to start.' : 'No payroll record found for this month.'}
               </div>
             ) : (
               <div style={{ borderRadius: 12, border: '1px solid var(--border)' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg2)' }}>
-                      {user?.is_superadmin && (
+                      {isHRAdmin && (
                         <th style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>
                           <input type="checkbox" onChange={e => setSelected(e.target.checked ? records.map(r => r.employee_id) : [])} checked={selected.length === records.length && records.length > 0} />
                         </th>
                       )}
                       {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
-                        if (!user?.is_superadmin && h === 'Actions') return <th key={h} style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>Download</th>;
+                        if (!isHRAdmin && h === 'Actions') return <th key={h} style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap' }}>Download</th>;
                         const isEmp = h === 'Employee';
                         return (
-                          <th key={h} style={{ padding: '10px 6px', textAlign: h === 'Actions' || isEmp ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap', width: isEmp ? '180px' : h === 'Actions' && user?.is_superadmin ? '380px' : undefined, maxWidth: isEmp ? '180px' : undefined }}>{h}</th>
+                          <th key={h} style={{ padding: '10px 6px', textAlign: h === 'Actions' || isEmp ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, whiteSpace: 'nowrap', width: isEmp ? '180px' : h === 'Actions' && isHRAdmin ? '380px' : undefined, maxWidth: isEmp ? '180px' : undefined }}>{h}</th>
                         );
                       })}
                     </tr>
@@ -331,7 +332,7 @@ export default function Payroll() {
                   <tbody>
                     {records.filter(r => !filterEmployee || String(r.employee_id) === String(filterEmployee)).map(r => (
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                        {user?.is_superadmin && (
+                        {isHRAdmin && (
                           <td style={{ padding: '10px 6px' }}>
                             <input type="checkbox" checked={selected.includes(r.employee_id)} onChange={e => setSelected(s => e.target.checked ? [...s, r.employee_id] : s.filter(id => id !== r.employee_id))} />
                           </td>
@@ -357,13 +358,13 @@ export default function Payroll() {
                         </td>
                         <td style={{ padding: '10px 6px', width: '380px', maxWidth: '380px' }}>
                           <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'nowrap' }}>
-                            {user?.is_superadmin && (
+                            {isHRAdmin && (
                               <>
                                 {r.status !== 'finalized' ? (
                                   <>
                                     <button 
                                       onClick={() => finalizeRecord(r.id)} 
-                                      title="Finalize Payroll"
+                                      title="Finalize Payroll" 
                                       style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, whiteSpace: 'nowrap' }}
                                     >
                                       <CheckCircle size={12} /> Finalize
@@ -401,7 +402,7 @@ export default function Payroll() {
                                 </div>
                               </>
                             )}
-                            {user?.is_superadmin && (
+                            {isHRAdmin && (
                               <button 
                                 onClick={() => emailPayslip(r.id, r.employee_name)} 
                                 title="Email Payslip to Employee" 

@@ -379,7 +379,8 @@ def manual_punch(data: PunchManual, db: Session = Depends(get_db), current_user:
 
 @router.get("/today/{employee_id}")
 def today_status(employee_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp_resolved = get_current_employee_optional(current_user, db)
         if not emp_resolved or employee_id != emp_resolved.id:
@@ -413,7 +414,8 @@ def get_records(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp_resolved = get_current_employee_optional(current_user, db)
         if not emp_resolved:
@@ -493,7 +495,8 @@ def recalculate_day(data: RecalculateRequest, db: Session = Depends(get_db), cur
 @router.get("/punches/{employee_id}")
 def get_punches(employee_id: int, target_date: date = None,
                 db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp_resolved = get_current_employee_optional(current_user, db)
         if not emp_resolved or employee_id != emp_resolved.id:
@@ -523,7 +526,8 @@ def get_all_punches(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp_resolved = get_current_employee_optional(current_user, db)
         if not emp_resolved:

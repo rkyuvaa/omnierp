@@ -44,8 +44,18 @@ function HRModule({ isActive, handleNav }) {
   
   const filteredHRItems = hrSubItems.filter(i => {
     if (user?.is_superadmin) return true;
-    if (i.to === '/hr/employees' || i.to === '/hr/configurations' || i.to === '/hr/attendance' || i.to === '/hr/payroll') return false;
-    if (i.to === '/hr/approvals') return !!user?.is_manager;
+    const p = user?.module_permissions?.hr || {};
+    const isHRAdmin = p.can_edit || p.can_delete;
+    
+    if (i.to === '/hr/employees' || i.to === '/hr/attendance' || i.to === '/hr/payroll') {
+      return !!isHRAdmin;
+    }
+    if (i.to === '/hr/configurations') {
+      return false; // Only for superadmin
+    }
+    if (i.to === '/hr/approvals') {
+      return !!isHRAdmin || !!user?.is_manager;
+    }
     return true;
   });
 

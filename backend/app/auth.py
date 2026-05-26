@@ -35,10 +35,36 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         raise cred_exc
     return user
 
-def require_admin(current_user: User = Depends(get_current_user)) -> User:
-    if not current_user.is_superadmin:
-        raise HTTPException(status_code=403, detail="Admin required")
-    return current_user
+def require_admin(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:
+    if current_user.is_superadmin:
+        return current_user
+    
+    # Allow module managers who have can_edit or can_delete permissions in their module roles
+    allowed = current_user.allowed_modules or {}
+    from app.models import Role
+    for mod, role_id in allowed.items():
+        role = db.query(Role).filter(Role.id == role_id).first()
+        if role and role.permissions:
+            perms = role.permissions
+            if perms.get("can_edit") or perms.get("can_delete"):
+                return current_user
+                
+    raise HTTPException(status_code=403, detail="Admin required")
+
+def is_hr_admin(user: User, db: Session) -> bool:
+    if user.is_superadmin:
+        return True
+    allowed = user.allowed_modules or {}
+    role_id = allowed.get("hr")
+    if not role_id:
+        return False
+    from app.models import Role
+    role = db.query(Role).filter(Role.id == role_id).first()
+    if role and role.permissions:
+        perms = role.permissions
+        if perms.get("can_edit") or perms.get("can_delete"):
+            return True
+    return False
 
 def log_action(db: Session, user, action: str, module: str, record_id: int, ref: str = "", changes: dict = {}):
     from app.models import AuditLog

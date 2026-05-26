@@ -99,7 +99,8 @@ def list_employees(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:

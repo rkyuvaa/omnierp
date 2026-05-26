@@ -61,7 +61,8 @@ def _serialize(r: HROnDutyRequest):
 
 @router.post("/apply")
 def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp_resolved = get_current_employee(current_user, db)
         if data.employee_id != emp_resolved.id:
@@ -97,7 +98,8 @@ def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user:
 @router.get("/my-requests")
 def my_onduty_requests(employee_id: int, status: Optional[str] = None,
                        db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
@@ -112,7 +114,8 @@ def my_onduty_requests(employee_id: int, status: Optional[str] = None,
 
 @router.get("/pending")
 def pending_onduty(approver_id: Optional[int] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
@@ -140,7 +143,8 @@ def pending_onduty(approver_id: Optional[int] = None, db: Session = Depends(get_
 def all_onduty(status: Optional[str] = None, employee_id: Optional[int] = None,
                db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     q = db.query(HROnDutyRequest)
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp = get_current_employee_optional(current_user, db)
         if not emp:
@@ -177,7 +181,8 @@ def _send_onduty_email_notification(db: Session, req: HROnDutyRequest):
 def approve_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Not found")
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp = get_current_employee(current_user, db)
         if req.approver_id != emp.id:
@@ -209,7 +214,8 @@ def approve_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db
 def reject_onduty(req_id: int, data: OnDutyAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Not found")
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp = get_current_employee(current_user, db)
         if req.approver_id != emp.id:

@@ -449,7 +449,8 @@ def list_payroll(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp_resolved = get_current_employee_optional(current_user, db)
         if not emp_resolved:
@@ -552,7 +553,8 @@ def bulk_update_payroll_status(data: BulkUpdateRequest, db: Session = Depends(ge
 def get_payroll_detail(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Not found")
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp_resolved = get_current_employee(current_user, db)
         if record.employee_id != emp_resolved.id:
@@ -659,7 +661,8 @@ def download_payslip(record_id: int, db: Session = Depends(get_db), current_user
     """Generate and return a payslip PDF for a payroll record."""
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Payroll record not found")
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
         emp_resolved = get_current_employee(current_user, db)
         if record.employee_id != emp_resolved.id:
@@ -872,7 +875,8 @@ def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Dep
 
 @router.get("/arrears/{employee_id}")
 def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not current_user.is_superadmin:
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp_resolved = get_current_employee_optional(current_user, db)
         if not emp_resolved or employee_id != emp_resolved.id:
