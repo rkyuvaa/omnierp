@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
+import { resubscribeForCurrentUser, unsubscribeUser } from '../utils/pushNotifications';
 
 const AuthContext = createContext({ user: null, loading: true, login: async () => {}, logout: () => {} });
 
@@ -38,9 +39,18 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', r.data.access_token);
     const me = await api.get('/auth/me');
     setUser(await fetchUserWithRole(me.data));
+    // Re-associate any existing browser push subscription with this user so
+    // notifications are delivered to the correct person on shared devices.
+    resubscribeForCurrentUser().catch(() => {});
   };
 
-  const logout = () => { localStorage.removeItem('token'); setUser(null); };
+  const logout = async () => {
+    // Detach browser push subscription from this user on the backend before
+    // clearing the token, so notifications are no longer sent to this user.
+    try { await unsubscribeUser(); } catch (_) {}
+    localStorage.removeItem('token');
+    setUser(null);
+  };
   return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>;
 }
 

@@ -66,9 +66,9 @@ export async function subscribeUser() {
 }
 
 /**
- * Unsubscribe user from push notifications (browser level and backend).
+ * Resubscribe the current browser subscription to the backend.
  */
-export async function unsubscribeUser() {
+export async function resubscribeForCurrentUser() {
   if (!isPushSupported()) return;
 
   const registration = await navigator.serviceWorker.getRegistration();
@@ -77,7 +77,50 @@ export async function unsubscribeUser() {
   const subscription = await registration.pushManager.getSubscription();
   if (!subscription) return;
 
-  // 1. Remove subscription on backend
+  const subscriptionJson = subscription.toJSON();
+  await api.post('/hr/push-subscriptions/subscribe', subscriptionJson);
+}
+
+/**
+ * Remove this browser's push subscription from the backend for the current user.
+ * Does NOT unsubscribe the browser PushManager, so the same endpoint can be
+ * re-used by the next user who logs in on this device.
+ */
+export async function unsubscribeUser() {
+  if (!isPushSupported()) return;
+
+  const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+  if (!registration) return;
+
+  const subscription = await registration.pushManager.getSubscription();
+  if (!subscription) return;
+
+  // Remove subscription association from backend (non-critical, swallow errors)
+  try {
+    await api.post('/hr/push-subscriptions/unsubscribe', {
+      endpoint: subscription.endpoint
+    });
+  } catch (e) {
+    console.error('Failed to remove subscription from backend on logout', e);
+  }
+  // Intentionally NOT calling subscription.unsubscribe() so the browser
+  // push endpoint survives for the next login on this device.
+}
+
+/**
+ * Fully unsubscribe from push (browser-level + backend).
+ * Call this when the user explicitly disables notifications in settings.
+ */
+export async function fullyUnsubscribeUser() {
+  if (!isPushSupported()) return;
+
+  const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+  if (!registration) return;
+
+  const subscription = await registration.pushManager.getSubscription();
+  if (!subscription) return;
+
+  // 1. Remove from backend
   try {
     await api.post('/hr/push-subscriptions/unsubscribe', {
       endpoint: subscription.endpoint
@@ -86,7 +129,7 @@ export async function unsubscribeUser() {
     console.error('Failed to remove subscription from backend', e);
   }
 
-  // 2. Unsubscribe browser PushManager
+  // 2. Unsubscribe from browser PushManager
   await subscription.unsubscribe();
 }
 

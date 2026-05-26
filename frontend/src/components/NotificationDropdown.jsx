@@ -5,7 +5,7 @@ import { Bell, BellOff, Check, Info, AlertTriangle } from 'lucide-react';
 import {
   isPushSupported,
   subscribeUser,
-  unsubscribeUser,
+  fullyUnsubscribeUser,
   getSubscriptionStatus
 } from '../utils/pushNotifications';
 
@@ -33,7 +33,7 @@ export default function NotificationDropdown() {
     setIsTogglingPush(true);
     try {
       if (pushStatus === 'subscribed') {
-        await unsubscribeUser();
+        await fullyUnsubscribeUser();
         setPushStatus('unsubscribed');
       } else {
         await subscribeUser();
