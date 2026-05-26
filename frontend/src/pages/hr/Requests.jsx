@@ -13,6 +13,25 @@ const STATUS_BADGE = {
   cancelled:     { bg: '#f1f5f9', color: '#64748b', label: 'Cancelled' },
 };
 
+function calculateToTime(fromTimeStr, durationHoursStr) {
+  if (!fromTimeStr || !durationHoursStr) return '';
+  const duration = parseFloat(durationHoursStr);
+  if (isNaN(duration) || duration <= 0) return '';
+  
+  const [hhStr, mmStr] = fromTimeStr.split(':');
+  const fromH = parseInt(hhStr, 10);
+  const fromM = parseInt(mmStr, 10);
+  
+  const totalMinutes = fromH * 60 + fromM + Math.round(duration * 60);
+  const finalH = Math.floor(totalMinutes / 60) % 24;
+  const finalM = totalMinutes % 60;
+  
+  const toHStr = String(finalH).padStart(2, '0');
+  const toMStr = String(finalM).padStart(2, '0');
+  
+  return `${toHStr}:${toMStr}`;
+}
+
 export default function Requests() {
   const [employees, setEmployees] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
@@ -305,9 +324,53 @@ export default function Requests() {
                 </div>
               )}
               <div><label style={labelStyle}>Date</label><input type="date" value={odForm.date || ''} onChange={e => setODForm({ ...odForm, date: e.target.value })} style={inputStyle} /></div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div><label style={labelStyle}>From Time</label><input type="time" value={odForm.from_time || ''} onChange={e => setODForm({ ...odForm, from_time: e.target.value })} style={inputStyle} /></div>
-                <div><label style={labelStyle}>To Time</label><input type="time" value={odForm.to_time || ''} onChange={e => setODForm({ ...odForm, to_time: e.target.value })} style={inputStyle} /></div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>From Time</label>
+                  <input 
+                    type="time" 
+                    value={odForm.from_time || ''} 
+                    onChange={e => {
+                      const newFrom = e.target.value;
+                      const calculatedTo = calculateToTime(newFrom, odForm.duration);
+                      setODForm({ 
+                        ...odForm, 
+                        from_time: newFrom,
+                        ...(calculatedTo ? { to_time: calculatedTo } : {})
+                      });
+                    }} 
+                    style={inputStyle} 
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>Hours (Optional)</label>
+                  <input 
+                    type="number" 
+                    step="0.5" 
+                    min="0" 
+                    placeholder="e.g. 2" 
+                    value={odForm.duration || ''} 
+                    onChange={e => {
+                      const dur = e.target.value;
+                      const calculatedTo = calculateToTime(odForm.from_time, dur);
+                      setODForm({ 
+                        ...odForm, 
+                        duration: dur,
+                        ...(calculatedTo ? { to_time: calculatedTo } : {})
+                      });
+                    }} 
+                    style={inputStyle} 
+                  />
+                </div>
+                <div>
+                  <label style={labelStyle}>To Time</label>
+                  <input 
+                    type="time" 
+                    value={odForm.to_time || ''} 
+                    onChange={e => setODForm({ ...odForm, to_time: e.target.value })} 
+                    style={inputStyle} 
+                  />
+                </div>
               </div>
               <div><label style={labelStyle}>Work Location</label><input type="text" value={odForm.work_location || ''} onChange={e => setODForm({ ...odForm, work_location: e.target.value })} style={inputStyle} /></div>
               <div><label style={labelStyle}>Purpose</label><textarea value={odForm.purpose || ''} onChange={e => setODForm({ ...odForm, purpose: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} /></div>
