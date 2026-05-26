@@ -3,9 +3,9 @@ from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, datetime, timedelta
-import os, shutil, uuid
+import os, shutil, uuid, math
 from app.database import get_db
-from app.models import User
+from app.models import User, Branch
 from app.auth import get_current_user, require_admin
 from app.hr_models import (
     HRAttendancePunch, HRAttendanceRecord, HREmployee,
@@ -28,6 +28,33 @@ STATUS_COLORS = {
     "holiday":    "#8b5cf6",
     "weekly_off": "#94a3b8",
 }
+
+# ── Haversine Proximity Helpers ───────────────────────────────────────────────
+def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """Calculate the great-circle distance between two GPS points in meters."""
+    R = 6371000.0  # Earth's radius in meters
+    phi1 = math.radians(lat1)
+    phi2 = math.radians(lat2)
+    delta_phi = math.radians(lat2 - lat1)
+    delta_lambda = math.radians(lon2 - lon1)
+    
+    a = (math.sin(delta_phi / 2.0) ** 2 +
+         math.cos(phi1) * math.cos(phi2) *
+         math.sin(delta_lambda / 2.0) ** 2)
+         
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+    return R * c
+
+def resolve_punch_location(p, active_branches) -> str:
+    """If mobile punch falls in a branch radius, returns branch name, else original location_name."""
+    if p.source == "mobile" and p.latitude is not None and p.longitude is not None:
+        for b in active_branches:
+            if b.latitude is not None and b.longitude is not None:
+                dist = haversine_distance(p.latitude, p.longitude, b.latitude, b.longitude)
+                radius = b.radius if b.radius is not None else 100.0
+                if dist <= radius:
+                    return b.name
+    return p.location_name
 
 class PunchManual(BaseModel):
     employee_id: int
@@ -284,6 +311,18 @@ async def mobile_punch(
     with open(filepath, "wb") as f:
         shutil.copyfileobj(photo.file, f)
 
+    # Proximity matching with branches
+    active_branches = db.query(Branch).filter(Branch.is_active == True).all()
+    resolved_location_name = location_name
+    if latitude is not None and longitude is not None:
+        for b in active_branches:
+            if b.latitude is not None and b.longitude is not None:
+                dist = haversine_distance(latitude, longitude, b.latitude, b.longitude)
+                radius = b.radius if b.radius is not None else 100.0
+                if dist <= radius:
+                    resolved_location_name = b.name
+                    break
+
     punch_time = datetime.now()
     punch = HRAttendancePunch(
         employee_id=employee_id,
@@ -292,13 +331,13 @@ async def mobile_punch(
         photo_url=f"/api/uploads/attendance/{filename}",
         latitude=latitude,
         longitude=longitude,
-        location_name=location_name,
+        location_name=resolved_location_name,
     )
     db.add(punch); db.commit()
 
     # Recompute daily record
     compute_record(db, employee_id, punch_time.date())
-    return {"message": "Punch recorded", "punch_time": str(punch_time), "location": location_name}
+    return {"message": "Punch recorded", "punch_time": str(punch_time), "location": resolved_location_name}
 
 @router.post("/punch/manual")
 def manual_punch(data: PunchManual, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
@@ -422,11 +461,12 @@ def get_punches(employee_id: int, target_date: date = None,
         day_end = datetime.combine(target_date, datetime.max.time())
         q = q.filter(HRAttendancePunch.punch_time.between(day_start, day_end))
     punches = q.order_by(HRAttendancePunch.punch_time).all()
+    active_branches = db.query(Branch).filter(Branch.is_active == True).all()
     return [{
         "id": p.id, "punch_time": str(p.punch_time),
         "source": p.source, "photo_url": p.photo_url,
         "latitude": p.latitude, "longitude": p.longitude,
-        "location_name": p.location_name,
+        "location_name": resolve_punch_location(p, active_branches),
     } for p in punches]
 
 @router.get("/punches")
@@ -463,6 +503,7 @@ def get_all_punches(
     if department_id:
         q = q.filter(HREmployee.department_id == department_id)
 
+    active_branches = db.query(Branch).filter(Branch.is_active == True).all()
     punches = q.order_by(HRAttendancePunch.punch_time.desc()).all()
     
     return [{
@@ -475,7 +516,7 @@ def get_all_punches(
         "photo_url": p.photo_url,
         "latitude": p.latitude,
         "longitude": p.longitude,
-        "location_name": p.location_name,
+        "location_name": resolve_punch_location(p, active_branches),
     } for p in punches]
 
 class RecomputeRequest(BaseModel):

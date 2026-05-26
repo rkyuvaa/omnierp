@@ -11,6 +11,9 @@ router = APIRouter()
 class BranchIn(BaseModel):
     name: str
     address: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    radius: Optional[float] = 100.0
     is_active: bool = True
 
 @router.get("/")

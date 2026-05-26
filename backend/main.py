@@ -47,6 +47,9 @@ def _safe_add_columns():
         ("hr_salary_components", "apply_if_gross_above", "DOUBLE PRECISION"),
         ("hr_payroll_records", "arrears_held", "DOUBLE PRECISION"),
         ("hr_payroll_records", "arrears_paid", "DOUBLE PRECISION"),
+        ("branches", "latitude", "DOUBLE PRECISION"),
+        ("branches", "longitude", "DOUBLE PRECISION"),
+        ("branches", "radius", "DOUBLE PRECISION"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:
@@ -59,6 +62,11 @@ def _safe_add_columns():
                         print(f"✅ Added column {table}.{col}")
                     except Exception as e:
                         print(f"⚠️ Column migration {table}.{col}: {e}")
+        try:
+            conn.execute(_text("UPDATE branches SET radius = 100.0 WHERE radius IS NULL"))
+            conn.commit()
+        except Exception as e:
+            print(f"⚠️ Error seeding default branch radius: {e}")
 
 try:
     _safe_add_columns()

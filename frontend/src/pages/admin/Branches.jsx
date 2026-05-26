@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2 } from 'lucide-react';
 
-const emptyForm = { name: '', address: '', is_active: true };
+const emptyForm = { name: '', address: '', latitude: '', longitude: '', radius: 100, is_active: true };
 
 export default function AdminBranches() {
   const [items, setItems] = useState([]);
@@ -20,14 +20,31 @@ export default function AdminBranches() {
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
   const openNew = () => { setForm(emptyForm); setEditing(null); setModal(true); };
-  const openEdit = b => { setForm({ name: b.name, address: b.address || '', is_active: b.is_active }); setEditing(b.id); setModal(true); };
+  const openEdit = b => { 
+    setForm({ 
+      name: b.name, 
+      address: b.address || '', 
+      latitude: b.latitude !== null && b.latitude !== undefined ? b.latitude : '',
+      longitude: b.longitude !== null && b.longitude !== undefined ? b.longitude : '',
+      radius: b.radius !== null && b.radius !== undefined ? b.radius : 100,
+      is_active: b.is_active 
+    }); 
+    setEditing(b.id); 
+    setModal(true); 
+  };
 
   const save = async () => {
     try {
-      if (editing) await api.put(`/branches/${editing}`, form);
-      else await api.post('/branches/', form);
+      const payload = {
+        ...form,
+        latitude: form.latitude === '' ? null : parseFloat(form.latitude),
+        longitude: form.longitude === '' ? null : parseFloat(form.longitude),
+        radius: form.radius === '' ? 100.0 : parseFloat(form.radius)
+      };
+      if (editing) await api.put(`/branches/${editing}`, payload);
+      else await api.post('/branches/', payload);
       toast.success('Saved'); setModal(false); load();
-    } catch { toast.error('Error'); }
+    } catch { toast.error('Error saving branch details'); }
   };
 
   const confirmDelete = async () => {
@@ -48,12 +65,35 @@ export default function AdminBranches() {
         {items.length === 0 ? <Empty /> : (
           <div className="table-wrap">
             <table>
-              <thead><tr><th>Name</th><th>Address</th><th>Status</th><th></th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Address</th>
+                  <th>Office GPS Coordinates</th>
+                  <th>Allowed Radius</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
               <tbody>
                 {items.map(b => (
                   <tr key={b.id}>
                     <td className="fw-600">{b.name}</td>
                     <td className="text-muted">{b.address || '—'}</td>
+                    <td>
+                      {b.latitude !== null && b.longitude !== null ? (
+                        <span className="text-muted fw-500" style={{ fontSize: 12 }}>
+                          Lat: {parseFloat(b.latitude).toFixed(5)}, Lon: {parseFloat(b.longitude).toFixed(5)}
+                        </span>
+                      ) : (
+                        <span style={{ color: 'var(--text3)', fontSize: 11, fontStyle: 'italic' }}>Not Configured</span>
+                      )}
+                    </td>
+                    <td>
+                      <span className="fw-600" style={{ fontSize: 12 }}>
+                        {b.radius !== null ? `${b.radius} meters` : '100 meters'}
+                      </span>
+                    </td>
                     <td><Badge color={b.is_active ? 'var(--green)' : 'var(--red)'}>{b.is_active ? 'Active' : 'Inactive'}</Badge></td>
                     <td>
                       <div className="flex gap-2">
@@ -74,6 +114,9 @@ export default function AdminBranches() {
           <div className="form-grid">
             <div className="form-group"><label className="form-label">Name *</label><input className="form-input" value={form.name} onChange={e => set('name', e.target.value)} /></div>
             <div className="form-group"><label className="form-label">Address</label><textarea className="form-textarea" value={form.address} onChange={e => set('address', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Latitude</label><input className="form-input" type="number" step="any" placeholder="e.g. 11.04609" value={form.latitude} onChange={e => set('latitude', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Longitude</label><input className="form-input" type="number" step="any" placeholder="e.g. 76.89994" value={form.longitude} onChange={e => set('longitude', e.target.value)} /></div>
+            <div className="form-group"><label className="form-label">Radius (Meters)</label><input className="form-input" type="number" placeholder="e.g. 100" value={form.radius} onChange={e => set('radius', e.target.value)} /></div>
             <div className="form-group">
               <label className="form-label">Status</label>
               <select className="form-select" value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>

@@ -17,7 +17,8 @@ import {
   Upload,
   MapPin,
   Camera,
-  X
+  X,
+  Building2
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -775,10 +776,32 @@ export default function Attendance() {
                           <td style={{ padding: '14px 16px', color: 'var(--text2)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {isMobile ? (
                               p.location_name ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <MapPin size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
-                                  <span title={p.location_name}>{p.location_name}</span>
-                                </div>
+                                (() => {
+                                  const isOffice = branches.some(b => b.name === p.location_name);
+                                  return isOffice ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <span style={{ 
+                                        display: 'inline-flex', 
+                                        alignItems: 'center', 
+                                        gap: 4, 
+                                        fontSize: 11, 
+                                        fontWeight: 800, 
+                                        padding: '4px 10px', 
+                                        borderRadius: 6, 
+                                        background: 'rgba(16, 185, 129, 0.1)', 
+                                        color: '#10b981',
+                                        border: '1px solid rgba(16, 185, 129, 0.2)'
+                                      }}>
+                                        <Building2 size={12} /> {p.location_name}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                      <MapPin size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                                      <span title={p.location_name}>{p.location_name}</span>
+                                    </div>
+                                  );
+                                })()
                               ) : (
                                 <span style={{ color: 'var(--text3)', fontSize: 12 }}>GPS Coordinates Available</span>
                               )

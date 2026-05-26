@@ -36,6 +36,9 @@ class Branch(Base):
     name = Column(String(100), unique=True)
     code = Column(String(20), unique=True)
     address = Column(String(200))
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
+    radius = Column(Float, default=100.0)
     is_active = Column(Boolean, default=True)
     users = relationship("User", back_populates="branch")
 
