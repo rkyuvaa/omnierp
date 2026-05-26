@@ -39,6 +39,7 @@ export default function Requests() {
   const [myOD, setMyOD] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('leave');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [showLeaveModal, setShowLeaveModal] = useState(false);
   const [showODModal, setShowODModal] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ is_half_day: false });
@@ -148,6 +149,10 @@ export default function Requests() {
     padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
     background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)',
   });
+  const subTabStyle = (active) => ({
+    padding: '6px 14px', borderRadius: 20, border: '1px solid ' + (active ? 'var(--accent)' : 'var(--border)'), cursor: 'pointer', fontWeight: 600, fontSize: 12,
+    background: active ? 'rgba(25, 84, 2, 0.08)' : 'var(--bg2)', color: active ? 'var(--accent)' : 'var(--text2)', transition: 'all 0.2s ease',
+  });
 
   function CountdownTimer({ seconds }) {
     const [secs, setSecs] = useState(seconds);
@@ -197,61 +202,89 @@ export default function Requests() {
           </div>
         </div>
 
+        {/* Status Filters */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+          <button style={subTabStyle(statusFilter === 'all')} onClick={() => setStatusFilter('all')}>All</button>
+          <button style={subTabStyle(statusFilter === 'pending')} onClick={() => setStatusFilter('pending')}>Pending</button>
+          <button style={subTabStyle(statusFilter === 'approved')} onClick={() => setStatusFilter('approved')}>Approved</button>
+          <button style={subTabStyle(statusFilter === 'rejected')} onClick={() => setStatusFilter('rejected')}>Rejected</button>
+        </div>
+
         {/* Request List */}
         {loading ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-            {tab === 'leave' && (myLeave.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No leave requests</div>
-            ) : myLeave.map(req => (
-              <div key={req.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontWeight: 700, fontSize: 15 }}>{req.leave_type_name}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
-                        {STATUS_BADGE[req.status]?.label}
-                      </span>
-                      {req.is_auto_approved && <span style={{ fontSize: 11, color: '#2563eb' }}>⏰ Auto-approved</span>}
-                    </div>
-                    <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_date} → {req.to_date} · <strong>{req.total_days} day{req.total_days > 1 ? 's' : ''}</strong></div>
-                    {req.reason && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Reason: {req.reason}</div>}
-                    {req.approver_remarks && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>Remarks: {req.approver_remarks}</div>}
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-                    <span style={{ fontSize: 11, color: 'var(--text3)' }}>{req.reference}</span>
-                    {req.status === 'pending' && req.seconds_until_auto_approve > 0 && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
-                        <Clock size={12} style={{ color: '#f59e0b' }} />
-                        Auto-approve in: <CountdownTimer seconds={req.seconds_until_auto_approve} />
+            {tab === 'leave' && (() => {
+              const filtered = myLeave.filter(req => {
+                if (statusFilter === 'all') return true;
+                if (statusFilter === 'pending') return req.status === 'pending';
+                if (statusFilter === 'approved') return req.status === 'approved' || req.status === 'auto_approved';
+                if (statusFilter === 'rejected') return req.status === 'rejected';
+                return true;
+              });
+              if (filtered.length === 0) {
+                return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No leave requests found</div>;
+              }
+              return filtered.map(req => (
+                <div key={req.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>{req.leave_type_name}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
+                          {STATUS_BADGE[req.status]?.label}
+                        </span>
+                        {req.is_auto_approved && <span style={{ fontSize: 11, color: '#2563eb' }}>⏰ Auto-approved</span>}
                       </div>
-                    )}
-                    {req.status === 'pending' && (
-                      <button onClick={() => cancelLeave(req.id)} style={{ fontSize: 11, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )))}
-
-            {tab === 'od' && (myOD.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No on-duty requests</div>
-            ) : myOD.map(req => (
-              <div key={req.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
-                  <div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontWeight: 700, fontSize: 15 }}>On-Duty — {req.date}</span>
-                      <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
-                        {STATUS_BADGE[req.status]?.label}
-                      </span>
+                      <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_date} → {req.to_date} · <strong>{req.total_days} day{req.total_days > 1 ? 's' : ''}</strong></div>
+                      {req.reason && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Reason: {req.reason}</div>}
+                      {req.approver_remarks && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>Remarks: {req.approver_remarks}</div>}
                     </div>
-                    <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_time} – {req.to_time} · {req.work_location}</div>
-                    {req.purpose && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Purpose: {req.purpose}</div>}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text3)' }}>{req.reference}</span>
+                      {req.status === 'pending' && req.seconds_until_auto_approve > 0 && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
+                          <Clock size={12} style={{ color: '#f59e0b' }} />
+                          Auto-approve in: <CountdownTimer seconds={req.seconds_until_auto_approve} />
+                        </div>
+                      )}
+                      {req.status === 'pending' && (
+                        <button onClick={() => cancelLeave(req.id)} style={{ fontSize: 11, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                      )}
+                    </div>
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)' }}>{req.reference}</div>
                 </div>
-              </div>
-            )))}
+              ));
+            })()}
+
+            {tab === 'od' && (() => {
+              const filtered = myOD.filter(req => {
+                if (statusFilter === 'all') return true;
+                if (statusFilter === 'pending') return req.status === 'pending';
+                if (statusFilter === 'approved') return req.status === 'approved' || req.status === 'auto_approved';
+                if (statusFilter === 'rejected') return req.status === 'rejected';
+                return true;
+              });
+              if (filtered.length === 0) {
+                return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No on-duty requests found</div>;
+              }
+              return filtered.map(req => (
+                <div key={req.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+                        <span style={{ fontWeight: 700, fontSize: 15 }}>On-Duty — {req.date}</span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
+                          {STATUS_BADGE[req.status]?.label}
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_time} – {req.to_time} · {req.work_location}</div>
+                      {req.purpose && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Purpose: {req.purpose}</div>}
+                    </div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)' }}>{req.reference}</div>
+                  </div>
+                </div>
+              ));
+            })()}
           </div>
         )}
       </div>
