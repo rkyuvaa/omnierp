@@ -89,7 +89,7 @@ export async function resubscribeForCurrentUser() {
 export async function unsubscribeUser() {
   if (!isPushSupported()) return;
 
-  const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+  const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) return;
 
   const subscription = await registration.pushManager.getSubscription();
@@ -114,7 +114,7 @@ export async function unsubscribeUser() {
 export async function fullyUnsubscribeUser() {
   if (!isPushSupported()) return;
 
-  const registration = await navigator.serviceWorker.getRegistration('/sw.js');
+  const registration = await navigator.serviceWorker.getRegistration();
   if (!registration) return;
 
   const subscription = await registration.pushManager.getSubscription();

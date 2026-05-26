@@ -28,7 +28,15 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      api.get('/auth/me').then(async r => setUser(await fetchUserWithRole(r.data))).catch(() => localStorage.removeItem('token')).finally(() => setLoading(false));
+      api.get('/auth/me')
+        .then(async r => {
+          const userWithRole = await fetchUserWithRole(r.data);
+          setUser(userWithRole);
+          // Proactively ensure subscription is associated with current user on mount/refresh
+          resubscribeForCurrentUser().catch(() => {});
+        })
+        .catch(() => localStorage.removeItem('token'))
+        .finally(() => setLoading(false));
     } else setLoading(false);
   }, []);
 

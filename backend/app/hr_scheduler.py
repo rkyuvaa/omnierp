@@ -77,10 +77,6 @@ def auto_approve_leaves():
                     reference_type="leave", reference_id=req.id
                 )
                 db.add(notif)
-                try:
-                    send_push_to_user(req.approver.user_id, title, msg, "leave", req.id, db)
-                except Exception as e:
-                    print(f"Failed to send push: {e}")
 
 
             print(f"[AutoApprove] Leave {req.reference} auto-approved")
