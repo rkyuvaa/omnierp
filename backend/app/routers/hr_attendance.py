@@ -226,7 +226,12 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         return record
 
     check_in = punches[0].punch_time
-    check_out = punches[-1].punch_time if len(punches) > 1 else None
+    check_out = None
+    if len(punches) > 1:
+        # Avoid treating accidental double-punches (within 5 minutes) as check-out
+        if (punches[-1].punch_time - check_in).total_seconds() >= 300:
+            check_out = punches[-1].punch_time
+            
     record.check_in = check_in
     record.check_out = check_out
     record.check_in_photo = punches[0].photo_url
