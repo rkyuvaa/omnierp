@@ -176,7 +176,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     
     # Global Configs
     global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
-    lop_calculation_base = get_hr_config(db, "lop_calculation_base", "gross") # gross or ctc
+    lop_calculation_base = get_hr_config(db, "lop_calculation_base", "gross") # gross, ctc, or net_pay
     lop_denominator_basis = get_hr_config(db, "lop_denominator_basis", "working_days") # calendar_days or working_days
 
     working_days_count = len([r for r in records if r.status not in ["holiday", "weekly_off"]])
@@ -320,8 +320,12 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     # 4. Handle Explicit LOP Deduction if using 'deduction' method
     if calc_method == "deduction" and lop_days > 0 and total_working_days_in_month > 0:
         full_gross_earnings = sum(earnings.values())
+        full_deductions_before_lop = sum(deductions.values())
+        net_pay_before_lop = full_gross_earnings - full_deductions_before_lop
         if lop_calculation_base == "gross":
             lop_deduction = round(full_gross_earnings * (lop_days / total_working_days_in_month), 2)
+        elif lop_calculation_base == "net_pay":
+            lop_deduction = round(net_pay_before_lop * (lop_days / total_working_days_in_month), 2)
         else: # ctc
             lop_deduction = round(ctc * (lop_days / total_working_days_in_month), 2)
             

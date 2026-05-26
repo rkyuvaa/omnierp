@@ -423,11 +423,12 @@ export default function HRConfigurations() {
               <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <div style={{ fontWeight: 700, marginBottom: 4 }}>LOP Calculation Base</div>
-                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Choose if LOP is deducted based on Gross earnings or Total CTC.</div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>Choose if LOP is deducted based on Gross earnings, Total CTC, or Net Pay (In-Hand).</div>
                 </div>
                 <select value={configs.lop_calculation_base || 'gross'} onChange={e => updateConfig('lop_calculation_base', e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
                   <option value="gross">Gross Salary</option>
                   <option value="ctc">Total CTC</option>
+                  <option value="net_pay">Net Pay (In-Hand)</option>
                 </select>
               </div>
 
