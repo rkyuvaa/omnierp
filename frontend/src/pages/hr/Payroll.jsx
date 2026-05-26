@@ -238,7 +238,7 @@ export default function Payroll() {
                 >
                   <option value=''>All Employees</option>
                   {employees.map(e => (
-                    <option key={e.id} value={e.id}>{e.first_name} {e.last_name} ({e.employee_code})</option>
+                    <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>
                   ))}
                 </select>
               )}
