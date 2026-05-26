@@ -14,7 +14,10 @@ import {
   RefreshCw, 
   Check,
   Users,
-  Upload
+  Upload,
+  MapPin,
+  Camera,
+  X
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -59,6 +62,9 @@ export default function Attendance() {
   const [year, setYear] = useState(today.getFullYear());
   const [employees, setEmployees] = useState([]);
   const [records, setRecords] = useState({});
+  const [punches, setPunches] = useState([]);
+  const [tab, setTab] = useState('grid');
+  const [selectedSelfie, setSelectedSelfie] = useState(null);
   const [loading, setLoading] = useState(true);
   const [branches, setBranches] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -91,10 +97,11 @@ export default function Attendance() {
       const params = { month, year };
       if (filterBranch) params.branch_id = filterBranch;
       if (filterDept) params.department_id = filterDept;
-      const [emps, recs, hols] = await Promise.all([
+      const [emps, recs, hols, pchs] = await Promise.all([
         api.get('/hr/employees/', { params: { branch_id: filterBranch || undefined, department_id: filterDept || undefined, is_active: true } }),
         api.get('/hr/attendance/records', { params }),
         api.get('/hr/holidays/', { params: { month, year } }),
+        api.get('/hr/attendance/punches', { params }),
       ]);
       let empsData = emps.data;
       if (!user?.is_superadmin && user?.employee_id) {
@@ -103,6 +110,7 @@ export default function Attendance() {
       setEmployees(empsData);
       setRecords(recs.data);
       setHolidays(hols.data || []);
+      setPunches(pchs.data || []);
     } catch (err) {
       toast.error('Failed to load attendance');
     }
@@ -290,6 +298,11 @@ export default function Attendance() {
     emp.employee_id.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const filteredPunches = punches.filter(p => 
+    p.employee_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.employee_code.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const inputStyle = { 
     width: '100%', 
     padding: '8px 12px', 
@@ -307,6 +320,31 @@ export default function Attendance() {
   return (
     <Layout title="Attendance">
       <div style={{ padding: '0 16px 24px' }}>
+        {/* Tab Switcher */}
+        {user?.is_superadmin && (
+          <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+            {['grid', 'punches'].map(t => (
+              <button 
+                key={t}
+                onClick={() => setTab(t)}
+                style={{ 
+                  padding: '12px 4px', 
+                  background: 'none', 
+                  border: 'none', 
+                  borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+                  color: tab === t ? 'var(--accent)' : 'var(--text3)',
+                  fontWeight: 700,
+                  fontSize: 14,
+                  cursor: 'pointer',
+                  textTransform: 'capitalize'
+                }}
+              >
+                {t === 'grid' ? 'Monthly Sheet' : 'Raw Punch Log'}
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Controls / Filter Bar */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'nowrap', overflowX: 'auto', alignItems: 'center', paddingBottom: '6px', width: '100%' }}>
           
@@ -423,7 +461,9 @@ export default function Attendance() {
           )}
         </div>
 
-        {/* Status Legend capsules shelf */}
+        {tab === 'grid' && (
+          <>
+            {/* Status Legend capsules shelf */}
         <div style={{ 
           display: 'flex', 
           gap: '12px', 
@@ -645,6 +685,152 @@ export default function Attendance() {
               </table>
             </div>
           </div>
+          </>
+        )}
+
+        {tab === 'punches' && (
+          loading ? (
+            <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: '16px', border: '1px solid rgba(226, 232, 240, 0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+              <div className="spinner" style={{ width: 28, height: 28 }}></div>
+              <div>Loading punch records...</div>
+            </div>
+          ) : (
+            <div style={{ 
+              background: 'var(--bg2)',
+              borderRadius: '16px',
+              border: '1px solid rgba(226, 232, 240, 0.8)',
+              boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
+              overflow: 'hidden',
+              padding: '16px 20px 24px'
+            }}>
+              <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+                📋 Raw Punch History
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text3)', background: 'var(--bg3)', padding: '2px 8px', borderRadius: 99 }}>
+                  {filteredPunches.length} records
+                </span>
+              </h3>
+              
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13, textAlign: 'left' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text2)', fontWeight: 700 }}>
+                      <th style={{ padding: '12px 16px' }}>Employee</th>
+                      <th style={{ padding: '12px 16px' }}>Punch Time</th>
+                      <th style={{ padding: '12px 16px' }}>Source / Device</th>
+                      <th style={{ padding: '12px 16px' }}>Location Details</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'center' }}>Selfie</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredPunches.length === 0 ? (
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text3)' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+                            <AlertCircle size={32} style={{ opacity: 0.3 }} />
+                            <span>No raw punches found for this period</span>
+                          </div>
+                        </td>
+                      </tr>
+                    ) : filteredPunches.map(p => {
+                      const punchDate = new Date(p.punch_time);
+                      const isMobile = p.source === 'mobile';
+                      
+                      return (
+                        <tr 
+                          key={p.id} 
+                          style={{ borderBottom: '1px solid var(--border)', transition: 'background-color 0.2s' }}
+                          onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(248, 250, 252, 0.4)'}
+                          onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+                        >
+                          <td style={{ padding: '14px 16px' }}>
+                            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{p.employee_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace', marginTop: 2 }}>{p.employee_code}</div>
+                          </td>
+                          <td style={{ padding: '14px 16px', color: 'var(--text2)' }}>
+                            <div style={{ fontWeight: 500 }}>
+                              {punchDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                            </div>
+                            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
+                              {punchDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                            </div>
+                          </td>
+                          <td style={{ padding: '14px 16px' }}>
+                            <span style={{ 
+                              display: 'inline-flex', 
+                              alignItems: 'center', 
+                              gap: 6, 
+                              fontSize: 11, 
+                              fontWeight: 700, 
+                              padding: '4px 10px', 
+                              borderRadius: 99,
+                              textTransform: 'uppercase',
+                              background: isMobile ? 'rgba(99, 102, 241, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                              color: isMobile ? '#4f46e5' : '#059669',
+                              border: isMobile ? '1px solid rgba(99, 102, 241, 0.2)' : '1px solid rgba(16, 185, 129, 0.2)'
+                            }}>
+                              {isMobile ? '📱 Mobile' : '📟 Biometric'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '14px 16px', color: 'var(--text2)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {isMobile ? (
+                              p.location_name ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <MapPin size={14} style={{ color: 'var(--accent)', flexShrink: 0 }} />
+                                  <span title={p.location_name}>{p.location_name}</span>
+                                </div>
+                              ) : (
+                                <span style={{ color: 'var(--text3)', fontSize: 12 }}>GPS Coordinates Available</span>
+                              )
+                            ) : (
+                              <span style={{ color: 'var(--text3)', fontSize: 12 }}>Biometric Terminal</span>
+                            )}
+                            {isMobile && (p.latitude && p.longitude) && (
+                              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, paddingLeft: 20 }}>
+                                Lat: {p.latitude.toFixed(5)}, Lon: {p.longitude.toFixed(5)}
+                              </div>
+                            )}
+                          </td>
+                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                            {isMobile && p.photo_url ? (
+                              <button 
+                                onClick={() => setSelectedSelfie({
+                                  photo_url: p.photo_url,
+                                  name: p.employee_name,
+                                  code: p.employee_code,
+                                  time: punchDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + punchDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+                                })}
+                                className="btn"
+                                style={{ 
+                                  padding: '5px 12px', 
+                                  fontSize: 12, 
+                                  fontWeight: 600, 
+                                  background: 'rgba(99, 102, 241, 0.06)', 
+                                  color: '#4f46e5', 
+                                  border: '1px solid rgba(99, 102, 241, 0.25)',
+                                  borderRadius: 8,
+                                  cursor: 'pointer',
+                                  transition: 'all 0.15s',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: 6
+                                }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.12)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.06)'; }}
+                              >
+                                <Camera size={13} /> View Selfie
+                              </button>
+                            ) : (
+                              <span style={{ color: 'var(--text3)' }}>—</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )
         )}
       </div>
 
@@ -842,6 +1028,43 @@ export default function Attendance() {
                 }}
               >
                 {uploading ? 'Uploading...' : 'Upload & Import'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Selfie Modal Viewer */}
+      {selectedSelfie && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(6px)', zIndex: 11000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg2)', borderRadius: 20, overflow: 'hidden', width: '100%', maxWidth: 400, boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)', border: '1px solid rgba(226, 232, 240, 0.8)' }}>
+            {/* Header */}
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg3)' }}>
+              <div>
+                <h4 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--text)' }}>Selfie Verification</h4>
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{selectedSelfie.name} ({selectedSelfie.code})</div>
+              </div>
+              <button onClick={() => setSelectedSelfie(null)} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: 6, cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <X size={15} />
+              </button>
+            </div>
+            {/* Body (Photo) */}
+            <div style={{ padding: 20, textAlign: 'center', background: '#090d16' }}>
+              <img 
+                src={selectedSelfie.photo_url} 
+                alt="Selfie captured at check-in" 
+                style={{ width: '100%', borderRadius: 12, display: 'block', margin: '0 auto', boxShadow: '0 4px 12px rgba(0,0,0,0.5)', transform: 'scaleX(-1)' }} 
+              />
+            </div>
+            {/* Footer */}
+            <div style={{ padding: '12px 20px', background: 'var(--bg3)', borderTop: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 600 }}>Captured: {selectedSelfie.time}</div>
+              <button 
+                onClick={() => setSelectedSelfie(null)} 
+                className="btn btn-primary" 
+                style={{ padding: '6px 16px', fontSize: 13, borderRadius: 8, fontWeight: 600, cursor: 'pointer' }}
+              >
+                Close Preview
               </button>
             </div>
           </div>

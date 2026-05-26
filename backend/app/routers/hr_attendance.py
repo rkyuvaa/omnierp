@@ -429,6 +429,55 @@ def get_punches(employee_id: int, target_date: date = None,
         "location_name": p.location_name,
     } for p in punches]
 
+@router.get("/punches")
+def get_all_punches(
+    month: int,
+    year: int,
+    employee_id: Optional[int] = None,
+    branch_id: Optional[int] = None,
+    department_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not current_user.is_superadmin:
+        from app.auth import get_current_employee_optional
+        emp_resolved = get_current_employee_optional(current_user, db)
+        if not emp_resolved:
+            return []
+        employee_id = emp_resolved.id
+        branch_id = None
+        department_id = None
+
+    from sqlalchemy import extract
+    q = db.query(HRAttendancePunch).join(HREmployee, HRAttendancePunch.employee_id == HREmployee.id)
+    
+    q = q.filter(
+        extract('month', HRAttendancePunch.punch_time) == month,
+        extract('year', HRAttendancePunch.punch_time) == year
+    )
+    
+    if employee_id:
+        q = q.filter(HRAttendancePunch.employee_id == employee_id)
+    if branch_id:
+        q = q.filter(HREmployee.branch_id == branch_id)
+    if department_id:
+        q = q.filter(HREmployee.department_id == department_id)
+
+    punches = q.order_by(HRAttendancePunch.punch_time.desc()).all()
+    
+    return [{
+        "id": p.id,
+        "employee_id": p.employee_id,
+        "employee_name": p.employee.name if p.employee else "-",
+        "employee_code": p.employee.employee_id if p.employee else "-",
+        "punch_time": str(p.punch_time),
+        "source": p.source,
+        "photo_url": p.photo_url,
+        "latitude": p.latitude,
+        "longitude": p.longitude,
+        "location_name": p.location_name,
+    } for p in punches]
+
 class RecomputeRequest(BaseModel):
     month: int
     year: int
