@@ -109,6 +109,12 @@ async def restore_backup(file: UploadFile = File(...), cu=Depends(get_current_us
             with zipfile.ZipFile(uploads_zip, 'r') as zipf:
                 zipf.extractall(UPLOADS_DIR)
         
+        # 4. Restore .env
+        env_backup_path = os.path.join(temp_extract, ".env")
+        if os.path.exists(env_backup_path):
+            target_env = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), ".env")
+            shutil.copy(env_backup_path, target_env)
+        
         if db_error:
             return {"message": "Files restored, but database restore had errors", "error": db_error}
         

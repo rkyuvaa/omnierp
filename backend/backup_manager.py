@@ -74,6 +74,11 @@ def create_backup():
             zipf.write(sql_file, "database.sql")
             if os.path.exists(uploads_zip):
                 zipf.write(uploads_zip, "uploads.zip")
+            
+            # Pack .env if it exists
+            env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+            if os.path.exists(env_path):
+                zipf.write(env_path, ".env")
         
         return bundle_name, None
         
@@ -144,6 +149,12 @@ def restore_backup_from_file(zip_path):
                 os.makedirs(UPLOADS_DIR)
             with zipfile.ZipFile(uploads_zip, 'r') as zipf:
                 zipf.extractall(UPLOADS_DIR)
+        
+        # 4. Restore .env
+        env_backup_path = os.path.join(temp_extract, ".env")
+        if os.path.exists(env_backup_path):
+            target_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+            shutil.copy(env_backup_path, target_env)
         
         return None
         
