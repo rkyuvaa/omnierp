@@ -106,14 +106,12 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     .container { width: 100%; }
     
     /* Strict Table Header to fix xhtml2pdf bugs */
-    .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-    .company-name { font-size: 14pt; font-weight: bold; color: #195402; margin-bottom: 2px; }
-    .company-info { font-size: 8pt; color: #4b5563; line-height: 1.2; margin-bottom: 2px; }
+    .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    .company-name { font-size: 16pt; font-weight: bold; color: #195402; margin-bottom: 4px; }
+    .company-info { font-size: 8.5pt; color: #475569; line-height: 1.35; }
     
-    /* Badge styling using a nested table for strict width control in xhtml2pdf */
-    .badge-table { width: 100px; border-collapse: collapse; float: right; }
-    .badge-cell { background: #195402; color: #fff; padding: 4px; font-weight: bold; font-size: 9pt; text-align: center; border-radius: 3px; }
-    .month-year { font-weight: bold; font-size: 10pt; margin-top: 6px; color: #1e293b; text-align: right; }
+    .payslip-title { font-size: 20pt; font-weight: bold; color: #195402; text-align: right; letter-spacing: 0.5px; }
+    .payslip-month { font-weight: bold; font-size: 10pt; color: #475569; text-align: right; margin-top: 3px; }
     
     /* Info Table - No vertical lines, just clean horizontal rows */
     .info-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
@@ -201,20 +199,23 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             <!-- HEADER -->
             <table class="hdr-table">
                 <tr>
-                    <td style="width: 150px; vertical-align: top; padding-top: 5px;">
+                    <td style="width: 150px; vertical-align: middle;">
                         {logo_html}
                     </td>
-                    <td style="vertical-align: top;">
+                    <td style="vertical-align: middle; padding-left: 10px;">
                         <div class="company-name">{company_name}</div>
                         <div class="company-info">{company_address}</div>
                         <div class="company-info">GSTIN: {company_gstin}</div>
                     </td>
-                    <td style="width: 130px; vertical-align: top;">
-                        <table class="badge-table"><tr><td class="badge-cell">PAYSLIP</td></tr></table>
-                        <div class="month-year" style="clear:both;">{month_name} {year}</div>
+                    <td style="width: 150px; vertical-align: middle; text-align: right;">
+                        <div class="payslip-title">PAYSLIP</div>
+                        <div class="payslip-month">{month_name} {year}</div>
                     </td>
                 </tr>
             </table>
+
+            <!-- Divider Line -->
+            <div style="border-bottom: 1.5px solid #cbd5e1; margin-bottom: 15px; margin-top: 10px; clear: both;"></div>
 
             <!-- EMPLOYEE INFO -->
             <div class="section-title">Employee Information</div>
