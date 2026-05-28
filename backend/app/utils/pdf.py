@@ -107,12 +107,12 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     
     /* Strict Table Header to fix xhtml2pdf bugs */
     .hdr-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-    .company-name { font-size: 14pt; font-weight: bold; color: #1a3c5e; margin-bottom: 2px; }
+    .company-name { font-size: 14pt; font-weight: bold; color: #195402; margin-bottom: 2px; }
     .company-info { font-size: 8pt; color: #4b5563; line-height: 1.2; margin-bottom: 2px; }
     
     /* Badge styling using a nested table for strict width control in xhtml2pdf */
     .badge-table { width: 100px; border-collapse: collapse; float: right; }
-    .badge-cell { background: #1a3c5e; color: #fff; padding: 4px; font-weight: bold; font-size: 9pt; text-align: center; border-radius: 3px; }
+    .badge-cell { background: #195402; color: #fff; padding: 4px; font-weight: bold; font-size: 9pt; text-align: center; border-radius: 3px; }
     .month-year { font-weight: bold; font-size: 10pt; margin-top: 6px; color: #1e293b; text-align: right; }
     
     /* Info Table - No vertical lines, just clean horizontal rows */
@@ -122,17 +122,17 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     .sep { width: 2%; text-align: center; color: #cbd5e1; }
     .val { font-weight: bold; width: 33%; color: #1e293b; font-size: 8.5pt; }
     
-    .section-title { background: #f8fafc; border-left: 3px solid #1a3c5e; padding: 5px 10px; font-weight: bold; font-size: 8.5pt; color: #1a3c5e; margin-bottom: 8px; margin-top: 10px; }
+    .section-title { background: #f8fafc; border-left: 3px solid #195402; padding: 5px 10px; font-weight: bold; font-size: 8.5pt; color: #195402; margin-bottom: 8px; margin-top: 10px; }
     
     /* Component Layout Tables - Strict grid as requested */
     .comp-layout { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
     .comp-cell { width: 49%; vertical-align: top; padding: 0; }
     .comp-spacer { width: 2%; }
     
-    .hdr-earn { background: #f0fdf4; color: #166534; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-ded { background: #fef2f2; color: #991b1b; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-cont { background: #f5f3ff; color: #5b21b6; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-summ { background: #fff7ed; color: #9a3412; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-earn { background: #fefce8; color: #d1b31b; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-ded { background: #fefce8; color: #d1b31b; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-cont { background: #fefce8; color: #d1b31b; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-summ { background: #fefce8; color: #d1b31b; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
     
     .comp-tbl { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; }
     .comp-tbl td { padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8.5pt; color: #334155; }
@@ -142,7 +142,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     
     /* Net Pay Box */
     .net-tbl { width: 100%; border-collapse: collapse; margin-top: 10px; }
-    .net-td { background: #1a3c5e; color: #fff; padding: 9px; text-align: center; border-radius: 4px; }
+    .net-td { background: #195402; color: #fff; padding: 9px; text-align: center; border-radius: 4px; }
     .net-title { font-size: 9pt; font-weight: bold; margin-bottom: 3px; opacity: 0.9; }
     .net-val { font-size: 18pt; font-weight: bold; }
     .net-words { font-size: 8pt; margin-top: 4px; font-style: italic; opacity: 0.85; }
@@ -182,7 +182,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             <div class="section-title">Leave Details</div>
             <table class="comp-tbl" style="width: 100%; border-collapse: collapse;">
                 <thead>
-                    <tr style="background: #f8fafc; font-weight: bold; color: #1a3c5e;">
+                    <tr style="background: #f8fafc; font-weight: bold; color: #195402;">
                         <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; width: 60%;">Leave Type</td>
                         <td style="padding: 5px 8px; border: 1px solid #e2e8f0; font-weight: bold; text-align: center; width: 40%;">Taken This Month</td>
                     </tr>
