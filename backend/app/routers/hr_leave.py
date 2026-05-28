@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import date, datetime, timedelta
-from app.database import get_db
+from app.database import get_db, SessionLocal
 from app.models import User
 from app.auth import get_current_user, require_admin
 from app.routers.hr_config import get_hr_config
@@ -403,10 +403,12 @@ def pending_approvals(
             ).order_by(HRLeaveRequest.created_at).all()
     return [_serialize_request(r) for r in reqs]
 
-def _send_leave_email_notification(db: Session, req: HRLeaveRequest):
-    if not req.employee or not req.employee.email or "@" not in req.employee.email:
-        return
+def _send_leave_email_notification(req_id: int):
+    db = SessionLocal()
     try:
+        req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
+        if not req or not req.employee or not req.employee.email or "@" not in req.employee.email:
+            return
         from app.utils.email_service import send_template_email
         variables = {
             "employee_name": req.employee.name,
@@ -424,7 +426,9 @@ def _send_leave_email_notification(db: Session, req: HRLeaveRequest):
             variables=variables
         )
     except Exception as e:
-        print(f"⚠️ Failed to send leave approval email to {req.employee.email}: {e}")
+        print(f"⚠️ Failed to send leave approval email for req {req_id}: {e}")
+    finally:
+        db.close()
 
 @router.get("/all")
 def all_requests(
@@ -447,7 +451,7 @@ def all_requests(
     return [_serialize_request(r) for r in q.order_by(HRLeaveRequest.created_at.desc()).all()]
 
 @router.post("/{req_id}/approve")
-def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def approve_leave(req_id: int, data: LeaveAction, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
     from app.auth import is_hr_admin
@@ -485,11 +489,11 @@ def approve_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db),
                 f"Your {req.leave_type.name if req.leave_type else 'leave'} from {req.from_date} to {req.to_date} has been approved.",
                 "leave", req.id)
     db.commit()
-    _send_leave_email_notification(db, req)
+    background_tasks.add_task(_send_leave_email_notification, req.id)
     return {"message": "Approved", "id": req.id}
 
 @router.post("/{req_id}/reject")
-def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def reject_leave(req_id: int, data: LeaveAction, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
     from app.auth import is_hr_admin
@@ -508,7 +512,7 @@ def reject_leave(req_id: int, data: LeaveAction, db: Session = Depends(get_db), 
                 f"Your leave from {req.from_date} to {req.to_date} was rejected. Reason: {data.remarks or 'No reason given'}",
                 "leave", req.id)
     db.commit()
-    _send_leave_email_notification(db, req)
+    background_tasks.add_task(_send_leave_email_notification, req.id)
     return {"message": "Rejected"}
 
 @router.post("/{req_id}/cancel")
