@@ -127,10 +127,10 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
     .comp-cell { width: 49%; vertical-align: top; padding: 0; }
     .comp-spacer { width: 2%; }
     
-    .hdr-earn { background: #fefce8; color: #8a6508; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-ded { background: #fefce8; color: #8a6508; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-cont { background: #fefce8; color: #8a6508; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
-    .hdr-summ { background: #fefce8; color: #8a6508; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-earn { background: #f0fdf4; color: #195402; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-ded { background: #f0fdf4; color: #195402; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-cont { background: #f0fdf4; color: #195402; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
+    .hdr-summ { background: #f0fdf4; color: #195402; font-weight: bold; padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8pt; margin-bottom: 2px; }
     
     .comp-tbl { width: 100%; border-collapse: collapse; border: 1px solid #e2e8f0; }
     .comp-tbl td { padding: 5px 8px; border: 1px solid #e2e8f0; font-size: 8.5pt; color: #334155; }
