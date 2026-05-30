@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../utils/api';
+import api, { BASE_URL } from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText, Download } from 'lucide-react';
@@ -110,12 +110,22 @@ export default function HRConfigurations() {
     } catch { toast.error('Delete failed'); }
   }
 
-  async function syncMachine(id) {
+  async function downloadSyncScript(machineId, machineName) {
     try {
-      await api.post(`/hr/biometric/sync/${id}`);
-      toast.success('Sync started in background');
-      setTimeout(fetchTab, 3000);
-    } catch { toast.error('Sync failed'); }
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${BASE_URL}/hr/biometric/generate-script/${machineId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) throw new Error('Failed to generate script');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sync_${machineName.replace(/\s+/g, '_').toLowerCase()}.py`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Sync script downloaded! Run it on your local network.');
+    } catch { toast.error('Failed to download sync script'); }
   }
 
   async function updateConfig(key, value) {
@@ -267,23 +277,49 @@ export default function HRConfigurations() {
 
         {/* BIOMETRIC MACHINES */}
         {tab === 'biometric' && (
-          <Section title="Biometric Machines (eSSL)" onAdd={() => openModal('biometric')}>
+          <Section title="Biometric Attendance Machines" onAdd={() => openModal('biometric')}>
+            {/* How it works info banner */}
+            <div style={{ background: 'var(--accent-dim)', border: '1px solid var(--accent)', borderRadius: 10, padding: '12px 16px', marginBottom: 16, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+              <div style={{ fontSize: 20, lineHeight: 1 }}>💡</div>
+              <div>
+                <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--accent)', marginBottom: 4 }}>How Biometric Sync Works</div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+                  Since the device is on your <strong>local network</strong> (e.g. 192.168.x.x), sync runs from a PC on the same network.
+                  Click <strong>Download Sync Script</strong> on any device below, run it on a local PC using{' '}
+                  <code style={{ background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>pip install pyzk requests</code>{', '}
+                  then{' '}
+                  <code style={{ background: 'var(--bg3)', padding: '1px 5px', borderRadius: 4, fontSize: 11 }}>python sync_machine.py</code>.
+                  The script connects to the device, fetches all punch logs, and uploads them here automatically.
+                </div>
+              </div>
+            </div>
+
             {machines.map(m => (
-              <div key={m.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 16, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{m.name}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>IP: <strong>{m.ip_address}:{m.port}</strong> · {m.branch_name || 'All Branches'}</div>
-                  {m.last_sync_at && (
-                    <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>
+              <div key={m.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 16, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: m.last_sync_status === 'success' ? '#22c55e' : m.last_sync_status === 'failed' ? '#ef4444' : '#94a3b8', flexShrink: 0 }} />
+                    <div style={{ fontWeight: 700, fontSize: 15 }}>{m.name}</div>
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 3 }}>
+                    📡 <strong>{m.ip_address}:{m.port}</strong> &nbsp;·&nbsp; {m.branch_name || 'All Branches'}
+                  </div>
+                  {m.last_sync_at ? (
+                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>
                       Last sync: {new Date(m.last_sync_at).toLocaleString()} ·
                       <span style={{ color: m.last_sync_status === 'success' ? '#22c55e' : '#ef4444', fontWeight: 600 }}> {m.last_sync_status}</span>
-                      {m.last_sync_count > 0 && ` · ${m.last_sync_count} records`}
+                      {m.last_sync_count > 0 && <span> · {m.last_sync_count} total records imported</span>}
                     </div>
+                  ) : (
+                    <div style={{ fontSize: 12, color: 'var(--text3)' }}>Never synced — download the script to start</div>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => syncMachine(m.id)} style={{ background: '#dbeafe', color: '#2563eb', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    <RefreshCw size={13} /> Sync Now
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <button
+                    onClick={() => downloadSyncScript(m.id, m.name)}
+                    style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}
+                  >
+                    <Download size={13} /> Download Sync Script
                   </button>
                   <button onClick={() => openModal('biometric', m)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 12 }}>Edit</button>
                   <button onClick={() => deleteItem('biometric', m.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 12 }}>Remove</button>
@@ -538,15 +574,15 @@ export default function HRConfigurations() {
             {/* Biometric Form */}
             {modal === 'biometric' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div><label style={labelStyle}>Machine Name</label><input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} /></div>
+                <div><label style={labelStyle}>Machine Name</label><input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="e.g. Main Entrance" /></div>
                 <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
-                  <div><label style={labelStyle}>IP Address</label><input value={form.ip_address || ''} onChange={e => setForm({ ...form, ip_address: e.target.value })} style={inputStyle} placeholder="192.168.1.100" /></div>
+                  <div><label style={labelStyle}>IP Address (local network)</label><input value={form.ip_address || ''} onChange={e => setForm({ ...form, ip_address: e.target.value })} style={inputStyle} placeholder="192.168.31.4" /></div>
                   <div><label style={labelStyle}>Port</label><input type="number" value={form.port || 4370} onChange={e => setForm({ ...form, port: parseInt(e.target.value) })} style={inputStyle} /></div>
                 </div>
-                <div style={{ marginTop: 10, marginBottom: 10 }}>
-                  <button onClick={testConnection} disabled={testing} type="button" className="btn" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid var(--border)', fontSize: 13, fontWeight: 600 }}>
-                    {testing ? <RefreshCw size={14} className="spin" /> : <Wifi size={14} />} {testing ? 'Testing...' : 'Test Connection'}
-                  </button>
+                <div style={{ background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 14px', fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>
+                  <strong style={{ color: 'var(--text)' }}>ℹ️ Connection Note:</strong> After saving, go back to the machine list and click{' '}
+                  <strong>Download Sync Script</strong>. Run that script on any PC on the same local network as this device to sync attendance.
+                  <br/>ZKTeco default port is <strong>4370</strong>.
                 </div>
                 <div><label style={labelStyle}>Branch</label>
                   <select value={form.branch_id || ''} onChange={e => setForm({ ...form, branch_id: e.target.value || null })} style={inputStyle}>

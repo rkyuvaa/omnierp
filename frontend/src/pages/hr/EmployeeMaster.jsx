@@ -254,7 +254,7 @@ export default function EmployeeMaster() {
                 { key: 'phone', label: 'Phone', type: 'text' },
                 { key: 'designation', label: 'Designation', type: 'text' },
                 { key: 'date_of_joining', label: 'Date of Joining', type: 'date' },
-                { key: 'biometric_id', label: 'Biometric ID (eSSL)', type: 'text' },
+                { key: 'biometric_id', label: 'Biometric Device User ID (ZKTeco/eSSL)', type: 'text' },
                 { key: 'basic_salary', label: 'Gross Salary (₹)', type: 'number' },
                 { key: 'uan', label: 'UAN (Universal Account Number)', type: 'text' },
                 { key: 'esi_number', label: 'ESI Number', type: 'text' },
