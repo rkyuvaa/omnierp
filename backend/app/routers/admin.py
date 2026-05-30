@@ -48,6 +48,14 @@ def download_backup(filename: str, cu=Depends(get_current_user)):
 def run_restore_in_background(temp_zip: str, temp_extract: str):
     print(f"[BackgroundRestore] Starting recovery job...")
     try:
+        # Ensure temp_extract is clean before extraction
+        if os.path.exists(temp_extract):
+            try:
+                shutil.rmtree(temp_extract)
+            except Exception as re:
+                print(f"[BackgroundRestore] Could not remove old temp extract path: {re}")
+        os.makedirs(temp_extract, exist_ok=True)
+
         # 1. Extract the bundle
         with zipfile.ZipFile(temp_zip, 'r') as zipf:
             zipf.extractall(temp_extract)
@@ -79,6 +87,22 @@ def run_restore_in_background(temp_zip: str, temp_extract: str):
                     print(f"[BackgroundRestore] Disposed SQLAlchemy connection pool.")
                 except Exception as de:
                     print(f"[BackgroundRestore] Error disposing engine pool: {de}")
+                
+                # Clear all existing tables by dropping and recreating public schema
+                reset_cmd = [
+                    tool_path,
+                    "-h", str(host),
+                    "-p", str(port) if port else "5432",
+                    "-U", str(user),
+                    "-d", str(dbname),
+                    "-c", "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+                ]
+                print(f"[BackgroundRestore] Wiping existing public schema before recovery...")
+                reset_res = subprocess.run(reset_cmd, capture_output=True, text=True)
+                if reset_res.returncode != 0:
+                    print(f"[BackgroundRestore] Warning: Schema wipe output: {reset_res.stderr}")
+                else:
+                    print(f"[BackgroundRestore] Database schema successfully wiped.")
                 
                 print(f"[BackgroundRestore] Executing psql restore process...")
                 result = subprocess.run(restore_cmd, capture_output=True, text=True)
