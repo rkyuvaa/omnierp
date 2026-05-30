@@ -9,6 +9,7 @@ export default function BackupManagement() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [restoring, setRestoring] = useState(false);
+  const [showRestoreScreen, setShowRestoreScreen] = useState(false);
 
   useEffect(() => {
     fetchBackups();
@@ -78,17 +79,35 @@ export default function BackupManagement() {
       if (res.data.error) {
         toast.error(res.data.message);
         console.error(res.data.error);
+        setRestoring(false);
       } else {
-        toast.success('System restored successfully! Please refresh the page.');
-        window.location.reload();
+        localStorage.setItem('isRestoring', 'true');
+        setShowRestoreScreen(true);
+        // Wait 15 seconds to allow background restore to finish before reloading
+        setTimeout(() => {
+          localStorage.removeItem('isRestoring');
+          toast.success('System restored successfully!');
+          window.location.href = '/login'; // Force them to login just in case tokens changed
+        }, 15000);
       }
     } catch (error) {
       toast.error('Restore failed. Check server logs.');
-    } finally {
       setRestoring(false);
+    } finally {
       e.target.value = '';
     }
   };
+
+  if (showRestoreScreen) {
+    return (
+      <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'var(--bg)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <RefreshCw size={64} className="spin" style={{ color: 'var(--accent)', marginBottom: 24 }} />
+        <h2 style={{ fontSize: 24, fontWeight: 'bold', color: 'var(--text)' }}>System Restore in Progress...</h2>
+        <p style={{ color: 'var(--text2)', marginTop: 12, fontSize: 16 }}>Please do not close this window. You will be redirected shortly.</p>
+        <style>{`.spin { animation: spin 2s linear infinite; } @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
+  }
 
   return (
     <Layout title="Backup & Migration">

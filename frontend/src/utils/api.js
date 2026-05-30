@@ -19,7 +19,7 @@ api.interceptors.request.use(cfg => {
 });
 
 api.interceptors.response.use(r => r, err => {
-  if (err.response?.status === 401) {
+  if (err.response?.status === 401 && localStorage.getItem('isRestoring') !== 'true') {
     localStorage.removeItem('token');
     window.location.href = '/login';
   }
