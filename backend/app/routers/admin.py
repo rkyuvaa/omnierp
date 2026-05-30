@@ -87,10 +87,10 @@ async def restore_backup(file: UploadFile = File(...), cu=Depends(get_current_us
             tool_path = find_pg_tool("psql")
             restore_cmd = [
                 tool_path,
-                "-h", host,
-                "-p", port,
-                "-U", user,
-                "-d", dbname,
+                "-h", str(host),
+                "-p", str(port) if port else "5432",
+                "-U", str(user),
+                "-d", str(dbname),
                 "-f", sql_file
             ]
             try:
