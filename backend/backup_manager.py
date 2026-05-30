@@ -22,6 +22,35 @@ def get_db_params():
         print(f"Error parsing DATABASE_URL: {e}")
         return None
 
+def find_pg_tool(tool_name):
+    import shutil as sys_shutil
+    # 1. Search in PATH
+    path = sys_shutil.which(tool_name)
+    if path:
+        return path
+    
+    # 2. Check standard Linux path
+    linux_path = f"/usr/bin/{tool_name}"
+    if os.path.exists(linux_path):
+        return linux_path
+        
+    # 3. Check common Windows PostgreSQL installation paths
+    if os.name == 'nt':
+        program_files = os.environ.get("ProgramFiles", "C:\\Program Files")
+        pg_dir = os.path.join(program_files, "PostgreSQL")
+        if os.path.exists(pg_dir):
+            try:
+                versions = sorted(os.listdir(pg_dir), reverse=True)
+                for v in versions:
+                    bin_path = os.path.join(pg_dir, v, "bin", f"{tool_name}.exe")
+                    if os.path.exists(bin_path):
+                        return bin_path
+            except Exception:
+                pass
+                
+    # 4. Fallback to name directly
+    return tool_name
+
 def create_backup():
     ensure_backup_dir()
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -41,8 +70,9 @@ def create_backup():
         # Set environment variable for password to avoid interactive prompt
         os.environ['PGPASSWORD'] = password
         
+        tool_path = find_pg_tool("pg_dump")
         dump_cmd = [
-            "/usr/bin/pg_dump",
+            tool_path,
             "-h", str(host),
             "-p", port,
             "-U", str(user),
@@ -50,11 +80,14 @@ def create_backup():
             str(dbname)
         ]
         
-        result = subprocess.run(dump_cmd, capture_output=True, text=True)
-        if result.returncode != 0:
-            error_msg = result.stderr if result.stderr else "Unknown error"
-            print(f"pg_dump error: {error_msg}")
-            return None, f"Database backup failed: {error_msg}"
+        try:
+            result = subprocess.run(dump_cmd, capture_output=True, text=True)
+            if result.returncode != 0:
+                error_msg = result.stderr if result.stderr else "Unknown error"
+                print(f"pg_dump error: {error_msg}")
+                return None, f"Database backup failed: {error_msg}"
+        except FileNotFoundError:
+            return None, f"PostgreSQL client utility '{tool_path}' not found. Please ensure postgresql-client is installed and in the system PATH."
         
         # 2. Archive Uploads
         uploads_zip = os.path.join(temp_dir, "uploads.zip")
@@ -130,17 +163,21 @@ def restore_backup_from_file(zip_path):
             user, password, host, port, dbname = db_params
             os.environ['PGPASSWORD'] = password
             
+            tool_path = find_pg_tool("psql")
             restore_cmd = [
-                "/usr/bin/psql",
+                tool_path,
                 "-h", str(host),
                 "-p", str(port) if port else "5432",
                 "-U", str(user),
                 "-d", str(dbname),
                 "-f", sql_file
             ]
-            result = subprocess.run(restore_cmd, capture_output=True, text=True)
-            if result.returncode != 0:
-                return f"Database restore failed: {result.stderr}"
+            try:
+                result = subprocess.run(restore_cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    return f"Database restore failed: {result.stderr}"
+            except FileNotFoundError:
+                return f"PostgreSQL client utility '{tool_path}' not found. Please ensure postgresql-client is installed and in the system PATH."
         
         # 3. Restore Files
         uploads_zip = os.path.join(temp_extract, "uploads.zip")

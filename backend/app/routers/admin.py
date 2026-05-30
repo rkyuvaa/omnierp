@@ -6,7 +6,7 @@ import shutil
 import zipfile
 import subprocess
 from app.auth import get_current_user, require_admin
-from backup_manager import list_backups, create_backup, delete_old_backups, BACKUP_DIR, UPLOADS_DIR, get_db_params
+from backup_manager import list_backups, create_backup, delete_old_backups, BACKUP_DIR, UPLOADS_DIR, get_db_params, find_pg_tool
 
 router = APIRouter()
 
@@ -78,21 +78,26 @@ async def restore_backup(file: UploadFile = File(...), cu=Depends(get_current_us
             # Use psql to restore. Note: This assumes the database exists and user has permissions.
             # We use --clean --if-exists in pg_dump ideally, but if not, we might need to drop and recreate.
             # For simplicity, we'll run the SQL file.
+            tool_path = find_pg_tool("psql")
             restore_cmd = [
-                "/usr/bin/psql",
+                tool_path,
                 "-h", host,
                 "-p", port,
                 "-U", user,
                 "-d", dbname,
                 "-f", sql_file
             ]
-            result = subprocess.run(restore_cmd, capture_output=True, text=True)
-            if result.returncode != 0:
-                print(f"Restore error: {result.stderr}")
-                # We continue anyway to try and restore files, but return error later
-                db_error = result.stderr
-            else:
-                db_error = None
+            try:
+                result = subprocess.run(restore_cmd, capture_output=True, text=True)
+                if result.returncode != 0:
+                    print(f"Restore error: {result.stderr}")
+                    # We continue anyway to try and restore files, but return error later
+                    db_error = result.stderr
+                else:
+                    db_error = None
+            except FileNotFoundError:
+                db_error = f"PostgreSQL client utility '{tool_path}' not found. Please ensure postgresql-client is installed and in the system PATH."
+                print(f"Restore error: {db_error}")
         
         # 3. Restore Files
         uploads_zip = os.path.join(temp_extract, "uploads.zip")
