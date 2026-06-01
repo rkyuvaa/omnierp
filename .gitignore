@@ -11,3 +11,5 @@ frontend/dist/
 *.log
 test.tar.gz
 *.tar.gz
+backend/*.json
+
