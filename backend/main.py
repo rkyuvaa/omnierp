@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import engine, Base
 from fastapi.staticfiles import StaticFiles
 import os
-from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin, admin_settings
+from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin, admin_settings, tasks
 from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions
 from app.hr_models import *  # register HR models with Base
 from app.hr_scheduler import start_scheduler
@@ -96,6 +96,7 @@ app.include_router(konwertcare.router, prefix="/api/konwertcare", tags=["konwert
 app.include_router(issue_matrix.router, prefix="/api/issue-matrix", tags=["issue-matrix"])
 app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(admin_settings.router, prefix="/api/admin/settings", tags=["admin-settings"])
+app.include_router(tasks.router, prefix="/api/tasks", tags=["Tasks"])
 
 # ── Attendance & HR Routers ──────────────────────────────────────────────────
 app.include_router(hr_employees.router, prefix="/api/hr/employees", tags=["HR-Employees"])

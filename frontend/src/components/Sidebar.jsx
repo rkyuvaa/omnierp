@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2 } from 'lucide-react';
 import { useState } from 'react';
 
 const mainItems = [{to:'/',label:'Dashboard',icon:LayoutDashboard}];
@@ -9,7 +9,8 @@ const moduleItems = [
   {to:'/installation',label:'KIM Installation',icon:Wrench,key:'installation'},
   {to:'/service',label:'Service',icon:ClipboardList,key:'service'},
   {to:'/warranty/products',label:'Product & Warranty',icon:ShieldCheck,key:'warranty'},
-  {to:'/konwertcare',label:'Konwert Care+',icon:HeartPulse,key:'konwertcare'}
+  {to:'/konwertcare',label:'Konwert Care+',icon:HeartPulse,key:'konwertcare'},
+  {to:'/tasks',label:'Task Management',icon:CheckSquare2,key:'tasks'}
 ];
 
 const hrSubItems = [

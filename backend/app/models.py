@@ -570,3 +570,99 @@ class EmailTemplate(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+
+# ─────────────────────────────────────────────
+# TASK MANAGEMENT
+# ─────────────────────────────────────────────
+class TaskLabel(Base):
+    __tablename__ = "task_labels"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(50), unique=True, index=True)
+    color = Column(String(20), default="#6366f1")
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class Task(Base):
+    __tablename__ = "tasks"
+    id = Column(Integer, primary_key=True, index=True)
+    reference = Column(String(30), unique=True, index=True)  # TASK-0001
+    title = Column(String(500), index=True)
+    description = Column(Text, nullable=True)  # HTML from rich text editor
+    status = Column(String(20), default="todo", index=True)  # todo|inprogress|inreview|done|closed
+    priority = Column(String(20), default="medium", index=True)  # low|medium|high|urgent
+    due_date = Column(DateTime, nullable=True)
+    assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
+    created_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    is_deleted = Column(Boolean, default=False)
+    deleted_at = Column(DateTime, nullable=True)
+    closed_at = Column(DateTime, nullable=True)
+    label_ids = Column(JSON, default=[])  # list of task_label ids
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    assignee = relationship("User", foreign_keys=[assigned_to])
+    creator = relationship("User", foreign_keys=[created_by])
+    subtasks = relationship("TaskSubtask", back_populates="task", cascade="all, delete-orphan", order_by="TaskSubtask.created_at")
+    comments = relationship("TaskComment", back_populates="task", cascade="all, delete-orphan", order_by="TaskComment.created_at")
+    attachments = relationship("TaskAttachment", back_populates="task", cascade="all, delete-orphan")
+    activity_logs = relationship("TaskActivityLog", back_populates="task", cascade="all, delete-orphan", order_by="TaskActivityLog.created_at")
+
+class TaskSubtask(Base):
+    __tablename__ = "task_subtasks"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), index=True)
+    title = Column(String(500))
+    is_done = Column(Boolean, default=False)
+    assigned_to = Column(Integer, ForeignKey("users.id"), nullable=True)
+    due_date = Column(DateTime, nullable=True)
+    done_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    task = relationship("Task", back_populates="subtasks")
+    assignee = relationship("User", foreign_keys=[assigned_to])
+
+class TaskComment(Base):
+    __tablename__ = "task_comments"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), index=True)
+    text = Column(Text)
+    created_by = Column(Integer, ForeignKey("users.id"))
+    is_edited = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    task = relationship("Task", back_populates="comments")
+    author = relationship("User", foreign_keys=[created_by])
+    attachments = relationship("TaskAttachment", back_populates="comment", cascade="all, delete-orphan")
+
+class TaskAttachment(Base):
+    __tablename__ = "task_attachments"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), nullable=True, index=True)
+    comment_id = Column(Integer, ForeignKey("task_comments.id"), nullable=True)
+    filename = Column(String(500))
+    file_url = Column(String(1000))
+    file_size = Column(Integer, nullable=True)
+    mime_type = Column(String(100), nullable=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id"))
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    task = relationship("Task", back_populates="attachments")
+    comment = relationship("TaskComment", back_populates="attachments")
+    uploader = relationship("User", foreign_keys=[uploaded_by])
+
+class TaskActivityLog(Base):
+    __tablename__ = "task_activity_logs"
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(Integer, ForeignKey("tasks.id"), index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    user_name = Column(String(100), nullable=True)
+    action = Column(String(50))  # created|status_changed|priority_changed|assigned|commented|subtask_added|subtask_done|attachment_added|deleted
+    field_changed = Column(String(100), nullable=True)
+    old_value = Column(String(500), nullable=True)
+    new_value = Column(String(500), nullable=True)
+    description = Column(Text, nullable=True)  # human readable summary
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    task = relationship("Task", back_populates="activity_logs")
+    user = relationship("User", foreign_keys=[user_id])
