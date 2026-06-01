@@ -362,6 +362,45 @@ export default function TaskDetail({ taskId, onClose, onUpdated }) {
             </div>
           </div>
 
+          {/* Due Date & Labels row */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Due Date</div>
+              <input type="datetime-local" disabled={isClosed}
+                value={task.due_date ? (() => {
+                  const date = new Date(task.due_date);
+                  const offset = date.getTimezoneOffset();
+                  const localDate = new Date(date.getTime() - (offset * 60 * 1000));
+                  return localDate.toISOString().slice(0, 16);
+                })() : ''}
+                onChange={e => update({ due_date: e.target.value ? e.target.value : null })}
+                className="form-input"
+                style={{ fontSize: 13, background: 'var(--bg3)', border: '1px solid var(--border)', borderRadius: 8, padding: '7px 12px', width: '100%', color: 'var(--text)', fontFamily: 'inherit', outline: 'none' }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6 }}>Labels</div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, alignContent: 'center', minHeight: 38 }}>
+                {labels.map(l => {
+                  const sel = (task.label_ids || []).includes(l.id);
+                  return (
+                    <button key={l.id} type="button" disabled={isClosed}
+                      onClick={() => {
+                        const newIds = sel 
+                          ? (task.label_ids || []).filter(id => id !== l.id) 
+                          : [...(task.label_ids || []), l.id];
+                        update({ label_ids: newIds });
+                      }}
+                      style={{ padding: '4px 10px', borderRadius: 99, border: `1.5px solid ${l.color}`, background: sel ? l.color : 'transparent',
+                        color: sel ? 'white' : l.color, fontSize: 11, fontWeight: 600, cursor: isClosed ? 'default' : 'pointer', transition: 'all 0.15s', fontFamily: 'inherit' }}>
+                      {l.name}
+                    </button>
+                  );
+                })}
+                {labels.length === 0 && <span style={{ fontSize: 12, color: 'var(--text3)' }}>No labels available</span>}
+              </div>
+            </div>
+          </div>
+
           {/* Description */}
           <div>
             <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 8 }}>
