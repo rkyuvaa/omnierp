@@ -277,6 +277,19 @@ class HRPushSubscription(Base):
     user = relationship("User")
 
 
+class HRFcmToken(Base):
+    """Stores Firebase Cloud Messaging device tokens for native Android push notifications."""
+    __tablename__ = "hr_fcm_tokens"
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), index=True)
+    token = Column(Text, unique=True, index=True)          # FCM device token
+    device_label = Column(String(100), nullable=True)      # e.g. "Samsung S24"
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    user = relationship("User")
+
+
 
 # ─────────────────────────────────────────────
 # PAYROLL RECORDS (monthly)

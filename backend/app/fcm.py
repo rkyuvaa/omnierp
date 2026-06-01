@@ -1,0 +1,131 @@
+"""
+FCM Push Notification sender for KIM-Connect mobile app.
+Uses Firebase Admin SDK to deliver real-time notifications to Android devices.
+
+Setup:
+  1. Download service account JSON from Firebase Console
+     (Project Settings → Service Accounts → Generate new private key)
+  2. Save it as: backend/firebase-service-account.json
+  3. Run: pip install firebase-admin
+"""
+
+import logging
+import os
+from typing import Optional
+
+logger = logging.getLogger(__name__)
+
+# Lazy initialisation — only loads Firebase if the service account file exists
+_firebase_app = None
+_firebase_available = False
+
+
+def _init_firebase():
+    global _firebase_app, _firebase_available
+    if _firebase_app is not None:
+        return _firebase_available
+
+    sa_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+        "firebase-service-account.json"
+    )
+
+    if not os.path.exists(sa_path):
+        logger.warning(
+            "⚠️  firebase-service-account.json not found at %s — "
+            "FCM push notifications will be disabled. "
+            "Download it from Firebase Console → Project Settings → Service Accounts.",
+            sa_path
+        )
+        _firebase_available = False
+        return False
+
+    try:
+        import firebase_admin
+        from firebase_admin import credentials
+        cred = credentials.Certificate(sa_path)
+        _firebase_app = firebase_admin.initialize_app(cred)
+        _firebase_available = True
+        logger.info("✅ Firebase Admin SDK initialised — FCM push notifications ENABLED")
+    except Exception as e:
+        logger.error("❌ Failed to initialise Firebase Admin SDK: %s", e)
+        _firebase_available = False
+
+    return _firebase_available
+
+
+def send_fcm_push(
+    device_token: str,
+    title: str,
+    body: str,
+    data: Optional[dict] = None
+) -> bool:
+    """
+    Send a single FCM push notification to a device token.
+    Returns True on success, False on failure.
+    """
+    if not _init_firebase():
+        return False
+
+    try:
+        from firebase_admin import messaging
+        message = messaging.Message(
+            notification=messaging.Notification(title=title, body=body),
+            data={k: str(v) for k, v in (data or {}).items()},
+            android=messaging.AndroidConfig(
+                priority="high",
+                notification=messaging.AndroidNotification(
+                    sound="default",
+                    click_action="FLUTTER_NOTIFICATION_CLICK",
+                    channel_id="kim_erp_push_channel",
+                ),
+            ),
+            token=device_token,
+        )
+        response = messaging.send(message)
+        logger.debug("FCM sent to %s… response: %s", device_token[-8:], response)
+        return True
+    except Exception as e:
+        logger.warning("FCM send failed for token %s…: %s", device_token[-8:], e)
+        return False
+
+
+def send_fcm_multicast(
+    device_tokens: list,
+    title: str,
+    body: str,
+    data: Optional[dict] = None
+) -> dict:
+    """
+    Send FCM to multiple device tokens at once (batch, max 500 per call).
+    Returns { "success": N, "failure": M }
+    """
+    if not _init_firebase() or not device_tokens:
+        return {"success": 0, "failure": len(device_tokens)}
+
+    try:
+        from firebase_admin import messaging
+        message = messaging.MulticastMessage(
+            notification=messaging.Notification(title=title, body=body),
+            data={k: str(v) for k, v in (data or {}).items()},
+            android=messaging.AndroidConfig(
+                priority="high",
+                notification=messaging.AndroidNotification(
+                    sound="default",
+                    channel_id="kim_erp_push_channel",
+                ),
+            ),
+            tokens=device_tokens[:500],  # FCM hard limit
+        )
+        response = messaging.send_each_for_multicast(message)
+        return {
+            "success": response.success_count,
+            "failure": response.failure_count,
+        }
+    except Exception as e:
+        logger.error("FCM multicast failed: %s", e)
+        return {"success": 0, "failure": len(device_tokens)}
+
+
+# Initialise eagerly at import time (non-blocking, just checks file)
+_init_firebase()
