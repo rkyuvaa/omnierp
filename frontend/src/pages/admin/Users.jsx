@@ -19,8 +19,46 @@ const ALL_MODULES = [
   { key: 'studio', name: 'Studio' },
   { key: 'warranty', name: 'Product & Warranty' },
   { key: 'konwertcare', name: 'Konwert Care+' },
-  { key: 'hr', name: 'Attendance & HR' }
+  { key: 'tasks', name: 'Task Management' },
+  { key: 'hr', name: 'Attendance & HR' },
 ];
+
+// Human-readable labels for audit log fields
+const FIELD_LABELS = {
+  name: 'Full Name',
+  email: 'Email Address',
+  password: 'Password',
+  role_id: 'Global Role',
+  department_id: 'Department',
+  branch_id: 'Primary Branch',
+  allowed_branches: 'Branch Access',
+  allowed_modules: 'Module Permissions',
+  is_superadmin: 'Super Admin',
+  is_active: 'Account Status',
+};
+
+const MODULE_NAMES = {
+  crm: 'CRM', installation: 'KIM Installation', service: 'Service',
+  studio: 'Studio', warranty: 'Product & Warranty', konwertcare: 'Konwert Care+',
+  tasks: 'Task Management', hr: 'Attendance & HR',
+};
+
+function formatAuditChange(key, val) {
+  if (key === 'password') return '••••••••';
+  if (key === 'is_superadmin') return val ? 'Super Admin granted' : 'Super Admin revoked';
+  if (key === 'is_active') return val ? 'Account activated' : 'Account deactivated';
+  if (key === 'allowed_modules') {
+    if (!val || typeof val !== 'object' || Object.keys(val).length === 0) return 'No modules';
+    return Object.keys(val).map(k => MODULE_NAMES[k] || k).join(', ');
+  }
+  if (key === 'allowed_branches') {
+    if (!val || (Array.isArray(val) && val.length === 0)) return 'No branches';
+    if (Array.isArray(val)) return `${val.length} branch(es)`;
+  }
+  if (val === null || val === undefined || val === '') return '—';
+  if (typeof val === 'object') return JSON.stringify(val);
+  return String(val);
+}
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -399,28 +437,50 @@ export default function AdminUsers() {
                     </div>
                   ) : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      {history.map(log => (
-                        <div key={log.id} style={{ borderLeft: '2px solid var(--accent-dim)', paddingLeft: 12, position: 'relative' }}>
-                          <div style={{ position: 'absolute', top: 0, left: -4, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
-                          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                             <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--text1)' }}>{log.action}</span>
-                             <span style={{ fontSize: 9, color: 'var(--text3)' }}>{log.created_at.split(' ')[1].substring(0,5)}</span>
-                          </div>
-                          <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>Modified by {log.user_name}</div>
-                          {log.changes && (
-                            <div style={{ marginTop: 6, padding: 6, background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
-                               {Object.entries(log.changes || {}).map(([key, val]) => {
-                                 const displayVal = val && typeof val.new === 'object' ? JSON.stringify(val.new) : String(val.new ?? '—');
-                                 return (
-                                   <div key={key} style={{ fontSize: 9, marginBottom: 2 }}>
-                                     <b style={{ color: 'var(--accent)' }}>{key}:</b> {displayVal}
-                                   </div>
-                                 );
-                               })}
+                      {history.map(log => {
+                        // Determine which fields changed and build a readable summary
+                        const changes = log.changes || {};
+                        const sensitiveKeys = ['password'];
+                        const changedFields = Object.keys(changes).filter(k => !sensitiveKeys.includes(k) || changes[k]?.new);
+                        const passwordChanged = 'password' in changes;
+
+                        // Build a short summary line
+                        let summary = '';
+                        if (log.action === 'CREATE') summary = 'User account created';
+                        else if (changedFields.length > 0) {
+                          summary = changedFields
+                            .map(k => FIELD_LABELS[k] || k)
+                            .join(', ') + ' updated';
+                          if (passwordChanged) summary = 'Password changed';
+                        } else {
+                          summary = log.action;
+                        }
+
+                        return (
+                          <div key={log.id} style={{ borderLeft: '2px solid var(--accent-dim)', paddingLeft: 12, position: 'relative' }}>
+                            <div style={{ position: 'absolute', top: 0, left: -4, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
+                               <span style={{ fontSize: 10, fontWeight: 900, color: log.action === 'CREATE' ? 'var(--accent)' : 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{log.action}</span>
+                               <span style={{ fontSize: 9, color: 'var(--text3)' }}>{log.created_at?.split(' ')[1]?.substring(0, 5)}</span>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500, marginBottom: 4 }}>By {log.user_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text1)', fontWeight: 600, marginBottom: passwordChanged ? 0 : 4 }}>{summary}</div>
+                            {/* Show field-level detail (except password raw value) */}
+                            {!passwordChanged && changedFields.length > 0 && (
+                              <div style={{ marginTop: 4, padding: '4px 8px', background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
+                                {changedFields.map(key => (
+                                  <div key={key} style={{ fontSize: 9, marginBottom: 2, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                                    <b style={{ color: 'var(--accent)', flexShrink: 0, minWidth: 80 }}>{FIELD_LABELS[key] || key}:</b>
+                                    <span style={{ color: 'var(--text2)', wordBreak: 'break-word' }}>
+                                      {formatAuditChange(key, changes[key]?.new ?? changes[key])}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                </div>
