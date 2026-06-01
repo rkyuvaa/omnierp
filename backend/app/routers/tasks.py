@@ -197,29 +197,31 @@ def list_tasks(
     total = q.count()
 
     # Ordering: urgent > high > medium > low, then by due date
-    from sqlalchemy import case
+    from sqlalchemy import case, nullslast
     priority_order = case(
-        {"urgent": 1, "high": 2, "medium": 3, "low": 4},
-        value=Task.priority,
+        (Task.priority == "urgent", 1),
+        (Task.priority == "high", 2),
+        (Task.priority == "medium", 3),
+        (Task.priority == "low", 4),
         else_=5
     )
     # Overdue tasks pinned first
     now = datetime.utcnow()
     overdue_order = case(
-        [(and_(Task.due_date < now, Task.status.not_in(["done", "closed"])), 0)],
+        (and_(Task.due_date < now, ~Task.status.in_(["done", "closed"])), 0),
         else_=1
     )
 
     if sort_by == "priority_due":
-        q = q.order_by(overdue_order, priority_order, Task.due_date.asc().nulls_last())
+        q = q.order_by(overdue_order, priority_order, nullslast(Task.due_date.asc()))
     elif sort_by == "due_date":
-        q = q.order_by(Task.due_date.asc().nulls_last())
+        q = q.order_by(nullslast(Task.due_date.asc()))
     elif sort_by == "created_at":
         q = q.order_by(Task.created_at.desc())
     elif sort_by == "status":
         q = q.order_by(Task.status)
     else:
-        q = q.order_by(overdue_order, priority_order, Task.due_date.asc().nulls_last())
+        q = q.order_by(overdue_order, priority_order, nullslast(Task.due_date.asc()))
 
     tasks = q.offset((page - 1) * limit).limit(limit).all()
     return {
@@ -241,7 +243,7 @@ def task_dashboard(db: Session = Depends(get_db), current_user: User = Depends(g
 
     return {
         "my_total": my_tasks.count(),
-        "my_overdue": my_tasks.filter(Task.due_date < now, Task.status.not_in(["done", "closed"])).count(),
+        "my_overdue": my_tasks.filter(Task.due_date < now, ~Task.status.in_(["done", "closed"])).count(),
         "my_due_today": my_tasks.filter(Task.due_date >= today_start, Task.due_date < today_end).count(),
         "my_due_tomorrow": my_tasks.filter(Task.due_date >= today_end, Task.due_date < tomorrow_end).count(),
         "by_status": {
@@ -251,7 +253,7 @@ def task_dashboard(db: Session = Depends(get_db), current_user: User = Depends(g
             p: my_tasks.filter(Task.priority == p).count() for p in ["low", "medium", "high", "urgent"]
         },
         "upcoming": [serialize_task(t, db) for t in
-            my_tasks.filter(Task.status != "done").order_by(Task.due_date.asc().nulls_last()).limit(5).all()
+            my_tasks.filter(Task.status != "done").order_by(Task.due_date.asc()).limit(5).all()
         ],
     }
 
