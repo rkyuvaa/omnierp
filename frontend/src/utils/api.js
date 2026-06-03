@@ -7,7 +7,7 @@ const isMobileApp = window.location.hostname === 'localhost' && !window.location
 const BASE_URL = isLocal 
   ? 'http://localhost:8000/api' 
   : isMobileApp 
-    ? 'https://kimerp.ddns.net/api'
+    ? 'https://app.konwertindiamotors.com/api'
     : `${window.location.protocol}//${window.location.hostname}${window.location.port && window.location.port !== '80' && window.location.port !== '443' ? ':' + window.location.port : ''}/api`;
 
 const api = axios.create({ baseURL: BASE_URL, timeout: 30000 });
