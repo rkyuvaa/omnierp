@@ -105,8 +105,8 @@ export default function TwoFactorSetup() {
               width: 40,
               height: 40,
               borderRadius: '10px',
-              background: 'rgba(34, 197, 94, 0.1)',
-              color: '#22c55e',
+              background: 'var(--accent-dim)',
+              color: 'var(--accent)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center'
@@ -232,7 +232,7 @@ export default function TwoFactorSetup() {
                   }}
                   title="Copy secret key"
                 >
-                  {copied ? <Check size={14} style={{ color: '#22c55e' }} /> : <Clipboard size={14} />}
+                  {copied ? <Check size={14} style={{ color: 'var(--accent2)' }} /> : <Clipboard size={14} />}
                 </button>
               </div>
 
@@ -290,7 +290,7 @@ export default function TwoFactorSetup() {
               width: 40,
               height: 40,
               borderRadius: '10px',
-              background: 'rgba(99, 102, 241, 0.08)',
+              background: 'var(--accent-dim)',
               color: 'var(--accent)',
               display: 'flex',
               alignItems: 'center',
