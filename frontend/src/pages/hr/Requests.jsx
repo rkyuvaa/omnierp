@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
@@ -33,6 +34,7 @@ function calculateToTime(fromTimeStr, durationHoursStr) {
 }
 
 export default function Requests() {
+  const [searchParams] = useSearchParams();
   const [employees, setEmployees] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [myLeave, setMyLeave] = useState([]);
@@ -70,6 +72,29 @@ export default function Requests() {
     }
     fetchRequests();
   }, [selectedEmp]);
+
+  useEffect(() => {
+    const refId = searchParams.get('id');
+    const refType = searchParams.get('type'); // 'leave' or 'onduty'
+    if (refId && refType) {
+      setTab(refType);
+      setStatusFilter('all');
+      
+      setTimeout(() => {
+        const element = document.getElementById(`${refType}-${refId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.style.outline = '2.5px solid var(--accent)';
+          element.style.outlineOffset = '2px';
+          element.style.transition = 'outline 0.3s ease';
+          
+          setTimeout(() => {
+            element.style.outline = 'none';
+          }, 3000);
+        }
+      }, 600);
+    }
+  }, [myLeave, myOD, searchParams]);
 
   async function fetchRequests() {
     setLoading(true);
@@ -225,7 +250,7 @@ export default function Requests() {
                 return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No leave requests found</div>;
               }
               return filtered.map(req => (
-                <div key={req.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+                <div key={req.id} id={`leave-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
@@ -268,7 +293,7 @@ export default function Requests() {
                 return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No on-duty requests found</div>;
               }
               return filtered.map(req => (
-                <div key={req.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+                <div key={req.id} id={`od-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>

@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import Layout from '../../components/Layout';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
@@ -26,6 +27,8 @@ function getDueLabel(due, status) {
 
 export default function TaskList() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const location = useLocation();
   const [tasks, setTasks] = useState([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -53,6 +56,15 @@ export default function TaskList() {
     api.get('/users/').then(r => setUsers(r.data || [])).catch(() => {});
     api.get('/tasks/labels').then(r => setLabels(r.data || [])).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    const tId = searchParams.get('taskId') || location.state?.taskId;
+    if (tId) {
+      setSelectedTaskId(Number(tId));
+      searchParams.delete('taskId');
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, location.state]);
 
   const fetchDashboard = () => api.get('/tasks/dashboard').then(r => setDashboard(r.data)).catch(() => {});
   useEffect(() => { fetchDashboard(); }, []);

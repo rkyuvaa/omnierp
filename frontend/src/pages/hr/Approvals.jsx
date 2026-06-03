@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { CheckCircle, XCircle, Clock, User, Calendar } from 'lucide-react';
 
 export default function Approvals() {
+  const [searchParams] = useSearchParams();
   const [approvers, setApprovers] = useState([]);
   const [selectedApprover, setSelectedApprover] = useState('');
   const [pendingLeave, setPendingLeave] = useState([]);
@@ -34,6 +36,34 @@ export default function Approvals() {
   useEffect(() => {
     fetchData();
   }, [selectedApprover, tab, sandwichMonth, sandwichYear]);
+
+  useEffect(() => {
+    const refId = searchParams.get('id');
+    const refType = searchParams.get('type'); // 'leave' or 'onduty'
+    if (refId && refType) {
+      const isPendingLeave = pendingLeave.some(r => String(r.id) === String(refId));
+      const isPendingOD = pendingOD.some(r => String(r.id) === String(refId));
+      if (refType === 'leave' && !isPendingLeave && pendingLeave.length > 0) {
+        setTab('history');
+      } else if (refType === 'onduty' && !isPendingOD && pendingOD.length > 0) {
+        setTab('history');
+      }
+      
+      setTimeout(() => {
+        const element = document.getElementById(`${refType}-${refId}`);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          element.style.outline = '2.5px solid var(--accent)';
+          element.style.outlineOffset = '2px';
+          element.style.transition = 'outline 0.3s ease';
+          
+          setTimeout(() => {
+            element.style.outline = 'none';
+          }, 3000);
+        }
+      }, 600);
+    }
+  }, [pendingLeave, pendingOD, allLeave, allOD, searchParams]);
 
   async function fetchData() {
     setLoading(true);
@@ -141,7 +171,7 @@ export default function Approvals() {
   function RequestCard({ req, type, showActions }) {
     const statusColors = { pending: '#f59e0b', approved: '#22c55e', auto_approved: '#3b82f6', rejected: '#ef4444', cancelled: '#94a3b8' };
     return (
-      <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
+      <div id={`${type}-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>

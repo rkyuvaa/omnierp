@@ -58,7 +58,7 @@ def list_users(branch_id: Optional[int] = None, db: Session = Depends(get_db), c
             User.branch_id == branch_id,
             User.allowed_branches.contains([branch_id])
         ))
-    users = query.all()
+    users = query.order_by(User.name.asc()).all()
     return [serialize(u) for u in users]
 
 @router.post("/")

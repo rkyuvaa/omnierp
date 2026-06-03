@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
 import { Bell, BellOff, Check, Info, AlertTriangle } from 'lucide-react';
@@ -12,6 +13,7 @@ import {
 
 export default function NotificationDropdown() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -99,6 +101,28 @@ export default function NotificationDropdown() {
       fetchCount();
     } catch (e) {
       console.error("Failed to mark notification as read", e);
+    }
+  };
+
+  const handleNotificationClick = async (n) => {
+    if (!n.is_read) {
+      await handleMarkRead(n.id);
+    }
+    setIsOpen(false);
+    
+    let path = '';
+    if (n.reference_type === 'task') {
+      path = `/tasks?taskId=${n.reference_id}`;
+    } else if (n.reference_type === 'leave' || n.reference_type === 'onduty') {
+      const titleLower = (n.title || '').toLowerCase();
+      if (user.is_superadmin || titleLower.includes('pending') || titleLower.includes('applied')) {
+        path = `/hr/approvals?type=${n.reference_type}&id=${n.reference_id}`;
+      } else {
+        path = `/hr/requests?type=${n.reference_type}&id=${n.reference_id}`;
+      }
+    }
+    if (path) {
+      navigate(path);
     }
   };
 
@@ -346,21 +370,21 @@ export default function NotificationDropdown() {
                   return (
                     <div 
                       key={n.id}
-                      onClick={() => !n.is_read && handleMarkRead(n.id)}
+                      onClick={() => handleNotificationClick(n)}
                       style={{
                         padding: '12px 16px',
                         borderBottom: '1px solid var(--border)',
                         display: 'flex',
                         gap: 12,
-                        cursor: n.is_read ? 'default' : 'pointer',
+                        cursor: 'pointer',
                         background: n.is_read ? 'var(--bg2)' : 'rgba(25, 84, 2, 0.03)',
                         transition: 'background 0.2s',
                       }}
                       onMouseEnter={e => {
-                        if (!n.is_read) e.currentTarget.style.background = 'rgba(25, 84, 2, 0.06)';
+                        e.currentTarget.style.background = n.is_read ? 'var(--bg3)' : 'rgba(25, 84, 2, 0.06)';
                       }}
                       onMouseLeave={e => {
-                        if (!n.is_read) e.currentTarget.style.background = 'rgba(25, 84, 2, 0.03)';
+                        e.currentTarget.style.background = n.is_read ? 'var(--bg2)' : 'rgba(25, 84, 2, 0.03)';
                       }}
                     >
                       {/* Icon */}
