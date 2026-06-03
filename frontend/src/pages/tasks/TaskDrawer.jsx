@@ -119,7 +119,7 @@ export default function TaskDrawer({ onClose, onSaved, prefillDate = null }) {
     }
   };
 
-  const filteredUsers = users.filter(u => u.name?.toLowerCase().includes(userSearch.toLowerCase())).slice(0, 8);
+  const filteredUsers = users.filter(u => u.name?.toLowerCase().includes(userSearch.toLowerCase()));
   const assignee = users.find(u => u.id === form.assigned_to);
   const selectedLabels = labels.filter(l => form.label_ids.includes(l.id));
 
@@ -178,27 +178,29 @@ export default function TaskDrawer({ onClose, onSaved, prefillDate = null }) {
                   ) : <span style={{ color: 'var(--text3)' }}>Select user...</span>}
                 </button>
                 {showUserPicker && (
-                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 100 }}>
-                    <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 100, display: 'flex', flexDirection: 'column', maxHeight: 250 }}>
+                    <div style={{ padding: '8px 10px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
                       <Search size={13} color="var(--text3)" />
                       <input autoFocus value={userSearch} onChange={e => setUserSearch(e.target.value)}
                         placeholder="Search..." style={{ border: 'none', outline: 'none', background: 'none', fontSize: 13, color: 'var(--text)', width: '100%', fontFamily: 'inherit' }} />
                     </div>
-                    {form.assigned_to && <div onClick={() => { set('assigned_to', null); setShowUserPicker(false); }}
-                      style={{ padding: '8px 12px', fontSize: 12, color: 'var(--red)', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>✕ Remove assignee</div>}
-                    {filteredUsers.map(u => (
-                      <div key={u.id} onClick={() => { set('assigned_to', u.id); setShowUserPicker(false); setUserSearch(''); }}
-                        style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: form.assigned_to === u.id ? 'var(--accent-dim)' : 'transparent', fontSize: 13 }}
-                        onMouseEnter={e => { if (form.assigned_to !== u.id) e.currentTarget.style.background = 'var(--bg3)'; }}
-                        onMouseLeave={e => { if (form.assigned_to !== u.id) e.currentTarget.style.background = 'transparent'; }}>
-                        <div className="user-avatar" style={{ width: 24, height: 24, fontSize: 11 }}>{u.name?.[0]}</div>
-                        <div>
-                          <div style={{ fontWeight: 600 }}>{u.name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text3)' }}>{u.email}</div>
+                    <div style={{ overflowY: 'auto', flex: 1 }}>
+                      {form.assigned_to && <div onClick={() => { set('assigned_to', null); setShowUserPicker(false); }}
+                        style={{ padding: '8px 12px', fontSize: 12, color: 'var(--red)', cursor: 'pointer', borderBottom: '1px solid var(--border)' }}>✕ Remove assignee</div>}
+                      {filteredUsers.map(u => (
+                        <div key={u.id} onClick={() => { set('assigned_to', u.id); setShowUserPicker(false); setUserSearch(''); }}
+                          style={{ padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', background: form.assigned_to === u.id ? 'var(--accent-dim)' : 'transparent', fontSize: 13 }}
+                          onMouseEnter={e => { if (form.assigned_to !== u.id) e.currentTarget.style.background = 'var(--bg3)'; }}
+                          onMouseLeave={e => { if (form.assigned_to !== u.id) e.currentTarget.style.background = 'transparent'; }}>
+                          <div className="user-avatar" style={{ width: 24, height: 24, fontSize: 11, flexShrink: 0 }}>{u.name?.[0]}</div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {filteredUsers.length === 0 && <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>No users found</div>}
+                      ))}
+                      {filteredUsers.length === 0 && <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text3)', fontSize: 12 }}>No users found</div>}
+                    </div>
                   </div>
                 )}
               </div>
