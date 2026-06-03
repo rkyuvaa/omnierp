@@ -222,6 +222,7 @@ export default function AdminUsers() {
 
   const SCOPE_PERMS = [
     { key: 'view_own_records_only', label: 'VIEW OWN RECORDS ONLY' },
+    { key: 'view_team_records_only', label: 'VIEW TEAM RECORDS ONLY' },
   ];
 
   const PERMS = [...CRUD_PERMS, ...SCOPE_PERMS];
@@ -764,6 +765,9 @@ export default function AdminUsers() {
                         ))}
                         {r.permissions?.view_own_records_only && (
                           <Badge color="rgba(251, 191, 36, 0.15)" style={{ color: '#f59e0b', fontSize: 8, fontWeight: 900, border: '1px solid rgba(251,191,36,0.3)' }}>OWN RECORDS</Badge>
+                        )}
+                        {r.permissions?.view_team_records_only && (
+                          <Badge color="rgba(139, 92, 246, 0.15)" style={{ color: '#8b5cf6', fontSize: 8, fontWeight: 900, border: '1px solid rgba(139,92,246,0.3)' }}>TEAM RECORDS</Badge>
                         )}
                       </div>
                     </td>

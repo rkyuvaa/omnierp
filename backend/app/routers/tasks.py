@@ -194,15 +194,25 @@ def list_tasks(
     if due_to:
         q = q.filter(Task.due_date <= datetime.fromisoformat(due_to))
 
-    # ── Own-records scope enforcement ─────────────────────────────
+    # ── Scope enforcement ─────────────────────────────
     if not current_user.is_superadmin:
         allowed_mods = current_user.allowed_modules or {}
         task_role_id = allowed_mods.get("tasks")
         if task_role_id:
             from app.models import Role as RoleModel
             task_role = db.query(RoleModel).filter(RoleModel.id == task_role_id).first()
-            if task_role and (task_role.permissions or {}).get("view_own_records_only"):
-                q = q.filter(Task.assigned_to == current_user.id)
+            if task_role and task_role.permissions:
+                perms = task_role.permissions
+                if perms.get("view_team_records_only"):
+                    from app.hr_models import HREmployee
+                    my_emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+                    allowed_user_ids = [current_user.id]
+                    if my_emp:
+                        subs = db.query(HREmployee).filter(HREmployee.manager_id == my_emp.id).all()
+                        allowed_user_ids.extend([sub.user_id for sub in subs if sub.user_id])
+                    q = q.filter(Task.assigned_to.in_(allowed_user_ids))
+                elif perms.get("view_own_records_only"):
+                    q = q.filter(Task.assigned_to == current_user.id)
 
     total = q.count()
 

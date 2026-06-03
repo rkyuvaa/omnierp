@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, CheckSquare, Square, Shield } from 'lucide-react';
 
-const emptyForm = { name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false, view_own_records_only: false } };
+const emptyForm = { name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false, view_own_records_only: false, view_team_records_only: false } };
 
 export default function AdminRoles() {
   const [items, setItems] = useState([]);
@@ -58,6 +58,7 @@ export default function AdminRoles() {
   ];
   const SCOPE_PERMS = [
     { key: 'view_own_records_only', label: 'View Own Records Only — user sees only tasks assigned to themselves (Task Management)' },
+    { key: 'view_team_records_only', label: 'View Team Records Only — user sees their own tasks + their direct reports\' tasks (Task Management)' },
   ];
   const PERMS = [...CRUD_PERMS, ...SCOPE_PERMS];
 
@@ -91,6 +92,9 @@ export default function AdminRoles() {
                       ))}
                       {i.permissions?.view_own_records_only && (
                         <span style={{ fontSize: 10, background: 'rgba(251,191,36,0.15)', color: '#f59e0b', padding: '4px 10px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.5px', border: '1px solid rgba(251,191,36,0.3)' }}>OWN RECORDS</span>
+                      )}
+                      {i.permissions?.view_team_records_only && (
+                        <span style={{ fontSize: 10, background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', padding: '4px 10px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.5px', border: '1px solid rgba(139,92,246,0.3)' }}>TEAM RECORDS</span>
                       )}
                       {!Object.keys(i.permissions || {}).some(k => i.permissions[k]) && <span className="text-muted text-sm" style={{ padding: '4px 10px' }}>No Access</span>}
                     </div>
