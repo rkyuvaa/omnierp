@@ -17,8 +17,11 @@ def hash_password(password: str) -> str:
 def verify_password(plain: str, hashed: str) -> bool:
     return _bcrypt.checkpw(plain[:72].encode(), hashed.encode())
 
-def create_token(data: dict) -> str:
-    exp = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+def create_token(data: dict, expires_delta: timedelta = None) -> str:
+    if expires_delta:
+        exp = datetime.utcnow() + expires_delta
+    else:
+        exp = datetime.utcnow() + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     return jwt.encode({**data, "exp": exp}, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> User:
@@ -28,6 +31,8 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
         user_id = payload.get("sub")
         if not user_id:
             raise cred_exc
+        if payload.get("mfa_pending"):
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="MFA verification pending")
     except JWTError:
         raise cred_exc
     user = db.query(User).filter(User.id == int(user_id)).first()

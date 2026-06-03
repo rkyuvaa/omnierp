@@ -17,6 +17,8 @@ class User(Base):
     allowed_modules = Column(JSON, default={})
     is_active = Column(Boolean, default=True)
     is_superadmin = Column(Boolean, default=False)
+    totp_secret = Column(String(100), nullable=True)
+    totp_enabled = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
     role = relationship("Role", back_populates="users")

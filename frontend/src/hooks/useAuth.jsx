@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
 import { resubscribeForCurrentUser, unsubscribeUser } from '../utils/pushNotifications';
 
-const AuthContext = createContext({ user: null, loading: true, login: async () => {}, logout: () => {} });
+const AuthContext = createContext({ user: null, loading: true, login: async () => {}, verifyMfa: async () => {}, logout: () => {} });
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
@@ -44,12 +44,33 @@ export function AuthProvider({ children }) {
     const form = new FormData();
     form.append('username', email); form.append('password', password);
     const r = await api.post('/auth/login', form);
+    if (r.data.mfa_required) {
+      return r.data;
+    }
     localStorage.setItem('token', r.data.access_token);
     const me = await api.get('/auth/me');
     setUser(await fetchUserWithRole(me.data));
     // Re-associate any existing browser push subscription with this user so
     // notifications are delivered to the correct person on shared devices.
     resubscribeForCurrentUser().catch(() => {});
+    return r.data;
+  };
+
+  const verifyMfa = async (mfa_token, code) => {
+    const r = await api.post('/auth/verify-totp', { mfa_token, code });
+    localStorage.setItem('token', r.data.access_token);
+    const me = await api.get('/auth/me');
+    setUser(await fetchUserWithRole(me.data));
+    resubscribeForCurrentUser().catch(() => {});
+    return r.data;
+  };
+
+  const refreshUser = async () => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const me = await api.get('/auth/me');
+      setUser(await fetchUserWithRole(me.data));
+    }
   };
 
   const logout = async () => {
@@ -59,7 +80,7 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     setUser(null);
   };
-  return <AuthContext.Provider value={{ user, login, logout, loading }}>{children}</AuthContext.Provider>;
+  return <AuthContext.Provider value={{ user, login, verifyMfa, logout, loading, refreshUser }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => {

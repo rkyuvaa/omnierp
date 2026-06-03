@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 
 // Pages
 import Login from './pages/Login';
+import TwoFactorChallenge from './pages/TwoFactorChallenge';
 import Dashboard from './pages/Dashboard';
 import Leads from './pages/crm/Leads';
 import LeadForm from './pages/crm/LeadForm';
@@ -48,6 +49,7 @@ export default function App() {
         <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/login/2fa" element={<TwoFactorChallenge />} />
           <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
           <Route path="/crm" element={<PrivateRoute><Leads /></PrivateRoute>} />
           <Route path="/crm/:id" element={<PrivateRoute><LeadForm /></PrivateRoute>} />

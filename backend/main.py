@@ -50,6 +50,8 @@ def _safe_add_columns():
         ("branches", "latitude", "DOUBLE PRECISION"),
         ("branches", "longitude", "DOUBLE PRECISION"),
         ("branches", "radius", "DOUBLE PRECISION"),
+        ("users", "totp_secret", "VARCHAR(100)"),
+        ("users", "totp_enabled", "BOOLEAN DEFAULT FALSE"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:

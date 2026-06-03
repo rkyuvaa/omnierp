@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../utils/api';
+import api, { getErrorMessage } from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -72,17 +72,38 @@ export default function EmployeeMaster() {
 
   async function saveEmployee() {
     setSaving(true);
+    const cleanedForm = { ...form };
+    const intFields = ['department_id', 'branch_id', 'shift_id', 'manager_id', 'salary_template_id'];
+    intFields.forEach(f => {
+      if (cleanedForm[f] === '' || cleanedForm[f] === undefined) {
+        cleanedForm[f] = null;
+      } else if (cleanedForm[f] !== null) {
+        cleanedForm[f] = parseInt(cleanedForm[f]);
+      }
+    });
+    const dateFields = ['date_of_joining', 'date_of_leaving'];
+    dateFields.forEach(f => {
+      if (cleanedForm[f] === '') {
+        cleanedForm[f] = null;
+      }
+    });
+    if (cleanedForm.basic_salary === '' || cleanedForm.basic_salary === undefined) {
+      cleanedForm.basic_salary = 0.0;
+    } else if (cleanedForm.basic_salary !== null) {
+      cleanedForm.basic_salary = parseFloat(cleanedForm.basic_salary);
+    }
+
     try {
       if (editEmp) {
-        await api.put(`/hr/employees/${editEmp.id}`, form);
+        await api.put(`/hr/employees/${editEmp.id}`, cleanedForm);
         toast.success('Employee updated');
       } else {
-        await api.post('/hr/employees/', form);
+        await api.post('/hr/employees/', cleanedForm);
         toast.success('Employee created');
       }
       setShowModal(false);
       fetchAll();
-    } catch (e) { toast.error(e.response?.data?.detail || 'Save failed'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Save failed')); }
     finally { setSaving(false); }
   }
 
@@ -572,12 +593,24 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
 
   async function saveSalary() {
     setSaving(true);
+    const cleanedSalaryForm = { ...salaryForm };
+    if (cleanedSalaryForm.salary_template_id === '' || cleanedSalaryForm.salary_template_id === undefined) {
+      cleanedSalaryForm.salary_template_id = null;
+    } else if (cleanedSalaryForm.salary_template_id !== null) {
+      cleanedSalaryForm.salary_template_id = parseInt(cleanedSalaryForm.salary_template_id);
+    }
+    if (cleanedSalaryForm.basic_salary === '' || cleanedSalaryForm.basic_salary === undefined) {
+      cleanedSalaryForm.basic_salary = 0.0;
+    } else if (cleanedSalaryForm.basic_salary !== null) {
+      cleanedSalaryForm.basic_salary = parseFloat(cleanedSalaryForm.basic_salary);
+    }
+
     try {
-      await api.put(`/hr/employees/${emp.id}`, salaryForm);
+      await api.put(`/hr/employees/${emp.id}`, cleanedSalaryForm);
       toast.success('Salary structure updated');
       setShowSalaryModal(false);
       onRefresh();
-    } catch { toast.error('Failed to update salary'); }
+    } catch (e) { toast.error(getErrorMessage(e, 'Failed to update salary')); }
     finally { setSaving(false); }
   }
 

@@ -16,3 +16,4 @@ APScheduler==3.10.4
 pywebpush==1.14.0
 py-vapid>=1.9.4
 firebase-admin==6.5.0
+pyotp==2.9.0

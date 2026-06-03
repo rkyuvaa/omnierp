@@ -1,3 +1,4 @@
+import pyotp
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -18,18 +19,112 @@ class UserOut(BaseModel):
     branch_id: int | None
     class Config: from_attributes = True
 
+class VerifyTOTPRequest(BaseModel):
+    mfa_token: str
+    code: str
+
+class VerifySetupTOTPRequest(BaseModel):
+    secret: str
+    code: str
+
+class DisableTOTPRequest(BaseModel):
+    code: str
+
 @router.post("/login")
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
     user = db.query(User).filter(User.email == form.username).first()
     if not user or not verify_password(form.password, user.password_hash):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     
-    from datetime import datetime
+    from datetime import datetime, timedelta
+    if user.totp_enabled:
+        # Create a short-lived MFA token (5 minutes)
+        mfa_token = create_token(
+            {"sub": str(user.id), "mfa_pending": True},
+            expires_delta=timedelta(minutes=5)
+        )
+        return {"mfa_required": True, "mfa_token": mfa_token}
+
     user.last_login = datetime.utcnow()
     db.commit()
 
     token = create_token({"sub": str(user.id)})
     return {"access_token": token, "token_type": "bearer"}
+
+@router.post("/verify-totp")
+def verify_totp(data: VerifyTOTPRequest, db: Session = Depends(get_db)):
+    from jose import jwt, JWTError
+    from app.config import settings
+    try:
+        payload = jwt.decode(data.mfa_token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        if not payload.get("mfa_pending"):
+            raise HTTPException(status_code=401, detail="Invalid MFA token")
+        user_id = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid or expired MFA token")
+        
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if not user or not user.is_active or not user.totp_enabled or not user.totp_secret:
+        raise HTTPException(status_code=401, detail="MFA not enabled or user inactive")
+        
+    totp = pyotp.TOTP(user.totp_secret)
+    if not totp.verify(data.code):
+        raise HTTPException(status_code=400, detail="Invalid 6-digit authentication code")
+        
+    from datetime import datetime
+    user.last_login = datetime.utcnow()
+    db.commit()
+    
+    access_token = create_token({"sub": str(user.id)})
+    return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/setup-totp/initiate")
+def setup_totp_initiate(current_user: User = Depends(get_current_user)):
+    if current_user.totp_enabled:
+        raise HTTPException(status_code=400, detail="MFA is already enabled")
+        
+    secret = pyotp.random_base32()
+    provisioning_uri = pyotp.totp.TOTP(secret).provisioning_uri(
+        name=current_user.email,
+        issuer_name="OmniERP"
+    )
+    import urllib.parse
+    qr_url = f"https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={urllib.parse.quote(provisioning_uri)}"
+    
+    return {
+        "secret": secret,
+        "qr_code_url": qr_url
+    }
+
+@router.post("/setup-totp/verify")
+def setup_totp_verify(data: VerifySetupTOTPRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if current_user.totp_enabled:
+        raise HTTPException(status_code=400, detail="MFA is already enabled")
+        
+    totp = pyotp.TOTP(data.secret)
+    if not totp.verify(data.code):
+        raise HTTPException(status_code=400, detail="Invalid code. Please try again.")
+        
+    current_user.totp_secret = data.secret
+    current_user.totp_enabled = True
+    db.commit()
+    
+    return {"message": "MFA enabled successfully"}
+
+@router.post("/setup-totp/disable")
+def setup_totp_disable(data: DisableTOTPRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    if not current_user.totp_enabled:
+        raise HTTPException(status_code=400, detail="MFA is not enabled")
+        
+    totp = pyotp.TOTP(current_user.totp_secret)
+    if not totp.verify(data.code):
+        raise HTTPException(status_code=400, detail="Invalid code. Verification failed.")
+        
+    current_user.totp_secret = None
+    current_user.totp_enabled = False
+    db.commit()
+    
+    return {"message": "MFA disabled successfully"}
 
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -52,7 +147,8 @@ def me(current_user: User = Depends(get_current_user), db: Session = Depends(get
         "employee_id": emp.id if emp else None,
         "employee_code": emp.employee_id if emp else None,
         "is_manager": is_manager,
-        "enable_mobile_punch": emp.enable_mobile_punch if emp else False
+        "enable_mobile_punch": emp.enable_mobile_punch if emp else False,
+        "totp_enabled": current_user.totp_enabled or False
     }
 
 

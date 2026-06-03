@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2 } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X } from 'lucide-react';
 import { useState } from 'react';
+import TwoFactorSetup from './TwoFactorSetup';
 
 const mainItems = [{to:'/',label:'Dashboard',icon:LayoutDashboard}];
 const moduleItems = [
@@ -85,6 +86,7 @@ function HRModule({ isActive, handleNav }) {
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const location = useLocation();
+  const [showProfileModal, setShowProfileModal] = useState(false);
   
   const isActive = (to) => to === '/' ? location.pathname === '/' : location.pathname.startsWith(to) && to !== '/';
   const handleNav = () => { if (window.innerWidth <= 768) onClose(); };
@@ -124,7 +126,13 @@ export default function Sidebar({ isOpen, onClose }) {
           <LogOut size={18} /> Logout
         </button>
         {user?.name && (
-          <div style={{display:'flex', alignItems:'center', gap:10, padding:'8px 14px 2px 14px'}}>
+          <div 
+            onClick={() => setShowProfileModal(true)}
+            style={{display:'flex', alignItems:'center', gap:10, padding:'8px 14px 2px 14px', cursor: 'pointer', transition: 'all 0.2s'}}
+            onMouseEnter={e=>{e.currentTarget.style.background='var(--bg3)'; e.currentTarget.style.borderRadius='8px';}}
+            onMouseLeave={e=>{e.currentTarget.style.background='transparent';}}
+            title="Open Profile Settings"
+          >
             <div style={{width:28, height:28, borderRadius:'50%', background:'var(--accent)', display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', fontWeight:700, fontSize:13, flexShrink:0}}>
               {user.name.charAt(0).toUpperCase()}
             </div>
@@ -135,6 +143,44 @@ export default function Sidebar({ isOpen, onClose }) {
           </div>
         )}
       </div>
+
+      {showProfileModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 480, maxWidth: '100%', boxShadow: '0 20px 40px rgba(0,0,0,0.3)', animation: 'modalSlideIn 0.25s ease-out' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>Profile Settings</h3>
+              <button onClick={() => setShowProfileModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+            
+            {/* User details card */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, background: 'var(--bg2)', padding: '16px 20px', borderRadius: 12, border: '1px solid var(--border)', marginBottom: 20 }}>
+              <div style={{ width: 44, height: 44, borderRadius: '50%', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 18, flexShrink: 0 }}>
+                {user.name.charAt(0).toUpperCase()}
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.name}</div>
+                <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user.email}</div>
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--accent)', border: '1.5px solid var(--accent)', padding: '2px 8px', borderRadius: 6, textTransform: 'uppercase' }}>
+                {user.is_superadmin ? 'Admin' : 'Employee'}
+              </span>
+            </div>
+
+            {/* 2FA Setup Panel */}
+            <TwoFactorSetup />
+
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
+              <button className="btn btn-primary" onClick={() => setShowProfileModal(false)} style={{ padding: '8px 18px', fontSize: 13, fontWeight: 700, borderRadius: 8 }}>Close</button>
+            </div>
+          </div>
+          <style>{`
+            @keyframes modalSlideIn {
+              from { opacity: 0; transform: scale(0.95) translateY(10px); }
+              to { opacity: 1; transform: scale(1) translateY(0); }
+            }
+          `}</style>
+        </div>
+      )}
     </aside>
   );
 }

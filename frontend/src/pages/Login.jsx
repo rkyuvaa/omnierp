@@ -12,7 +12,14 @@ export default function Login() {
 
   const handleSubmit = async e => {
     e.preventDefault(); setLoading(true);
-    try { await login(email, password); navigate('/'); }
+    try {
+      const res = await login(email, password);
+      if (res.mfa_required) {
+        navigate('/login/2fa', { state: { mfa_token: res.mfa_token } });
+      } else {
+        navigate('/');
+      }
+    }
     catch { toast.error('Invalid credentials'); }
     finally { setLoading(false); }
   };

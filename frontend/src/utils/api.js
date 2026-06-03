@@ -27,5 +27,18 @@ api.interceptors.response.use(r => r, err => {
   return Promise.reject(err);
 });
 
+export function getErrorMessage(err, defaultMsg = 'An error occurred') {
+  const detail = err.response?.data?.detail;
+  if (!detail) return err.message || defaultMsg;
+  if (typeof detail === 'string') return detail;
+  if (Array.isArray(detail)) {
+    return detail.map(d => {
+      const field = Array.isArray(d.loc) ? d.loc.slice(1).join('.') : '';
+      return field ? `${field}: ${d.msg}` : d.msg;
+    }).join(', ');
+  }
+  return typeof detail === 'object' ? JSON.stringify(detail) : String(detail);
+}
+
 export default api;
 export { BASE_URL };
