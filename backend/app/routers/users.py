@@ -31,6 +31,7 @@ class UserUpdate(BaseModel):
     allowed_modules: Optional[Any] = {}
     is_active: Optional[bool] = None
     is_superadmin: Optional[bool] = None
+    reset_totp: Optional[bool] = None
 
 def serialize(u: User):
     return {
@@ -44,6 +45,7 @@ def serialize(u: User):
         "department_name": getattr(u.department, 'name', None) if hasattr(u, 'department') else None,
         "created_at": str(u.created_at),
         "last_login": str(u.last_login) if u.last_login else None,
+        "totp_enabled": u.totp_enabled or False,
     }
 
 @router.get("/")
@@ -69,7 +71,7 @@ def create_user(data: UserCreate, db: Session = Depends(get_db), current_user: U
         role_id=data.role_id, branch_id=data.branch_id, department_id=data.department_id,
         allowed_branches=data.allowed_branches,
         allowed_modules=data.allowed_modules, is_superadmin=data.is_superadmin
-    )
+      )
     db.add(user); db.commit(); db.refresh(user)
     log_action(db, current_user, "CREATE", "users", user.id, user.email)
     return serialize(user)
@@ -88,6 +90,14 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db), c
     changes = {}
     new_data = data.model_dump(exclude_none=True)
     
+    # Handle reset_totp if provided
+    if "reset_totp" in new_data:
+        if new_data["reset_totp"]:
+            user.totp_secret = None
+            user.totp_enabled = False
+            changes["totp_enabled"] = {"old": True, "new": False}
+        del new_data["reset_totp"]
+
     # Track rights changes specifically
     rights_keys = ["role_id", "branch_id", "allowed_branches", "allowed_modules", "is_superadmin", "is_active"]
     for k in rights_keys:

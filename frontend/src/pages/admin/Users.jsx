@@ -155,6 +155,19 @@ export default function AdminUsers() {
     finally { setSaving(false); }
   };
 
+  const handleAdminReset2FA = async () => {
+    if (!window.confirm("Are you sure you want to disable and reset Two-Factor Authentication for this user? They will be able to log in with just their password, and will need to configure 2FA again.")) {
+      return;
+    }
+    try {
+      await api.put(`/users/${editing}`, { reset_totp: true });
+      toast.success("Two-Factor Authentication has been reset/disabled for this user.");
+      load();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || "Failed to reset 2FA");
+    }
+  };
+
   const saveModal = async () => {
     if (!modalForm.name) return toast.error('Name is required');
     try {
@@ -420,6 +433,48 @@ export default function AdminUsers() {
                    <label style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Last Active Session</label>
                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{editing ? (users.find(u => u.id === editing)?.last_login || 'No recent activity') : 'Pending'}</span>
                  </div>
+                 {editing && (
+                    <div>
+                      <label style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Two-Factor Auth (2FA)</label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                        <span style={{
+                          fontSize: 10,
+                          fontWeight: 800,
+                          padding: '3px 8px',
+                          borderRadius: 6,
+                          background: users.find(u => u.id === editing)?.totp_enabled ? 'var(--accent-dim)' : 'var(--bg3)',
+                          color: users.find(u => u.id === editing)?.totp_enabled ? 'var(--accent)' : 'var(--text3)',
+                          border: `1.5px solid ${users.find(u => u.id === editing)?.totp_enabled ? 'var(--accent)' : 'var(--border)'}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}>
+                          {users.find(u => u.id === editing)?.totp_enabled ? '🛡️ Active' : 'Inactive'}
+                        </span>
+                        {users.find(u => u.id === editing)?.totp_enabled && (
+                          <button 
+                            onClick={handleAdminReset2FA}
+                            className="btn btn-sm"
+                            style={{ 
+                              padding: '3px 8px', 
+                              fontSize: 10, 
+                              fontWeight: 700, 
+                              height: '22px',
+                              background: 'var(--red-dim)',
+                              color: 'var(--red)',
+                              border: '1px solid transparent',
+                              borderRadius: '6px',
+                              cursor: 'pointer'
+                            }}
+                            onMouseEnter={e => e.currentTarget.style.borderColor = 'var(--red)'}
+                            onMouseLeave={e => e.currentTarget.style.borderColor = 'transparent'}
+                          >
+                            Disable / Reset
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                </div>
              </div>
 

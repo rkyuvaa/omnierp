@@ -10,6 +10,8 @@ export default function TwoFactorSetup() {
   const [setupData, setSetupData] = useState(null); // { secret, qr_code_url }
   const [code, setCode] = useState('');
   const [copied, setCopied] = useState(false);
+  const [disableMethod, setDisableMethod] = useState('code'); // 'code' | 'password'
+  const [password, setPassword] = useState('');
 
   // Check if TOTP is enabled globally for this user.
   // Wait! We added `totp_enabled` to models.py and auth.py me endpoint, but wait!
@@ -60,15 +62,22 @@ export default function TwoFactorSetup() {
 
   const handleDisable = async e => {
     e.preventDefault();
-    if (code.length !== 6) return toast.error('Please enter the 6-digit verification code to disable');
+    if (disableMethod === 'code' && code.length !== 6) {
+      return toast.error('Please enter the 6-digit verification code to disable');
+    }
+    if (disableMethod === 'password' && !password) {
+      return toast.error('Please enter your password to disable');
+    }
     setLoading(true);
     try {
-      await api.post('/auth/setup-totp/disable', { code });
-      toast.success('Two-Factor Authentication disabled.');
+      const payload = disableMethod === 'code' ? { code } : { password };
+      await api.post('/auth/setup-totp/disable', payload);
+      toast.success('Two-Factor Authentication disabled and deleted successfully.');
       setCode('');
+      setPassword('');
       await refreshUser();
     } catch (err) {
-      toast.error(getErrorMessage(err, 'Failed to disable 2FA. Please verify the code.'));
+      toast.error(getErrorMessage(err, 'Failed to disable 2FA. Please try again.'));
     } finally {
       setLoading(false);
     }
@@ -129,53 +138,138 @@ export default function TwoFactorSetup() {
           </div>
 
           <form onSubmit={handleDisable} style={{ borderTop: '1px solid var(--border)', paddingTop: 16, marginTop: 12 }}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 8 }}>
-              Disable Two-Factor Authentication
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 12 }}>
+              Disable & Delete Two-Factor Authentication
             </div>
-            <p style={{ fontSize: 12, color: 'var(--text3)', margin: '0 0 12px 0', lineHeight: 1.4 }}>
-              To deactivate 2FA, please enter the current 6-digit verification code from your authenticator app.
-            </p>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-              <input
-                className="form-input"
-                type="text"
-                pattern="[0-9]*"
-                inputMode="numeric"
-                maxLength={6}
-                value={code}
-                onChange={handleInputChange}
-                placeholder="000000"
-                required
+
+            {/* Selection tabs for verification method */}
+            <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+              <button 
+                type="button" 
+                onClick={() => { setDisableMethod('code'); setPassword(''); }}
                 style={{
-                  fontSize: 16,
-                  letterSpacing: '4px',
-                  textAlign: 'center',
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: `2.5px solid ${disableMethod === 'code' ? 'var(--accent)' : 'transparent'}`,
+                  color: disableMethod === 'code' ? 'var(--accent)' : 'var(--text3)',
+                  fontSize: 11,
                   fontWeight: 700,
-                  maxWidth: '140px',
-                  height: '38px',
-                  borderRadius: '8px',
-                  background: 'var(--bg)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text)'
+                  padding: '4px 0 6px 0',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
                 }}
-              />
-              <button className="btn" type="submit" disabled={loading} style={{
-                background: 'rgba(239, 68, 68, 0.1)',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
-                color: '#ef4444',
-                padding: '0 16px',
-                height: '38px',
-                borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: 13,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6
-              }}>
-                {loading ? <Loader2 size={14} className="spinner" /> : 'Disable 2FA'}
+              >
+                Use Verification Code
+              </button>
+              <button 
+                type="button" 
+                onClick={() => { setDisableMethod('password'); setCode(''); }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  borderBottom: `2.5px solid ${disableMethod === 'password' ? 'var(--accent)' : 'transparent'}`,
+                  color: disableMethod === 'password' ? 'var(--accent)' : 'var(--text3)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '4px 0 6px 0',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                Use Password (If Lost)
               </button>
             </div>
+
+            {disableMethod === 'code' ? (
+              <>
+                <p style={{ fontSize: 12, color: 'var(--text3)', margin: '0 0 12px 0', lineHeight: 1.4 }}>
+                  Enter the current 6-digit verification code from your authenticator app to disable and delete 2FA.
+                </p>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <input
+                    className="form-input"
+                    type="text"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={code}
+                    onChange={handleInputChange}
+                    placeholder="000000"
+                    required
+                    style={{
+                      fontSize: 16,
+                      letterSpacing: '4px',
+                      textAlign: 'center',
+                      fontWeight: 700,
+                      maxWidth: '140px',
+                      height: '38px',
+                      borderRadius: '8px',
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)'
+                    }}
+                  />
+                  <button className="btn" type="submit" disabled={loading} style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    color: '#ef4444',
+                    padding: '0 16px',
+                    height: '38px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    {loading ? <Loader2 size={14} className="spinner" /> : 'Disable & Delete'}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p style={{ fontSize: 12, color: 'var(--text3)', margin: '0 0 12px 0', lineHeight: 1.4 }}>
+                  Enter your account password to verify your identity and disable/delete the authenticator.
+                </p>
+                <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                  <input
+                    className="form-input"
+                    type="password"
+                    value={password}
+                    onChange={e => setPassword(e.target.value)}
+                    placeholder="Account password"
+                    required
+                    style={{
+                      fontSize: 14,
+                      padding: '0 12px',
+                      maxWidth: '180px',
+                      height: '38px',
+                      borderRadius: '8px',
+                      background: 'var(--bg)',
+                      border: '1px solid var(--border)',
+                      color: 'var(--text)'
+                    }}
+                  />
+                  <button className="btn" type="submit" disabled={loading} style={{
+                    background: 'rgba(239, 68, 68, 0.1)',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    color: '#ef4444',
+                    padding: '0 16px',
+                    height: '38px',
+                    borderRadius: '8px',
+                    fontWeight: 600,
+                    fontSize: 13,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6
+                  }}>
+                    {loading ? <Loader2 size={14} className="spinner" /> : 'Disable & Delete'}
+                  </button>
+                </div>
+              </>
+            )}
           </form>
         </div>
       ) : setupData ? (

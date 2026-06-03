@@ -1,11 +1,12 @@
 import pyotp
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from app.database import get_db
 from app.models import User, Role, Branch, Module
-from app.auth import verify_password, create_token, hash_password, get_current_user
+from app.auth import verify_password, create_token, hash_password, get_current_user, log_action
 
 router = APIRouter()
 
@@ -28,7 +29,8 @@ class VerifySetupTOTPRequest(BaseModel):
     code: str
 
 class DisableTOTPRequest(BaseModel):
-    code: str
+    code: Optional[str] = None
+    password: Optional[str] = None
 
 @router.post("/login")
 def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
@@ -114,17 +116,37 @@ def setup_totp_verify(data: VerifySetupTOTPRequest, current_user: User = Depends
 @router.post("/setup-totp/disable")
 def setup_totp_disable(data: DisableTOTPRequest, current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     if not current_user.totp_enabled:
-        raise HTTPException(status_code=400, detail="MFA is not enabled")
+        raise HTTPException(status_code=400, detail="Two-Factor Authentication is not enabled")
         
-    totp = pyotp.TOTP(current_user.totp_secret)
-    if not totp.verify(data.code):
-        raise HTTPException(status_code=400, detail="Invalid code. Verification failed.")
+    verified = False
+    if data.code:
+        totp = pyotp.TOTP(current_user.totp_secret)
+        if totp.verify(data.code):
+            verified = True
+        else:
+            raise HTTPException(status_code=400, detail="Invalid verification code")
+    elif data.password:
+        if verify_password(data.password, current_user.password_hash):
+            verified = True
+        else:
+            raise HTTPException(status_code=400, detail="Invalid password")
+    else:
+        raise HTTPException(status_code=400, detail="Verification code or password is required")
         
-    current_user.totp_secret = None
-    current_user.totp_enabled = False
-    db.commit()
-    
-    return {"message": "MFA disabled successfully"}
+    if verified:
+        current_user.totp_secret = None
+        current_user.totp_enabled = False
+        db.commit()
+        log_action(
+            db, 
+            current_user, 
+            "DISABLE_MFA", 
+            "users", 
+            current_user.id, 
+            current_user.email, 
+            changes={"totp_enabled": {"old": True, "new": False}}
+        )
+        return {"message": "Two-Factor Authentication disabled and deleted successfully"}
 
 @router.get("/me")
 def me(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
