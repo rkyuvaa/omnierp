@@ -77,7 +77,7 @@ export default function TaskDrawer({ onClose, onSaved, prefillDate = null }) {
 
   useEffect(() => {
     api.get('/tasks/labels').then(r => setLabels(r.data)).catch(() => {});
-    api.get('/users/').then(r => setUsers(r.data || [])).catch(() => {});
+    api.get('/users/?for_tasks=true').then(r => setUsers(r.data || [])).catch(() => {});
     setTimeout(() => titleRef.current?.focus(), 100);
   }, []);
 

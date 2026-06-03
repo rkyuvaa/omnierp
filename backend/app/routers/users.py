@@ -49,7 +49,7 @@ def serialize(u: User):
     }
 
 @router.get("/")
-def list_users(branch_id: Optional[int] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def list_users(branch_id: Optional[int] = None, for_tasks: bool = False, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     query = db.query(User)
     if branch_id:
         # Filter users who have this branch_id primary OR in their allowed_branches JSON list
@@ -58,6 +58,27 @@ def list_users(branch_id: Optional[int] = None, db: Session = Depends(get_db), c
             User.branch_id == branch_id,
             User.allowed_branches.contains([branch_id])
         ))
+        
+    if for_tasks and not current_user.is_superadmin:
+        from app.models import Role
+        role = db.query(Role).filter(Role.id == current_user.role_id).first()
+        if role:
+            perms = role.permissions or {}
+            if perms.get("view_team_records_only"):
+                from app.hr_models import HREmployee
+                my_emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+                allowed_user_ids = [current_user.id]
+                if my_emp:
+                    subs = db.query(HREmployee).filter(
+                        or_(
+                            HREmployee.manager_id == my_emp.id,
+                            HREmployee.manager_l2_id == my_emp.id
+                        )
+                    ).all()
+                    allowed_user_ids.extend([sub.user_id for sub in subs if sub.user_id])
+                query = query.filter(User.id.in_(allowed_user_ids))
+            elif perms.get("view_own_records_only"):
+                query = query.filter(User.id == current_user.id)
     users = query.order_by(User.name.asc()).all()
     return [serialize(u) for u in users]
 
