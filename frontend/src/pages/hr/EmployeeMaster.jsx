@@ -97,6 +97,9 @@ export default function EmployeeMaster() {
       if (editEmp) {
         await api.put(`/hr/employees/${editEmp.id}`, cleanedForm);
         toast.success('Employee updated');
+        if (activeTab === 'detail' && selectedEmp && selectedEmp.id === editEmp.id) {
+          openDetail(editEmp);
+        }
       } else {
         await api.post('/hr/employees/', cleanedForm);
         toast.success('Employee created');
