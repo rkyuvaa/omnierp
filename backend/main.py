@@ -36,6 +36,28 @@ except Exception as e:
 finally:
     _db.close()
 
+# Auto-link Employees and User Accounts by email case-insensitively
+from app.models import User
+from app.hr_models import HREmployee
+_db = SessionLocal()
+try:
+    unlinked_emps = _db.query(HREmployee).filter(HREmployee.user_id == None, HREmployee.email != None).all()
+    if unlinked_emps:
+        linked_count = 0
+        for emp in unlinked_emps:
+            # Match by case-insensitive email
+            user = _db.query(User).filter(User.email.ilike(emp.email)).first()
+            if user:
+                emp.user_id = user.id
+                linked_count += 1
+        if linked_count > 0:
+            _db.commit()
+            print(f"✅ Auto-linked {linked_count} employees to user accounts by email case-insensitively")
+except Exception as e:
+    print(f"⚠️ Error auto-linking employees to user accounts: {e}")
+finally:
+    _db.close()
+
 # Auto-migrate: add any missing columns safely
 from sqlalchemy import text as _text, inspect as _inspect
 def _safe_add_columns():

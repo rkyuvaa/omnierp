@@ -17,6 +17,7 @@ const labelStyle = { fontSize: 12, fontWeight: 600, color: 'var(--text2)', margi
 
 export default function EmployeeMaster() {
   const [employees, setEmployees] = useState([]);
+  const [users, setUsers] = useState([]);
   const [shifts, setShifts] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [branches, setBranches] = useState([]);
@@ -39,16 +40,18 @@ export default function EmployeeMaster() {
   async function fetchAll() {
     setLoading(true);
     try {
-      const [emps, sh, depts, brs] = await Promise.all([
+      const [emps, sh, depts, brs, usr] = await Promise.all([
         api.get('/hr/employees/'),
         api.get('/hr/shifts/'),
         api.get('/departments/'),
         api.get('/branches/'),
+        api.get('/users/'),
       ]);
       setEmployees(emps.data);
       setShifts(sh.data);
       setDepartments(depts.data);
       setBranches(brs.data);
+      setUsers(usr.data || []);
     } catch { toast.error('Failed to load data'); }
     finally { setLoading(false); }
   }
@@ -73,7 +76,7 @@ export default function EmployeeMaster() {
   async function saveEmployee() {
     setSaving(true);
     const cleanedForm = { ...form };
-    const intFields = ['department_id', 'branch_id', 'shift_id', 'manager_id', 'manager_l2_id', 'salary_template_id'];
+    const intFields = ['department_id', 'branch_id', 'shift_id', 'manager_id', 'manager_l2_id', 'salary_template_id', 'user_id'];
     intFields.forEach(f => {
       if (cleanedForm[f] === '' || cleanedForm[f] === undefined) {
         cleanedForm[f] = null;
@@ -329,6 +332,13 @@ export default function EmployeeMaster() {
                 <select value={form.manager_l2_id || ''} onChange={e => setForm({ ...form, manager_l2_id: e.target.value ? parseInt(e.target.value) : null })} style={inputStyle}>
                   <option value="">— Select L2 Manager —</option>
                   {employees.filter(emp => emp.id !== form.id).map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>Linked User Account (for App Login & Tasks)</label>
+                <select value={form.user_id || ''} onChange={e => setForm({ ...form, user_id: e.target.value ? parseInt(e.target.value) : null })} style={inputStyle}>
+                  <option value="">— Select User Account —</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
                 </select>
               </div>
               <div>

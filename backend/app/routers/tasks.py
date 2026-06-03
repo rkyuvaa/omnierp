@@ -207,6 +207,14 @@ def list_tasks(
                     from app.hr_models import HREmployee
                     from sqlalchemy import or_
                     my_emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+                    # Self-healing fallback for current user
+                    if not my_emp and current_user.email:
+                        my_emp = db.query(HREmployee).filter(HREmployee.email.ilike(current_user.email)).first()
+                        if my_emp:
+                            my_emp.user_id = current_user.id
+                            db.commit()
+                            db.refresh(my_emp)
+
                     allowed_user_ids = [current_user.id]
                     if my_emp:
                         subs = db.query(HREmployee).filter(
@@ -215,7 +223,27 @@ def list_tasks(
                                 HREmployee.manager_l2_id == my_emp.id
                             )
                         ).all()
-                        allowed_user_ids.extend([sub.user_id for sub in subs if sub.user_id])
+                        
+                        sub_emails = [sub.email for sub in subs if sub.email]
+                        linked_user_ids = []
+                        for sub in subs:
+                            if sub.user_id:
+                                linked_user_ids.append(sub.user_id)
+                        
+                        if sub_emails:
+                            sub_emails_lower = [email.lower() for email in sub_emails]
+                            from sqlalchemy import func
+                            matching_users = db.query(User).filter(func.lower(User.email).in_(sub_emails_lower)).all()
+                            for mu in matching_users:
+                                # Auto-heal the link in the DB
+                                for sub in subs:
+                                    if sub.email and sub.email.lower() == mu.email.lower() and not sub.user_id:
+                                        sub.user_id = mu.id
+                                        db.commit()
+                                if mu.id not in linked_user_ids:
+                                    linked_user_ids.append(mu.id)
+                        
+                        allowed_user_ids.extend(linked_user_ids)
                     q = q.filter(Task.assigned_to.in_(allowed_user_ids))
                 elif perms.get("view_own_records_only"):
                     q = q.filter(Task.assigned_to == current_user.id)
