@@ -213,12 +213,18 @@ export default function AdminUsers() {
     }));
   };
 
-  const PERMS = [
+  const CRUD_PERMS = [
     { key: 'can_read', label: 'READ' },
     { key: 'can_create', label: 'CREATE' },
     { key: 'can_edit', label: 'EDIT' },
     { key: 'can_delete', label: 'DELETE' },
   ];
+
+  const SCOPE_PERMS = [
+    { key: 'view_own_records_only', label: 'VIEW OWN RECORDS ONLY' },
+  ];
+
+  const PERMS = [...CRUD_PERMS, ...SCOPE_PERMS];
 
   const toggleBranch = (bid) => {
     const current = form.allowed_branches || [];
@@ -753,9 +759,12 @@ export default function AdminUsers() {
                     <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{r.name}</td>
                     <td style={{ padding: '12px' }}>
                       <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
-                        {PERMS.filter(p => r.permissions?.[p.key]).map(p => (
+                        {CRUD_PERMS.filter(p => r.permissions?.[p.key]).map(p => (
                           <Badge key={p.key} color="var(--accent-dim)" style={{ color: 'var(--accent)', fontSize: 8, fontWeight: 900 }}>{p.label}</Badge>
                         ))}
+                        {r.permissions?.view_own_records_only && (
+                          <Badge color="rgba(251, 191, 36, 0.15)" style={{ color: '#f59e0b', fontSize: 8, fontWeight: 900, border: '1px solid rgba(251,191,36,0.3)' }}>OWN RECORDS</Badge>
+                        )}
                       </div>
                     </td>
                     <td style={{ padding: '12px', textAlign: 'right' }}>
@@ -806,20 +815,37 @@ export default function AdminUsers() {
             )}
 
             {modalMode === 'role' && (
-              <div className="form-group">
-                <label className="form-label" style={{ fontSize: 10, fontWeight: 800, marginBottom: 10 }}>Global Permission Assets</label>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {PERMS.map(p => {
-                    const active = modalForm.permissions?.[p.key];
-                    return (
-                      <div key={p.key} onClick={() => toggleRolePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: active ? 'var(--accent-dim)' : 'var(--bg2)', borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
-                        {active ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
-                        <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text2)' }}>{p.label}</span>
-                      </div>
-                    );
-                  })}
+              <>
+                <div className="form-group">
+                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800, marginBottom: 10 }}>Global Permission Assets</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {CRUD_PERMS.map(p => {
+                      const active = modalForm.permissions?.[p.key];
+                      return (
+                        <div key={p.key} onClick={() => toggleRolePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: active ? 'var(--accent-dim)' : 'var(--bg2)', borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
+                          {active ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
+                          <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text2)' }}>{p.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+
+                <div className="form-group" style={{ marginTop: 8 }}>
+                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800, marginBottom: 10, color: '#f59e0b' }}>Data Scope Settings</label>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {SCOPE_PERMS.map(p => {
+                      const active = modalForm.permissions?.[p.key];
+                      return (
+                        <div key={p.key} onClick={() => toggleRolePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: active ? 'rgba(251, 191, 36, 0.12)' : 'var(--bg2)', borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? '#f59e0b' : 'transparent'}` }}>
+                          {active ? <CheckSquare size={16} color="#f59e0b" /> : <Square size={16} color="var(--text3)" />}
+                          <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'var(--text2)' }}>{p.label}</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </>
             )}
 
             <div className="form-group">
