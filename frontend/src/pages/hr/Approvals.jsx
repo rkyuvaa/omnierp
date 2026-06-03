@@ -182,9 +182,19 @@ export default function Approvals() {
                 <div style={{ fontWeight: 700, fontSize: 14 }}>{req.employee_name}</div>
                 <div style={{ fontSize: 12, color: 'var(--text3)' }}>{req.reference}</div>
               </div>
-              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 700, background: `${statusColors[req.status]}20`, color: statusColors[req.status] }}>
-                {req.status.replace('_', ' ').toUpperCase()}
+              <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 700, background: `${statusColors[req.status] || '#f59e0b'}20`, color: statusColors[req.status] || '#f59e0b' }}>
+                {(req.status || 'pending').replace('_', ' ').toUpperCase()}
               </span>
+              {req.l1_approver_id && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: req.l1_status === 'approved' ? '#22c55e' : (req.l1_status === 'rejected' ? '#ef4444' : '#f59e0b'), marginLeft: 4, background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>
+                  L1: {req.l1_status ? req.l1_status.toUpperCase() : 'PENDING'}
+                </span>
+              )}
+              {req.l2_approver_id && (
+                <span style={{ fontSize: 10, fontWeight: 700, color: req.l2_status === 'approved' ? '#22c55e' : (req.l2_status === 'rejected' ? '#ef4444' : '#f59e0b'), marginLeft: 4, background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>
+                  L2: {req.l2_status ? req.l2_status.toUpperCase() : 'PENDING'}
+                </span>
+              )}
             </div>
 
             {type === 'leave' ? (

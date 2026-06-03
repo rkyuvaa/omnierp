@@ -205,10 +205,16 @@ def list_tasks(
                 perms = task_role.permissions
                 if perms.get("view_team_records_only"):
                     from app.hr_models import HREmployee
+                    from sqlalchemy import or_
                     my_emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
                     allowed_user_ids = [current_user.id]
                     if my_emp:
-                        subs = db.query(HREmployee).filter(HREmployee.manager_id == my_emp.id).all()
+                        subs = db.query(HREmployee).filter(
+                            or_(
+                                HREmployee.manager_id == my_emp.id,
+                                HREmployee.manager_l2_id == my_emp.id
+                            )
+                        ).all()
                         allowed_user_ids.extend([sub.user_id for sub in subs if sub.user_id])
                     q = q.filter(Task.assigned_to.in_(allowed_user_ids))
                 elif perms.get("view_own_records_only"):

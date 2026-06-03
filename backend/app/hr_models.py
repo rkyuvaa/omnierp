@@ -18,7 +18,8 @@ class HREmployee(Base):
     designation = Column(String(100), nullable=True)
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
-    manager_id = Column(Integer, nullable=True)           # FK to hr_employees.id
+    manager_id = Column(Integer, nullable=True)           # FK to hr_employees.id (L1 Manager)
+    manager_l2_id = Column(Integer, nullable=True)        # FK to hr_employees.id (L2 Manager)
     shift_id = Column(Integer, ForeignKey("hr_shifts.id"), nullable=True)
     date_of_joining = Column(Date, nullable=True)
     date_of_leaving = Column(Date, nullable=True)
@@ -134,9 +135,23 @@ class HRLeaveRequest(Base):
     half_day_session = Column(String(10), nullable=True)   # morning / afternoon
     reason = Column(Text, nullable=True)
     status = Column(String(20), default="pending")         # pending/approved/rejected/cancelled/auto_approved
+    
+    # Legacy / Final Approver tracking
     approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
     approver_remarks = Column(Text, nullable=True)
     approved_at = Column(DateTime, nullable=True)
+
+    # Multi-level Approvals
+    l1_approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
+    l1_status = Column(String(20), default="pending")      # pending/approved/rejected
+    l1_remarks = Column(Text, nullable=True)
+    l1_approved_at = Column(DateTime, nullable=True)
+
+    l2_approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
+    l2_status = Column(String(20), nullable=True)          # pending/approved/rejected/not_required
+    l2_remarks = Column(Text, nullable=True)
+    l2_approved_at = Column(DateTime, nullable=True)
+
     auto_approve_at = Column(DateTime, nullable=True)      # created_at + 6 hours
     is_auto_approved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -161,9 +176,23 @@ class HROnDutyRequest(Base):
     work_location = Column(String(200), nullable=True)
     purpose = Column(Text, nullable=True)
     status = Column(String(20), default="pending")  # pending/approved/rejected/auto_approved
+    
+    # Legacy / Final Approver tracking
     approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
     approver_remarks = Column(Text, nullable=True)
     approved_at = Column(DateTime, nullable=True)
+
+    # Multi-level Approvals
+    l1_approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
+    l1_status = Column(String(20), default="pending")
+    l1_remarks = Column(Text, nullable=True)
+    l1_approved_at = Column(DateTime, nullable=True)
+
+    l2_approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
+    l2_status = Column(String(20), nullable=True)
+    l2_remarks = Column(Text, nullable=True)
+    l2_approved_at = Column(DateTime, nullable=True)
+
     auto_approve_at = Column(DateTime, nullable=True)
     is_auto_approved = Column(Boolean, default=False)
     created_at = Column(DateTime, default=datetime.utcnow)

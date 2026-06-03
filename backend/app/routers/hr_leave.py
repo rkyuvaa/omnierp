@@ -284,6 +284,8 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
                     half_day_session=data.half_day_session,
                     reason=data.reason,
                     approver_id=emp.manager_id,
+                    l1_approver_id=emp.manager_id,
+                    l2_approver_id=getattr(emp, 'manager_l2_id', None),
                     auto_approve_at=auto_approve_at,
                 )
                 db.add(req_paid)
@@ -301,6 +303,8 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
                     half_day_session=data.half_day_session,
                     reason=f"{data.reason or ''} (Overflow from {leave_type.code})".strip(),
                     approver_id=emp.manager_id,
+                    l1_approver_id=emp.manager_id,
+                    l2_approver_id=getattr(emp, 'manager_l2_id', None),
                     auto_approve_at=auto_approve_at,
                 )
                 db.add(req_unpaid)
@@ -334,6 +338,8 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
         half_day_session=data.half_day_session,
         reason=data.reason,
         approver_id=emp.manager_id,
+        l1_approver_id=emp.manager_id,
+        l2_approver_id=getattr(emp, 'manager_l2_id', None),
         auto_approve_at=auto_approve_at,
     )
     db.add(req); db.commit(); db.refresh(req)
@@ -462,9 +468,49 @@ def approve_leave(req_id: int, data: LeaveAction, background_tasks: BackgroundTa
             raise HTTPException(status_code=403, detail="Access denied. You are not authorized to approve this request.")
     if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
 
-    req.status = "approved"
-    req.approver_remarks = data.remarks
-    req.approved_at = datetime.utcnow()
+    # Role check
+    emp = None
+    if not is_hr_admin(current_user, db):
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+
+    is_l1 = (req.l1_approver_id == emp.id) if emp else False
+    is_l2 = (req.l2_approver_id == emp.id) if emp else False
+    is_super = is_hr_admin(current_user, db)
+
+    final_approval = False
+
+    if is_l1 and not is_l2 and req.l1_status == "pending":
+        req.l1_status = "approved"
+        req.l1_remarks = data.remarks
+        req.l1_approved_at = datetime.utcnow()
+        if req.l2_approver_id:
+            req.approver_id = req.l2_approver_id
+            # Notify L2 Manager
+            l2_manager = db.query(HREmployee).filter(HREmployee.id == req.l2_approver_id).first()
+            if l2_manager and l2_manager.user_id:
+                _notify(db, l2_manager.user_id,
+                        "Leave Request Pending (L2)",
+                        f"{req.employee.name if req.employee else 'Employee'} leave approved by L1. Pending your final approval.",
+                        "leave", req.id)
+            db.commit()
+            return {"message": "Approved (L1), pending L2", "id": req.id}
+        else:
+            final_approval = True
+    elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
+        req.l2_status = "approved"
+        req.l2_remarks = data.remarks
+        req.l2_approved_at = datetime.utcnow()
+        final_approval = True
+    elif is_super:
+        final_approval = True
+    else:
+        raise HTTPException(400, "You cannot approve this request in its current state.")
+
+    if final_approval:
+        req.status = "approved"
+        req.approver_remarks = data.remarks
+        req.approved_at = datetime.utcnow()
 
     # Deduct balance
     if req.leave_type and req.leave_type.code != "LOP":
@@ -503,6 +549,24 @@ def reject_leave(req_id: int, data: LeaveAction, background_tasks: BackgroundTas
         if req.approver_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You are not authorized to reject this request.")
     if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
+    
+    emp = None
+    if not is_hr_admin(current_user, db):
+        from app.auth import get_current_employee
+        emp = get_current_employee(current_user, db)
+
+    is_l1 = (req.l1_approver_id == emp.id) if emp else False
+    is_l2 = (req.l2_approver_id == emp.id) if emp else False
+    
+    if is_l1 and req.l1_status == "pending":
+        req.l1_status = "rejected"
+        req.l1_remarks = data.remarks
+        req.l1_approved_at = datetime.utcnow()
+    elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
+        req.l2_status = "rejected"
+        req.l2_remarks = data.remarks
+        req.l2_approved_at = datetime.utcnow()
+
     req.status = "rejected"
     req.approver_remarks = data.remarks
     req.approved_at = datetime.utcnow()
@@ -553,6 +617,10 @@ def _serialize_request(r: HRLeaveRequest):
         "approver_id": r.approver_id,
         "approver_name": r.approver.name if r.approver else None,
         "approver_remarks": r.approver_remarks,
+        "l1_approver_id": getattr(r, 'l1_approver_id', None),
+        "l1_status": getattr(r, 'l1_status', None),
+        "l2_approver_id": getattr(r, 'l2_approver_id', None),
+        "l2_status": getattr(r, 'l2_status', None),
         "is_auto_approved": r.is_auto_approved,
         "auto_approve_at": r.auto_approve_at.isoformat() + "Z" if r.auto_approve_at else None,
         "seconds_until_auto_approve": remaining,

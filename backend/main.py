@@ -52,6 +52,23 @@ def _safe_add_columns():
         ("branches", "radius", "DOUBLE PRECISION"),
         ("users", "totp_secret", "VARCHAR(100)"),
         ("users", "totp_enabled", "BOOLEAN DEFAULT FALSE"),
+        ("hr_employees", "manager_l2_id", "INTEGER"),
+        ("hr_leave_requests", "l1_approver_id", "INTEGER"),
+        ("hr_leave_requests", "l1_status", "VARCHAR(20) DEFAULT 'pending'"),
+        ("hr_leave_requests", "l1_remarks", "TEXT"),
+        ("hr_leave_requests", "l1_approved_at", "TIMESTAMP"),
+        ("hr_leave_requests", "l2_approver_id", "INTEGER"),
+        ("hr_leave_requests", "l2_status", "VARCHAR(20)"),
+        ("hr_leave_requests", "l2_remarks", "TEXT"),
+        ("hr_leave_requests", "l2_approved_at", "TIMESTAMP"),
+        ("hr_onduty_requests", "l1_approver_id", "INTEGER"),
+        ("hr_onduty_requests", "l1_status", "VARCHAR(20) DEFAULT 'pending'"),
+        ("hr_onduty_requests", "l1_remarks", "TEXT"),
+        ("hr_onduty_requests", "l1_approved_at", "TIMESTAMP"),
+        ("hr_onduty_requests", "l2_approver_id", "INTEGER"),
+        ("hr_onduty_requests", "l2_status", "VARCHAR(20)"),
+        ("hr_onduty_requests", "l2_remarks", "TEXT"),
+        ("hr_onduty_requests", "l2_approved_at", "TIMESTAMP"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:

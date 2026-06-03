@@ -73,7 +73,7 @@ export default function EmployeeMaster() {
   async function saveEmployee() {
     setSaving(true);
     const cleanedForm = { ...form };
-    const intFields = ['department_id', 'branch_id', 'shift_id', 'manager_id', 'salary_template_id'];
+    const intFields = ['department_id', 'branch_id', 'shift_id', 'manager_id', 'manager_l2_id', 'salary_template_id'];
     intFields.forEach(f => {
       if (cleanedForm[f] === '' || cleanedForm[f] === undefined) {
         cleanedForm[f] = null;
@@ -317,10 +317,17 @@ export default function EmployeeMaster() {
                   <option value="false">Inactive</option>
                 </select>
               </div>
-               <div>
-                <label style={labelStyle}>Reporting Manager</label>
+              <div>
+                <label style={labelStyle}>Reporting Manager (L1)</label>
                 <select value={form.manager_id || ''} onChange={e => setForm({ ...form, manager_id: e.target.value ? parseInt(e.target.value) : null })} style={inputStyle}>
-                  <option value="">— Select Manager —</option>
+                  <option value="">— Select L1 Manager —</option>
+                  {employees.filter(emp => emp.id !== form.id).map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>2nd Level Manager (L2)</label>
+                <select value={form.manager_l2_id || ''} onChange={e => setForm({ ...form, manager_l2_id: e.target.value ? parseInt(e.target.value) : null })} style={inputStyle}>
+                  <option value="">— Select L2 Manager —</option>
                   {employees.filter(emp => emp.id !== form.id).map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
                 </select>
               </div>

@@ -258,6 +258,16 @@ export default function Requests() {
                         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
                           {STATUS_BADGE[req.status]?.label}
                         </span>
+                        {req.l1_approver_id && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: req.l1_status === 'approved' ? '#22c55e' : (req.l1_status === 'rejected' ? '#ef4444' : '#f59e0b'), marginLeft: 4, background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>
+                            L1: {req.l1_status ? req.l1_status.toUpperCase() : 'PENDING'}
+                          </span>
+                        )}
+                        {req.l2_approver_id && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: req.l2_status === 'approved' ? '#22c55e' : (req.l2_status === 'rejected' ? '#ef4444' : '#f59e0b'), marginLeft: 4, background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>
+                            L2: {req.l2_status ? req.l2_status.toUpperCase() : 'PENDING'}
+                          </span>
+                        )}
                         {req.is_auto_approved && <span style={{ fontSize: 11, color: '#2563eb' }}>⏰ Auto-approved</span>}
                       </div>
                       <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_date} → {req.to_date} · <strong>{req.total_days} day{req.total_days > 1 ? 's' : ''}</strong></div>
@@ -301,6 +311,16 @@ export default function Requests() {
                         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
                           {STATUS_BADGE[req.status]?.label}
                         </span>
+                        {req.l1_approver_id && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: req.l1_status === 'approved' ? '#22c55e' : (req.l1_status === 'rejected' ? '#ef4444' : '#f59e0b'), marginLeft: 4, background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>
+                            L1: {req.l1_status ? req.l1_status.toUpperCase() : 'PENDING'}
+                          </span>
+                        )}
+                        {req.l2_approver_id && (
+                          <span style={{ fontSize: 10, fontWeight: 700, color: req.l2_status === 'approved' ? '#22c55e' : (req.l2_status === 'rejected' ? '#ef4444' : '#f59e0b'), marginLeft: 4, background: 'var(--bg)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)' }}>
+                            L2: {req.l2_status ? req.l2_status.toUpperCase() : 'PENDING'}
+                          </span>
+                        )}
                       </div>
                       <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_time} – {req.to_time} · {req.work_location}</div>
                       {req.purpose && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Purpose: {req.purpose}</div>}
