@@ -5,7 +5,7 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, CheckSquare, Square, Shield } from 'lucide-react';
 
-const emptyForm = { name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false } };
+const emptyForm = { name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false, view_own_records_only: false } };
 
 export default function AdminRoles() {
   const [items, setItems] = useState([]);
@@ -50,12 +50,16 @@ export default function AdminRoles() {
     permissions: { ...(f.permissions || {}), [key]: !f.permissions?.[key] }
   }));
 
-  const PERMS = [
+  const CRUD_PERMS = [
     { key: 'can_read', label: 'Read Data (View records / Operator Level)' },
     { key: 'can_create', label: 'Create Data (Add new records / User Level)' },
     { key: 'can_edit', label: 'Edit Data (Modify existing records / Manager Level)' },
     { key: 'can_delete', label: 'Delete Data (Remove records completely / Admin Level)' },
   ];
+  const SCOPE_PERMS = [
+    { key: 'view_own_records_only', label: 'View Own Records Only — user sees only tasks assigned to themselves (Task Management)' },
+  ];
+  const PERMS = [...CRUD_PERMS, ...SCOPE_PERMS];
 
   return (
     <Layout title="Role Management">
@@ -79,12 +83,15 @@ export default function AdminRoles() {
                 <tr key={i.id}>
                   <td style={{ fontWeight: 700, paddingLeft: 20, color: 'var(--text)' }}>{i.name}</td>
                   <td>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {PERMS.filter(p => i.permissions?.[p.key]).map(p => (
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {CRUD_PERMS.filter(p => i.permissions?.[p.key]).map(p => (
                         <span key={p.key} style={{ fontSize: 10, background: 'var(--accent-dim)', color: 'var(--accent)', padding: '4px 10px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.5px' }}>
                           {p.key.replace('can_', '').toUpperCase()}
                         </span>
                       ))}
+                      {i.permissions?.view_own_records_only && (
+                        <span style={{ fontSize: 10, background: 'rgba(251,191,36,0.15)', color: '#f59e0b', padding: '4px 10px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.5px', border: '1px solid rgba(251,191,36,0.3)' }}>OWN RECORDS</span>
+                      )}
                       {!Object.keys(i.permissions || {}).some(k => i.permissions[k]) && <span className="text-muted text-sm" style={{ padding: '4px 10px' }}>No Access</span>}
                     </div>
                   </td>
@@ -112,7 +119,7 @@ export default function AdminRoles() {
             <div className="form-group" style={{ marginTop: 20 }}>
               <label className="form-label" style={{ marginBottom: 12, fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--accent)' }}>Global Permission Settings</label>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {PERMS.map(p => {
+                {CRUD_PERMS.map(p => {
                   const active = form.permissions?.[p.key];
                   return (
                     <div key={p.key} onClick={() => togglePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: active ? 'var(--accent-dim)' : 'var(--bg3)', border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
@@ -123,7 +130,27 @@ export default function AdminRoles() {
                         {p.label}
                       </div>
                     </div>
-                  )
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── Data Scope Settings ─────────────────── */}
+            <div className="form-group" style={{ marginTop: 20 }}>
+              <label className="form-label" style={{ marginBottom: 12, fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#f59e0b' }}>Data Scope Settings</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {SCOPE_PERMS.map(p => {
+                  const active = form.permissions?.[p.key];
+                  return (
+                    <div key={p.key} onClick={() => togglePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: active ? 'rgba(251,191,36,0.12)' : 'var(--bg3)', border: `2px solid ${active ? '#f59e0b' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
+                      <div style={{ color: active ? '#f59e0b' : 'var(--text3)' }}>
+                        {active ? <CheckSquare size={20} /> : <Square size={20} />}
+                      </div>
+                      <div style={{ fontSize: 14, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'var(--text2)' }}>
+                        {p.label}
+                      </div>
+                    </div>
+                  );
                 })}
               </div>
             </div>

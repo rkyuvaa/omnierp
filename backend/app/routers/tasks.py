@@ -194,6 +194,16 @@ def list_tasks(
     if due_to:
         q = q.filter(Task.due_date <= datetime.fromisoformat(due_to))
 
+    # ── Own-records scope enforcement ─────────────────────────────
+    if not current_user.is_superadmin:
+        allowed_mods = current_user.allowed_modules or {}
+        task_role_id = allowed_mods.get("tasks")
+        if task_role_id:
+            from app.models import Role as RoleModel
+            task_role = db.query(RoleModel).filter(RoleModel.id == task_role_id).first()
+            if task_role and (task_role.permissions or {}).get("view_own_records_only"):
+                q = q.filter(Task.assigned_to == current_user.id)
+
     total = q.count()
 
     # Ordering: urgent > high > medium > low, then by due date
