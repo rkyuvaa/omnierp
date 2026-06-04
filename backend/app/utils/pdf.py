@@ -204,18 +204,18 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             for h in pending_holds
         ])
         pending_holds_html = f"""
-            <div class="section-title" style="background:#fff7ed;border-left-color:#d97706;color:#92400e;margin-top:10px;">Pending Salary Holds (Informational - Not Deducted This Month)</div>
+            <div class="section-title">Pending Salary Holds (Informational - Not Deducted This Month)</div>
             <table class="comp-tbl" style="width:100%;border-collapse:collapse;">
                 <thead>
-                    <tr style="background:#fff7ed;font-weight:bold;color:#92400e;">
-                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;width:20%;">Period</td>
-                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;width:50%;">Remarks</td>
-                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;text-align:right;width:30%;">Amount Held</td>
+                    <tr style="background:#f8fafc;font-weight:bold;color:#195402;">
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;width:30%;">Period</td>
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;width:45%;">Remarks</td>
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;text-align:right;width:25%;">Amount Held</td>
                     </tr>
                 </thead>
                 <tbody>
                     {hold_rows_html}
-                    <tr style="font-weight:bold;background:#fef3c7;">
+                    <tr style="font-weight:bold;background:#f8fafc;">
                         <td style="padding:5px 8px;border:1px solid #e2e8f0;" colspan="2">TOTAL PENDING SALARY HOLD</td>
                         <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:right;color:#dc2626;">Rs. {holds_total:,.2f}</td>
                     </tr>
