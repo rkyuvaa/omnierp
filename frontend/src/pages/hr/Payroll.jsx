@@ -538,16 +538,17 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
         employee_id: data.employee_id,
         amount: amt,
         type: entryType,
-        target_month: entryType === 'already_paid' ? month : parseInt(targetMonth),
-        target_year: entryType === 'already_paid' ? year : parseInt(targetYear),
-        original_month: (entryType === 'add' || entryType === 'already_paid') ? parseInt(origMonth) : null,
-        original_year: (entryType === 'add' || entryType === 'already_paid') ? parseInt(origYear) : null,
+        target_month: (entryType === 'already_paid' || entryType === 'previously_held') ? month : parseInt(targetMonth),
+        target_year: (entryType === 'already_paid' || entryType === 'previously_held') ? year : parseInt(targetYear),
+        original_month: (entryType === 'add' || entryType === 'already_paid' || entryType === 'previously_held') ? parseInt(origMonth) : null,
+        original_year: (entryType === 'add' || entryType === 'already_paid' || entryType === 'previously_held') ? parseInt(origYear) : null,
         remarks: remarks
       });
       toast.success(
         entryType === 'add' ? 'Arrear payout added' : 
         entryType === 'already_paid' ? 'Already Paid record logged' : 
         entryType === 'one_time' ? 'One-time deduction added' :
+        entryType === 'previously_held' ? 'Previously held arrear logged' :
         'Salary held (deduction added)'
       );
       setAmount(''); setRemarks('');
@@ -768,6 +769,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                   <option value="add">Add to Payroll (Arrear Payout)</option>
                   <option value="already_paid">Already Paid (Record Only)</option>
                   <option value="one_time">Deduct (One-time, No carry forward)</option>
+                  <option value="previously_held">Previously Held (Record Only)</option>
                 </select>
               </div>
 
@@ -782,7 +784,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                 />
               </div>
 
-              {entryType !== 'already_paid' && (
+              {entryType !== 'already_paid' && entryType !== 'previously_held' && (
                 <div style={{ display: 'flex', gap: 8 }}>
                   <div style={{ flex: 1 }}>
                     <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Target Month</label>
@@ -811,9 +813,9 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                 </div>
               )}
 
-              {(entryType === 'add' || entryType === 'already_paid') && (
+              {(entryType === 'add' || entryType === 'already_paid' || entryType === 'previously_held') && (
                 <div>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Original Period (Arrear month being paid)</label>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Original Period (Arrear month being paid / held)</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <div style={{ flex: 1 }}>
                       <select 
@@ -847,7 +849,12 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                   type="text" 
                   value={remarks} 
                   onChange={e => setRemarks(e.target.value)} 
-                  placeholder={entryType === 'add' ? "e.g. Arrear adjustment for performance bonus" : entryType === 'already_paid' ? "e.g. Paid in cash on April 5" : "e.g. Salary held for clearance"} 
+                  placeholder={
+                    entryType === 'add' ? "e.g. Arrear adjustment for performance bonus" : 
+                    entryType === 'already_paid' ? "e.g. Paid in cash on April 5" : 
+                    entryType === 'previously_held' ? "e.g. Outstanding held balance from previous system" :
+                    "e.g. Salary held for clearance"
+                  } 
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} 
                 />
               </div>
@@ -867,6 +874,8 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                   ? `Amount will be recorded as already paid outside standard payroll (will NOT affect future payroll runs).`
                   : entryType === 'one_time'
                   ? `Amount will be recorded as a one-time deduction from the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll (will NOT carry forward).`
+                  : entryType === 'previously_held'
+                  ? `Amount will be recorded as a pending held balance from the past month (will NOT affect current/future payroll runs).`
                   : `Amount will be held (deducted from earnings) in the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll.`
                 }
               </div>

@@ -934,8 +934,19 @@ def manual_arrear(data: ArrearManualRequest, db: Session = Depends(get_db), curr
             status="one_time",
             remarks=data.remarks
         )
+    elif data.type == "previously_held":
+        orig_m = data.original_month or data.target_month
+        orig_y = data.original_year or data.target_year
+        arrear = HRArrearRecord(
+            employee_id=data.employee_id,
+            held_month=orig_m,
+            held_year=orig_y,
+            amount_held=data.amount,
+            status="held",
+            remarks=data.remarks
+        )
     else:
-        raise HTTPException(400, "Invalid type. Must be 'add', 'deduct', 'already_paid' or 'one_time'")
+        raise HTTPException(400, "Invalid type. Must be 'add', 'deduct', 'already_paid', 'one_time' or 'previously_held'")
         
     db.add(arrear)
     db.commit()
