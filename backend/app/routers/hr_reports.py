@@ -149,31 +149,36 @@ def payroll_export(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    employees = _get_employees(db, branch_id, department_id)
+    q = db.query(HRPayrollRecord).join(HREmployee, HRPayrollRecord.employee_id == HREmployee.id).filter(
+        HRPayrollRecord.month == month,
+        HRPayrollRecord.year == year
+    )
+    if branch_id:
+        q = q.filter(HREmployee.branch_id == branch_id)
+    if department_id:
+        q = q.filter(HREmployee.department_id == department_id)
+        
+    records = q.all()
     result = []
-    for emp in employees:
-        payroll = db.query(HRPayrollRecord).filter(
-            HRPayrollRecord.employee_id == emp.id,
-            HRPayrollRecord.month == month,
-            HRPayrollRecord.year == year
-        ).first()
-        if payroll:
-            result.append({
-                "employee_id": emp.employee_id,
-                "employee_name": emp.name,
-                "designation": emp.designation,
-                "working_days": payroll.working_days,
-                "present_days": payroll.present_days,
-                "absent_days": payroll.absent_days,
-                "leave_days": payroll.leave_days,
-                "lop_days": payroll.lop_days,
-                "on_duty_days": payroll.on_duty_days,
-                "basic_salary": float(payroll.basic_salary or 0),
-                "total_earnings": float(payroll.total_earnings or 0),
-                "total_deductions": float(payroll.total_deductions or 0),
-                "net_salary": float(payroll.net_salary or 0),
-                "status": payroll.status,
-            })
+    for payroll in records:
+        emp = payroll.employee
+        if not emp: continue
+        result.append({
+            "employee_id": emp.employee_id,
+            "employee_name": emp.name,
+            "designation": emp.designation,
+            "working_days": payroll.working_days,
+            "present_days": payroll.present_days,
+            "absent_days": payroll.absent_days,
+            "leave_days": payroll.leave_days,
+            "lop_days": payroll.lop_days,
+            "on_duty_days": payroll.on_duty_days,
+            "basic_salary": float(payroll.basic_salary or 0),
+            "total_earnings": float(payroll.total_earnings or 0),
+            "total_deductions": float(payroll.total_deductions or 0),
+            "net_salary": float(payroll.net_salary or 0),
+            "status": payroll.status,
+        })
     return result
 
 @router.get("/payroll-export/excel")
@@ -183,24 +188,17 @@ def payroll_export_excel(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    employees = _get_employees(db, branch_id)
+    q = db.query(HRPayrollRecord).join(HREmployee, HRPayrollRecord.employee_id == HREmployee.id).filter(
+        HRPayrollRecord.month == month,
+        HRPayrollRecord.year == year
+    )
+    if branch_id:
+        q = q.filter(HREmployee.branch_id == branch_id)
+    payroll_records = q.all()
+
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = f"Payroll {month}-{year}"
-
-    if not employees:
-        buf = io.BytesIO()
-        wb.save(buf); buf.seek(0)
-        filename = f"payroll_{year}_{str(month).zfill(2)}.xlsx"
-        return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                 headers={"Content-Disposition": f"attachment; filename={filename}"})
-
-    emp_map = {emp.id: emp for emp in employees}
-    payroll_records = db.query(HRPayrollRecord).filter(
-        HRPayrollRecord.employee_id.in_(list(emp_map.keys())),
-        HRPayrollRecord.month == month,
-        HRPayrollRecord.year == year
-    ).all()
 
     if not payroll_records:
         headers = ["Emp ID", "Name", "Designation", "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty", "Basic", "Earnings", "Deductions", "Net Salary"]
@@ -216,7 +214,7 @@ def payroll_export_excel(
         return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                                  headers={"Content-Disposition": f"attachment; filename={filename}"})
 
-    # Gather all unique dynamic keys across all payroll records in this batch
+    emp_map = {pr.employee_id: pr.employee for pr in payroll_records if pr.employee}
     all_regular_earning_keys = set()
     all_arrear_earning_keys = set()
     all_deduction_keys = set()
@@ -277,8 +275,11 @@ def payroll_export_excel(
         cell.fill = header_fill
         cell.alignment = Alignment(horizontal="center")
 
-    for row_num, pr in enumerate(payroll_records, 2):
-        emp = emp_map[pr.employee_id]
+    row_num = 2
+    for pr in payroll_records:
+        emp = emp_map.get(pr.employee_id)
+        if not emp:
+            continue
         breakdown = pr.components_breakdown or {}
         earnings = breakdown.get('earnings', {})
         deductions = breakdown.get('deductions', {})
@@ -333,6 +334,7 @@ def payroll_export_excel(
             if isinstance(val, (int, float)) and header not in ["Emp ID", "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty"]:
                 cell.number_format = '#,##0.00'
                 cell.alignment = Alignment(horizontal="right")
+        row_num += 1
 
     buf = io.BytesIO()
     wb.save(buf); buf.seek(0)
