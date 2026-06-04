@@ -204,7 +204,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             for h in pending_holds
         ])
         pending_holds_html = f"""
-            <div class="section-title" style="background:#fff7ed;border-left-color:#d97706;color:#92400e;margin-top:10px;">Pending Salary Holds (Informational — Not Deducted This Month)</div>
+            <div class="section-title" style="background:#fff7ed;border-left-color:#d97706;color:#92400e;margin-top:10px;">Pending Salary Holds (Informational - Not Deducted This Month)</div>
             <table class="comp-tbl" style="width:100%;border-collapse:collapse;">
                 <thead>
                     <tr style="background:#fff7ed;font-weight:bold;color:#92400e;">
