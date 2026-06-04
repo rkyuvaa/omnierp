@@ -496,6 +496,8 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
         paid_list = [(float(a.amount_held or 0), a.remarks, a.held_month, a.held_year) for a in arrears_paid_records]
 
         if not emp.is_active and not held_list and not paid_list:
+            if existing and existing.status == "draft":
+                db.delete(existing)
             results.append({"employee_id": emp_id, "status": "skipped", "reason": "Inactive and has no arrears"})
             continue
 
