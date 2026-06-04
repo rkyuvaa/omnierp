@@ -315,6 +315,8 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
                 </tr>
             </table>
 
+            {pending_holds_html}
+
             <!-- NET PAY -->
             <table class="net-tbl">
                 <tr>
@@ -327,7 +329,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             </table>
 
             {leave_section_html}
-            {pending_holds_html}
+            
             
             <div class="footer-note">
                 {footer_text}<br>
