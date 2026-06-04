@@ -37,6 +37,7 @@ class EmployeeCreate(BaseModel):
     esi_number: Optional[str] = None
 
 class EmployeeUpdate(BaseModel):
+    employee_id: Optional[str] = None
     name: Optional[str] = None
     email: Optional[str] = None
     phone: Optional[str] = None
@@ -190,6 +191,12 @@ def update_employee(
     emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
     if not emp:
         raise HTTPException(404, "Employee not found")
+        
+    if data.employee_id and data.employee_id != emp.employee_id:
+        existing = db.query(HREmployee).filter(HREmployee.employee_id == data.employee_id).first()
+        if existing:
+            raise HTTPException(400, "Employee ID already exists")
+            
     for k, v in data.model_dump(exclude_none=True).items():
         setattr(emp, k, v)
     db.commit(); db.refresh(emp)
