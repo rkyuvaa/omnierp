@@ -570,8 +570,17 @@ export default function AdminUsers() {
             <Shield size={14} /> Roles
           </button>
         </div>
-        <div className="toolbar-right">
-          {view === 'users' && <button className="btn btn-primary btn-sm" onClick={openNew}><Plus size={14} /> New User</button>}
+        <div className="toolbar-right" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {view === 'users' && (
+            <>
+              <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)', marginRight: 4 }}>
+                Total Users: {users.length}
+              </span>
+              <button className="btn btn-primary btn-sm" onClick={openNew}>
+                <Plus size={14} /> New User
+              </button>
+            </>
+          )}
           {view === 'departments' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', is_active: true }); setModalEditing(null); setModalMode('dept'); setModal(true); }}><Plus size={14} /> New Dept</button>}
           {view === 'branches' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', address: '', latitude: '', longitude: '', radius: 100, is_active: true }); setModalEditing(null); setModalMode('branch'); setModal(true); }}><Plus size={14} /> New Branch</button>}
           {view === 'roles' && <button className="btn btn-primary btn-sm" onClick={() => { setModalForm({ name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false } }); setModalEditing(null); setModalMode('role'); setModal(true); }}><Plus size={14} /> New Role</button>}
