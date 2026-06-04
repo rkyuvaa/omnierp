@@ -796,6 +796,16 @@ class ArrearPayRequest(BaseModel):
     pay_month: int
     pay_year: int
 
+class ArrearManualRequest(BaseModel):
+    employee_id: int
+    amount: float
+    type: str  # "add" or "deduct"
+    target_month: int
+    target_year: int
+    original_month: Optional[int] = None
+    original_year: Optional[int] = None
+    remarks: Optional[str] = None
+
 @router.post("/arrears/hold")
 def hold_arrear(data: ArrearHoldRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     arrear = HRArrearRecord(
@@ -809,6 +819,37 @@ def hold_arrear(data: ArrearHoldRequest, db: Session = Depends(get_db), current_
     db.add(arrear)
     db.commit()
     return {"message": "Arrear held successfully", "arrear_id": arrear.id}
+
+@router.post("/arrears/manual")
+def manual_arrear(data: ArrearManualRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    if data.type == "add":
+        orig_m = data.original_month or data.target_month
+        orig_y = data.original_year or data.target_year
+        arrear = HRArrearRecord(
+            employee_id=data.employee_id,
+            held_month=orig_m,
+            held_year=orig_y,
+            amount_held=data.amount,
+            status="paid",
+            paid_in_month=data.target_month,
+            paid_in_year=data.target_year,
+            remarks=data.remarks
+        )
+    elif data.type == "deduct":
+        arrear = HRArrearRecord(
+            employee_id=data.employee_id,
+            held_month=data.target_month,
+            held_year=data.target_year,
+            amount_held=data.amount,
+            status="held",
+            remarks=data.remarks
+        )
+    else:
+        raise HTTPException(400, "Invalid type. Must be 'add' or 'deduct'")
+        
+    db.add(arrear)
+    db.commit()
+    return {"message": f"Arrear manual {data.type} created successfully", "arrear_id": arrear.id}
 
 @router.post("/arrears/pay")
 def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
@@ -895,6 +936,8 @@ def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Ses
         "held_month": a.held_month,
         "held_year": a.held_year,
         "status": a.status,
+        "paid_in_month": a.paid_in_month,
+        "paid_in_year": a.paid_in_year,
         "remarks": a.remarks
     } for a in arrears]
 

@@ -498,10 +498,14 @@ export default function Payroll() {
 function ArrearsModal({ data, month, year, onClose, onRefresh }) {
   const [pending, setPending] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [holdAmount, setHoldAmount] = useState('');
+  const [entryType, setEntryType] = useState('deduct'); // 'add' (payout) or 'deduct' (hold)
+  const [amount, setAmount] = useState('');
   const [remarks, setRemarks] = useState('');
+  const [targetMonth, setTargetMonth] = useState(month);
+  const [targetYear, setTargetYear] = useState(year);
+  const [origMonth, setOrigMonth] = useState(month);
+  const [origYear, setOrigYear] = useState(year);
   const [saving, setSaving] = useState(false);
-  const [selectedArrears, setSelectedArrears] = useState([]);
   const [payingArrearId, setPayingArrearId] = useState(null);
   const [payoutAmount, setPayoutAmount] = useState('');
 
@@ -517,22 +521,28 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
     finally { setLoading(false); }
   }
 
-  async function handleHold() {
-    if (!holdAmount || holdAmount <= 0) return toast.error('Enter valid amount');
+  async function handleManualSave() {
+    const amt = parseFloat(amount);
+    if (!amt || amt <= 0) return toast.error('Enter valid amount');
     setSaving(true);
     try {
-      await api.post('/hr/payroll/arrears/hold', {
+      await api.post('/hr/payroll/arrears/manual', {
         employee_id: data.employee_id,
-        amount: parseFloat(holdAmount),
-        month, year, remarks
+        amount: amt,
+        type: entryType,
+        target_month: parseInt(targetMonth),
+        target_year: parseInt(targetYear),
+        original_month: entryType === 'add' ? parseInt(origMonth) : null,
+        original_year: entryType === 'add' ? parseInt(origYear) : null,
+        remarks: remarks
       });
-      toast.success('Salary held as arrear');
-      setHoldAmount(''); setRemarks('');
+      toast.success(entryType === 'add' ? 'Arrear payout added' : 'Salary held (deduction added)');
+      setAmount(''); setRemarks('');
       fetchPending();
       onRefresh();
     } catch (err) { 
       const detail = err.response?.data?.detail;
-      const msg = Array.isArray(detail) ? detail[0]?.msg : (typeof detail === 'string' ? detail : 'Failed to hold salary');
+      const msg = Array.isArray(detail) ? detail[0]?.msg : (typeof detail === 'string' ? detail : 'Failed to save entry');
       toast.error(msg); 
     }
     finally { setSaving(false); }
@@ -565,7 +575,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
   }
 
   async function handleRevert(arrearId) {
-    if (!confirm('Revert this payout? It will be moved back to held status and removed from this month\'s salary.')) return;
+    if (!confirm('Revert this payout? It will be moved back to held status and removed from this month\'s payroll.')) return;
     setSaving(true);
     try {
       await api.post(`/hr/payroll/arrears/revert/${arrearId}`);
@@ -621,7 +631,13 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                             {a.status}
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: 'var(--text3)' }}>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</div>
+                        <div style={{ fontSize: 11, color: 'var(--text3)' }}>
+                          {a.status === 'paid' ? (
+                            <>Paid in {MONTH_NAMES[a.paid_in_month - 1]} {a.paid_in_year} (from {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
+                          ) : (
+                            <>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</>
+                          )}
+                        </div>
                         {a.remarks && <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>Note: {a.remarks}</div>}
                       </div>
                       <div style={{ display: 'flex', gap: 4 }}>
@@ -689,42 +705,116 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
 
           <div style={{ height: 1, background: 'var(--border)', margin: '24px 0' }} />
 
-          {/* Hold Salary Section */}
+          {/* Manual Adjustment Section */}
           <div>
             <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-              <Plus size={14} /> Hold Salary (Create Arrear)
+              <Plus size={14} /> Manual Arrear Entry (Add / Deduct)
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Amount to Hold (₹)</label>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Adjustment Type</label>
+                <select 
+                  value={entryType} 
+                  onChange={e => setEntryType(e.target.value)} 
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14, cursor: 'pointer' }}
+                >
+                  <option value="deduct">Deduct from Payroll (Hold Salary)</option>
+                  <option value="add">Add to Payroll (Arrear Payout)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Amount (₹)</label>
                 <input 
                   type="number" 
-                  value={holdAmount} 
-                  onChange={e => setHoldAmount(e.target.value)} 
+                  value={amount} 
+                  onChange={e => setAmount(e.target.value)} 
                   placeholder="0.00" 
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} 
                 />
               </div>
+
+              <div style={{ display: 'flex', gap: 8 }}>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Target Month</label>
+                  <select 
+                    value={targetMonth} 
+                    onChange={e => setTargetMonth(parseInt(e.target.value))} 
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
+                  >
+                    {MONTH_NAMES.map((name, i) => (
+                      <option key={name} value={i + 1}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Target Year</label>
+                  <select 
+                    value={targetYear} 
+                    onChange={e => setTargetYear(parseInt(e.target.value))} 
+                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
+                  >
+                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                      <option key={y} value={y}>{y}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              {entryType === 'add' && (
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Original Period (Arrear month being paid)</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <div style={{ flex: 1 }}>
+                      <select 
+                        value={origMonth} 
+                        onChange={e => setOrigMonth(parseInt(e.target.value))} 
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
+                      >
+                        {MONTH_NAMES.map((name, i) => (
+                          <option key={name} value={i + 1}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <select 
+                        value={origYear} 
+                        onChange={e => setOrigYear(parseInt(e.target.value))} 
+                        style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
+                      >
+                        {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Remarks (Optional)</label>
                 <input 
                   type="text" 
                   value={remarks} 
                   onChange={e => setRemarks(e.target.value)} 
-                  placeholder="Reason for holding salary..." 
+                  placeholder={entryType === 'add' ? "e.g. Arrear adjustment for performance bonus" : "e.g. Salary held for clearance"} 
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} 
                 />
               </div>
+
               <button 
-                onClick={handleHold} 
+                onClick={handleManualSave} 
                 disabled={saving} 
                 className="btn btn-primary" 
-                style={{ width: '100%', background: '#6366f1', fontSize: 13, height: 38, border: 'none' }}
+                style={{ width: '100%', background: '#6366f1', fontSize: 13, height: 38, border: 'none', marginTop: 4 }}
               >
-                {saving ? 'Holding...' : 'Hold This Amount'}
+                {saving ? 'Saving...' : 'Save Entry'}
               </button>
               <div style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'center', fontStyle: 'italic' }}>
-                Held amount will be deducted from {MONTH_NAMES[month-1]} payout.
+                {entryType === 'add' 
+                  ? `Amount will be paid (added to earnings) in the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll.`
+                  : `Amount will be held (deducted from earnings) in the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll.`
+                }
               </div>
             </div>
           </div>
