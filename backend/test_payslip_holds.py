@@ -33,6 +33,12 @@ for r in recs:
             pdf_bytes = _generate_payslip_pdf_bytes(r, db)
             print(f"  PDF Generated Successfully: {len(pdf_bytes)} bytes")
             
+            # Save the PDF to a scratch file so the user can look at it
+            pdf_scratch_path = "scratch_nickendra_payslip.pdf"
+            with open(pdf_scratch_path, "wb") as f:
+                f.write(pdf_bytes)
+            print(f"  Saved PDF structure to {pdf_scratch_path}")
+            
             # Let's manually generate HTML to print/verify contents
             from app.utils.pdf import generate_payslip_html
             from app.routers.hr_payroll import MONTH_NAMES
