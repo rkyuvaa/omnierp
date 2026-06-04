@@ -28,7 +28,7 @@ export default function Payroll() {
 
   useEffect(() => {
     if (isHRAdmin) {
-      api.get('/hr/employees/', { params: { is_active: true } }).then(r => setEmployees(r.data));
+      api.get('/hr/employees/').then(r => setEmployees(r.data));
     }
   }, [user, isHRAdmin]);
 
@@ -49,15 +49,21 @@ export default function Payroll() {
   async function fetchPayroll() {
     setLoading(true);
     try {
-      const res = await api.get('/hr/payroll/', { params: { month, year } });
-      setRecords(res.data);
+      const [payrollRes, pendingRes] = await Promise.all([
+        api.get('/hr/payroll/', { params: { month, year } }),
+        api.get('/hr/payroll/arrears/pending-list')
+      ]);
+      setRecords(payrollRes.data);
+      setPendingList(pendingRes.data);
       setSelected([]);
     } catch { toast.error('Failed to load payroll'); }
     finally { setLoading(false); }
   }
 
   async function generatePayroll() {
-    const toGenerate = selected.length > 0 ? selected : employees.map(e => e.id);
+    const pendingArrearEmpIds = pendingList.map(p => p.employee_id);
+    const targetEmployees = employees.filter(e => e.is_active || pendingArrearEmpIds.includes(e.id));
+    const toGenerate = selected.length > 0 ? selected : targetEmployees.map(e => e.id);
     if (toGenerate.length === 0) return toast.error('No employees to generate for');
     setGenerating(true);
     try {
@@ -239,7 +245,9 @@ export default function Payroll() {
                 >
                   <option value=''>All Employees</option>
                   {employees.map(e => (
-                    <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>
+                    <option key={e.id} value={e.id}>
+                      {e.is_active ? '' : '[Inactive] '}{e.name} ({e.employee_id})
+                    </option>
                   ))}
                 </select>
               )}

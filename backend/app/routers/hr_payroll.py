@@ -161,6 +161,61 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     # arrears_held_list/arrears_paid_list should be list of (amount, remarks)
     arrears_held_list = arrears_held_list or []
     arrears_paid_list = arrears_paid_list or []
+    
+    if not employee.is_active:
+        earnings = {}
+        deductions = {}
+        employer_contributions = {}
+        
+        # Apply held list (deductions)
+        for item in arrears_held_list:
+            if len(item) == 3:
+                amt, rem, status = item
+            else:
+                amt, rem = item
+                status = "held"
+                
+            if amt > 0:
+                if status == "one_time":
+                    label = rem.strip() if rem and len(rem.strip()) > 0 else "One-time Deduction"
+                else:
+                    label = "Salary Held (Arrears)"
+                deductions[label] = round(deductions.get(label, 0) + amt, 2)
+                
+        # Apply paid list (earnings / arrears payable)
+        for amt, rem, h_month, h_year in arrears_paid_list:
+            if amt > 0:
+                m_name = MONTH_NAMES[h_month] if 0 < h_month < 13 else "Arrear"
+                label = f"Arrear Payout ({m_name} {h_year})"
+                earnings[label] = round(earnings.get(label, 0) + amt, 2)
+                
+        arrears_held_total = sum(a[0] for a in arrears_held_list)
+        arrears_paid_total = sum(a[0] for a in arrears_paid_list)
+        
+        total_earnings = round(sum(earnings.values()), 2)
+        total_deductions = round(sum(deductions.values()), 2)
+        net_salary = round(total_earnings - total_deductions, 2)
+        
+        return {
+            "working_days": 0,
+            "present_days": 0,
+            "absent_days": 0,
+            "leave_days": 0,
+            "lop_days": 0,
+            "on_duty_days": 0,
+            "basic_salary": 0,
+            "total_earnings": total_earnings,
+            "total_deductions": total_deductions,
+            "net_salary": net_salary,
+            "arrears_held": arrears_held_total,
+            "arrears_paid": arrears_paid_total,
+            "components_breakdown": {
+                "earnings": earnings,
+                "deductions": deductions,
+                "employer_contributions": employer_contributions
+            },
+        }
+
     emp = employee
     ctc = float(emp.basic_salary or 0)
     components = _resolve_components(db, emp)
@@ -439,6 +494,10 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
             HRArrearRecord.status == "paid"
         ).all()
         paid_list = [(float(a.amount_held or 0), a.remarks, a.held_month, a.held_year) for a in arrears_paid_records]
+
+        if not emp.is_active and not held_list and not paid_list:
+            results.append({"employee_id": emp_id, "status": "skipped", "reason": "Inactive and has no arrears"})
+            continue
 
         calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, held_list, paid_list)
 
