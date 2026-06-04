@@ -69,7 +69,7 @@ def num_to_words(n: float) -> str:
     return ' '.join(parts)
 
 
-def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None, uan: str = '-', leave_summary: list = None, esi_number: str = '-') -> str:
+def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg: dict, fields_config: list = None, uan: str = '-', leave_summary: list = None, esi_number: str = '-', pending_holds: list = None) -> str:
     company_name    = 'Konwert India Motors Private Limited'
     company_address = 'SF No 237/1B2, Near PSBB School Vadavalli, Coimbatore - 641108'
     company_gstin   = '33AAHCK7681B1ZL'
@@ -191,6 +191,38 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             </table>
         """
 
+    # ── Pending Salary Holds section ───────────────────────────────────────────
+    pending_holds_html = ""
+    if pending_holds:
+        holds_total = sum(h["amount"] for h in pending_holds)
+        hold_rows_html = "".join([
+            f"""<tr>
+                <td style="padding:5px 8px;border:1px solid #e2e8f0;">{h['month']} {h['year']}</td>
+                <td style="padding:5px 8px;border:1px solid #e2e8f0;">{h['remarks']}</td>
+                <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:right;color:#dc2626;font-weight:600;">Rs. {h['amount']:,.2f}</td>
+            </tr>"""
+            for h in pending_holds
+        ])
+        pending_holds_html = f"""
+            <div class="section-title" style="background:#fff7ed;border-left-color:#d97706;color:#92400e;margin-top:10px;">Pending Salary Holds (Informational — Not Deducted This Month)</div>
+            <table class="comp-tbl" style="width:100%;border-collapse:collapse;">
+                <thead>
+                    <tr style="background:#fff7ed;font-weight:bold;color:#92400e;">
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;width:20%;">Period</td>
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;width:50%;">Remarks</td>
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;font-weight:bold;text-align:right;width:30%;">Amount Held</td>
+                    </tr>
+                </thead>
+                <tbody>
+                    {hold_rows_html}
+                    <tr style="font-weight:bold;background:#fef3c7;">
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;" colspan="2">TOTAL PENDING SALARY HOLD</td>
+                        <td style="padding:5px 8px;border:1px solid #e2e8f0;text-align:right;color:#dc2626;">Rs. {holds_total:,.2f}</td>
+                    </tr>
+                </tbody>
+            </table>
+        """
+
     html = f"""
     <html>
     <head><meta charset="utf-8"/><style>{css}</style></head>
@@ -295,6 +327,7 @@ def generate_payslip_html(record, employee, month_name: str, year: int, pdf_cfg:
             </table>
 
             {leave_section_html}
+            {pending_holds_html}
             
             <div class="footer-note">
                 {footer_text}<br>

@@ -788,6 +788,22 @@ def _generate_payslip_pdf_bytes(record, db: Session):
             "balance": remaining
         })
 
+    # Fetch all PENDING held arrears for this employee (across all months)
+    # These are informational — not re-deducted, just shown in payslip for reference.
+    all_pending_holds = db.query(HRArrearRecord).filter(
+        HRArrearRecord.employee_id == employee.id,
+        HRArrearRecord.status == "held"
+    ).order_by(HRArrearRecord.held_year, HRArrearRecord.held_month).all()
+    pending_holds = [
+        {
+            "month": MONTH_NAMES[a.held_month] if 0 < a.held_month < 13 else "?",
+            "year": a.held_year,
+            "amount": float(a.amount_held or 0),
+            "remarks": a.remarks or ""
+        }
+        for a in all_pending_holds if float(a.amount_held or 0) > 0
+    ]
+
     html = generate_payslip_html(
         record, 
         employee, 
@@ -797,7 +813,8 @@ def _generate_payslip_pdf_bytes(record, db: Session):
         fields_config, 
         uan=employee.uan or "-", 
         leave_summary=leave_summary,
-        esi_number=employee.esi_number or "-"
+        esi_number=employee.esi_number or "-",
+        pending_holds=pending_holds
     )
     return render_to_pdf(html)
 
