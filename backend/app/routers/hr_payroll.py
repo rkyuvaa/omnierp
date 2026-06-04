@@ -661,6 +661,64 @@ def _generate_payslip_pdf_bytes(record, db: Session):
 
     month_name = MONTH_NAMES[record.month]
 
+    # ── Live arrear merge ──────────────────────────────────────────────────────
+    # Always re-read live arrear data from DB so the payslip reflects the
+    # current state, even if payroll was generated before an arrear was updated.
+    breakdown = dict(record.components_breakdown or {})
+    live_earnings = dict(breakdown.get("earnings", {}))
+    live_deductions = dict(breakdown.get("deductions", {}))
+
+    # Held / one-time arrears for THIS month (deductions)
+    live_held = db.query(HRArrearRecord).filter(
+        HRArrearRecord.employee_id == employee.id,
+        HRArrearRecord.held_month == record.month,
+        HRArrearRecord.held_year == record.year,
+        HRArrearRecord.status.in_(["held", "one_time"])
+    ).all()
+    for a in live_held:
+        amt = float(a.amount_held or 0)
+        if amt <= 0:
+            continue
+        if a.status == "one_time":
+            label = (a.remarks or "").strip() or "One-time Deduction"
+        else:
+            label = "Salary Held (Arrears)"
+        live_deductions[label] = round(live_deductions.get(label, 0) + amt, 2)
+
+    # Paid arrears for THIS month (earnings / arrear payouts)
+    live_paid = db.query(HRArrearRecord).filter(
+        HRArrearRecord.employee_id == employee.id,
+        HRArrearRecord.paid_in_month == record.month,
+        HRArrearRecord.paid_in_year == record.year,
+        HRArrearRecord.status == "paid"
+    ).all()
+    for a in live_paid:
+        amt = float(a.amount_held or 0)
+        if amt <= 0:
+            continue
+        h_month = a.held_month or 0
+        h_year = a.held_year or 0
+        m_name = MONTH_NAMES[h_month] if 0 < h_month < 13 else "Arrear"
+        label = f"Arrear Payout ({m_name} {h_year})"
+        live_earnings[label] = round(live_earnings.get(label, 0) + amt, 2)
+
+    # Rebuild a fresh record-like object with merged breakdown so pdf.py uses it
+    class _PatchedRecord:
+        pass
+    patched = _PatchedRecord()
+    patched.__dict__.update(record.__dict__)
+    patched.components_breakdown = {
+        "earnings": live_earnings,
+        "deductions": live_deductions,
+        "employer_contributions": breakdown.get("employer_contributions", {}),
+    }
+    # Recompute totals so NET PAY reflects live data
+    patched.total_earnings = round(sum(live_earnings.values()), 2)
+    patched.total_deductions = round(sum(live_deductions.values()), 2)
+    patched.net_salary = round(patched.total_earnings - patched.total_deductions, 2)
+    record = patched
+    # ──────────────────────────────────────────────────────────────────────────
+
     # Calculate leave details for the current month
     start_date = date(record.year, record.month, 1)
     end_date = date(record.year, record.month, monthrange(record.year, record.month)[1])
