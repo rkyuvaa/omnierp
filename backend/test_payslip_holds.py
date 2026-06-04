@@ -7,6 +7,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 os.chdir(os.path.dirname(__file__))
 
 from app.database import SessionLocal
+import app.models
 from app.hr_models import HRArrearRecord, HRPayrollRecord, HREmployee
 
 db = SessionLocal()
