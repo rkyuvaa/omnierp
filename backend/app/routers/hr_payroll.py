@@ -664,17 +664,43 @@ def _generate_payslip_pdf_bytes(record, db: Session):
     # ── Live arrear merge ──────────────────────────────────────────────────────
     # Always re-read live arrear data from DB so the payslip reflects the
     # current state, even if payroll was generated before an arrear was updated.
+    # IMPORTANT: First fetch live DB records, then STRIP their equivalent labels
+    # from the stored breakdown before re-adding, to avoid double-counting.
     breakdown = dict(record.components_breakdown or {})
-    live_earnings = dict(breakdown.get("earnings", {}))
-    live_deductions = dict(breakdown.get("deductions", {}))
 
-    # Held / one-time arrears for THIS month (deductions)
+    # ── Step 1: Fetch live arrear records from DB ──────────────────────────────
     live_held = db.query(HRArrearRecord).filter(
         HRArrearRecord.employee_id == employee.id,
         HRArrearRecord.held_month == record.month,
         HRArrearRecord.held_year == record.year,
         HRArrearRecord.status.in_(["held", "one_time"])
     ).all()
+
+    live_paid = db.query(HRArrearRecord).filter(
+        HRArrearRecord.employee_id == employee.id,
+        HRArrearRecord.paid_in_month == record.month,
+        HRArrearRecord.paid_in_year == record.year,
+        HRArrearRecord.status == "paid"
+    ).all()
+
+    # ── Step 2: Build the set of labels that will come from DB ─────────────────
+    # Remove these labels from the stored breakdown first (prevents double-count).
+    db_deduction_labels = set()
+    for a in live_held:
+        if a.status == "one_time":
+            db_deduction_labels.add((a.remarks or "").strip() or "One-time Deduction")
+        else:
+            db_deduction_labels.add("Salary Held (Arrears)")
+
+    # "Arrear Payout (*)" entries in earnings are also always from DB
+    stored_earnings = breakdown.get("earnings", {})
+    stored_deductions = breakdown.get("deductions", {})
+
+    # ── Step 3: Start with stored data minus any arrear-derived entries ─────────
+    live_earnings = {k: v for k, v in stored_earnings.items() if "Arrear Payout" not in k}
+    live_deductions = {k: v for k, v in stored_deductions.items() if k not in db_deduction_labels}
+
+    # ── Step 4: Re-add fresh arrear data from DB ───────────────────────────────
     for a in live_held:
         amt = float(a.amount_held or 0)
         if amt <= 0:
@@ -685,13 +711,6 @@ def _generate_payslip_pdf_bytes(record, db: Session):
             label = "Salary Held (Arrears)"
         live_deductions[label] = round(live_deductions.get(label, 0) + amt, 2)
 
-    # Paid arrears for THIS month (earnings / arrear payouts)
-    live_paid = db.query(HRArrearRecord).filter(
-        HRArrearRecord.employee_id == employee.id,
-        HRArrearRecord.paid_in_month == record.month,
-        HRArrearRecord.paid_in_year == record.year,
-        HRArrearRecord.status == "paid"
-    ).all()
     for a in live_paid:
         amt = float(a.amount_held or 0)
         if amt <= 0:
@@ -702,7 +721,7 @@ def _generate_payslip_pdf_bytes(record, db: Session):
         label = f"Arrear Payout ({m_name} {h_year})"
         live_earnings[label] = round(live_earnings.get(label, 0) + amt, 2)
 
-    # Rebuild a fresh record-like object with merged breakdown so pdf.py uses it
+    # ── Step 5: Rebuild record with corrected breakdown ────────────────────────
     class _PatchedRecord:
         pass
     patched = _PatchedRecord()
@@ -712,7 +731,6 @@ def _generate_payslip_pdf_bytes(record, db: Session):
         "deductions": live_deductions,
         "employer_contributions": breakdown.get("employer_contributions", {}),
     }
-    # Recompute totals so NET PAY reflects live data
     patched.total_earnings = round(sum(live_earnings.values()), 2)
     patched.total_deductions = round(sum(live_deductions.values()), 2)
     patched.net_salary = round(patched.total_earnings - patched.total_deductions, 2)
