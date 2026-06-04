@@ -530,13 +530,17 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
         employee_id: data.employee_id,
         amount: amt,
         type: entryType,
-        target_month: parseInt(targetMonth),
-        target_year: parseInt(targetYear),
-        original_month: entryType === 'add' ? parseInt(origMonth) : null,
-        original_year: entryType === 'add' ? parseInt(origYear) : null,
+        target_month: entryType === 'already_paid' ? month : parseInt(targetMonth),
+        target_year: entryType === 'already_paid' ? year : parseInt(targetYear),
+        original_month: (entryType === 'add' || entryType === 'already_paid') ? parseInt(origMonth) : null,
+        original_year: (entryType === 'add' || entryType === 'already_paid') ? parseInt(origYear) : null,
         remarks: remarks
       });
-      toast.success(entryType === 'add' ? 'Arrear payout added' : 'Salary held (deduction added)');
+      toast.success(
+        entryType === 'add' ? 'Arrear payout added' : 
+        entryType === 'already_paid' ? 'Already Paid record logged' : 
+        'Salary held (deduction added)'
+      );
       setAmount(''); setRemarks('');
       fetchPending();
       onRefresh();
@@ -571,6 +575,18 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
       const msg = Array.isArray(detail) ? detail[0]?.msg : (typeof detail === 'string' ? detail : 'Failed to process payout');
       toast.error(msg); 
     }
+    finally { setSaving(false); }
+  }
+
+  async function handleMarkAlreadyPaid(arrearId) {
+    if (!confirm('Mark this arrear as already paid outside standard payroll? This will move it out of pending holds.')) return;
+    setSaving(true);
+    try {
+      await api.post(`/hr/payroll/arrears/already-paid/${arrearId}`);
+      toast.success('Marked as already paid');
+      fetchPending();
+      onRefresh();
+    } catch { toast.error('Failed to update status'); }
     finally { setSaving(false); }
   }
 
@@ -622,36 +638,55 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pending.map(a => (
-                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: a.status === 'paid' ? '#f0f9ff' : 'var(--bg2)', borderRadius: 8, border: a.status === 'paid' ? '1px solid #bae6fd' : '1px solid var(--border)' }}>
+                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: a.status === 'paid' ? '#f0f9ff' : a.status === 'already_paid' ? '#f8fafc' : 'var(--bg2)', borderRadius: 8, border: a.status === 'paid' ? '1px solid #bae6fd' : a.status === 'already_paid' ? '1px solid #cbd5e1' : '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                           <div style={{ fontWeight: 700, fontSize: 13 }}>₹{a.amount_held.toLocaleString()}</div>
-                          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, fontWeight: 700, background: a.status === 'paid' ? '#dcfce7' : '#fef3c7', color: a.status === 'paid' ? '#16a34a' : '#d97706', textTransform: 'uppercase' }}>
-                            {a.status}
+                          <span style={{ 
+                            fontSize: 10, 
+                            padding: '2px 6px', 
+                            borderRadius: 4, 
+                            fontWeight: 700, 
+                            background: a.status === 'paid' ? '#dcfce7' : a.status === 'already_paid' ? '#e2e8f0' : '#fef3c7', 
+                            color: a.status === 'paid' ? '#16a34a' : a.status === 'already_paid' ? '#475569' : '#d97706', 
+                            textTransform: 'uppercase' 
+                          }}>
+                            {a.status === 'already_paid' ? 'already paid' : a.status}
                           </span>
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)' }}>
                           {a.status === 'paid' ? (
                             <>Paid in {MONTH_NAMES[a.paid_in_month - 1]} {a.paid_in_year} (from {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
+                          ) : a.status === 'already_paid' ? (
+                            <>Paid Outside Payroll (from {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
                           ) : (
                             <>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</>
                           )}
                         </div>
                         {a.remarks && <div style={{ fontSize: 10, color: 'var(--accent)', marginTop: 2 }}>Note: {a.remarks}</div>}
                       </div>
-                      <div style={{ display: 'flex', gap: 4 }}>
+                      <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                         {a.status === 'held' ? (
                           payingArrearId !== a.id && (
-                            <button 
-                              onClick={() => { setPayingArrearId(a.id); setPayoutAmount(a.amount_held); }}
-                              disabled={saving}
-                              style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
-                            >
-                              Pay Part/Full
-                            </button>
+                            <>
+                              <button 
+                                onClick={() => { setPayingArrearId(a.id); setPayoutAmount(a.amount_held); }}
+                                disabled={saving}
+                                style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '6px 12px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                Pay Part/Full
+                              </button>
+                              <button 
+                                onClick={() => handleMarkAlreadyPaid(a.id)}
+                                disabled={saving}
+                                style={{ background: 'var(--bg2)', color: 'var(--text2)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}
+                              >
+                                Already Paid
+                              </button>
+                            </>
                           )
-                        ) : (
+                        ) : a.status === 'paid' ? (
                           <button 
                             onClick={() => handleRevert(a.id)}
                             disabled={saving}
@@ -659,7 +694,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                           >
                             Revert
                           </button>
-                        )}
+                        ) : null}
                         <button 
                           onClick={() => handleDelete(a.id)}
                           disabled={saving}
@@ -720,6 +755,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                 >
                   <option value="deduct">Deduct from Payroll (Hold Salary)</option>
                   <option value="add">Add to Payroll (Arrear Payout)</option>
+                  <option value="already_paid">Already Paid (Record Only)</option>
                 </select>
               </div>
 
@@ -734,34 +770,36 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 8 }}>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Target Month</label>
-                  <select 
-                    value={targetMonth} 
-                    onChange={e => setTargetMonth(parseInt(e.target.value))} 
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
-                  >
-                    {MONTH_NAMES.map((name, i) => (
-                      <option key={name} value={i + 1}>{name}</option>
-                    ))}
-                  </select>
+              {entryType !== 'already_paid' && (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Target Month</label>
+                    <select 
+                      value={targetMonth} 
+                      onChange={e => setTargetMonth(parseInt(e.target.value))} 
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
+                    >
+                      {MONTH_NAMES.map((name, i) => (
+                        <option key={name} value={i + 1}>{name}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Target Year</label>
+                    <select 
+                      value={targetYear} 
+                      onChange={e => setTargetYear(parseInt(e.target.value))} 
+                      style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
+                    >
+                      {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
+                        <option key={y} value={y}>{y}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-                <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Target Year</label>
-                  <select 
-                    value={targetYear} 
-                    onChange={e => setTargetYear(parseInt(e.target.value))} 
-                    style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, cursor: 'pointer' }}
-                  >
-                    {[2024, 2025, 2026, 2027, 2028, 2029, 2030].map(y => (
-                      <option key={y} value={y}>{y}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
+              )}
 
-              {entryType === 'add' && (
+              {(entryType === 'add' || entryType === 'already_paid') && (
                 <div>
                   <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'var(--text3)', marginBottom: 4 }}>Original Period (Arrear month being paid)</label>
                   <div style={{ display: 'flex', gap: 8 }}>
@@ -797,7 +835,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                   type="text" 
                   value={remarks} 
                   onChange={e => setRemarks(e.target.value)} 
-                  placeholder={entryType === 'add' ? "e.g. Arrear adjustment for performance bonus" : "e.g. Salary held for clearance"} 
+                  placeholder={entryType === 'add' ? "e.g. Arrear adjustment for performance bonus" : entryType === 'already_paid' ? "e.g. Paid in cash on April 5" : "e.g. Salary held for clearance"} 
                   style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14 }} 
                 />
               </div>
@@ -813,6 +851,8 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
               <div style={{ fontSize: 11, color: 'var(--text3)', textAlign: 'center', fontStyle: 'italic' }}>
                 {entryType === 'add' 
                   ? `Amount will be paid (added to earnings) in the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll.`
+                  : entryType === 'already_paid'
+                  ? `Amount will be recorded as already paid outside standard payroll (will NOT affect future payroll runs).`
                   : `Amount will be held (deducted from earnings) in the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll.`
                 }
               </div>

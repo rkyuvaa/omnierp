@@ -844,12 +844,38 @@ def manual_arrear(data: ArrearManualRequest, db: Session = Depends(get_db), curr
             status="held",
             remarks=data.remarks
         )
+    elif data.type == "already_paid":
+        orig_m = data.original_month or data.target_month
+        orig_y = data.original_year or data.target_year
+        arrear = HRArrearRecord(
+            employee_id=data.employee_id,
+            held_month=orig_m,
+            held_year=orig_y,
+            amount_held=data.amount,
+            status="already_paid",
+            remarks=data.remarks
+        )
     else:
-        raise HTTPException(400, "Invalid type. Must be 'add' or 'deduct'")
+        raise HTTPException(400, "Invalid type. Must be 'add', 'deduct' or 'already_paid'")
         
     db.add(arrear)
     db.commit()
     return {"message": f"Arrear manual {data.type} created successfully", "arrear_id": arrear.id}
+
+@router.post("/arrears/already-paid/{arrear_id}")
+def mark_arrear_already_paid(arrear_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    arrear = db.query(HRArrearRecord).filter(HRArrearRecord.id == arrear_id).first()
+    if not arrear:
+        raise HTTPException(404, "Arrear record not found")
+    if arrear.status != "held":
+        raise HTTPException(400, "Only pending held arrears can be marked as already paid")
+    
+    arrear.status = "already_paid"
+    # Append to remarks to indicate paid outside standard payroll
+    p_remarks = " [Paid Outside Payroll]"
+    arrear.remarks = (arrear.remarks or "").split(" [")[0] + p_remarks
+    db.commit()
+    return {"message": "Arrear marked as already paid successfully"}
 
 @router.post("/arrears/pay")
 def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
