@@ -539,6 +539,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
       toast.success(
         entryType === 'add' ? 'Arrear payout added' : 
         entryType === 'already_paid' ? 'Already Paid record logged' : 
+        entryType === 'one_time' ? 'One-time deduction added' :
         'Salary held (deduction added)'
       );
       setAmount(''); setRemarks('');
@@ -638,7 +639,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pending.map(a => (
-                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: a.status === 'paid' ? '#f0f9ff' : a.status === 'already_paid' ? '#f8fafc' : 'var(--bg2)', borderRadius: 8, border: a.status === 'paid' ? '1px solid #bae6fd' : a.status === 'already_paid' ? '1px solid #cbd5e1' : '1px solid var(--border)' }}>
+                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: a.status === 'paid' ? '#f0f9ff' : a.status === 'already_paid' ? '#f8fafc' : a.status === 'one_time' ? '#faf5ff' : 'var(--bg2)', borderRadius: 8, border: a.status === 'paid' ? '1px solid #bae6fd' : a.status === 'already_paid' ? '1px solid #cbd5e1' : a.status === 'one_time' ? '1px solid #e9d5ff' : '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -648,11 +649,11 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                             padding: '2px 6px', 
                             borderRadius: 4, 
                             fontWeight: 700, 
-                            background: a.status === 'paid' ? '#dcfce7' : a.status === 'already_paid' ? '#e2e8f0' : '#fef3c7', 
-                            color: a.status === 'paid' ? '#16a34a' : a.status === 'already_paid' ? '#475569' : '#d97706', 
+                            background: a.status === 'paid' ? '#dcfce7' : a.status === 'already_paid' ? '#e2e8f0' : a.status === 'one_time' ? '#f3e8ff' : '#fef3c7', 
+                            color: a.status === 'paid' ? '#16a34a' : a.status === 'already_paid' ? '#475569' : a.status === 'one_time' ? '#7e22ce' : '#d97706', 
                             textTransform: 'uppercase' 
                           }}>
-                            {a.status === 'already_paid' ? 'already paid' : a.status}
+                            {a.status === 'already_paid' ? 'already paid' : a.status === 'one_time' ? 'one-time' : a.status}
                           </span>
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)' }}>
@@ -660,6 +661,8 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                             <>Paid in {MONTH_NAMES[a.paid_in_month - 1]} {a.paid_in_year} (from {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
                           ) : a.status === 'already_paid' ? (
                             <>Paid Outside Payroll (from {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
+                          ) : a.status === 'one_time' ? (
+                            <>One-time Deduction (Target: {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
                           ) : (
                             <>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</>
                           )}
@@ -756,6 +759,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                   <option value="deduct">Deduct from Payroll (Hold Salary)</option>
                   <option value="add">Add to Payroll (Arrear Payout)</option>
                   <option value="already_paid">Already Paid (Record Only)</option>
+                  <option value="one_time">Deduct (One-time, No carry forward)</option>
                 </select>
               </div>
 
@@ -853,6 +857,8 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                   ? `Amount will be paid (added to earnings) in the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll.`
                   : entryType === 'already_paid'
                   ? `Amount will be recorded as already paid outside standard payroll (will NOT affect future payroll runs).`
+                  : entryType === 'one_time'
+                  ? `Amount will be recorded as a one-time deduction from the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll (will NOT carry forward).`
                   : `Amount will be held (deducted from earnings) in the ${MONTH_NAMES[targetMonth - 1]} ${targetYear} payroll.`
                 }
               </div>

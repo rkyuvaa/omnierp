@@ -335,9 +335,18 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     total_earnings_base = round(sum(earnings.values()), 2)
     
     # 4. Handle Arrears (Add/Subtract after pro-rating)
-    for amt, rem in arrears_held_list:
+    for item in arrears_held_list:
+        if len(item) == 3:
+            amt, rem, status = item
+        else:
+            amt, rem = item
+            status = "held"
+            
         if amt > 0:
-            label = "Salary Held (Arrears)"
+            if status == "one_time":
+                label = rem.strip() if rem and len(rem.strip()) > 0 else "One-time Deduction"
+            else:
+                label = "Salary Held (Arrears)"
             deductions[label] = round(deductions.get(label, 0) + amt, 2)
         
     for amt, rem, h_month, h_year in arrears_paid_list:
@@ -419,9 +428,9 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
             HRArrearRecord.employee_id == emp_id,
             HRArrearRecord.held_month == data.month,
             HRArrearRecord.held_year == data.year,
-            HRArrearRecord.status == "held"
+            HRArrearRecord.status.in_(["held", "one_time"])
         ).all()
-        held_list = [(float(a.amount_held or 0), a.remarks) for a in arrears_held_records]
+        held_list = [(float(a.amount_held or 0), a.remarks, a.status) for a in arrears_held_records]
 
         arrears_paid_records = db.query(HRArrearRecord).filter(
             HRArrearRecord.employee_id == emp_id,
@@ -855,8 +864,17 @@ def manual_arrear(data: ArrearManualRequest, db: Session = Depends(get_db), curr
             status="already_paid",
             remarks=data.remarks
         )
+    elif data.type == "one_time":
+        arrear = HRArrearRecord(
+            employee_id=data.employee_id,
+            held_month=data.target_month,
+            held_year=data.target_year,
+            amount_held=data.amount,
+            status="one_time",
+            remarks=data.remarks
+        )
     else:
-        raise HTTPException(400, "Invalid type. Must be 'add', 'deduct' or 'already_paid'")
+        raise HTTPException(400, "Invalid type. Must be 'add', 'deduct', 'already_paid' or 'one_time'")
         
     db.add(arrear)
     db.commit()
