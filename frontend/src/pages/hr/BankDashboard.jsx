@@ -373,35 +373,7 @@ export default function BankDashboard() {
                   </div>
                 </div>
 
-                {/* Accounts list on dashboard */}
-                {summary.accounts?.length > 0 && (
-                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 16 }}>Bank Accounts</div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
-                      {summary.accounts.map(a => (
-                        <div key={a.id} style={{ border: '1.5px solid var(--border)', borderRadius: 12, padding: '14px 16px' }}>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', marginBottom: 2 }}>{a.account_name}</div>
-                          <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 10 }}>{a.bank_name || '—'}{a.account_number ? ` · ···${a.account_number.slice(-4)}` : ''}</div>
-                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                            <div>
-                              <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginBottom: 2 }}>BALANCE</div>
-                              <div style={{ fontSize: 15, fontWeight: 800, color: '#10b981' }}>{fmt(a.current_balance)}</div>
-                            </div>
-                            <div>
-                              <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginBottom: 2 }}>NET OF LIEN</div>
-                              <div style={{ fontSize: 15, fontWeight: 800, color: '#6366f1' }}>{fmt(a.balance_with_lien)}</div>
-                            </div>
-                          </div>
-                          {a.lien_amount > 0 && (
-                            <div style={{ marginTop: 8, fontSize: 11, color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4 }}>
-                              <Shield size={11} /> Lien: {fmt(a.lien_amount)}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                {/* Accounts list on dashboard (Removed as requested) */}
               </>
             ) : null}
           </div>
