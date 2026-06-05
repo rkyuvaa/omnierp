@@ -33,6 +33,7 @@ import Requests from './pages/hr/Requests';
 import Approvals from './pages/hr/Approvals';
 import Payroll from './pages/hr/Payroll';
 import HRConfigurations from './pages/hr/HRConfigurations';
+import BankDashboard from './pages/hr/BankDashboard';
 import TaskList from './pages/tasks/TaskList';
 
 // Integrated PrivateRoute
@@ -78,6 +79,7 @@ export default function App() {
           <Route path="/hr/approvals" element={<PrivateRoute><Approvals /></PrivateRoute>} />
           <Route path="/hr/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
           <Route path="/hr/configurations" element={<PrivateRoute><HRConfigurations /></PrivateRoute>} />
+          <Route path="/bank/dashboard" element={<PrivateRoute><BankDashboard /></PrivateRoute>} />
           <Route path="/tasks" element={<PrivateRoute><TaskList /></PrivateRoute>} />
         </Routes>
       </AuthProvider>

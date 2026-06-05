@@ -5,7 +5,9 @@ from fastapi.staticfiles import StaticFiles
 import os
 from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin, admin_settings, tasks
 from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions
+from app.routers import bank
 from app.hr_models import *  # register HR models with Base
+from app.bank_models import *  # register Bank models with Base
 from app.hr_scheduler import start_scheduler
 
 
@@ -155,6 +157,7 @@ app.include_router(hr_notifications.router, prefix="/api/hr/notifications", tags
 
 app.include_router(hr_push_subscriptions.router, prefix="/api/hr/push-subscriptions", tags=["HR-Push-Subscriptions"])
 app.include_router(hr_config.router, prefix="/api/hr/config", tags=["HR-Config"])
+app.include_router(bank.router, prefix="/api/bank", tags=["Bank"])
 
 
 

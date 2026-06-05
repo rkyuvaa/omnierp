@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark } from 'lucide-react';
 import { useState } from 'react';
 import TwoFactorSetup from './TwoFactorSetup';
 
@@ -114,9 +114,15 @@ export default function Sidebar({ isOpen, onClose }) {
         </div>
         
         {user?.is_superadmin && (
-          <div style={{marginBottom:24}}>
-            <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Admin</div>
-            {adminItems.map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>)}
+          <div>
+            <div style={{marginBottom:24}}>
+              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Finance</div>
+              <NavItem to='/bank/dashboard' label='Bank Dashboard' icon={Landmark} active={isActive('/bank/dashboard')} onClick={handleNav} />
+            </div>
+            <div style={{marginBottom:24}}>
+              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Admin</div>
+              {adminItems.map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>)}
+            </div>
           </div>
         )}
       </div>
