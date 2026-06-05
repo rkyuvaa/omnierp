@@ -269,8 +269,13 @@ export default function BankDashboard() {
 
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
-          <div>
+          {/* Tabs on the left */}
+          <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', borderRadius: 10, padding: 4, width: 'fit-content', border: '1px solid var(--border)' }}>
+            <button style={tabStyle('dashboard')} onClick={() => setTab('dashboard')}>📊 Overview</button>
+            <button style={tabStyle('transactions')} onClick={() => setTab('transactions')}>📋 Transactions</button>
+            <button style={tabStyle('accounts')} onClick={() => setTab('accounts')}>🏦 Accounts</button>
           </div>
+
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Account filter */}
             <select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '8px 12px', fontSize: 12 }}>
@@ -287,13 +292,6 @@ export default function BankDashboard() {
               <Landmark size={15} /> Add Account
             </button>
           </div>
-        </div>
-
-        {/* Tabs */}
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20, background: 'var(--bg)', borderRadius: 10, padding: 4, width: 'fit-content', border: '1px solid var(--border)' }}>
-          <button style={tabStyle('dashboard')} onClick={() => setTab('dashboard')}>📊 Overview</button>
-          <button style={tabStyle('transactions')} onClick={() => setTab('transactions')}>📋 Transactions</button>
-          <button style={tabStyle('accounts')} onClick={() => setTab('accounts')}>🏦 Accounts</button>
         </div>
 
         {/* ── Dashboard Tab ── */}
