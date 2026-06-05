@@ -194,7 +194,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
         
         total_earnings = round(sum(earnings.values()), 2)
         total_deductions = round(sum(deductions.values()), 2)
-        net_salary = round(total_earnings - total_deductions, 2)
+        net_salary = round(max(0.0, total_earnings - total_deductions), 2)
         
         return {
             "working_days": 0,
@@ -415,7 +415,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
 
     total_earnings = round(sum(earnings.values()), 2)
     total_deductions = round(sum(deductions.values()), 2)
-    net_salary = round(total_earnings - total_deductions, 2)
+    net_salary = round(max(0.0, total_earnings - total_deductions), 2)
 
     return {
         "working_days": total_working_days_in_month,
@@ -733,7 +733,7 @@ def _generate_payslip_pdf_bytes(record, db: Session):
     }
     patched.total_earnings = round(sum(live_earnings.values()), 2)
     patched.total_deductions = round(sum(live_deductions.values()), 2)
-    patched.net_salary = round(patched.total_earnings - patched.total_deductions, 2)
+    patched.net_salary = round(max(0.0, patched.total_earnings - patched.total_deductions), 2)
     record = patched
     # ──────────────────────────────────────────────────────────────────────────
 
