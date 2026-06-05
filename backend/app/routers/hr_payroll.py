@@ -1239,25 +1239,34 @@ def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_u
 
 @router.get("/arrears/pending-list")
 def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    """Return all employees who have pending arrears balance."""
-    # Group by employee to show total pending per person
-    from sqlalchemy import func
-    results = db.query(
-        HRArrearRecord.employee_id,
-        HREmployee.name,
-        HREmployee.employee_id.label("code"),
-        func.sum(HRArrearRecord.amount_held).label("total_pending")
-    ).join(HREmployee, HRArrearRecord.employee_id == HREmployee.id)\
-     .filter(HRArrearRecord.status == "held")\
-     .group_by(HRArrearRecord.employee_id, HREmployee.name, HREmployee.employee_id)\
-     .all()
-     
-    return [{
-        "employee_id": r.employee_id,
-        "name": r.name,
-        "code": r.code,
-        "total_pending": float(r.total_pending or 0)
-    } for r in results]
+    """Return employees with arrears based on active/inactive rules."""
+    # 1. Get all employees who have at least one arrear record
+    employees_with_arrears = db.query(HREmployee).join(
+        HRArrearRecord, HREmployee.id == HRArrearRecord.employee_id
+    ).distinct().all()
+    
+    response_data = []
+    for emp in employees_with_arrears:
+        # 2. Get all arrear records for this employee
+        arrears = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == emp.id).all()
+        
+        # Calculate pending amount (status in ['held', 'one_time'])
+        total_pending = sum(float(a.amount_held or 0) for a in arrears if a.status in ["held", "one_time"])
+        
+        # Apply visibility rules:
+        # - Show all active employees with arrear records
+        # - Show inactive employees only when there is a pending arrear amount > 0
+        if emp.is_active or total_pending > 0:
+            response_data.append({
+                "employee_id": emp.id,
+                "name": emp.name,
+                "code": emp.employee_id,
+                "total_pending": round(total_pending, 2)
+            })
+            
+    # Sort alphabetically by name
+    response_data.sort(key=lambda x: (x["name"] or "").lower())
+    return response_data
 
 @router.get("/arrears/{employee_id}")
 def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
