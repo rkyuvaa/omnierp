@@ -1239,37 +1239,38 @@ def pay_arrears(data: ArrearPayRequest, db: Session = Depends(get_db), current_u
 
 @router.get("/arrears/pending-list")
 def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
-    import traceback
-    try:
-        # 1. Get all employees who have at least one arrear record
-        employees_with_arrears = db.query(HREmployee).join(
-            HRArrearRecord, HREmployee.id == HRArrearRecord.employee_id
-        ).distinct().all()
+    # 1. Get distinct employee IDs from the arrear table to avoid complex join/distinct queries
+    arrear_emp_ids = db.query(HRArrearRecord.employee_id).distinct().all()
+    emp_ids = [r[0] for r in arrear_emp_ids if r[0] is not None]
+    
+    if not emp_ids:
+        return []
         
-        response_data = []
-        for emp in employees_with_arrears:
-            # 2. Get all arrear records for this employee
-            arrears = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == emp.id).all()
+    # 2. Fetch the corresponding employee records
+    employees_with_arrears = db.query(HREmployee).filter(HREmployee.id.in_(emp_ids)).all()
+    
+    response_data = []
+    for emp in employees_with_arrears:
+        # 3. Get all arrear records for this employee
+        arrears = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == emp.id).all()
+        
+        # Calculate pending amount (status in ['held', 'one_time'])
+        total_pending = sum(float(a.amount_held or 0) for a in arrears if a.status in ["held", "one_time"])
+        
+        # Apply visibility rules:
+        # - Show all active employees with arrear records
+        # - Show inactive employees only when there is a pending arrear amount > 0
+        if emp.is_active or total_pending > 0:
+            response_data.append({
+                "employee_id": emp.id,
+                "name": emp.name,
+                "code": emp.employee_id,
+                "total_pending": round(total_pending, 2)
+            })
             
-            # Calculate pending amount (status in ['held', 'one_time'])
-            total_pending = sum(float(a.amount_held or 0) for a in arrears if a.status in ["held", "one_time"])
-            
-            # Apply visibility rules:
-            # - Show all active employees with arrear records
-            # - Show inactive employees only when there is a pending arrear amount > 0
-            if emp.is_active or total_pending > 0:
-                response_data.append({
-                    "employee_id": emp.id,
-                    "name": emp.name,
-                    "code": emp.employee_id,
-                    "total_pending": round(total_pending, 2)
-                })
-                
-        # Sort alphabetically by name
-        response_data.sort(key=lambda x: (x["name"] or "").lower())
-        return response_data
-    except Exception as e:
-        return {"error": str(e), "traceback": traceback.format_exc()}
+    # Sort alphabetically by name
+    response_data.sort(key=lambda x: (x["name"] or "").lower())
+    return response_data
 
 @router.get("/arrears/{employee_id}")
 def get_employee_arrears(employee_id: int, status: Optional[str] = None, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
