@@ -332,18 +332,18 @@ export default function Dashboard() {
     load();
   }, [load]);
 
-  // Calendar events: approved + pending leaves & OD
-  const calendarLeaves = leaves.filter(l => ['approved', 'pending'].includes(l.status));
-  const calendarOd = onduty.filter(o => ['approved', 'pending'].includes(o.status));
+  // Calendar events: approved + pending + auto_approved leaves & OD
+  const calendarLeaves = leaves.filter(l => ['approved', 'pending', 'auto_approved'].includes(l.status));
+  const calendarOd = onduty.filter(o => ['approved', 'pending', 'auto_approved'].includes(o.status));
 
-  // On Duty Today (approved OD records for today)
+  // On Duty Today (approved, auto_approved, & pending OD records for today)
   const onDutyToday = onduty.filter(o =>
-    o.status === 'approved' && o.date === today
+    ['approved', 'auto_approved', 'pending'].includes(o.status) && o.date === today
   );
 
-  // Planned On-Duty (approved upcoming OD records)
+  // Planned On-Duty (approved, auto_approved, & pending upcoming OD records)
   const plannedOnDuty = onduty
-    .filter(o => o.status === 'approved' && o.date > today)
+    .filter(o => ['approved', 'auto_approved', 'pending'].includes(o.status) && o.date > today)
     .sort((a, b) => a.date.localeCompare(b.date));
 
   if (loading) {
@@ -436,13 +436,28 @@ export default function Dashboard() {
                           width: 8,
                           height: 8,
                           borderRadius: '50%',
-                          background: '#10b981',
+                          background: o.status === 'pending' ? '#f59e0b' : '#10b981',
                           border: '1.5px solid var(--bg2)'
                         }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {o.employee_name}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {o.employee_name}
+                          </span>
+                          {o.status === 'pending' && (
+                            <span style={{
+                              fontSize: 9,
+                              fontWeight: 700,
+                              background: '#fef3c7',
+                              color: '#92400e',
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              textTransform: 'uppercase'
+                            }}>
+                              Pending
+                            </span>
+                          )}
                         </div>
                         <div style={{ fontSize: 10, color: 'var(--text3)' }}>
                           {formatTime(o.from_time)} – {formatTime(o.to_time)}
@@ -508,8 +523,23 @@ export default function Dashboard() {
                     <div key={o.id} className="emp-row" style={{ gap: 8 }}>
                       <Avatar name={o.employee_name} color={c} size={28} />
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          {o.employee_name}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                            {o.employee_name}
+                          </span>
+                          {o.status === 'pending' && (
+                            <span style={{
+                              fontSize: 9,
+                              fontWeight: 700,
+                              background: '#fef3c7',
+                              color: '#92400e',
+                              padding: '1px 5px',
+                              borderRadius: 4,
+                              textTransform: 'uppercase'
+                            }}>
+                              Pending
+                            </span>
+                          )}
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text3)' }}>
                           <Clock size={9} />
