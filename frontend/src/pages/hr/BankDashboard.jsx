@@ -270,10 +270,6 @@ export default function BankDashboard() {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Landmark size={24} color="#6366f1" /> Bank Dashboard
-            </h1>
-            <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text3)' }}>CEO-level banking authorization overview</p>
           </div>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Account filter */}
