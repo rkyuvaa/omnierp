@@ -1257,10 +1257,8 @@ def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Dep
         # Calculate pending amount (status in ['held', 'one_time'])
         total_pending = sum(float(a.amount_held or 0) for a in arrears if a.status in ["held", "one_time"])
         
-        # Apply visibility rules:
-        # - Show all active employees with arrear records
-        # - Show inactive employees only when there is a pending arrear amount > 0
-        if emp.is_active or total_pending > 0:
+        # Show employee only if they have a pending arrear amount > 0
+        if total_pending > 0:
             response_data.append({
                 "employee_id": emp.id,
                 "name": emp.name,
