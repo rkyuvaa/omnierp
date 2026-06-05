@@ -375,12 +375,16 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     # 4. Handle Explicit LOP Deduction if using 'deduction' method
     if calc_method == "deduction" and lop_days > 0 and total_working_days_in_month > 0:
         full_gross_earnings = sum(earnings.values())
-        full_deductions_before_lop = sum(deductions.values())
-        net_pay_before_lop = full_gross_earnings - full_deductions_before_lop
+        
+        # Calculate target net pay (excluding dynamic taxes like PT and TDS for LOP base)
+        fixed_deductions = sum(amt for name, amt in deductions.items() if "PT" not in name.upper() and "PROFESSIONAL TAX" not in name.upper() and "TDS" not in name.upper() and "TAX" not in name.upper())
+        target_net_pay = full_gross_earnings - fixed_deductions
+        
         if lop_calculation_base == "gross":
             lop_deduction = round(full_gross_earnings * (lop_days / total_working_days_in_month), 2)
         elif lop_calculation_base == "net_pay":
-            lop_deduction = round(net_pay_before_lop * (lop_days / total_working_days_in_month), 2)
+            # Use the target net pay (excluding PT/TDS) instead of final net pay
+            lop_deduction = round(target_net_pay * (lop_days / total_working_days_in_month), 2)
         else: # ctc
             lop_deduction = round(ctc * (lop_days / total_working_days_in_month), 2)
             
