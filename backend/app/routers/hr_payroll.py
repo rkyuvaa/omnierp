@@ -579,13 +579,119 @@ def list_payroll(
     return response_data
 
 
+# ── Helper functions for one-time deductions ──
+def _process_one_time_deductions(db: Session, record: HRPayrollRecord):
+    one_time_records = db.query(HRArrearRecord).filter(
+        HRArrearRecord.employee_id == record.employee_id,
+        HRArrearRecord.held_month == record.month,
+        HRArrearRecord.held_year == record.year,
+        HRArrearRecord.status == "one_time"
+    ).all()
+    
+    if not one_time_records:
+        return
+        
+    total_ot = sum(float(r.amount_held or 0) for r in one_time_records)
+    total_other_deductions = max(0.0, float(record.total_deductions or 0) - total_ot)
+    avail_earnings = max(0.0, float(record.total_earnings or 0) - total_other_deductions)
+    
+    for r in one_time_records:
+        amt = float(r.amount_held or 0)
+        if amt <= 0:
+            r.status = "deducted"
+            r.paid_in_month = record.month
+            r.paid_in_year = record.year
+            continue
+            
+        if avail_earnings >= amt:
+            r.status = "deducted"
+            r.paid_in_month = record.month
+            r.paid_in_year = record.year
+            avail_earnings -= amt
+        else:
+            deducted_amt = avail_earnings
+            unpaid_amt = round(amt - deducted_amt, 2)
+            avail_earnings = 0.0
+            
+            if deducted_amt > 0:
+                part_deducted = HRArrearRecord(
+                    employee_id=r.employee_id,
+                    held_month=r.held_month,
+                    held_year=r.held_year,
+                    amount_held=deducted_amt,
+                    status="deducted",
+                    paid_in_month=record.month,
+                    paid_in_year=record.year,
+                    remarks=f"{r.remarks or 'One-time Deduction'} [Partially Deducted]"
+                )
+                db.add(part_deducted)
+                
+            next_month = record.month + 1
+            next_year = record.year
+            if next_month > 12:
+                next_month = 1
+                next_year += 1
+                
+            r.amount_held = unpaid_amt
+            r.held_month = next_month
+            r.held_year = next_year
+            r.remarks = f"{r.remarks or 'One-time Deduction'} [Carried forward: unpaid ₹{unpaid_amt}]"
+
+def _revert_one_time_deductions(db: Session, record: HRPayrollRecord):
+    deducted_records = db.query(HRArrearRecord).filter(
+        HRArrearRecord.employee_id == record.employee_id,
+        HRArrearRecord.paid_in_month == record.month,
+        HRArrearRecord.paid_in_year == record.year,
+        HRArrearRecord.status == "deducted"
+    ).all()
+    
+    next_month = record.month + 1
+    next_year = record.year
+    if next_month > 12:
+        next_month = 1
+        next_year += 1
+
+    for r in deducted_records:
+        if "[Partially Deducted]" in (r.remarks or ""):
+            original = db.query(HRArrearRecord).filter(
+                HRArrearRecord.employee_id == r.employee_id,
+                HRArrearRecord.held_month == next_month,
+                HRArrearRecord.held_year == next_year,
+                HRArrearRecord.status == "one_time"
+            ).first()
+            if original:
+                original.amount_held = round(float(original.amount_held or 0) + float(r.amount_held or 0), 2)
+                original.held_month = record.month
+                original.held_year = record.year
+                original.remarks = (original.remarks or "").split(" [Carried forward:")[0]
+            db.delete(r)
+        else:
+            r.status = "one_time"
+            r.paid_in_month = None
+            r.paid_in_year = None
+
+    rolled_records = db.query(HRArrearRecord).filter(
+        HRArrearRecord.employee_id == record.employee_id,
+        HRArrearRecord.held_month == next_month,
+        HRArrearRecord.held_year == next_year,
+        HRArrearRecord.status == "one_time",
+        HRArrearRecord.remarks.like("%[Carried forward: unpaid %")
+    ).all()
+    for r in rolled_records:
+        r.held_month = record.month
+        r.held_year = record.year
+        r.remarks = (r.remarks or "").split(" [Carried forward:")[0]
+
+
 @router.post("/{record_id}/finalize")
 def finalize_payroll(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Payroll record not found")
-    record.status = "finalized"
-    record.finalized_at = datetime.utcnow()
-    db.commit()
+    if record.status != "finalized":
+        record.status = "finalized"
+        record.finalized_at = datetime.utcnow()
+        _process_one_time_deductions(db, record)
+        db.commit()
     return {"message": "Payroll finalized"}
 
 
@@ -593,6 +699,8 @@ def finalize_payroll(record_id: int, db: Session = Depends(get_db), current_user
 def delete_payroll_record(record_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     record = db.query(HRPayrollRecord).filter(HRPayrollRecord.id == record_id).first()
     if not record: raise HTTPException(404, "Payroll record not found")
+    if record.status == "finalized":
+        _revert_one_time_deductions(db, record)
     db.delete(record)
     db.commit()
     return {"message": "Payroll record deleted"}
@@ -602,7 +710,11 @@ def delete_payroll_record(record_id: int, db: Session = Depends(get_db), current
 def bulk_delete_payroll(data: BulkDeleteRequest, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     if not data.record_ids:
         return {"message": "No records selected"}
-    db.query(HRPayrollRecord).filter(HRPayrollRecord.id.in_(data.record_ids)).delete(synchronize_session=False)
+    records = db.query(HRPayrollRecord).filter(HRPayrollRecord.id.in_(data.record_ids)).all()
+    for record in records:
+        if record.status == "finalized":
+            _revert_one_time_deductions(db, record)
+        db.delete(record)
     db.commit()
     return {"message": f"Deleted {len(data.record_ids)} records"}
 
@@ -612,13 +724,33 @@ def bulk_update_payroll_status(data: BulkUpdateRequest, db: Session = Depends(ge
     if not data.record_ids:
         return {"message": "No records selected"}
     
-    update_vals = {"status": data.status}
     if data.status == "finalized":
-        update_vals["finalized_at"] = datetime.utcnow()
+        records = db.query(HRPayrollRecord).filter(
+            HRPayrollRecord.id.in_(data.record_ids),
+            HRPayrollRecord.status != "finalized"
+        ).all()
+        for record in records:
+            record.status = "finalized"
+            record.finalized_at = datetime.utcnow()
+            _process_one_time_deductions(db, record)
     else:
-        update_vals["finalized_at"] = None
+        records = db.query(HRPayrollRecord).filter(
+            HRPayrollRecord.id.in_(data.record_ids),
+            HRPayrollRecord.status == "finalized"
+        ).all()
+        for record in records:
+            _revert_one_time_deductions(db, record)
+            record.status = data.status
+            record.finalized_at = None
+            
+        db.query(HRPayrollRecord).filter(
+            HRPayrollRecord.id.in_(data.record_ids),
+            HRPayrollRecord.status != "finalized"
+        ).update({
+            "status": data.status,
+            "finalized_at": None
+        }, synchronize_session=False)
         
-    db.query(HRPayrollRecord).filter(HRPayrollRecord.id.in_(data.record_ids)).update(update_vals, synchronize_session=False)
     db.commit()
     return {"message": f"Updated {len(data.record_ids)} records to {data.status}"}
 

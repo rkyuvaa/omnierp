@@ -648,7 +648,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pending.map(a => (
-                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: a.status === 'paid' ? '#f0f9ff' : a.status === 'already_paid' ? '#f8fafc' : a.status === 'one_time' ? '#faf5ff' : 'var(--bg2)', borderRadius: 8, border: a.status === 'paid' ? '1px solid #bae6fd' : a.status === 'already_paid' ? '1px solid #cbd5e1' : a.status === 'one_time' ? '1px solid #e9d5ff' : '1px solid var(--border)' }}>
+                  <div key={a.id} style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '12px', background: a.status === 'paid' ? '#f0f9ff' : a.status === 'already_paid' ? '#f8fafc' : a.status === 'one_time' ? '#faf5ff' : a.status === 'deducted' ? '#f0fdf4' : 'var(--bg2)', borderRadius: 8, border: a.status === 'paid' ? '1px solid #bae6fd' : a.status === 'already_paid' ? '1px solid #cbd5e1' : a.status === 'one_time' ? '1px solid #e9d5ff' : a.status === 'deducted' ? '1px solid #bbf7d0' : '1px solid var(--border)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -658,11 +658,11 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                             padding: '2px 6px', 
                             borderRadius: 4, 
                             fontWeight: 700, 
-                            background: a.status === 'paid' ? '#dcfce7' : a.status === 'already_paid' ? '#e2e8f0' : a.status === 'one_time' ? '#f3e8ff' : '#fef3c7', 
-                            color: a.status === 'paid' ? '#16a34a' : a.status === 'already_paid' ? '#475569' : a.status === 'one_time' ? '#7e22ce' : '#d97706', 
+                            background: a.status === 'paid' ? '#dcfce7' : a.status === 'already_paid' ? '#e2e8f0' : a.status === 'one_time' ? '#f3e8ff' : a.status === 'deducted' ? '#dcfce7' : '#fef3c7', 
+                            color: a.status === 'paid' ? '#16a34a' : a.status === 'already_paid' ? '#475569' : a.status === 'one_time' ? '#7e22ce' : a.status === 'deducted' ? '#16a34a' : '#d97706', 
                             textTransform: 'uppercase' 
                           }}>
-                            {a.status === 'already_paid' ? 'already paid' : a.status === 'one_time' ? 'one-time' : a.status}
+                            {a.status === 'already_paid' ? 'already paid' : a.status === 'one_time' ? 'one-time' : a.status === 'deducted' ? 'deducted' : a.status}
                           </span>
                         </div>
                         <div style={{ fontSize: 11, color: 'var(--text3)' }}>
@@ -672,6 +672,8 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                             <>Paid Outside Payroll (from {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
                           ) : a.status === 'one_time' ? (
                             <>One-time Deduction (Target: {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
+                          ) : a.status === 'deducted' ? (
+                            <>Deducted in {MONTH_NAMES[a.paid_in_month - 1]} {a.paid_in_year} (Target: {MONTH_NAMES[a.held_month - 1]} {a.held_year})</>
                           ) : (
                             <>Held in {MONTH_NAMES[a.held_month - 1]} {a.held_year}</>
                           )}
