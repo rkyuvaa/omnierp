@@ -128,6 +128,15 @@ tbody td { padding: 11px 14px; color: var(--text); vertical-align: middle; }
     left: 0;
   }
   
+  .notif-dropdown-menu {
+    position: fixed !important;
+    top: 60px !important;
+    right: 16px !important;
+    left: 16px !important;
+    width: auto !important;
+    max-height: calc(100vh - 100px) !important;
+  }
+  
   .sidebar-overlay {
     position: fixed;
     inset: 0;

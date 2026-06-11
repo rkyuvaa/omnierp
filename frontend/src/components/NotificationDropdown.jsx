@@ -138,7 +138,7 @@ export default function NotificationDropdown() {
   if (!user) return null;
 
   return (
-    <div style={{ position: 'relative' }}>
+    <div className="notif-dropdown-wrapper" style={{ position: 'relative' }}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         style={{
@@ -195,7 +195,7 @@ export default function NotificationDropdown() {
               cursor: 'default',
             }}
           />
-          <div style={{
+          <div className="notif-dropdown-menu" style={{
             position: 'absolute',
             top: '100%',
             right: 0,
