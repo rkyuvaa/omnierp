@@ -310,33 +310,6 @@ export default function FinanceDashboard() {
         </button>
       </div>
 
-      {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
-        <KpiCard
-          label="Total Lien"
-          value={INR(d.total_lien)}
-          icon={AlertTriangle}
-          color="#b45309"
-          bg="rgba(246,173,85,0.12)"
-          loading={loading}
-        />
-        <KpiCard
-          label="Total Actual Available"
-          value={INR(d.total_actual)}
-          icon={TrendingUp}
-          color="#4f46e5"
-          bg="rgba(99,102,241,0.1)"
-          loading={loading}
-        />
-        <KpiCard
-          label="Payments This Week"
-          value={INR(d.payments_this_week)}
-          icon={CreditCard}
-          color="#0369a1"
-          bg="rgba(3,105,161,0.1)"
-          loading={loading}
-        />
-      </div>
 
       {/* Bank Cards */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
