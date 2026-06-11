@@ -247,7 +247,6 @@ function BankCard({ bank, loading }) {
 
 export default function FinanceDashboard() {
   const [dashData, setDashData] = useState(null);
-  const [txCounts, setTxCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -255,20 +254,8 @@ export default function FinanceDashboard() {
     if (showRefreshing) setRefreshing(true);
     else setLoading(true);
     try {
-      const [dash, txList] = await Promise.all([
-        api.get('/finance/dashboard'),
-        api.get('/finance/transactions').catch(() => ({ data: [] })),
-      ]);
-      setDashData(dash.data);
-
-      // Count by status
-      const list = Array.isArray(txList.data) ? txList.data : (txList.data?.results ?? txList.data?.items ?? []);
-      const counts = { entered: 0, verified: 0, approved: 0, rejected: 0 };
-      list.forEach(tx => {
-        const s = (tx.status || '').toLowerCase();
-        if (counts[s] !== undefined) counts[s]++;
-      });
-      setTxCounts(counts);
+      const res = await api.get('/finance/dashboard');
+      setDashData(res.data);
     } catch (e) {
       console.error('Finance dashboard load error', e);
     } finally {
@@ -324,15 +311,7 @@ export default function FinanceDashboard() {
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 14, marginBottom: 24 }}>
-        <KpiCard
-          label="Total Bank Balance"
-          value={INR(d.total_balance)}
-          icon={Landmark}
-          color="var(--accent)"
-          bg="var(--accent-dim)"
-          loading={loading}
-        />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14, marginBottom: 28 }}>
         <KpiCard
           label="Total Lien"
           value={INR(d.total_lien)}
@@ -358,12 +337,6 @@ export default function FinanceDashboard() {
           loading={loading}
         />
       </div>
-
-      {/* Transaction Status Counts */}
-      <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.7px', color: 'var(--text3)', marginBottom: 10 }}>
-        Transaction Status
-      </div>
-      <StatusCountsRow counts={txCounts} loading={loading} />
 
       {/* Bank Cards */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
