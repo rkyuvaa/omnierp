@@ -109,7 +109,7 @@ export default function ManagementReport() {
 
   useEffect(() => {
     setLoading(true);
-    api.get('/api/finance/report/management')
+    api.get('/finance/report/management')
       .then(r => setData(r.data))
       .catch(err => setError(err?.response?.data?.message || 'Failed to load management report.'))
       .finally(() => setLoading(false));

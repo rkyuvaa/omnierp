@@ -60,7 +60,7 @@ export default function FinanceWeeklyBuckets() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/api/finance/accounts').then(r => setAccounts(r.data || [])).catch(() => {});
+    api.get('/finance/accounts').then(r => setAccounts(r.data || [])).catch(() => {});
   }, []);
 
   const fetchData = useCallback(async () => {
@@ -68,7 +68,7 @@ export default function FinanceWeeklyBuckets() {
     try {
       const params = new URLSearchParams({ year, month, fy });
       if (bankId) params.set('bank_id', bankId);
-      const res = await api.get(`/api/finance/weekly-buckets?${params}`);
+      const res = await api.get(`/finance/weekly-buckets?${params}`);
       setData(res.data);
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to load weekly buckets.');

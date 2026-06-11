@@ -34,8 +34,8 @@ export default function FinanceImport() {
   const fileInputRef = useRef();
 
   useEffect(() => {
-    api.get('/api/finance/accounts').then(r => setAccounts(r.data || [])).catch(() => {});
-    api.get('/api/finance/heads').then(r => setHeads(r.data || [])).catch(() => {});
+    api.get('/finance/accounts').then(r => setAccounts(r.data || [])).catch(() => {});
+    api.get('/finance/heads').then(r => setHeads(r.data || [])).catch(() => {});
   }, []);
 
   // Drag & drop handlers
@@ -58,7 +58,7 @@ export default function FinanceImport() {
       const fd = new FormData();
       fd.append('bank_account_id', selectedAccount);
       fd.append('file', file);
-      const res = await api.post('/api/finance/import/preview', fd, {
+      const res = await api.post('/finance/import/preview', fd, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       const data = res.data;
@@ -117,12 +117,12 @@ export default function FinanceImport() {
           account_head_id: r.headId ? Number(r.headId) : null,
         })),
       };
-      const res = await api.post('/api/finance/import/post', payload);
+      const res = await api.post('/finance/import/post', payload);
       // Save mapping rules
       for (const row of saveRuleRows) {
         if (row.headId) {
           try {
-            await api.post('/api/finance/mapping-rules', {
+            await api.post('/finance/mapping-rules', {
               description_keyword: row.description,
               account_head_id: Number(row.headId),
             });
@@ -235,7 +235,7 @@ export default function FinanceImport() {
 
   const headName = (id) => {
     const h = heads.find(h => String(h.id) === String(id));
-    return h ? h.name : '';
+    return h ? h.head_name : '';
   };
 
   if (postResult) {

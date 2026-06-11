@@ -43,7 +43,7 @@ export default function FinancePivotReport() {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get('/api/finance/accounts').then(r => setAccounts(r.data || [])).catch(() => {});
+    api.get('/finance/accounts').then(r => setAccounts(r.data || [])).catch(() => {});
   }, []);
 
   const fetchData = async () => {
@@ -51,7 +51,7 @@ export default function FinancePivotReport() {
     try {
       const params = new URLSearchParams({ fy, month });
       if (bankId) params.set('bank_id', bankId);
-      const res = await api.get(`/api/finance/pivot?${params}`);
+      const res = await api.get(`/finance/pivot?${params}`);
       setData(res.data);
     } catch (err) {
       setError(err?.response?.data?.message || 'Failed to load pivot report.');
