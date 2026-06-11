@@ -1,0 +1,23 @@
+{
+  "short_name": "KIM ERP",
+  "name": "KIM ERP Portal",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#ffffff",
+  "theme_color": "#195402",
+  "display": "standalone",
+  "orientation": "portrait"
+}
