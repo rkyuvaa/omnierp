@@ -30,7 +30,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-logo">
-          <div className="logo-icon">K</div>
+          <img src="/favicon.png" style={{width:44, height:44, objectFit:'contain'}} alt="Logo" />
           <div>
             <div className="logo-text">KIM ERP</div>
           </div>

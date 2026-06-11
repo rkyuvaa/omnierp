@@ -25,8 +25,8 @@ self.addEventListener('push', function(event) {
   const title = payload.title || 'OmniERP Notification';
   const options = {
     body: payload.body || '',
-    icon: '/favicon.svg',
-    badge: '/favicon.svg',
+    icon: '/favicon.png',
+    badge: '/favicon.png',
     vibrate: [100, 50, 100],
     // Tag deduplicates: same-type notifications collapse instead of stacking
     tag: payload.reference_type ? `${payload.reference_type}-${payload.reference_id}` : 'omnierp',
