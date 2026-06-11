@@ -16,6 +16,12 @@ function isoDate(d) {
   return typeof d === 'string' ? d.slice(0,10) : d.toISOString().slice(0,10);
 }
 
+function formatDateFriendly(dateStr) {
+  if (!dateStr) return '';
+  const date = new Date(dateStr + 'T00:00:00');
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function datesBetween(from, to) {
   const dates = [];
   let cur = new Date(from + 'T00:00:00');
@@ -92,6 +98,7 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const todayStr = isoDate(today);
+  const [selectedDate, setSelectedDate] = useState(todayStr);
 
   // Build quick lookup maps: date → array of events
   const leaveMap = {};
@@ -135,6 +142,9 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
     cells.push(null);
   }
 
+  const selectedLeaves = leaveMap[selectedDate] || [];
+  const selectedOds = odMap[selectedDate] || [];
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
       {/* Header */}
@@ -159,14 +169,7 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
       </div>
 
       {/* Day cells grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gridTemplateRows: 'repeat(6, 1fr)',
-        gap: 4,
-        flex: 1,
-        overflow: 'hidden'
-      }}>
+      <div className="day-cells-grid">
         {cells.map((day, i) => {
           if (day === null) {
             return (
@@ -183,21 +186,26 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
           const leaves = leaveMap[dateStr] || [];
           const ods = odMap[dateStr] || [];
           const isToday = dateStr === todayStr;
+          const isSelected = dateStr === selectedDate;
           const hasLeave = leaves.length > 0;
           const hasOd = ods.length > 0;
 
           return (
-            <div key={day} style={{
-              borderRadius: 6,
-              padding: 4,
-              background: isToday ? 'var(--bg3)' : 'var(--bg2)',
-              border: isToday ? '2px solid var(--accent)' : '1px solid var(--border)',
-              display: 'flex',
-              flexDirection: 'column',
-              overflow: 'hidden',
-              position: 'relative',
-              transition: 'all 0.15s'
-            }}>
+            <div
+              key={day}
+              onClick={() => setSelectedDate(dateStr)}
+              style={{
+                borderRadius: 6,
+                padding: 4,
+                background: isToday ? 'var(--bg3)' : isSelected ? 'var(--bg3)' : 'var(--bg2)',
+                border: isToday ? '2px solid var(--accent)' : isSelected ? '2.5px solid var(--accent2)' : '1px solid var(--border)',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+                position: 'relative'
+              }}
+              className="calendar-day-cell"
+            >
               {/* Day number & OD dot */}
               <div style={{
                 display: 'flex',
@@ -230,14 +238,8 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
                 )}
               </div>
 
-              {/* Leaves text list inside cell */}
-              <div className="scroll-list" style={{
-                display: 'flex',
-                flexDirection: 'column',
-                gap: 2,
-                flex: 1,
-                overflowY: 'auto'
-              }}>
+              {/* Leaves text list inside cell (Desktop) */}
+              <div className="cell-event-list scroll-list">
                 {leaves.map((l, li) => {
                   const c = empColor(l._idx);
                   const isPending = l.status === 'pending';
@@ -267,13 +269,44 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
                   );
                 })}
               </div>
+
+              {/* Mobile dots indicators (Mobile) */}
+              <div className="cell-dot-container">
+                {leaves.map((l, idx) => {
+                  const isPending = l.status === 'pending';
+                  return (
+                    <span 
+                      key={`l-${idx}`} 
+                      style={{
+                        width: 5,
+                        height: 5,
+                        borderRadius: '50%',
+                        background: isPending ? '#ef4444' : '#3b82f6',
+                        display: 'inline-block'
+                      }} 
+                    />
+                  );
+                })}
+                {ods.map((o, idx) => (
+                  <span 
+                    key={`o-${idx}`} 
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      background: '#f59e0b',
+                      display: 'inline-block'
+                    }} 
+                  />
+                ))}
+              </div>
             </div>
           );
         })}
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 2 }}>
+      <div style={{ display: 'flex', gap: 16, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 2, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 8, height: 8, borderRadius: 2, background: '#dbeafe', borderLeft: '2.5px solid #3b82f6', display: 'inline-block' }} />
           <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Approved Leave</span>
@@ -285,6 +318,91 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
           <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>On-Duty</span>
+        </div>
+      </div>
+
+      {/* Selected Day Details Panel for Mobile */}
+      <div className="selected-day-details">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+            Schedule: {formatDateFriendly(selectedDate)}
+          </span>
+          <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>
+            {selectedLeaves.length + selectedOds.length} Events
+          </span>
+        </div>
+
+        {/* Selected Leaves */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+            Leaves ({selectedLeaves.length})
+          </div>
+          {selectedLeaves.length === 0 ? (
+            <div style={{ fontSize: 11, color: 'var(--text3)', fontStyle: 'italic', paddingLeft: 4 }}>No leaves scheduled</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {selectedLeaves.map((l, li) => {
+                const c = empColor(l._idx);
+                return (
+                  <div key={li} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg2)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Avatar name={l.employee_name} color={c} size={24} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+                        {l.employee_name}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>
+                        {l.leave_type_name}
+                      </span>
+                      <StatusBadge status={l.status} />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Selected On-Duty */}
+        <div>
+          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+            On-Duty ({selectedOds.length})
+          </div>
+          {selectedOds.length === 0 ? (
+            <div style={{ fontSize: 11, color: 'var(--text3)', fontStyle: 'italic', paddingLeft: 4 }}>No on-duty scheduled</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {selectedOds.map((o, oi) => {
+                const c = empColor(o._odIdx + 5);
+                return (
+                  <div key={oi} style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg2)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Avatar name={o.employee_name} color={c} size={24} />
+                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+                          {o.employee_name}
+                        </span>
+                      </div>
+                      <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 500 }}>
+                        {formatTime(o.from_time)} – {formatTime(o.to_time)}
+                      </span>
+                    </div>
+                    {o.work_location && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#10b981', fontWeight: 600, paddingLeft: 32 }}>
+                        <MapPin size={10} />{o.work_location}
+                      </div>
+                    )}
+                    {o.purpose && (
+                      <div style={{ fontSize: 10, color: 'var(--text3)', fontStyle: 'italic', paddingLeft: 32 }}>
+                        "{o.purpose}"
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -368,19 +486,116 @@ export default function Dashboard() {
         .scroll-list { overflow-y:auto; flex:1; padding-right:2px; }
         .scroll-list::-webkit-scrollbar { width:3px; }
         .scroll-list::-webkit-scrollbar-thumb { background:var(--border2); border-radius:3px; }
+
+        /* Responsive Grid & Columns */
+        .dash-grid {
+          display: grid;
+          grid-template-columns: 1fr 300px;
+          gap: 12px;
+          height: calc(100vh - 56px - 48px);
+          overflow: hidden;
+        }
+        .calendar-card {
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+        }
+        .right-column-container {
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+          overflow: hidden;
+        }
+        .onduty-card {
+          padding: 14px 16px;
+          display: flex;
+          flex-direction: column;
+          overflow: hidden;
+          flex: 1;
+        }
+        .day-cells-grid {
+          display: grid;
+          grid-template-columns: repeat(7, 1fr);
+          grid-template-rows: repeat(6, 1fr);
+          gap: 4px;
+          flex: 1;
+          overflow: hidden;
+        }
+        .cell-event-list {
+          display: flex;
+          flex-direction: column;
+          gap: 2px;
+          flex: 1;
+          overflow-y: auto;
+        }
+        .cell-dot-container {
+          display: none;
+          align-items: center;
+          justify-content: center;
+          gap: 3px;
+          margin-top: auto;
+          flex-wrap: wrap;
+          padding-top: 2px;
+        }
+        .selected-day-details {
+          display: none;
+          margin-top: 12px;
+          padding: 12px;
+          background: var(--bg3);
+          border-radius: 8px;
+          border: 1px solid var(--border);
+        }
+
+        /* Hover and pointer effects */
+        .calendar-day-cell {
+          cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .calendar-day-cell:hover {
+          background: var(--bg3) !important;
+          border-color: var(--border2) !important;
+        }
+
+        @media (max-width: 1024px) {
+          .dash-grid {
+            grid-template-columns: 1fr;
+            height: auto;
+            overflow: visible;
+          }
+          .calendar-card {
+            overflow: visible;
+            height: auto;
+          }
+          .right-column-container {
+            overflow: visible;
+            height: auto;
+          }
+          .onduty-card {
+            height: 320px;
+            flex: none;
+          }
+          .day-cells-grid {
+            grid-template-rows: auto;
+            aspect-ratio: 1.3;
+          }
+          .cell-event-list {
+            display: none !important;
+          }
+          .cell-dot-container {
+            display: flex;
+          }
+          .selected-day-details {
+            display: block;
+          }
+        }
       `}</style>
 
       {/* Grid container with exactly two columns, occupying full height without body overflow */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 300px',
-        gap: 12,
-        height: 'calc(100vh - 56px - 48px)',
-        overflow: 'hidden'
-      }}>
+      <div className="dash-grid">
 
         {/* ── Left Column: Calendar ── */}
-        <div className="dash-card" style={{ padding: '16px', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        <div className="dash-card calendar-card">
           <div className="dash-sec-title" style={{ flexShrink: 0 }}>
             <Calendar size={13} style={{ color: 'var(--accent)' }} />
             Workforce Leave Calendar
@@ -391,10 +606,10 @@ export default function Dashboard() {
         </div>
 
         {/* ── Right Column: Stacked On-Duty Panels ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 12, overflow: 'hidden' }}>
+        <div className="right-column-container">
 
           {/* Currently On Duty */}
-          <div className="dash-card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+          <div className="dash-card onduty-card">
             <div className="dash-sec-title" style={{ flexShrink: 0 }}>
               <UserCheck size={13} style={{ color: '#10b981' }} />
               Currently On Duty
@@ -488,7 +703,7 @@ export default function Dashboard() {
           </div>
 
           {/* Planned On-Duty */}
-          <div className="dash-card" style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', overflow: 'hidden', flex: 1 }}>
+          <div className="dash-card onduty-card">
             <div className="dash-sec-title" style={{ flexShrink: 0 }}>
               <Briefcase size={13} style={{ color: '#f59e0b' }} />
               Planned On-Duty
