@@ -204,13 +204,19 @@ def update_employee(
 
 
 @router.delete("/{emp_id}")
-def deactivate_employee(emp_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def delete_employee(emp_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
     if not emp:
         raise HTTPException(404, "Employee not found")
-    emp.is_active = False
-    db.commit()
-    return {"message": "Employee deactivated"}
+    try:
+        # Before deleting the employee, also delete their leave balances to prevent FK constraint failures
+        db.query(HRLeaveBalance).filter(HRLeaveBalance.employee_id == emp_id).delete()
+        db.delete(emp)
+        db.commit()
+        return {"message": "Employee deleted successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(400, "Cannot delete employee as they have active payroll, attendance, or other records. Please deactivate them instead.")
 
 @router.get("/import/template")
 def get_import_template(current_user: User = Depends(get_current_user)):

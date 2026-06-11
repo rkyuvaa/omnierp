@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api, { getErrorMessage } from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight } from 'lucide-react';
+import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
 
 const STATUS_BADGE = { true: { bg: '#dcfce7', color: '#16a34a', label: 'Active' }, false: { bg: '#fee2e2', color: '#dc2626', label: 'Inactive' } };
 
@@ -119,6 +119,17 @@ export default function EmployeeMaster() {
       toast.success(`Employee ${emp.is_active ? 'deactivated' : 'activated'}`);
       fetchAll();
     } catch { toast.error('Failed'); }
+  }
+
+  async function deleteEmployee(emp) {
+    if (!window.confirm(`Are you sure you want to delete employee "${emp.name}"?`)) return;
+    try {
+      await api.delete(`/hr/employees/${emp.id}`);
+      toast.success('Employee deleted');
+      fetchAll();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to delete employee');
+    }
   }
 
   async function handleImport() {
@@ -245,12 +256,15 @@ export default function EmployeeMaster() {
                           </span>
                         </td>
                         <td style={{ padding: '10px 12px' }}>
-                          <div style={{ display: 'flex', gap: 8 }}>
-                            <button onClick={() => openEdit(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--text2)' }}>
+                          <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
+                            <button onClick={() => openEdit(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--text2)' }} title="Edit Profile">
                               <Edit2 size={13} />
                             </button>
-                            <button onClick={() => toggleActive(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: emp.is_active ? '#22c55e' : '#94a3b8' }}>
+                            <button onClick={() => toggleActive(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: emp.is_active ? '#22c55e' : '#94a3b8' }} title={emp.is_active ? "Deactivate" : "Activate"}>
                               {emp.is_active ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
+                            </button>
+                            <button onClick={() => deleteEmployee(emp)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }} title="Delete Employee">
+                              <Trash2 size={13} />
                             </button>
                           </div>
                         </td>
