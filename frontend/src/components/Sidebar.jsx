@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog } from 'lucide-react';
 import { useState } from 'react';
 import TwoFactorSetup from './TwoFactorSetup';
 
@@ -83,6 +83,40 @@ function HRModule({ isActive, handleNav }) {
   );
 }
 
+const financeItems = [
+  {to:'/finance/dashboard',    label:'Dashboard',      icon:Landmark},
+  {to:'/finance/transactions', label:'Transactions',   icon:ClipboardList},
+  {to:'/finance/import',       label:'Import Statement',icon:Upload},
+  {to:'/finance/weekly',       label:'Weekly Buckets', icon:Calendar},
+  {to:'/finance/pivot',        label:'Pivot Report',   icon:BarChart3},
+  {to:'/finance/report',       label:'Mgmt Report',    icon:FileBarChart2},
+  {to:'/finance/config',       label:'Configuration',  icon:Cog},
+];
+
+function FinanceModule({ isActive, handleNav }) {
+  const [expanded, setExpanded] = useState(true);
+  const isFinanceActive = financeItems.some(i => isActive(i.to));
+  return (
+    <div style={{marginBottom:24}}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isFinanceActive?600:500,color:isFinanceActive?'var(--text)':'var(--text2)',background:isFinanceActive?'var(--bg3)':'transparent',textAlign:'left'}}
+      >
+        <TrendingUp size={18} style={{opacity:0.8}}/>
+        <span style={{flex:1}}>Finance</span>
+        {expanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+      </button>
+      {expanded && (
+        <div style={{paddingLeft:16}}>
+          {financeItems.map(i => (
+            <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({ isOpen, onClose }) {
   const { user, logout } = useAuth();
   const location = useLocation();
@@ -115,10 +149,7 @@ export default function Sidebar({ isOpen, onClose }) {
         
         {user?.is_superadmin && (
           <div>
-            <div style={{marginBottom:24}}>
-              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Finance</div>
-              <NavItem to='/bank/dashboard' label='Bank Dashboard' icon={Landmark} active={isActive('/bank/dashboard')} onClick={handleNav} />
-            </div>
+            <FinanceModule isActive={isActive} handleNav={handleNav} />
             <div style={{marginBottom:24}}>
               <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Admin</div>
               {adminItems.map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>)}

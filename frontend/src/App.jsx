@@ -35,6 +35,13 @@ import Payroll from './pages/hr/Payroll';
 import HRConfigurations from './pages/hr/HRConfigurations';
 import BankDashboard from './pages/hr/BankDashboard';
 import TaskList from './pages/tasks/TaskList';
+import FinanceDashboard from './pages/finance/FinanceDashboard';
+import FinanceTransactions from './pages/finance/FinanceTransactions';
+import FinanceImport from './pages/finance/FinanceImport';
+import FinanceWeeklyBuckets from './pages/finance/FinanceWeeklyBuckets';
+import FinancePivotReport from './pages/finance/FinancePivotReport';
+import ManagementReport from './pages/finance/ManagementReport';
+import FinanceConfig from './pages/finance/FinanceConfig';
 
 // Integrated PrivateRoute
 const PrivateRoute = ({ children }) => {
@@ -79,8 +86,16 @@ export default function App() {
           <Route path="/hr/approvals" element={<PrivateRoute><Approvals /></PrivateRoute>} />
           <Route path="/hr/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
           <Route path="/hr/configurations" element={<PrivateRoute><HRConfigurations /></PrivateRoute>} />
-          <Route path="/bank/dashboard" element={<PrivateRoute><BankDashboard /></PrivateRoute>} />
+          <Route path="/bank/dashboard" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
           <Route path="/tasks" element={<PrivateRoute><TaskList /></PrivateRoute>} />
+          {/* Finance Module */}
+          <Route path="/finance/dashboard" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
+          <Route path="/finance/transactions" element={<PrivateRoute><FinanceTransactions /></PrivateRoute>} />
+          <Route path="/finance/import" element={<PrivateRoute><FinanceImport /></PrivateRoute>} />
+          <Route path="/finance/weekly" element={<PrivateRoute><FinanceWeeklyBuckets /></PrivateRoute>} />
+          <Route path="/finance/pivot" element={<PrivateRoute><FinancePivotReport /></PrivateRoute>} />
+          <Route path="/finance/report" element={<PrivateRoute><ManagementReport /></PrivateRoute>} />
+          <Route path="/finance/config" element={<PrivateRoute><FinanceConfig /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

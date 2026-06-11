@@ -6,6 +6,7 @@ import os
 from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin, admin_settings, tasks
 from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions
 from app.routers import bank
+from app.routers import finance
 from app.hr_models import *  # register HR models with Base
 from app.bank_models import *  # register Bank models with Base
 from app.hr_scheduler import start_scheduler
@@ -93,6 +94,17 @@ def _safe_add_columns():
         ("hr_onduty_requests", "l2_status", "VARCHAR(20)"),
         ("hr_onduty_requests", "l2_remarks", "TEXT"),
         ("hr_onduty_requests", "l2_approved_at", "TIMESTAMP"),
+        # Finance module new columns
+        ("bank_transactions", "transaction_type", "VARCHAR(10) DEFAULT 'DEBIT'"),
+        ("bank_transactions", "debit_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("bank_transactions", "credit_amount", "DOUBLE PRECISION DEFAULT 0"),
+        ("bank_transactions", "account_head_id", "INTEGER"),
+        ("bank_transactions", "import_batch_id", "INTEGER"),
+        ("bank_transactions", "week_number", "INTEGER"),
+        ("bank_transactions", "week_year", "INTEGER"),
+        ("bank_accounts", "opening_balance", "DOUBLE PRECISION DEFAULT 0"),
+        ("bank_accounts", "last_statement_balance", "DOUBLE PRECISION"),
+        ("bank_accounts", "last_import_at", "TIMESTAMP"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:
@@ -158,7 +170,18 @@ app.include_router(hr_notifications.router, prefix="/api/hr/notifications", tags
 app.include_router(hr_push_subscriptions.router, prefix="/api/hr/push-subscriptions", tags=["HR-Push-Subscriptions"])
 app.include_router(hr_config.router, prefix="/api/hr/config", tags=["HR-Config"])
 app.include_router(bank.router, prefix="/api/bank", tags=["Bank"])
+app.include_router(finance.router, prefix="/api/finance", tags=["Finance"])
 
+
+# Seed Finance module default data
+from app.routers.finance import seed_finance_data as _seed_finance
+_db2 = SessionLocal()
+try:
+    _seed_finance(_db2)
+except Exception as e:
+    print(f"⚠️ Finance seed skipped: {e}")
+finally:
+    _db2.close()
 
 
 from fastapi.responses import FileResponse
