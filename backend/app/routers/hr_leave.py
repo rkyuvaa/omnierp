@@ -444,14 +444,6 @@ def all_requests(
     current_user: User = Depends(get_current_user)
 ):
     q = db.query(HRLeaveRequest)
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee_optional
-        emp = get_current_employee_optional(current_user, db)
-        if not emp:
-            return []
-        q = q.filter(HRLeaveRequest.approver_id == emp.id)
-        
     if status: q = q.filter(HRLeaveRequest.status == status)
     if employee_id: q = q.filter(HRLeaveRequest.employee_id == employee_id)
     return [_serialize_request(r) for r in q.order_by(HRLeaveRequest.created_at.desc()).all()]

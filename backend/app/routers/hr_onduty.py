@@ -149,14 +149,6 @@ def pending_onduty(approver_id: Optional[int] = None, db: Session = Depends(get_
 def all_onduty(status: Optional[str] = None, employee_id: Optional[int] = None,
                db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     q = db.query(HROnDutyRequest)
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee_optional
-        emp = get_current_employee_optional(current_user, db)
-        if not emp:
-            return []
-        q = q.filter(HROnDutyRequest.approver_id == emp.id)
-
     if status: q = q.filter(HROnDutyRequest.status == status)
     if employee_id: q = q.filter(HROnDutyRequest.employee_id == employee_id)
     return [_serialize(r) for r in q.order_by(HROnDutyRequest.created_at.desc()).all()]
