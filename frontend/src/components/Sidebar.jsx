@@ -24,6 +24,7 @@ const hrSubItems = [
 ];
 const adminItems = [
   {to:'/admin/users',label:'User Management',icon:Users},
+  {to:'/admin/modules',label:'Modules',icon:SlidersHorizontal},
   {to:'/warranty/bom',label:'BOM Master',icon:Package},
   {to:'/studio',label:'Studio',icon:Settings},
   {to:'/admin/backups',label:'System Backup',icon:Database},
