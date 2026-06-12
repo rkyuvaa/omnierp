@@ -139,8 +139,43 @@ export default function NotificationDropdown() {
 
   return (
     <div className="notif-dropdown-wrapper" style={{ position: 'relative' }}>
+      {/* Keyframe animations for unread notification state */}
+      <style>{`
+        @keyframes notifBellWiggle {
+          0%   { transform: rotate(0deg); }
+          5%   { transform: rotate(18deg); }
+          10%  { transform: rotate(-16deg); }
+          15%  { transform: rotate(14deg); }
+          20%  { transform: rotate(-10deg); }
+          25%  { transform: rotate(6deg); }
+          30%  { transform: rotate(0deg); }
+          100% { transform: rotate(0deg); }
+        }
+        @keyframes notifGlowRing {
+          0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.55); }
+          50%  { box-shadow: 0 0 0 7px rgba(239,68,68,0); }
+          100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+        }
+        @keyframes notifBadgePop {
+          0%,100% { transform: scale(1); }
+          30%     { transform: scale(1.35); }
+          60%     { transform: scale(0.88); }
+          80%     { transform: scale(1.12); }
+        }
+        .notif-bell-active {
+          animation: notifBellWiggle 3s ease-in-out infinite,
+                     notifGlowRing   3s ease-in-out infinite;
+          background: var(--bg3) !important;
+          border-radius: 8px;
+        }
+        .notif-badge-pulse {
+          animation: notifBadgePop 3s ease-in-out infinite;
+        }
+      `}</style>
+
       <button 
         onClick={() => setIsOpen(!isOpen)}
+        className={unreadCount > 0 ? 'notif-bell-active' : ''}
         style={{
           background: 'var(--bg3)',
           border: 'none',
@@ -150,35 +185,40 @@ export default function NotificationDropdown() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: 'var(--text2)',
+          color: unreadCount > 0 ? '#ef4444' : 'var(--text2)',
           cursor: 'pointer',
           position: 'relative',
-          transition: 'all 0.2s',
+          transition: 'color 0.3s, background 0.2s',
           outline: 'none',
         }}
-        onMouseEnter={e => e.currentTarget.style.background = 'var(--border)'}
-        onMouseLeave={e => e.currentTarget.style.background = 'var(--bg3)'}
+        onMouseEnter={e => { e.currentTarget.style.background = 'var(--border)'; }}
+        onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg3)'; }}
       >
-        <Bell size={18} />
+        <Bell size={18} style={{ filter: unreadCount > 0 ? 'drop-shadow(0 0 4px rgba(239,68,68,0.7))' : 'none', transition: 'filter 0.3s' }} />
         {unreadCount > 0 && (
-          <span style={{
-            position: 'absolute',
-            top: -2,
-            right: -2,
-            background: 'var(--red)',
-            color: '#fff',
-            borderRadius: '50%',
-            minWidth: 16,
-            height: 16,
-            fontSize: 9,
-            fontWeight: 800,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '0 4px',
-            border: '2px solid var(--bg2)',
-          }}>
-            {unreadCount}
+          <span
+            className="notif-badge-pulse"
+            style={{
+              position: 'absolute',
+              top: -4,
+              right: -4,
+              background: 'linear-gradient(135deg, #ef4444 0%, #dc2626 100%)',
+              color: '#fff',
+              borderRadius: '999px',
+              minWidth: 18,
+              height: 18,
+              fontSize: 9,
+              fontWeight: 900,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '0 5px',
+              border: '2px solid var(--bg)',
+              letterSpacing: '-0.3px',
+              boxShadow: '0 2px 6px rgba(239,68,68,0.5)',
+            }}
+          >
+            {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
