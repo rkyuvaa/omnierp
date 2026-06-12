@@ -205,7 +205,7 @@ def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], 
 
 # ── Leave Application Routes ─────────────────────────────────────────────────
 @router.post("/apply")
-def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     from app.auth import is_hr_admin
     if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
@@ -317,6 +317,7 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
                                 f"{emp.name} requested leave which was split: {paid_days}d of {leave_type.name} and {unpaid_days}d of LOP.",
                                 "leave", req_paid.id)
                 db.commit()
+                background_tasks.add_task(_send_leave_email_notification, req_paid.id, True)
                 return {
                     "id": req_paid.id,
                     "reference": req_paid.reference,
@@ -344,7 +345,7 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
     )
     db.add(req); db.commit(); db.refresh(req)
 
-    # Notify manager
+    # Notify manager (in-app + email)
     if emp.manager_id:
         manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
         if manager and manager.user_id:
@@ -353,6 +354,7 @@ def apply_leave(data: LeaveApply, db: Session = Depends(get_db), current_user: U
                     f"{emp.name} has applied for {leave_type.name} from {data.from_date} to {data.to_date}.",
                     "leave", req.id)
     db.commit()
+    background_tasks.add_task(_send_leave_email_notification, req.id, True)
     return {"id": req.id, "reference": req.reference, "status": req.status, "auto_approve_at": auto_approve_at.isoformat() + "Z"}
 
 @router.get("/my-requests")
@@ -409,30 +411,56 @@ def pending_approvals(
             ).order_by(HRLeaveRequest.created_at).all()
     return [_serialize_request(r) for r in reqs]
 
-def _send_leave_email_notification(req_id: int):
+def _send_leave_email_notification(req_id: int, to_manager: bool = False):
     db = SessionLocal()
     try:
         req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
-        if not req or not req.employee or not req.employee.email or "@" not in req.employee.email:
+        if not req or not req.employee:
             return
         from app.utils.email_service import send_template_email
-        variables = {
-            "employee_name": req.employee.name,
-            "leave_type": req.leave_type.name if req.leave_type else "Leave",
-            "from_date": str(req.from_date),
-            "to_date": str(req.to_date),
-            "status": req.status,
-            "approver_name": req.approver.name if req.approver else "HR/Manager",
-            "reason": req.approver_remarks or "No remarks provided"
-        }
-        send_template_email(
-            db=db,
-            to_email=req.employee.email,
-            template_name="leave_status_update",
-            variables=variables
-        )
+
+        # ── Email to EMPLOYEE on status update (approve / reject) ──
+        if not to_manager:
+            if not req.employee.email or "@" not in req.employee.email:
+                return
+            variables = {
+                "employee_name": req.employee.name,
+                "leave_type": req.leave_type.name if req.leave_type else "Leave",
+                "from_date": str(req.from_date),
+                "to_date": str(req.to_date),
+                "status": req.status,
+                "approver_name": req.approver.name if req.approver else "HR/Manager",
+                "reason": req.approver_remarks or "No remarks provided"
+            }
+            send_template_email(
+                db=db,
+                to_email=req.employee.email,
+                template_name="leave_status_update",
+                variables=variables
+            )
+
+        # ── Email to MANAGER on new application ──
+        else:
+            manager = db.query(HREmployee).filter(HREmployee.id == req.l1_approver_id).first() if req.l1_approver_id else None
+            if not manager or not manager.email or "@" not in manager.email:
+                return
+            variables = {
+                "employee_name": req.employee.name,
+                "leave_type": req.leave_type.name if req.leave_type else "Leave",
+                "from_date": str(req.from_date),
+                "to_date": str(req.to_date),
+                "total_days": str(req.total_days),
+                "reason": req.reason or "No reason provided",
+                "approver_name": manager.name,
+            }
+            send_template_email(
+                db=db,
+                to_email=manager.email,
+                template_name="leave_new_request",
+                variables=variables
+            )
     except Exception as e:
-        print(f"⚠️ Failed to send leave approval email for req {req_id}: {e}")
+        print(f"⚠️ Failed to send leave email for req {req_id}: {e}")
     finally:
         db.close()
 

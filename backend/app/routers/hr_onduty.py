@@ -64,7 +64,7 @@ def _serialize(r: HROnDutyRequest):
     }
 
 @router.post("/apply")
-def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def apply_onduty(data: OnDutyApply, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     from app.auth import is_hr_admin
     if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
@@ -96,9 +96,10 @@ def apply_onduty(data: OnDutyApply, db: Session = Depends(get_db), current_user:
         manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
         if manager and manager.user_id:
             _notify(db, manager.user_id, "On-Duty Request Pending",
-                    f"{emp.name} applied for On-Duty on {data.date} at {data.work_location}.",
+                    f"{emp.name} applied for On-Duty on {data.date} at {data.work_location or 'N/A'}.",
                     "onduty", req.id)
     db.commit()
+    background_tasks.add_task(_send_onduty_email_notification, req.id, True)
     return {"id": req.id, "reference": req.reference, "status": req.status}
 
 @router.get("/my-requests")
@@ -153,26 +154,52 @@ def all_onduty(status: Optional[str] = None, employee_id: Optional[int] = None,
     if employee_id: q = q.filter(HROnDutyRequest.employee_id == employee_id)
     return [_serialize(r) for r in q.order_by(HROnDutyRequest.created_at.desc()).all()]
 
-def _send_onduty_email_notification(req_id: int):
+def _send_onduty_email_notification(req_id: int, to_manager: bool = False):
     db = SessionLocal()
     try:
         req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
-        if not req or not req.employee or not req.employee.email or "@" not in req.employee.email:
+        if not req or not req.employee:
             return
         from app.utils.email_service import send_template_email
-        variables = {
-            "employee_name": req.employee.name,
-            "date": str(req.date),
-            "status": req.status,
-            "approver_name": req.approver.name if req.approver else "HR/Manager",
-            "reason": req.approver_remarks or "No remarks provided"
-        }
-        send_template_email(
-            db=db,
-            to_email=req.employee.email,
-            template_name="onduty_status_update",
-            variables=variables
-        )
+
+        # ── Email to EMPLOYEE on status update (approve / reject) ──
+        if not to_manager:
+            if not req.employee.email or "@" not in req.employee.email:
+                return
+            variables = {
+                "employee_name": req.employee.name,
+                "date": str(req.date),
+                "status": req.status,
+                "approver_name": req.approver.name if req.approver else "HR/Manager",
+                "reason": req.approver_remarks or "No remarks provided"
+            }
+            send_template_email(
+                db=db,
+                to_email=req.employee.email,
+                template_name="onduty_status_update",
+                variables=variables
+            )
+
+        # ── Email to MANAGER on new application ──
+        else:
+            manager = db.query(HREmployee).filter(HREmployee.id == req.l1_approver_id).first() if req.l1_approver_id else None
+            if not manager or not manager.email or "@" not in manager.email:
+                return
+            variables = {
+                "employee_name": req.employee.name,
+                "date": str(req.date),
+                "from_time": req.from_time,
+                "to_time": req.to_time,
+                "work_location": req.work_location or "N/A",
+                "purpose": req.purpose or "Not specified",
+                "approver_name": manager.name,
+            }
+            send_template_email(
+                db=db,
+                to_email=manager.email,
+                template_name="onduty_new_request",
+                variables=variables
+            )
     except Exception as e:
         print(f"⚠️ Failed to send On-Duty email for req {req_id}: {e}")
     finally:
