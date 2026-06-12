@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional, List
@@ -205,7 +205,15 @@ def update_employee_balances(employee_id: int, data: List[SingleBalanceUpdate], 
 
 # ── Leave Application Routes ─────────────────────────────────────────────────
 @router.post("/apply")
-def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Request, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    origin = request.headers.get("origin")
+    if not origin:
+        referer = request.headers.get("referer")
+        if referer:
+            from urllib.parse import urlparse
+            parsed = urlparse(referer)
+            origin = f"{parsed.scheme}://{parsed.netloc}"
+
     from app.auth import is_hr_admin
     if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
@@ -317,7 +325,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, db: Session
                                 f"{emp.name} requested leave which was split: {paid_days}d of {leave_type.name} and {unpaid_days}d of LOP.",
                                 "leave", req_paid.id)
                 db.commit()
-                background_tasks.add_task(_send_leave_email_notification, req_paid.id, True)
+                background_tasks.add_task(_send_leave_email_notification, req_paid.id, True, origin)
                 return {
                     "id": req_paid.id,
                     "reference": req_paid.reference,
@@ -354,7 +362,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, db: Session
                     f"{emp.name} has applied for {leave_type.name} from {data.from_date} to {data.to_date}.",
                     "leave", req.id)
     db.commit()
-    background_tasks.add_task(_send_leave_email_notification, req.id, True)
+    background_tasks.add_task(_send_leave_email_notification, req.id, True, origin)
     return {"id": req.id, "reference": req.reference, "status": req.status, "auto_approve_at": auto_approve_at.isoformat() + "Z"}
 
 @router.get("/my-requests")
@@ -411,7 +419,7 @@ def pending_approvals(
             ).order_by(HRLeaveRequest.created_at).all()
     return [_serialize_request(r) for r in reqs]
 
-def _send_leave_email_notification(req_id: int, to_manager: bool = False):
+def _send_leave_email_notification(req_id: int, to_manager: bool = False, origin: Optional[str] = None):
     db = SessionLocal()
     try:
         req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
@@ -446,7 +454,11 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False):
                 return
             import os
             frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
-            action_url = f"{frontend_url}/hr/approvals?type=leave&id={req.id}" if frontend_url else ""
+            if not frontend_url and origin:
+                frontend_url = origin.rstrip("/")
+            if not frontend_url:
+                frontend_url = "http://localhost"
+            action_url = f"{frontend_url}/hr/approvals?type=leave&id={req.id}"
             variables = {
                 "employee_name": req.employee.name,
                 "leave_type": req.leave_type.name if req.leave_type else "Leave",

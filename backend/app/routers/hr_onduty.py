@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
@@ -64,7 +64,16 @@ def _serialize(r: HROnDutyRequest):
     }
 
 @router.post("/apply")
-def apply_onduty(data: OnDutyApply, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def apply_onduty(data: OnDutyApply, background_tasks: BackgroundTasks, request: Request,
+                 db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    origin = request.headers.get("origin")
+    if not origin:
+        referer = request.headers.get("referer")
+        if referer:
+            from urllib.parse import urlparse
+            parsed = urlparse(referer)
+            origin = f"{parsed.scheme}://{parsed.netloc}"
+
     from app.auth import is_hr_admin
     if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee
@@ -99,7 +108,7 @@ def apply_onduty(data: OnDutyApply, background_tasks: BackgroundTasks, db: Sessi
                     f"{emp.name} applied for On-Duty on {data.date} at {data.work_location or 'N/A'}.",
                     "onduty", req.id)
     db.commit()
-    background_tasks.add_task(_send_onduty_email_notification, req.id, True)
+    background_tasks.add_task(_send_onduty_email_notification, req.id, True, origin)
     return {"id": req.id, "reference": req.reference, "status": req.status}
 
 @router.get("/my-requests")
@@ -154,7 +163,7 @@ def all_onduty(status: Optional[str] = None, employee_id: Optional[int] = None,
     if employee_id: q = q.filter(HROnDutyRequest.employee_id == employee_id)
     return [_serialize(r) for r in q.order_by(HROnDutyRequest.created_at.desc()).all()]
 
-def _send_onduty_email_notification(req_id: int, to_manager: bool = False):
+def _send_onduty_email_notification(req_id: int, to_manager: bool = False, origin: Optional[str] = None):
     db = SessionLocal()
     try:
         req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
@@ -187,7 +196,11 @@ def _send_onduty_email_notification(req_id: int, to_manager: bool = False):
                 return
             import os
             frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
-            action_url = f"{frontend_url}/hr/approvals?type=onduty&id={req.id}" if frontend_url else ""
+            if not frontend_url and origin:
+                frontend_url = origin.rstrip("/")
+            if not frontend_url:
+                frontend_url = "http://localhost"
+            action_url = f"{frontend_url}/hr/approvals?type=onduty&id={req.id}"
             variables = {
                 "employee_name": req.employee.name,
                 "date": str(req.date),
