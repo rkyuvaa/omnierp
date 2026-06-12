@@ -27,6 +27,8 @@ def seed_modules(db: Session):
         {"key": "warranty", "name": "Product & Warranty", "icon": "shield-check"},
         {"key": "konwertcare", "name": "Konwert Care+", "icon": "heart-pulse"},
         {"key": "tasks", "name": "Task Management", "icon": "check-square-2"},
+        {"key": "hr", "name": "Attendance & HR", "icon": "clock"},
+        {"key": "finance", "name": "Finance", "icon": "trending-up"},
         {"key": "studio", "name": "Studio", "icon": "settings"}
     ]
     for idx, item in enumerate(defaults):

@@ -147,12 +147,16 @@ export default function Sidebar({ isOpen, onClose }) {
             const p = user?.module_permissions?.[i.key];
             return p && (p.can_read || p.can_create || p.can_edit || p.can_delete);
           }).map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav} />)}
-          <HRModule isActive={isActive} handleNav={handleNav} />
+          {user?.active_modules?.includes('hr') && (
+            <HRModule isActive={isActive} handleNav={handleNav} />
+          )}
         </div>
         
         {user?.is_superadmin && (
           <div>
-            <FinanceModule isActive={isActive} handleNav={handleNav} />
+            {user?.active_modules?.includes('finance') && (
+              <FinanceModule isActive={isActive} handleNav={handleNav} />
+            )}
             <div style={{marginBottom:24}}>
               <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Admin</div>
               {adminItems.filter(i => {
