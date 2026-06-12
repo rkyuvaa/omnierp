@@ -4,10 +4,12 @@ import { Badge, Loader } from '../../components/Shared';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { ToggleLeft, ToggleRight } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function AdminModules() {
   const [modules, setModules] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { refreshUser } = useAuth();
 
   const load = () => api.get('/modules/').then(r => setModules(r.data)).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
@@ -15,6 +17,7 @@ export default function AdminModules() {
   const toggle = async (m) => {
     await api.put(`/modules/${m.id}/toggle`);
     toast.success(`${m.name} ${m.is_active ? 'disabled' : 'enabled'}`);
+    await refreshUser();
     load();
   };
 

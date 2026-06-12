@@ -156,6 +156,10 @@ def me(current_user: User = Depends(get_current_user), db: Session = Depends(get
     if emp:
         from app.hr_models import HREmployee
         is_manager = db.query(HREmployee).filter(HREmployee.manager_id == emp.id).first() is not None
+    
+    from app.models import Module
+    active_mods = [m.key for m in db.query(Module).filter(Module.is_active == True).all()]
+    
     return {
         "id": current_user.id,
         "name": current_user.name,
@@ -170,7 +174,8 @@ def me(current_user: User = Depends(get_current_user), db: Session = Depends(get
         "employee_code": emp.employee_id if emp else None,
         "is_manager": is_manager,
         "enable_mobile_punch": emp.enable_mobile_punch if emp else False,
-        "totp_enabled": current_user.totp_enabled or False
+        "totp_enabled": current_user.totp_enabled or False,
+        "active_modules": active_mods
     }
 
 

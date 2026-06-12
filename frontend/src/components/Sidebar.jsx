@@ -141,6 +141,8 @@ export default function Sidebar({ isOpen, onClose }) {
         <div style={{marginBottom:24}}>
           <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Modules</div>
           {moduleItems.filter(i => {
+            const isActiveGlobally = user?.active_modules?.includes(i.key);
+            if (!isActiveGlobally) return false;
             if (user?.is_superadmin) return true;
             const p = user?.module_permissions?.[i.key];
             return p && (p.can_read || p.can_create || p.can_edit || p.can_delete);
@@ -153,7 +155,12 @@ export default function Sidebar({ isOpen, onClose }) {
             <FinanceModule isActive={isActive} handleNav={handleNav} />
             <div style={{marginBottom:24}}>
               <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Admin</div>
-              {adminItems.map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>)}
+              {adminItems.filter(i => {
+                if (i.to === '/studio') {
+                  return user?.active_modules?.includes('studio');
+                }
+                return true;
+              }).map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>)}
             </div>
           </div>
         )}
