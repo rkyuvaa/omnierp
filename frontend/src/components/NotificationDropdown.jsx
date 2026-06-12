@@ -60,6 +60,22 @@ export default function NotificationDropdown() {
     return () => clearInterval(interval);
   }, [user]);
 
+  // Listen for push notifications from the service worker → instantly refresh count
+  useEffect(() => {
+    if (!user || !('serviceWorker' in navigator)) return;
+
+    const handleSWMessage = (event) => {
+      if (event.data && event.data.type === 'PUSH_RECEIVED') {
+        fetchCount();
+        // If dropdown is open, also refresh the list
+        if (isOpen) fetchNotifications();
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleSWMessage);
+    return () => navigator.serviceWorker.removeEventListener('message', handleSWMessage);
+  }, [user, isOpen]);
+
   useEffect(() => {
     if (isOpen && user) {
       fetchNotifications();

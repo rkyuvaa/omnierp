@@ -444,6 +444,9 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False):
             manager = db.query(HREmployee).filter(HREmployee.id == req.l1_approver_id).first() if req.l1_approver_id else None
             if not manager or not manager.email or "@" not in manager.email:
                 return
+            import os
+            frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
+            action_url = f"{frontend_url}/hr/approvals?type=leave&id={req.id}" if frontend_url else ""
             variables = {
                 "employee_name": req.employee.name,
                 "leave_type": req.leave_type.name if req.leave_type else "Leave",
@@ -452,6 +455,7 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False):
                 "total_days": str(req.total_days),
                 "reason": req.reason or "No reason provided",
                 "approver_name": manager.name,
+                "action_url": action_url,
             }
             send_template_email(
                 db=db,

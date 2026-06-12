@@ -185,6 +185,9 @@ def _send_onduty_email_notification(req_id: int, to_manager: bool = False):
             manager = db.query(HREmployee).filter(HREmployee.id == req.l1_approver_id).first() if req.l1_approver_id else None
             if not manager or not manager.email or "@" not in manager.email:
                 return
+            import os
+            frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
+            action_url = f"{frontend_url}/hr/approvals?type=onduty&id={req.id}" if frontend_url else ""
             variables = {
                 "employee_name": req.employee.name,
                 "date": str(req.date),
@@ -193,6 +196,7 @@ def _send_onduty_email_notification(req_id: int, to_manager: bool = False):
                 "work_location": req.work_location or "N/A",
                 "purpose": req.purpose or "Not specified",
                 "approver_name": manager.name,
+                "action_url": action_url,
             }
             send_template_email(
                 db=db,
