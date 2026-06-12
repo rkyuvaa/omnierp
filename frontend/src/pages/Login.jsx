@@ -3,20 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Check, Loader2 } from 'lucide-react';
 
-// Password strength calculator
-function checkStrength(pwd) {
-  if (!pwd) return 0;
-  if (pwd.length < 4) return 1;
-  let score = 1;
-  if (pwd.length >= 6) score += 1;
-  if (pwd.length >= 10) score += 1;
-  const hasMixed = /[a-z]/.test(pwd) && /[A-Z]/.test(pwd);
-  const hasDigit = /\d/.test(pwd);
-  const hasSpecial = /[^a-zA-Z\d]/.test(pwd);
-  if (hasMixed) score += 1;
-  if (hasDigit || hasSpecial) score += 1;
-  return Math.min(5, score);
-}
+// Password strength calculator removed for login screen
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -39,7 +26,6 @@ export default function Login() {
 
   // Validate email format
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-  const passwordStrength = checkStrength(password);
 
   const handleEmailChange = (e) => {
     setEmail(e.target.value);
@@ -111,16 +97,8 @@ export default function Login() {
     titleText = errorHint;
     titleColor = '#ef4444';
   } else if (passwordFocused) {
-    if (passwordStrength >= 4) {
-      titleText = 'Looking good!';
-      titleColor = '#16a34a';
-    } else if (password.length > 0 && passwordStrength < 4) {
-      titleText = 'Make it stronger';
-      titleColor = '#f59e0b';
-    } else {
-      titleText = 'Enter Your Password';
-      titleColor = '#eab308';
-    }
+    titleText = 'Enter your password';
+    titleColor = '#eab308';
   } else if (emailValid && !password) {
     titleText = 'Now enter your password';
     titleColor = '#1a2e18';
@@ -133,13 +111,7 @@ export default function Login() {
   const mailIconColor = emailValid ? 'var(--accent)' : emailFocused ? '#eab308' : '#88a878';
   const mailIconTransform = `translateY(-50%) ${emailFocused ? 'scale(1.15)' : 'scale(1)'}`;
 
-  const lockIconColor = passwordFocused
-    ? (passwordStrength === 1 ? '#ef4444' :
-       passwordStrength === 2 ? '#f59e0b' :
-       passwordStrength === 3 ? '#eab308' :
-       passwordStrength === 4 ? '#16a34a' :
-       passwordStrength === 5 ? '#195402' : '#eab308')
-    : '#88a878';
+  const lockIconColor = passwordFocused ? 'var(--accent)' : '#88a878';
   const lockIconTransform = `translateY(-50%) ${passwordFocused ? 'scale(1.15)' : 'scale(1)'}`;
 
   return (
@@ -202,6 +174,37 @@ export default function Login() {
         }
         .pulse-dot {
           animation: pulseDot 2s infinite ease-in-out;
+        }
+        .secure-pulse-dot {
+          width: 6px;
+          height: 6px;
+          background-color: var(--accent);
+          border-radius: 50%;
+          display: inline-block;
+          box-shadow: 0 0 0 0 rgba(59, 109, 17, 0.4);
+          animation: pulseSecure 1.5s infinite;
+        }
+        @keyframes pulseSecure {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(59, 109, 17, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 6px rgba(59, 109, 17, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(59, 109, 17, 0);
+          }
+        }
+        @keyframes bounceArrow {
+          0% { transform: translateX(0); }
+          100% { transform: translateX(4px); }
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
         }
         
         @media (max-width: 480px) {
@@ -296,7 +299,7 @@ export default function Login() {
                   <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: '#6b825e' }}>
                     Password
                   </label>
-                  {passwordStrength >= 4 && <Check size={12} color="var(--accent)" style={{ strokeWidth: 3 }} />}
+                  {password.length > 0 && <Check size={12} color="var(--accent)" style={{ strokeWidth: 3 }} />}
                 </div>
                 <div style={{ position: 'relative' }}>
                   <Lock
@@ -322,7 +325,7 @@ export default function Login() {
                       width: '100%',
                       padding: '12px 40px 12px 40px',
                       background: '#f7fbf4',
-                      border: `1px solid ${passwordStrength >= 4 ? 'var(--accent)' : passwordFocused ? '#eab308' : '#c8d8c0'}`,
+                      border: `1px solid ${passwordFocused ? 'var(--accent)' : '#c8d8c0'}`,
                       borderRadius: 8,
                       outline: 'none',
                       color: '#1a2e18',
@@ -352,36 +355,19 @@ export default function Login() {
                   </button>
                 </div>
 
-                {/* Password strength indicators */}
-                {password.length > 0 && (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ background: '#e0ead8', height: 4, borderRadius: 2, overflow: 'hidden' }}>
-                      <div style={{
-                        height: '100%',
-                        width: `${passwordStrength * 20}%`,
-                        background: passwordStrength === 1 ? '#ef4444' :
-                                    passwordStrength === 2 ? '#f59e0b' :
-                                    passwordStrength === 3 ? '#eab308' :
-                                    passwordStrength === 4 ? '#16a34a' : '#195402',
-                        transition: 'width 0.3s ease, background-color 0.3s ease'
-                      }} />
-                    </div>
-                    <div style={{
-                      fontSize: 10,
-                      fontWeight: 700,
-                      marginTop: 4,
-                      color: passwordStrength === 1 ? '#ef4444' :
-                             passwordStrength === 2 ? '#f59e0b' :
-                             passwordStrength === 3 ? '#eab308' :
-                             passwordStrength === 4 ? '#16a34a' : '#195402',
-                      transition: 'color 0.3s ease'
-                    }}>
-                      {passwordStrength === 1 && 'Very weak'}
-                      {passwordStrength === 2 && 'Weak'}
-                      {passwordStrength === 3 && 'Fair'}
-                      {passwordStrength === 4 && 'Strong'}
-                      {passwordStrength === 5 && 'Very strong'}
-                    </div>
+                {/* Secure password entry indicator */}
+                {passwordFocused && (
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: 11,
+                    color: '#88a878',
+                    marginTop: 8,
+                    animation: 'fadeIn 0.25s ease'
+                  }}>
+                    <span className="secure-pulse-dot" />
+                    <span style={{ fontWeight: 600 }}>Secure encrypted password entry</span>
                   </div>
                 )}
               </div>
@@ -448,7 +434,7 @@ export default function Login() {
                 ) : (
                   <>
                     Sign in
-                    <ArrowRight size={16} />
+                    <ArrowRight size={16} style={{ animation: password.length > 0 ? 'bounceArrow 0.8s infinite alternate' : 'none' }} />
                   </>
                 )}
               </button>
