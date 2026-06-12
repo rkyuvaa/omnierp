@@ -27,15 +27,18 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# Seed Email Templates
+# Seed Email Templates & System Modules
 from app.database import SessionLocal
 from app.routers.admin_settings import seed_email_templates
+from app.routers.modules import seed_modules
 _db = SessionLocal()
 try:
     seed_email_templates(_db)
     print("✅ Email templates seeded successfully")
+    seed_modules(_db)
+    print("✅ System modules seeded successfully")
 except Exception as e:
-    print(f"⚠️ Error seeding templates: {e}")
+    print(f"⚠️ Error seeding database: {e}")
 finally:
     _db.close()
 
