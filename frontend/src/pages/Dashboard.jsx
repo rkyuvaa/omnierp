@@ -3,8 +3,11 @@ import Layout from '../components/Layout';
 import api from '../utils/api';
 import {
   Calendar, Clock, UserCheck, Users, ChevronLeft, ChevronRight,
-  AlertCircle, CheckCircle, XCircle, Loader2, MapPin, Briefcase
+  AlertCircle, CheckCircle, XCircle, Loader2, MapPin, Briefcase, Shield
 } from 'lucide-react';
+import { useAuth } from '../hooks/useAuth';
+import { Modal } from '../components/Shared';
+import TwoFactorSetup from '../components/TwoFactorSetup';
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 const MONTHS = ['January','February','March','April','May','June',
@@ -425,10 +428,28 @@ const navBtn = {
 
 // ─── Main Dashboard ─────────────────────────────────────────────────────────
 export default function Dashboard() {
+  const { user } = useAuth();
+  const [showMfaSuggestion, setShowMfaSuggestion] = useState(false);
+  const [showMfaSetupForm, setShowMfaSetupForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState([]);
   const [onduty, setOnduty] = useState([]);
   const today = isoDate(new Date());
+
+  useEffect(() => {
+    if (user && !user.totp_enabled && sessionStorage.getItem('mfaSuggestionDismissed') !== 'true') {
+      const timer = setTimeout(() => {
+        setShowMfaSuggestion(true);
+      }, 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user?.totp_enabled && showMfaSuggestion) {
+      setShowMfaSuggestion(false);
+    }
+  }, [user?.totp_enabled, showMfaSuggestion]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -479,6 +500,11 @@ export default function Dashboard() {
     <Layout title="Dashboard">
       <style>{`
         @keyframes spin { to { transform:rotate(360deg); } }
+        @keyframes pulseShield {
+          0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 90, 39, 0.4); }
+          70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(45, 90, 39, 0); }
+          100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 90, 39, 0); }
+        }
         .dash-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; }
         .dash-sec-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text3); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
         .emp-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); }
@@ -775,6 +801,70 @@ export default function Dashboard() {
 
         </div>
       </div>
+      {showMfaSuggestion && (
+        <Modal 
+          title="Security Suggestion" 
+          onClose={() => {
+            sessionStorage.setItem('mfaSuggestionDismissed', 'true');
+            setShowMfaSuggestion(false);
+          }}
+        >
+          {!showMfaSetupForm ? (
+            <div style={{ textAlign: 'center', padding: '10px 12px' }}>
+              <div style={{
+                width: 60,
+                height: 60,
+                borderRadius: '50%',
+                background: 'var(--accent-dim)',
+                color: 'var(--accent)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                margin: '0 auto 16px auto',
+                animation: 'pulseShield 2s infinite'
+              }}>
+                <Shield size={32} />
+              </div>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                Enable Two-Factor Authentication
+              </h3>
+              <p style={{ fontSize: 13, color: 'var(--text2)', lineHeight: 1.5, marginBottom: 24 }}>
+                Protect your account from unauthorized access by adding an extra layer of security. Verify logins using an authenticator app (like Google Authenticator or Microsoft Authenticator).
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <button 
+                  className="btn btn-primary" 
+                  style={{ width: '100%', padding: '10px 16px', fontWeight: 700 }}
+                  onClick={() => setShowMfaSetupForm(true)}
+                >
+                  Configure Authenticator Now
+                </button>
+                <button 
+                  className="btn btn-ghost" 
+                  style={{ width: '100%', color: 'var(--text3)', fontWeight: 600 }}
+                  onClick={() => {
+                    sessionStorage.setItem('mfaSuggestionDismissed', 'true');
+                    setShowMfaSuggestion(false);
+                  }}
+                >
+                  Maybe Later
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <button 
+                className="btn btn-ghost" 
+                style={{ fontSize: 12, padding: '4px 8px', marginBottom: 12, color: 'var(--text2)' }}
+                onClick={() => setShowMfaSetupForm(false)}
+              >
+                ← Back to suggestion
+              </button>
+              <TwoFactorSetup />
+            </div>
+          )}
+        </Modal>
+      )}
     </Layout>
   );
 }
