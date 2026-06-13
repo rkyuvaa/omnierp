@@ -76,8 +76,7 @@ def send_fcm_push(
                 priority="high",
                 notification=messaging.AndroidNotification(
                     sound="default",
-                    click_action="FLUTTER_NOTIFICATION_CLICK",
-                    channel_id="kim_erp_push_channel",
+                    default_sound=True,
                 ),
             ),
             token=device_token,
@@ -112,7 +111,7 @@ def send_fcm_multicast(
                 priority="high",
                 notification=messaging.AndroidNotification(
                     sound="default",
-                    channel_id="kim_erp_push_channel",
+                    default_sound=True,
                 ),
             ),
             tokens=device_tokens[:500],  # FCM hard limit
