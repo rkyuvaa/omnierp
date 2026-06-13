@@ -25,7 +25,7 @@ export function AuthProvider({ children }) {
     return { ...userData, module_permissions: permissionsMap }; 
   };
 
-  const registerFcmTokenIfAny = async () => {
+  const registerFcmTokenIfAny = async (retryCount = 0) => {
     const fcmToken = localStorage.getItem('kim_fcm_token') || window.KIM_FCM_TOKEN;
     if (fcmToken) {
       try {
@@ -34,6 +34,12 @@ export function AuthProvider({ children }) {
       } catch (e) {
         console.error('Failed to register FCM token silently:', e);
       }
+    } else if (retryCount < 5) {
+      // Android WebView token injection can happen slightly after page mount.
+      // Retry every 2 seconds for up to 10 seconds.
+      setTimeout(() => {
+        registerFcmTokenIfAny(retryCount + 1);
+      }, 2000);
     }
   };
 
