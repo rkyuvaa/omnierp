@@ -7,6 +7,7 @@ from app.routers import auth, users, branches, departments, roles, modules, crm,
 from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions
 from app.routers import bank
 from app.routers import finance
+from app.routers import notifications
 from app.hr_models import *  # register HR models with Base
 from app.bank_models import *  # register Bank models with Base
 from app.hr_scheduler import start_scheduler
@@ -80,6 +81,7 @@ def _safe_add_columns():
         ("branches", "radius", "DOUBLE PRECISION"),
         ("users", "totp_secret", "VARCHAR(100)"),
         ("users", "totp_enabled", "BOOLEAN DEFAULT FALSE"),
+        ("users", "fcm_token", "TEXT"),
         ("hr_employees", "manager_l2_id", "INTEGER"),
         ("hr_leave_requests", "l1_approver_id", "INTEGER"),
         ("hr_leave_requests", "l1_status", "VARCHAR(20) DEFAULT 'pending'"),
@@ -135,6 +137,7 @@ except Exception as e:
 _scheduler = start_scheduler()
 
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 app.include_router(branches.router, prefix="/api/branches", tags=["branches"])
 app.include_router(departments.router, prefix="/api/departments", tags=["departments"])

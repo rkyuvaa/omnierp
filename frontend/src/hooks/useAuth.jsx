@@ -25,6 +25,18 @@ export function AuthProvider({ children }) {
     return { ...userData, module_permissions: permissionsMap }; 
   };
 
+  const registerFcmTokenIfAny = async () => {
+    const fcmToken = localStorage.getItem('kim_fcm_token') || window.KIM_FCM_TOKEN;
+    if (fcmToken) {
+      try {
+        await api.post('/notifications/register-token', { token: fcmToken });
+        console.log('✅ FCM token registered silently');
+      } catch (e) {
+        console.error('Failed to register FCM token silently:', e);
+      }
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -32,6 +44,7 @@ export function AuthProvider({ children }) {
         .then(async r => {
           const userWithRole = await fetchUserWithRole(r.data);
           setUser(userWithRole);
+          registerFcmTokenIfAny().catch(() => {});
           // Proactively ensure subscription is associated with current user on mount/refresh
           resubscribeForCurrentUser().catch(() => {});
         })
@@ -50,6 +63,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', r.data.access_token);
     const me = await api.get('/auth/me');
     setUser(await fetchUserWithRole(me.data));
+    registerFcmTokenIfAny().catch(() => {});
     // Re-associate any existing browser push subscription with this user so
     // notifications are delivered to the correct person on shared devices.
     resubscribeForCurrentUser().catch(() => {});
@@ -61,6 +75,7 @@ export function AuthProvider({ children }) {
     localStorage.setItem('token', r.data.access_token);
     const me = await api.get('/auth/me');
     setUser(await fetchUserWithRole(me.data));
+    registerFcmTokenIfAny().catch(() => {});
     resubscribeForCurrentUser().catch(() => {});
     return r.data;
   };

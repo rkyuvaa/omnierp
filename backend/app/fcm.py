@@ -129,3 +129,30 @@ def send_fcm_multicast(
 
 # Initialise eagerly at import time (non-blocking, just checks file)
 _init_firebase()
+
+
+def send_push_notification(
+    user_id: int,
+    title: str,
+    body: str
+) -> bool:
+    """
+    Reads the user's fcm_token from DB and sends FCM notification.
+    """
+    from app.database import SessionLocal
+    from app.models import User
+
+    db = SessionLocal()
+    try:
+        user = db.query(User).filter(User.id == user_id).first()
+        if not user or not user.fcm_token:
+            logger.warning("No FCM token found for user %s", user_id)
+            return False
+        
+        return send_fcm_push(user.fcm_token, title, body)
+    except Exception as e:
+        logger.error("Failed to send push notification to user %s: %s", user_id, e)
+        return False
+    finally:
+        db.close()
+
