@@ -45,12 +45,37 @@ def send_push_to_user(
 ):
     """
     Query all push subscriptions for a user and trigger web push notifications using pywebpush.
-    Automatically removes expired/invalid subscriptions from the database.
+    Also sends native FCM push notifications if fcm_token is registered on the User record.
+    Automatically removes expired/invalid web subscriptions from the database.
     """
     if not db:
         logger.error("No DB session provided to send_push_to_user")
         return
 
+    # 1. Native FCM Push Notification
+    try:
+        from app.models import User
+        from app.fcm import send_fcm_push
+        
+        user = db.query(User).filter(User.id == user_id).first()
+        if user and user.fcm_token:
+            data_payload = {}
+            if reference_type:
+                data_payload["type"] = reference_type
+            if reference_id:
+                data_payload["id"] = str(reference_id)
+                
+            logger.info(f"Sending native FCM push notification to user {user_id}...")
+            send_fcm_push(
+                device_token=user.fcm_token,
+                title=title,
+                body=message,
+                data=data_payload
+            )
+    except Exception as fcm_ex:
+        logger.error(f"Failed to send native FCM push to user {user_id}: {fcm_ex}")
+
+    # 2. Web Push Notification (PWA/Browser)
     subscriptions = db.query(HRPushSubscription).filter(HRPushSubscription.user_id == user_id).all()
     if not subscriptions:
         return
