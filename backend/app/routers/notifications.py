@@ -34,3 +34,12 @@ def register_token(
     except Exception as e:
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error registering token: {str(e)}")
+
+
+@router.get("/my-token")
+def get_my_token(current_user: User = Depends(get_current_user)):
+    """
+    Debug endpoint to check the currently registered FCM token for the logged-in user.
+    """
+    return {"fcm_token": current_user.fcm_token}
+
