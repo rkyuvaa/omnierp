@@ -16,7 +16,11 @@ const SHORT_DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 
 function isoDate(d) {
   if (!d) return '';
-  return typeof d === 'string' ? d.slice(0,10) : d.toISOString().slice(0,10);
+  if (typeof d === 'string') return d.slice(0, 10);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
 }
 
 function formatDateFriendly(dateStr) {
