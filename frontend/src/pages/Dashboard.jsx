@@ -475,9 +475,13 @@ export default function Dashboard() {
     load();
   }, [load]);
 
-  // Calendar events: approved + pending + auto_approved leaves & OD
-  const calendarLeaves = leaves.filter(l => ['approved', 'pending', 'auto_approved'].includes(l.status));
-  const calendarOd = onduty.filter(o => ['approved', 'pending', 'auto_approved'].includes(o.status));
+  // Calendar events: approved + pending + auto_approved leaves & OD (current & future only)
+  const calendarLeaves = leaves.filter(l => 
+    ['approved', 'pending', 'auto_approved'].includes(l.status) && l.to_date >= today
+  );
+  const calendarOd = onduty.filter(o => 
+    ['approved', 'pending', 'auto_approved'].includes(o.status) && o.date >= today
+  );
 
   // On Duty Today (approved, auto_approved, & pending OD records for today)
   const onDutyToday = onduty.filter(o =>
