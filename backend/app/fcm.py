@@ -25,20 +25,23 @@ def _init_firebase():
     if _firebase_app is not None:
         return _firebase_available
 
-    sa_path = os.path.join(
-        os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-        "firebase-service-account.json"
-    )
+    backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    sa_path = os.path.join(backend_dir, "firebase-service-account.json")
 
     if not os.path.exists(sa_path):
-        logger.warning(
-            "⚠️  firebase-service-account.json not found at %s — "
-            "FCM push notifications will be disabled. "
-            "Download it from Firebase Console → Project Settings → Service Accounts.",
-            sa_path
-        )
-        _firebase_available = False
-        return False
+        import glob
+        matches = glob.glob(os.path.join(backend_dir, "*firebase-adminsdk*.json"))
+        if matches:
+            sa_path = matches[0]
+            logger.info("Found Firebase credential match: %s", os.path.basename(sa_path))
+        else:
+            logger.warning(
+                "⚠️  Firebase credentials file (*firebase-adminsdk*.json) not found in %s — "
+                "FCM push notifications will be disabled.",
+                backend_dir
+            )
+            _firebase_available = False
+            return False
 
     try:
         import firebase_admin
