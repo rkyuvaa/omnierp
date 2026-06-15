@@ -38,6 +38,18 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     user = db.query(User).filter(User.id == int(user_id)).first()
     if not user or not user.is_active:
         raise cred_exc
+        
+    # Update last_active_at if older than 60 seconds (or is None)
+    try:
+        from datetime import datetime
+        now = datetime.utcnow()
+        if not user.last_active_at or (now - user.last_active_at).total_seconds() > 60:
+            user.last_active_at = now
+            db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"Error updating last_active_at: {e}")
+        
     return user
 
 def require_admin(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)) -> User:

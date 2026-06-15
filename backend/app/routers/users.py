@@ -34,6 +34,7 @@ class UserUpdate(BaseModel):
     reset_totp: Optional[bool] = None
 
 def serialize(u: User):
+    from datetime import datetime
     return {
         "id": u.id, "name": u.name, "email": u.email,
         "is_active": u.is_active, "is_superadmin": u.is_superadmin,
@@ -43,8 +44,10 @@ def serialize(u: User):
         "role_name": u.role.name if u.role else None,
         "branch_name": u.branch.name if u.branch else None,
         "department_name": getattr(u.department, 'name', None) if hasattr(u, 'department') else None,
-        "created_at": str(u.created_at),
-        "last_login": str(u.last_login) if u.last_login else None,
+        "created_at": u.created_at.isoformat() + 'Z' if u.created_at else None,
+        "last_login": u.last_login.isoformat() + 'Z' if u.last_login else None,
+        "last_active_at": u.last_active_at.isoformat() + 'Z' if u.last_active_at else None,
+        "is_online": u.last_active_at is not None and (datetime.utcnow() - u.last_active_at).total_seconds() < 300,
         "totp_enabled": u.totp_enabled or False,
     }
 

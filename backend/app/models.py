@@ -22,6 +22,7 @@ class User(Base):
     fcm_token = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     last_login = Column(DateTime, nullable=True)
+    last_active_at = Column(DateTime, nullable=True)
     role = relationship("Role", back_populates="users")
     branch = relationship("Branch", back_populates="users")
     department = relationship("Department", back_populates="users")

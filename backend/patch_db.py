@@ -40,6 +40,9 @@ def patch_db():
             ("hr", "hr_employees", "enable_mobile_punch", "BOOLEAN DEFAULT FALSE"),
             ("hr", "hr_employees", "uan", "VARCHAR(50)"),
             ("hr", "hr_employees", "esi_number", "VARCHAR(50)"),
+            
+            # Users module
+            ("users", "users", "last_active_at", "TIMESTAMP WITHOUT TIME ZONE"),
         ]
         
         for module, table, col, col_type in patches:

@@ -60,6 +60,20 @@ function formatAuditChange(key, val) {
   return String(val);
 }
 
+const formatDateTime = (dateStr) => {
+  if (!dateStr) return 'Never';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return 'Never';
+  return date.toLocaleString('en-US', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true
+  });
+};
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
@@ -600,6 +614,8 @@ export default function AdminUsers() {
                     <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Role</th>
                     <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Branches</th>
                     <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Module Rights</th>
+                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Last Login</th>
+                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Logged In</th>
                     <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Status</th>
                     <th style={{ padding: '12px' }}></th>
                   </tr>
@@ -641,6 +657,17 @@ export default function AdminUsers() {
                               </Badge>
                             );
                           })}
+                        </div>
+                      </td>
+                      <td style={{ padding: '12px', fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>
+                        {formatDateTime(u.last_login)}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <div style={{ width: 6, height: 6, borderRadius: '50%', background: u.is_online ? 'var(--green)' : '#94a3b8' }} />
+                          <span style={{ fontSize: 10, fontWeight: 900, color: u.is_online ? 'var(--green)' : '#94a3b8', textTransform: 'uppercase' }}>
+                            {u.is_online ? 'Online' : 'Offline'}
+                          </span>
                         </div>
                       </td>
                       <td style={{ padding: '12px' }}>
