@@ -268,8 +268,10 @@ def list_my_claims(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    from app.auth import get_current_employee
-    emp = get_current_employee(current_user, db)
+    from app.auth import get_current_employee_optional
+    emp = get_current_employee_optional(current_user, db)
+    if not emp:
+        return []
     q = db.query(ExpenseClaim).filter(ExpenseClaim.employee_id == emp.id)
     if status:
         q = q.filter(ExpenseClaim.status == status)
