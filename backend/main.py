@@ -7,9 +7,11 @@ from app.routers import auth, users, branches, departments, roles, modules, crm,
 from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions
 from app.routers import bank
 from app.routers import finance
+from app.routers import expenses
 from app.routers import notifications
 from app.hr_models import *  # register HR models with Base
 from app.bank_models import *  # register Bank models with Base
+from app.expense_models import *  # register Expense models with Base
 from app.hr_scheduler import start_scheduler
 
 
@@ -110,6 +112,10 @@ def _safe_add_columns():
         ("bank_accounts", "opening_balance", "DOUBLE PRECISION DEFAULT 0"),
         ("bank_accounts", "last_statement_balance", "DOUBLE PRECISION"),
         ("bank_accounts", "last_import_at", "TIMESTAMP"),
+        # Expenses module new columns (handled by create_all, kept here for safety)
+        ("expense_categories", "max_limit", "DOUBLE PRECISION"),
+        ("expense_claims", "reimbursement_ref", "VARCHAR(100)"),
+        ("expense_claims", "reimbursement_mode", "VARCHAR(20)"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:
@@ -177,6 +183,7 @@ app.include_router(hr_push_subscriptions.router, prefix="/api/hr/push-subscripti
 app.include_router(hr_config.router, prefix="/api/hr/config", tags=["HR-Config"])
 app.include_router(bank.router, prefix="/api/bank", tags=["Bank"])
 app.include_router(finance.router, prefix="/api/finance", tags=["Finance"])
+app.include_router(expenses.router, prefix="/api/expenses", tags=["Expenses"])
 
 
 # Seed Finance module default data
@@ -188,6 +195,17 @@ except Exception as e:
     print(f"⚠️ Finance seed skipped: {e}")
 finally:
     _db2.close()
+
+# Seed Expense default categories
+from app.routers.expenses import seed_expense_categories as _seed_expenses
+_db3 = SessionLocal()
+try:
+    _seed_expenses(_db3)
+    print("✅ Expense categories seeded successfully")
+except Exception as e:
+    print(f"⚠️ Expense seed skipped: {e}")
+finally:
+    _db3.close()
 
 
 from fastapi.responses import FileResponse
@@ -228,7 +246,17 @@ def serve_attendance_upload(filename: str):
     raise HTTPException(status_code=404, detail="Selfie file not found on disk")
 
 # Keep the general static mount for other things
+
+@app.get("/api/uploads/expenses/{filename}")
+@app.get("/uploads/expenses/{filename}")
+def serve_expense_upload(filename: str):
+    file_path = os.path.join(upload_dir, "expenses", filename)
+    if not os.path.isfile(file_path):
+        raise HTTPException(status_code=404, detail="Receipt file not found")
+    return FileResponse(file_path)
+
 app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
+
 
 
 @app.get("/")

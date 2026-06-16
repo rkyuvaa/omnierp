@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog, Receipt } from 'lucide-react';
 import { useState } from 'react';
 import TwoFactorSetup from './TwoFactorSetup';
 
@@ -118,7 +118,47 @@ function FinanceModule({ isActive, handleNav }) {
   );
 }
 
+const expenseSubItems = [
+  {to:'/expenses/dashboard', label:'Dashboard',      icon:LayoutDashboard},
+  {to:'/expenses/my',        label:'My Expenses',    icon:Receipt},
+  {to:'/expenses/approvals', label:'Approvals',      icon:CheckSquare},
+  {to:'/expenses/categories',label:'Categories',     icon:SlidersHorizontal, adminOnly: true},
+];
+
+function ExpensesModule({ isActive, handleNav }) {
+  const { user } = useAuth();
+  const [expanded, setExpanded] = useState(true);
+
+  const filteredItems = expenseSubItems.filter(i => {
+    if (i.adminOnly) return !!user?.is_superadmin;
+    if (i.to === '/expenses/approvals') return !!user?.is_superadmin || !!user?.is_manager;
+    return true;
+  });
+
+  const isExpensesActive = filteredItems.some(i => isActive(i.to));
+  return (
+    <div style={{marginBottom: 24}}>
+      <button
+        onClick={() => setExpanded(e => !e)}
+        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isExpensesActive?600:500,color:isExpensesActive?'var(--text)':'var(--text2)',background:isExpensesActive?'var(--bg3)':'transparent',textAlign:'left'}}
+      >
+        <Receipt size={18} style={{opacity:0.8}}/>
+        <span style={{flex:1}}>Expenses & Reimb.</span>
+        {expanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+      </button>
+      {expanded && (
+        <div style={{paddingLeft:16}}>
+          {filteredItems.map(i => (
+            <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Sidebar({ isOpen, onClose }) {
+
   const { user, logout } = useAuth();
   const location = useLocation();
   const [showProfileModal, setShowProfileModal] = useState(false);
@@ -149,6 +189,9 @@ export default function Sidebar({ isOpen, onClose }) {
           }).map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav} />)}
           {user?.active_modules?.includes('hr') && (
             <HRModule isActive={isActive} handleNav={handleNav} />
+          )}
+          {user?.active_modules?.includes('expenses') && (
+            <ExpensesModule isActive={isActive} handleNav={handleNav} />
           )}
         </div>
         

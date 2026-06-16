@@ -42,6 +42,10 @@ import FinanceWeeklyBuckets from './pages/finance/FinanceWeeklyBuckets';
 import FinancePivotReport from './pages/finance/FinancePivotReport';
 import ManagementReport from './pages/finance/ManagementReport';
 import FinanceConfig from './pages/finance/FinanceConfig';
+import ExpenseDashboard from './pages/expenses/ExpenseDashboard';
+import MyExpenses from './pages/expenses/MyExpenses';
+import ExpenseApprovals from './pages/expenses/ExpenseApprovals';
+import ExpenseCategories from './pages/expenses/ExpenseCategories';
 
 // Integrated PrivateRoute
 const PrivateRoute = ({ children }) => {
@@ -96,6 +100,11 @@ export default function App() {
           <Route path="/finance/pivot" element={<PrivateRoute><FinancePivotReport /></PrivateRoute>} />
           <Route path="/finance/report" element={<PrivateRoute><ManagementReport /></PrivateRoute>} />
           <Route path="/finance/config" element={<PrivateRoute><FinanceConfig /></PrivateRoute>} />
+          {/* Expenses Module */}
+          <Route path="/expenses/dashboard" element={<PrivateRoute><ExpenseDashboard /></PrivateRoute>} />
+          <Route path="/expenses/my" element={<PrivateRoute><MyExpenses /></PrivateRoute>} />
+          <Route path="/expenses/approvals" element={<PrivateRoute><ExpenseApprovals /></PrivateRoute>} />
+          <Route path="/expenses/categories" element={<PrivateRoute><ExpenseCategories /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

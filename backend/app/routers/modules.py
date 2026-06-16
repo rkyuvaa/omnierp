@@ -29,6 +29,7 @@ def seed_modules(db: Session):
         {"key": "tasks", "name": "Task Management", "icon": "check-square-2"},
         {"key": "hr", "name": "Attendance & HR", "icon": "clock"},
         {"key": "finance", "name": "Finance", "icon": "trending-up"},
+        {"key": "expenses", "name": "Expenses & Reimbursement", "icon": "receipt"},
         {"key": "studio", "name": "Studio", "icon": "settings"}
     ]
     for idx, item in enumerate(defaults):
