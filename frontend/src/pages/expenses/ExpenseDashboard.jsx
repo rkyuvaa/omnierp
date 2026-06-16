@@ -73,61 +73,42 @@ export default function ExpenseDashboard() {
   }, []);
 
   return (
-    <Layout>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 24,
-                fontWeight: 800,
-                color: 'var(--text)',
-                letterSpacing: '-0.5px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <Receipt size={24} style={{ color: 'var(--accent)' }} /> Expenses &amp; Reimbursement
-            </h1>
-            <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 4 }}>Track and manage expense claims</div>
-          </div>
-          <div style={{ display: 'flex', gap: 10 }}>
+    <Layout title="Expenses & Reimbursement">
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* Header Actions */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
+          <button
+            onClick={() => navigate('/expenses/my')}
+            style={{
+              padding: '9px 18px',
+              borderRadius: 8,
+              border: '1px solid var(--border)',
+              background: 'var(--bg2)',
+              color: 'var(--text)',
+              cursor: 'pointer',
+              fontWeight: 600,
+              fontSize: 13,
+            }}
+          >
+            My Claims
+          </button>
+          {user?.is_superadmin && (
             <button
-              onClick={() => navigate('/expenses/my')}
+              onClick={() => navigate('/expenses/approvals')}
               style={{
                 padding: '9px 18px',
                 borderRadius: 8,
-                border: '1px solid var(--border)',
-                background: 'var(--bg2)',
-                color: 'var(--text)',
+                border: 'none',
+                background: 'var(--accent)',
+                color: '#fff',
                 cursor: 'pointer',
                 fontWeight: 600,
                 fontSize: 13,
               }}
             >
-              My Claims
+              Approvals
             </button>
-            {user?.is_superadmin && (
-              <button
-                onClick={() => navigate('/expenses/approvals')}
-                style={{
-                  padding: '9px 18px',
-                  borderRadius: 8,
-                  border: 'none',
-                  background: 'var(--accent)',
-                  color: '#fff',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 13,
-                }}
-              >
-                Approvals
-              </button>
-            )}
-          </div>
+          )}
         </div>
 
         {/* KPI Cards */}

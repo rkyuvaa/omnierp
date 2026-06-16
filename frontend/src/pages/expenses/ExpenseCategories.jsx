@@ -113,57 +113,39 @@ export default function ExpenseCategories() {
   }
 
   return (
-    <Layout>
-      <div style={{ maxWidth: 900, margin: '0 auto', padding: '28px 24px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 800,
-                color: 'var(--text)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <Tag size={22} style={{ color: 'var(--accent)' }} /> Expense Categories
-            </h1>
-            <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 3 }}>Manage expense types and limits</div>
-          </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-            <label
-              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}
-            >
-              <input
-                type="checkbox"
-                checked={showInactive}
-                onChange={e => setShowInactive(e.target.checked)}
-                style={{ cursor: 'pointer' }}
-              />{' '}
-              Show inactive
-            </label>
-            <button
-              onClick={openAdd}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 7,
-                padding: '9px 18px',
-                borderRadius: 9,
-                border: 'none',
-                background: 'var(--accent)',
-                color: '#fff',
-                cursor: 'pointer',
-                fontWeight: 700,
-                fontSize: 13,
-              }}
-            >
-              <Plus size={15} /> Add Category
-            </button>
-          </div>
+    <Layout title="Expense Categories">
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* Header Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16, marginBottom: 20 }}>
+          <label
+            style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}
+          >
+            <input
+              type="checkbox"
+              checked={showInactive}
+              onChange={e => setShowInactive(e.target.checked)}
+              style={{ cursor: 'pointer' }}
+            />{' '}
+            Show inactive
+          </label>
+          <button
+            onClick={openAdd}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 7,
+              padding: '9px 18px',
+              borderRadius: 9,
+              border: 'none',
+              background: 'var(--accent)',
+              color: '#fff',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: 13,
+            }}
+          >
+            <Plus size={15} /> Add Category
+          </button>
         </div>
 
         {loading ? (

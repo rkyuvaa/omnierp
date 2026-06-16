@@ -84,34 +84,8 @@ export default function ExpenseApprovals() {
   const pendingCount = tab === 'pending' ? claims.length : 0;
 
   return (
-    <Layout>
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 24px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 800,
-                color: 'var(--text)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <CheckCircle size={22} style={{ color: 'var(--accent)' }} /> Expense Approvals
-            </h1>
-            <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 3 }}>
-              Review and process employee expense claims
-            </div>
-          </div>
-          <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>
-            {filtered.length} claim{filtered.length !== 1 ? 's' : ''} ·{' '}
-            <span style={{ color: 'var(--text)' }}>{INR(totalFiltered)}</span>
-          </div>
-        </div>
-
+    <Layout title="Expense Approvals">
+      <div style={{ padding: '0 24px 24px' }}>
         {/* Tabs + Search */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
           {[
@@ -136,6 +110,10 @@ export default function ExpenseApprovals() {
             </button>
           ))}
           <div style={{ flex: 1 }} />
+          <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600, marginRight: 10 }}>
+            {filtered.length} claim{filtered.length !== 1 ? 's' : ''} ·{' '}
+            <span style={{ color: 'var(--text)' }}>{INR(totalFiltered)}</span>
+          </div>
           <div style={{ position: 'relative' }}>
             <Search
               size={14}

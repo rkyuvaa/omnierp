@@ -148,26 +148,30 @@ export default function MyExpenses() {
   const selCat = categories.find(c => c.id === parseInt(form.category_id));
 
   return (
-    <Layout>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '28px 24px' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-          <div>
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 22,
-                fontWeight: 800,
-                color: 'var(--text)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-              }}
-            >
-              <Receipt size={22} style={{ color: 'var(--accent)' }} /> My Expenses
-            </h1>
-            <div style={{ fontSize: 13, color: 'var(--text3)', marginTop: 3 }}>Submit and track your expense claims</div>
-          </div>
+    <Layout title="My Expenses">
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* Filter tabs & Actions */}
+        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+          {[{ v: '', l: 'All' }, ...Object.entries(STATUS_CONFIG).map(([v, c]) => ({ v, l: c.label }))].map(
+            ({ v, l }) => (
+              <button
+                key={v}
+                onClick={() => setFilterStatus(v)}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 20,
+                  border: '1px solid var(--border)',
+                  background: filterStatus === v ? 'var(--accent)' : 'var(--bg2)',
+                  color: filterStatus === v ? '#fff' : 'var(--text2)',
+                  cursor: 'pointer',
+                  fontWeight: 700,
+                  fontSize: 12,
+                }}
+              >
+                {l}
+              </button>
+            )
+          )}
           <button
             onClick={() => setShowModal(true)}
             style={{
@@ -183,35 +187,11 @@ export default function MyExpenses() {
               fontWeight: 700,
               fontSize: 13,
               boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+              marginLeft: 'auto',
             }}
           >
             <Plus size={16} /> New Claim
           </button>
-        </div>
-
-        {/* Filter tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap' }}>
-          {[{ v: '', l: 'All' }, ...Object.entries(STATUS_CONFIG).map(([v, c]) => ({ v, l: c.label }))].map(
-            ({ v, l }) => (
-              <button
-                key={v}
-                onClick={() => setFilterStatus(v)}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 20,
-                  border: '1px solid var(--border)',
-                  background: filterStatus === v ? 'var(--accent)' : 'var(--bg2)',
-                  color: filterStatus === v ? '#fff' : 'var(--text2)',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  fontSize: 12,
-                  transition: 'all 0.15s',
-                }}
-              >
-                {l}
-              </button>
-            )
-          )}
         </div>
 
         {/* Claims list */}
