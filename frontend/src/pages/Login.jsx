@@ -124,7 +124,7 @@ export default function Login() {
           min-height: 100vh;
           background: #f4fbf0;
           padding: 24px;
-          font-family: 'DM Sans', sans-serif;
+          font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         .login-card-container {
           width: 100%;

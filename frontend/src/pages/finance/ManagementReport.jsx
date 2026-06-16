@@ -119,7 +119,7 @@ export default function ManagementReport() {
     wrapper: { background: '#f3f4f6', minHeight: '100vh', padding: '24px' },
     container: {
       maxWidth: 900, margin: '0 auto',
-      fontFamily: '"DM Sans", sans-serif',
+      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
     },
     reportHeader: {
       background: '#fff', border: '1px solid #e5e7eb',
