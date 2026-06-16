@@ -46,6 +46,7 @@ import ExpenseDashboard from './pages/expenses/ExpenseDashboard';
 import MyExpenses from './pages/expenses/MyExpenses';
 import ExpenseApprovals from './pages/expenses/ExpenseApprovals';
 import ExpenseCategories from './pages/expenses/ExpenseCategories';
+import ExpenseSettlement from './pages/expenses/ExpenseSettlement';
 
 // Integrated PrivateRoute
 const PrivateRoute = ({ children }) => {
@@ -105,6 +106,7 @@ export default function App() {
           <Route path="/expenses/my" element={<PrivateRoute><MyExpenses /></PrivateRoute>} />
           <Route path="/expenses/approvals" element={<PrivateRoute><ExpenseApprovals /></PrivateRoute>} />
           <Route path="/expenses/categories" element={<PrivateRoute><ExpenseCategories /></PrivateRoute>} />
+          <Route path="/expenses/advance/:id/settlement" element={<PrivateRoute><ExpenseSettlement /></PrivateRoute>} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

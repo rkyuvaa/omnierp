@@ -63,9 +63,10 @@ export default function ExpenseDashboard() {
     Promise.all([
       api.get('/expenses/summary'),
       api.get('/expenses/', { params: {} }),
+      api.get('/expenses/advances/ledger').catch(() => ({ data: { balance: 0 } })),
     ])
-      .then(([s, c]) => {
-        setSummary(s.data);
+      .then(([s, c, l]) => {
+        setSummary({ ...s.data, ledger_balance: l.data?.balance ?? 0 });
         setRecentClaims(c.data.slice(0, 10));
       })
       .catch(() => {})
@@ -136,6 +137,14 @@ export default function ExpenseDashboard() {
             color="#6366f1"
             bg="#6366f120"
             sub="Paid out"
+          />
+          <KpiCard
+            label="Advance Balance"
+            value={loading ? '—' : INR(summary.ledger_balance)}
+            icon={Wallet}
+            color="#10b981"
+            bg="#10b98120"
+            sub="Active cash advance"
           />
           <KpiCard
             label="This Month"
