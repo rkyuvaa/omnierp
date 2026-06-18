@@ -82,7 +82,7 @@ const EMPTY_FORM = {
 
 export default function MyExpenses() {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState('reimbursements');
+  const [activeTab, setActiveTab] = useState('advances');
   const [claims, setClaims] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -320,24 +320,6 @@ export default function MyExpenses() {
         <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
           <button
             onClick={() => {
-              setActiveTab('reimbursements');
-              setFilterStatus('');
-            }}
-            style={{
-              padding: '12px 4px',
-              background: 'none',
-              border: 'none',
-              borderBottom: activeTab === 'reimbursements' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: activeTab === 'reimbursements' ? 'var(--text)' : 'var(--text3)',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: 14,
-            }}
-          >
-            Reimbursement Claims
-          </button>
-          <button
-            onClick={() => {
               setActiveTab('advances');
               setFilterStatus('');
             }}
@@ -353,6 +335,24 @@ export default function MyExpenses() {
             }}
           >
             Cash Advances
+          </button>
+          <button
+            onClick={() => {
+              setActiveTab('reimbursements');
+              setFilterStatus('');
+            }}
+            style={{
+              padding: '12px 4px',
+              background: 'none',
+              border: 'none',
+              borderBottom: activeTab === 'reimbursements' ? '2px solid var(--accent)' : '2px solid transparent',
+              color: activeTab === 'reimbursements' ? 'var(--text)' : 'var(--text3)',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: 14,
+            }}
+          >
+            Reimbursement Claims
           </button>
         </div>
 

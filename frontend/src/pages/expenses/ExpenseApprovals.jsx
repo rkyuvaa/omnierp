@@ -45,7 +45,7 @@ const ADV_STATUS_COLORS = {
 
 export default function ExpenseApprovals() {
   const { user } = useAuth();
-  const [mainTab, setMainTab] = useState('reimbursements'); // reimbursements | advances
+  const [mainTab, setMainTab] = useState('advances'); // reimbursements | advances
   const [subTab, setSubTab] = useState('pending'); // pending | all
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -171,25 +171,6 @@ export default function ExpenseApprovals() {
         <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
           <button
             onClick={() => {
-              setMainTab('reimbursements');
-              setSubTab('pending');
-              setSearch('');
-            }}
-            style={{
-              padding: '12px 4px',
-              background: 'none',
-              border: 'none',
-              borderBottom: mainTab === 'reimbursements' ? '2px solid var(--accent)' : '2px solid transparent',
-              color: mainTab === 'reimbursements' ? 'var(--text)' : 'var(--text3)',
-              cursor: 'pointer',
-              fontWeight: 700,
-              fontSize: 14,
-            }}
-          >
-            Reimbursement Claims
-          </button>
-          <button
-            onClick={() => {
               setMainTab('advances');
               setSubTab('pending');
               setSearch('');
@@ -206,6 +187,25 @@ export default function ExpenseApprovals() {
             }}
           >
             Cash Advances & Settlements
+          </button>
+          <button
+            onClick={() => {
+              setMainTab('reimbursements');
+              setSubTab('pending');
+              setSearch('');
+            }}
+            style={{
+              padding: '12px 4px',
+              background: 'none',
+              border: 'none',
+              borderBottom: mainTab === 'reimbursements' ? '2px solid var(--accent)' : '2px solid transparent',
+              color: mainTab === 'reimbursements' ? 'var(--text)' : 'var(--text3)',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: 14,
+            }}
+          >
+            Reimbursement Claims
           </button>
         </div>
 
