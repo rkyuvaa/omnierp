@@ -10,6 +10,7 @@ export default function BackupManagement() {
   const [generating, setGenerating] = useState(false);
   const [restoring, setRestoring] = useState(false);
   const [showRestoreScreen, setShowRestoreScreen] = useState(false);
+  const [downloadingFile, setDownloadingFile] = useState(null);
 
   useEffect(() => {
     fetchBackups();
@@ -42,9 +43,11 @@ export default function BackupManagement() {
   };
 
   const handleDownload = async (filename) => {
+    setDownloadingFile(filename);
     try {
       const response = await api.get(`/admin/backups/${filename}/download`, {
         responseType: 'blob',
+        timeout: 0, // Disable timeout limit for downloads
       });
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
@@ -55,6 +58,8 @@ export default function BackupManagement() {
       link.remove();
     } catch (error) {
       toast.error('Download failed');
+    } finally {
+      setDownloadingFile(null);
     }
   };
 
@@ -174,8 +179,13 @@ export default function BackupManagement() {
                       className="btn btn-ghost" 
                       onClick={() => handleDownload(b.filename)}
                       style={{ color: 'var(--accent)' }}
+                      disabled={downloadingFile !== null}
                     >
-                      <Download size={18} />
+                      {downloadingFile === b.filename ? (
+                        <RefreshCw size={18} className="spin-fast" />
+                      ) : (
+                        <Download size={18} className="download-btn-icon" />
+                      )}
                     </button>
                   </td>
                 </tr>
@@ -205,7 +215,14 @@ export default function BackupManagement() {
 
       <style>{`
         .spin { animation: spin 2s linear infinite; }
+        .spin-fast { animation: spin 0.8s linear infinite; }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        .download-btn-icon {
+          transition: transform 0.2s ease;
+        }
+        .btn:hover:not(:disabled) .download-btn-icon {
+          transform: translateY(2px);
+        }
       `}</style>
     </Layout>
   );
