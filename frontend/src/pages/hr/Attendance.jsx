@@ -18,8 +18,7 @@ import {
   MapPin,
   Camera,
   X,
-  Building2,
-  TriangleAlert
+  Building2
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -722,61 +721,34 @@ export default function Attendance() {
                                 transition: 'background-color 0.2s'
                               }}
                             >
-                              {/* Badge wrapper — relative so warning dot can overlay */}
-                              <div style={{ position: 'relative', width: 28, margin: '0 auto' }}>
-                                <div
-                                  title={badgeTitle}
-                                  onClick={() => isHRAdmin && openCorrect(emp, d)}
-                                  style={{
-                                    width: 28, height: 28, borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
-                                    background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
-                                    color: cfg ? cfg.color : 'var(--text3)',
-                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '8px' : '10px', 
-                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                    border: ghostPunch ? '2px solid #eab308' : v ? '2px solid #f97316' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
-                                    boxShadow: ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
-                                    boxSizing: 'border-box'
-                                  }}
-                                  onMouseEnter={e => {
-                                    if (isHRAdmin) {
-                                      e.currentTarget.style.transform = 'scale(1.08)';
-                                      if (cfg) e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 3px rgba(234,179,8,0.25)' : '0 4px 6px rgba(0,0,0,0.05)';
-                                    }
-                                  }}
-                                  onMouseLeave={e => {
-                                    if (isHRAdmin) {
-                                      e.currentTarget.style.transform = 'scale(1)';
-                                      e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
-                                    }
-                                  }}
-                                >
-                                  {cfg ? cfg.label : '·'}
-                                </div>
-                                {/* Ghost punch warning indicator */}
-                                {ghostPunch && (
-                                  <div
-                                    title={badgeTitle}
-                                    style={{
-                                      position: 'absolute',
-                                      top: -5,
-                                      right: -5,
-                                      width: 13,
-                                      height: 13,
-                                      borderRadius: '50%',
-                                      background: '#eab308',
-                                      border: '2px solid var(--bg2)',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                      zIndex: 2,
-                                      boxShadow: '0 1px 4px rgba(234,179,8,0.5)',
-                                      animation: 'ghost-pulse 2s ease-in-out infinite',
-                                    }}
-                                  >
-                                    <TriangleAlert size={7} color="white" strokeWidth={3} />
-                                  </div>
-                                )}
+                              <div
+                                title={badgeTitle}
+                                onClick={() => isHRAdmin && openCorrect(emp, d)}
+                                style={{
+                                  width: 28, height: 28, margin: '0 auto', borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
+                                  background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
+                                  color: cfg ? cfg.color : 'var(--text3)',
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '8px' : '10px', 
+                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                  border: ghostPunch ? '2px solid #eab308' : v ? '2px solid #f97316' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
+                                  boxShadow: ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
+                                  boxSizing: 'border-box'
+                                }}
+                                onMouseEnter={e => {
+                                  if (isHRAdmin) {
+                                    e.currentTarget.style.transform = 'scale(1.08)';
+                                    if (cfg) e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 3px rgba(234,179,8,0.25)' : '0 4px 6px rgba(0,0,0,0.05)';
+                                  }
+                                }}
+                                onMouseLeave={e => {
+                                  if (isHRAdmin) {
+                                    e.currentTarget.style.transform = 'scale(1)';
+                                    e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
+                                  }
+                                }}
+                              >
+                                {cfg ? cfg.label : '·'}
                               </div>
                             </td>
                           );
