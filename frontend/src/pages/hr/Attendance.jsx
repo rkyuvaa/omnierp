@@ -679,16 +679,23 @@ export default function Attendance() {
                           const cfg = status ? STATUS_CONFIG[status] : null;
                           const v = (violations[emp.id] || []).find(x => x.dayStr === d.dayStr);
 
-                          // Ghost Punch Detection: present/late but stayed < 60 minutes
+                          // Ghost Punch Detection: present/late but hours_worked < 1 hour
                           let ghostPunch = false;
                           let ghostMins = null;
-                          if (rec?.check_in && rec?.check_out && (status === 'present' || status === 'late')) {
-                            const inMs = new Date(rec.check_in).getTime();
-                            const outMs = new Date(rec.check_out).getTime();
-                            const diffMins = Math.round((outMs - inMs) / 60000);
-                            if (diffMins > 0 && diffMins < 60) {
+                          if (rec && (status === 'present' || status === 'late')) {
+                            const hw = rec.hours_worked ?? null;
+                            if (hw !== null && hw > 0 && hw < 1) {
                               ghostPunch = true;
-                              ghostMins = diffMins;
+                              ghostMins = Math.round(hw * 60);
+                            } else if (!hw && rec.check_in && rec.check_out) {
+                              // Fallback: compute from timestamps if hours_worked is 0/null
+                              const inMs = new Date(rec.check_in).getTime();
+                              const outMs = new Date(rec.check_out).getTime();
+                              const diffMins = Math.round((outMs - inMs) / 60000);
+                              if (diffMins > 0 && diffMins < 60) {
+                                ghostPunch = true;
+                                ghostMins = diffMins;
+                              }
                             }
                           }
 
