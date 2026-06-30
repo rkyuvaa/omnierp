@@ -18,7 +18,8 @@ import {
   MapPin,
   Camera,
   X,
-  Building2
+  Building2,
+  TriangleAlert
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
@@ -678,6 +679,25 @@ export default function Attendance() {
                           const cfg = status ? STATUS_CONFIG[status] : null;
                           const v = (violations[emp.id] || []).find(x => x.dayStr === d.dayStr);
 
+                          // Ghost Punch Detection: present/late but stayed < 60 minutes
+                          let ghostPunch = false;
+                          let ghostMins = null;
+                          if (rec?.check_in && rec?.check_out && (status === 'present' || status === 'late')) {
+                            const inMs = new Date(rec.check_in).getTime();
+                            const outMs = new Date(rec.check_out).getTime();
+                            const diffMins = Math.round((outMs - inMs) / 60000);
+                            if (diffMins > 0 && diffMins < 60) {
+                              ghostPunch = true;
+                              ghostMins = diffMins;
+                            }
+                          }
+
+                          const badgeTitle = ghostPunch
+                            ? `⚠ Suspicious Attendance — Only ${ghostMins} min in office!\nIn: ${new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}  Out: ${new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\nMarked as ${cfg?.full} — Review required`
+                            : v ? v.label
+                            : cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}`
+                            : (isHRAdmin ? `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct` : `Empty (${d.num} ${MONTH_NAMES[month-1]})`);
+
                           return (
                             <td 
                               key={d.num} 
@@ -687,38 +707,65 @@ export default function Attendance() {
                                 padding: '3px', 
                                 textAlign: 'center', 
                                 borderRight: '1px solid rgba(226, 232, 240, 0.5)', 
-                                background: v ? 'rgba(249, 115, 22, 0.05)' : (hoveredCol === d.num ? 'rgba(25, 84, 2, 0.03)' : 'transparent'),
+                                background: ghostPunch ? 'rgba(234, 179, 8, 0.06)' : v ? 'rgba(249, 115, 22, 0.05)' : (hoveredCol === d.num ? 'rgba(25, 84, 2, 0.03)' : 'transparent'),
                                 transition: 'background-color 0.2s'
                               }}
                             >
-                              <div
-                                title={v ? v.label : (cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}` : (isHRAdmin ? `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct` : `Empty (${d.num} ${MONTH_NAMES[month-1]})`))}
-                                onClick={() => isHRAdmin && openCorrect(emp, d)}
-                                style={{
-                                  width: 28, height: 28, margin: '0 auto', borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
-                                  background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
-                                  color: cfg ? cfg.color : 'var(--text3)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '8px' : '10px', 
-                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                  border: v ? '2px solid #f97316' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
-                                  boxShadow: cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
-                                  boxSizing: 'border-box'
-                                }}
-                                onMouseEnter={e => {
-                                  if (isHRAdmin) {
-                                    e.currentTarget.style.transform = 'scale(1.08)';
-                                    if (cfg) e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
-                                  }
-                                }}
-                                onMouseLeave={e => {
-                                  if (isHRAdmin) {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.boxShadow = cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
-                                  }
-                                }}
-                              >
-                                {cfg ? cfg.label : '·'}
+                              {/* Badge wrapper — relative so warning dot can overlay */}
+                              <div style={{ position: 'relative', width: 28, margin: '0 auto' }}>
+                                <div
+                                  title={badgeTitle}
+                                  onClick={() => isHRAdmin && openCorrect(emp, d)}
+                                  style={{
+                                    width: 28, height: 28, borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
+                                    background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
+                                    color: cfg ? cfg.color : 'var(--text3)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '8px' : '10px', 
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    border: ghostPunch ? '2px solid #eab308' : v ? '2px solid #f97316' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
+                                    boxShadow: ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
+                                    boxSizing: 'border-box'
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (isHRAdmin) {
+                                      e.currentTarget.style.transform = 'scale(1.08)';
+                                      if (cfg) e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 3px rgba(234,179,8,0.25)' : '0 4px 6px rgba(0,0,0,0.05)';
+                                    }
+                                  }}
+                                  onMouseLeave={e => {
+                                    if (isHRAdmin) {
+                                      e.currentTarget.style.transform = 'scale(1)';
+                                      e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
+                                    }
+                                  }}
+                                >
+                                  {cfg ? cfg.label : '·'}
+                                </div>
+                                {/* Ghost punch warning indicator */}
+                                {ghostPunch && (
+                                  <div
+                                    title={badgeTitle}
+                                    style={{
+                                      position: 'absolute',
+                                      top: -5,
+                                      right: -5,
+                                      width: 13,
+                                      height: 13,
+                                      borderRadius: '50%',
+                                      background: '#eab308',
+                                      border: '2px solid var(--bg2)',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      zIndex: 2,
+                                      boxShadow: '0 1px 4px rgba(234,179,8,0.5)',
+                                      animation: 'ghost-pulse 2s ease-in-out infinite',
+                                    }}
+                                  >
+                                    <TriangleAlert size={7} color="white" strokeWidth={3} />
+                                  </div>
+                                )}
                               </div>
                             </td>
                           );
@@ -1202,6 +1249,13 @@ export default function Attendance() {
           </div>
         </div>
       )}
+      {/* Ghost punch animation */}
+      <style>{`
+        @keyframes ghost-pulse {
+          0%, 100% { box-shadow: 0 0 0 0 rgba(234,179,8,0.5), 0 1px 4px rgba(234,179,8,0.5); }
+          50% { box-shadow: 0 0 0 4px rgba(234,179,8,0), 0 1px 4px rgba(234,179,8,0.5); }
+        }
+      `}</style>
     </Layout>
   );
 }
