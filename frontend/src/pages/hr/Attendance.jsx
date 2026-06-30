@@ -679,28 +679,32 @@ export default function Attendance() {
                           const cfg = status ? STATUS_CONFIG[status] : null;
                           const v = (violations[emp.id] || []).find(x => x.dayStr === d.dayStr);
 
-                          // Ghost Punch Detection: present/late but hours_worked < 1 hour
+                          // Ghost Punch / Missing Checkout Detection:
+                          // If marked Present or Late, but has no checkout OR checkout is less than 60 mins from checkin.
                           let ghostPunch = false;
                           let ghostMins = null;
+                          let isMissingCheckout = false;
                           if (rec && (status === 'present' || status === 'late')) {
-                            const hw = rec.hours_worked ?? null;
-                            if (hw !== null && hw > 0 && hw < 1) {
-                              ghostPunch = true;
-                              ghostMins = Math.round(hw * 60);
-                            } else if (!hw && rec.check_in && rec.check_out) {
-                              // Fallback: compute from timestamps if hours_worked is 0/null
-                              const inMs = new Date(rec.check_in).getTime();
-                              const outMs = new Date(rec.check_out).getTime();
-                              const diffMins = Math.round((outMs - inMs) / 60000);
-                              if (diffMins > 0 && diffMins < 60) {
+                            if (rec.check_in) {
+                              if (!rec.check_out) {
                                 ghostPunch = true;
-                                ghostMins = diffMins;
+                                isMissingCheckout = true;
+                              } else {
+                                const inMs = new Date(rec.check_in).getTime();
+                                const outMs = new Date(rec.check_out).getTime();
+                                const diffMins = Math.round((outMs - inMs) / 60000);
+                                if (diffMins >= 0 && diffMins < 60) {
+                                  ghostPunch = true;
+                                  ghostMins = diffMins;
+                                }
                               }
                             }
                           }
 
                           const badgeTitle = ghostPunch
-                            ? `⚠ Suspicious Attendance — Only ${ghostMins} min in office!\nIn: ${new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}  Out: ${new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\nMarked as ${cfg?.full} — Review required`
+                            ? (isMissingCheckout 
+                                ? `⚠ Suspicious Attendance — Missing check-out / Single punch!\nIn: ${new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}  Out: —\nMarked as ${cfg?.full} — Review required`
+                                : `⚠ Suspicious Attendance — Only ${ghostMins} min in office!\nIn: ${new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}  Out: ${new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\nMarked as ${cfg?.full} — Review required`)
                             : v ? v.label
                             : cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}`
                             : (isHRAdmin ? `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct` : `Empty (${d.num} ${MONTH_NAMES[month-1]})`);
