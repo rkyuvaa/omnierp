@@ -1021,6 +1021,7 @@ export default function HRConfigurations() {
               </button>
             </div>
           </div>
+        )}
       </div>
     </Layout>
   );
