@@ -280,7 +280,21 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
         HRLeaveBalance.year == year
     ).all()
     balance_map = {b.leave_type_id: b for b in balances}
-    
+
+    # Pre-fetch YTD leave attendance record counts per leave type (for yearly cap check)
+    ytd_leave_recs = db.query(HRAttendanceRecord).filter(
+        HRAttendanceRecord.employee_id == emp.id,
+        extract('year', HRAttendanceRecord.date) == year,
+        HRAttendanceRecord.status == "leave",
+        HRAttendanceRecord.leave_request_id.isnot(None)
+    ).all()
+    ytd_leave_days_by_type = {}
+    for ytd_r in ytd_leave_recs:
+        if ytd_r.leave_request and ytd_r.leave_request.leave_type_id:
+            lt_id_ytd = ytd_r.leave_request.leave_type_id
+            if ytd_r.leave_request.leave_type and ytd_r.leave_request.leave_type.is_paid:
+                ytd_leave_days_by_type[lt_id_ytd] = ytd_leave_days_by_type.get(lt_id_ytd, 0) + 1
+
     paid_leaves_by_type = {}
 
     # 2. Calculate LOP Days (Numerator subtraction)
@@ -334,22 +348,10 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                         exceeds_monthly = (paid_leaves_by_type.get(lt_id, 0) > bal.monthly_limit)
                     
                     # Check 2: Exceeded yearly balance?
-                    # Count actual approved leave attendance records for this leave type
-                    # across the ENTIRE year (not just this month) to avoid double-counting.
+                    # Use pre-fetched YTD count to avoid N DB queries inside the loop.
                     exceeds_yearly = False
                     if bal:
-                        from sqlalchemy import extract as sql_extract
-                        ytd_leave_recs = db.query(HRAttendanceRecord).filter(
-                            HRAttendanceRecord.employee_id == emp.id,
-                            sql_extract('year', HRAttendanceRecord.date) == year,
-                            HRAttendanceRecord.status == "leave",
-                            HRAttendanceRecord.leave_request_id.isnot(None)
-                        ).all()
-                        ytd_days_for_type = sum(
-                            1 for r in ytd_leave_recs
-                            if r.leave_request and r.leave_request.leave_type_id == lt_id
-                            and (r.leave_request.leave_type.is_paid if r.leave_request.leave_type else False)
-                        )
+                        ytd_days_for_type = ytd_leave_days_by_type.get(lt_id, 0)
                         exceeds_yearly = (ytd_days_for_type > bal.allocated_days)
                     
                     if exceeds_monthly or exceeds_yearly:
