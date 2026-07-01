@@ -542,6 +542,9 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
 
         calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, held_list, paid_list)
 
+        # lop_alert is a runtime flag only — not stored in DB
+        lop_alert = calc.pop("lop_alert", None)
+
         if existing:
             for k, v in calc.items():
                 setattr(existing, k, v)
