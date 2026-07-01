@@ -476,7 +476,6 @@ export default function HRConfigurations() {
             </div>
           </div>
         )}
-      </div>
 
       {/* Modal */}
       {modal && (
@@ -1022,8 +1021,6 @@ export default function HRConfigurations() {
               </button>
             </div>
           </div>
-        )}
-
       </div>
     </Layout>
   );
