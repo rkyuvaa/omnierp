@@ -476,6 +476,29 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     }
 
 
+@router.get("/debug-leaves-public")
+def debug_leaves_public(name: str, month: int, year: int, db: Session = Depends(get_db)):
+    emp = db.query(HREmployee).filter(HREmployee.name.like(f"%{name}%")).first()
+    if not emp:
+        return {"error": "Employee not found"}
+    balances = db.query(HRLeaveBalance).filter(HRLeaveBalance.employee_id == emp.id, HRLeaveBalance.year == year).all()
+    bal_data = [{"type": b.leave_type.name, "code": b.leave_type.code, "allocated": b.allocated_days, "used": b.used_days, "remaining": b.allocated_days - b.used_days} for b in balances]
+    
+    requests = db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == emp.id).all()
+    req_data = [{"id": r.id, "type": r.leave_type.name, "code": r.leave_type.code, "from": str(r.from_date), "to": str(r.to_date), "total_days": r.total_days, "status": r.status} for r in requests]
+    
+    att_recs = db.query(HRAttendanceRecord).filter(HRAttendanceRecord.employee_id == emp.id, extract('month', HRAttendanceRecord.date) == month, extract('year', HRAttendanceRecord.date) == year).all()
+    att_data = [{"date": str(a.date), "status": a.status, "leave_req_id": a.leave_request_id} for a in att_recs]
+    
+    return {
+        "emp_name": emp.name,
+        "emp_id": emp.id,
+        "balances": bal_data,
+        "requests": req_data,
+        "attendance": att_data
+    }
+
+
 @router.get("/debug/{emp_id}")
 def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Debug endpoint to inspect salary component resolution for an employee"""
