@@ -334,18 +334,23 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                         exceeds_monthly = (paid_leaves_by_type.get(lt_id, 0) > bal.monthly_limit)
                     
                     # Check 2: Exceeded yearly balance?
+                    # Count actual approved leave attendance records for this leave type
+                    # across the ENTIRE year (not just this month) to avoid double-counting.
                     exceeds_yearly = False
                     if bal:
-                        total_this_month = len([
-                            r for r in records 
-                            if r.status == "leave" 
-                            and r.leave_request 
-                            and r.leave_request.leave_type_id == lt_id 
+                        from sqlalchemy import extract as sql_extract
+                        ytd_leave_recs = db.query(HRAttendanceRecord).filter(
+                            HRAttendanceRecord.employee_id == emp.id,
+                            sql_extract('year', HRAttendanceRecord.date) == year,
+                            HRAttendanceRecord.status == "leave",
+                            HRAttendanceRecord.leave_request_id.isnot(None)
+                        ).all()
+                        ytd_days_for_type = sum(
+                            1 for r in ytd_leave_recs
+                            if r.leave_request and r.leave_request.leave_type_id == lt_id
                             and (r.leave_request.leave_type.is_paid if r.leave_request.leave_type else False)
-                        ])
-                        prior_used = max(0, bal.used_days - total_this_month)
-                        allocated = bal.allocated_days
-                        exceeds_yearly = (prior_used + paid_leaves_by_type[lt_id] > allocated)
+                        )
+                        exceeds_yearly = (ytd_days_for_type > bal.allocated_days)
                     
                     if exceeds_monthly or exceeds_yearly:
                         lop_days += 1
