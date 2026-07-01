@@ -3,7 +3,7 @@ import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
-import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight, Trash2, Mail } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight, Trash2, Mail, AlertTriangle } from 'lucide-react';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -353,7 +353,19 @@ export default function Payroll() {
                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{r.present_days}</td>
                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#ef4444', fontWeight: 600 }}>{r.absent_days}</td>
                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#6366f1', fontWeight: 600 }}>{r.leave_days}</td>
-                        <td style={{ padding: '10px 4px', textAlign: 'center', color: '#f59e0b', fontWeight: 600 }}>{r.lop_days}</td>
+                        <td style={{ padding: '10px 4px', textAlign: 'center' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ color: r.lop_days > 0 ? '#f59e0b' : 'var(--text3)', fontWeight: r.lop_days > 0 ? 700 : 400 }}>{r.lop_days}</span>
+                            {r.lop_alert && (
+                              <span
+                                title={r.lop_alert}
+                                style={{ cursor: 'help', display: 'flex', alignItems: 'center' }}
+                              >
+                                <AlertTriangle size={13} color="#f59e0b" strokeWidth={2.5} />
+                              </span>
+                            )}
+                          </div>
+                        </td>
                         <td style={{ padding: '10px 4px', textAlign: 'center', color: '#06b6d4', fontWeight: 600 }}>{r.on_duty_days}</td>
                         <td style={{ padding: '10px 4px', color: '#22c55e', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.total_earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '10px 4px', color: '#6366f1', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.arrears_paid || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>

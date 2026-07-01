@@ -157,6 +157,26 @@ def _calculate_components(ctc: float, components: list):
     return result_list, computed
 
 
+def _compute_lop_alert(db: Session, employee, lop_days: float, year: int):
+    """Return an alert string if the employee has LOP but available paid leave balance."""
+    if lop_days <= 0:
+        return None
+    balances = db.query(HRLeaveBalance).filter(
+        HRLeaveBalance.employee_id == employee.id,
+        HRLeaveBalance.year == year
+    ).all()
+    available = []
+    for bal in balances:
+        lt = bal.leave_type
+        if lt and lt.is_paid and lt.code != "LOP" and lt.is_active:
+            remaining = bal.allocated_days - bal.used_days
+            if remaining > 0:
+                available.append(f"{lt.name} ({remaining:.1f} days remaining)")
+    if available:
+        return "Has available paid leave that could cover LOP: " + ", ".join(available)
+    return None
+
+
 def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int, lop_base: str = "gross", arrears_held_list: list = None, arrears_paid_list: list = None) -> dict:
     # arrears_held_list/arrears_paid_list should be list of (amount, remarks)
     arrears_held_list = arrears_held_list or []
@@ -337,6 +357,9 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 lop_days += 1
                 absent_days_count += 1
 
+    # Detect: does the employee have LOP days BUT also has available paid leave balance?
+    lop_alert = _compute_lop_alert(db, emp, lop_days, year)
+
     # Overrule LOP deduction for fixed salary employees
     if getattr(emp, "salary_category", "regular") == "fixed":
         lop_days = 0
@@ -439,6 +462,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             "deductions": deductions,
             "employer_contributions": employer_contributions
         },
+        "lop_alert": lop_alert,
     }
 
 
@@ -581,6 +605,7 @@ def list_payroll(
             "arrears_paid": float(r.arrears_paid or 0),
             "components_breakdown": r.components_breakdown,
             "status": r.status,
+            "lop_alert": _compute_lop_alert(db, r.employee, float(r.lop_days or 0), r.year),
         })
     
     response_data.sort(key=lambda x: (x["employee_name"] or "").lower())
