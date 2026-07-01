@@ -281,10 +281,11 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     ).all()
     balance_map = {b.leave_type_id: b for b in balances}
 
-    # Pre-fetch YTD leave attendance record counts per leave type (for yearly cap check)
+    # Pre-fetch YTD leave attendance record counts per leave type (prior to current month)
     ytd_leave_recs = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == emp.id,
         extract('year', HRAttendanceRecord.date) == year,
+        extract('month', HRAttendanceRecord.date) < month,
         HRAttendanceRecord.status == "leave",
         HRAttendanceRecord.leave_request_id.isnot(None)
     ).all()
@@ -320,7 +321,6 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
         if rec:
             if rec.status in ["present", "late"]: present_days += 1
             elif rec.status == "half_day": half_days += 1
-            elif rec.status == "leave": leave_days += 1
             elif rec.status == "on_duty": on_duty_days += 1
             elif rec.status in ["absent", "sandwich_lop"]: absent_days_count += 1
             
@@ -341,6 +341,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                     
                     if lt_id:
                         paid_leaves_by_type[lt_id] = paid_leaves_by_type.get(lt_id, 0) + 1
+                        ytd_leave_days_by_type[lt_id] = ytd_leave_days_by_type.get(lt_id, 0) + 1
                     
                     # Check 1: Exceeded monthly limit for this specific leave type?
                     exceeds_monthly = False
@@ -348,7 +349,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                         exceeds_monthly = (paid_leaves_by_type.get(lt_id, 0) > bal.monthly_limit)
                     
                     # Check 2: Exceeded yearly balance?
-                    # Use pre-fetched YTD count to avoid N DB queries inside the loop.
+                    # Use running count to check if we exceeded allocated_days.
                     exceeds_yearly = False
                     if bal:
                         ytd_days_for_type = ytd_leave_days_by_type.get(lt_id, 0)
@@ -356,6 +357,8 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                     
                     if exceeds_monthly or exceeds_yearly:
                         lop_days += 1
+                    else:
+                        leave_days += 1
                 else:
                     lop_days += 1
         else:
