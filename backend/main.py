@@ -261,41 +261,6 @@ app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 
 @app.get("/")
 def root():
-    try:
-        from app.database import SessionLocal
-        from app.hr_models import HREmployee, HRLeaveBalance, HRLeaveRequest, HRAttendanceRecord
-        from sqlalchemy import extract
-        import json
-        
-        db = SessionLocal()
-        emp = db.query(HREmployee).filter(HREmployee.name.like("%Satishkumar%")).first()
-        if emp:
-            balances = db.query(HRLeaveBalance).filter(HRLeaveBalance.employee_id == emp.id, HRLeaveBalance.year == 2026).all()
-            bal_data = [{"type": b.leave_type.name, "code": b.leave_type.code, "allocated": b.allocated_days, "used": b.used_days, "remaining": b.allocated_days - b.used_days} for b in balances]
-            
-            requests = db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == emp.id).all()
-            req_data = [{"id": r.id, "type": r.leave_type.name, "code": r.leave_type.code, "from": str(r.from_date), "to": str(r.to_date), "total_days": r.total_days, "status": r.status} for r in requests]
-            
-            att_recs = db.query(HRAttendanceRecord).filter(HRAttendanceRecord.employee_id == emp.id, extract('month', HRAttendanceRecord.date) == 6, extract('year', HRAttendanceRecord.date) == 2026).all()
-            att_data = [{"date": str(a.date), "status": a.status, "leave_req_id": a.leave_request_id} for a in att_recs]
-            
-            dump_data = {
-                "emp_name": emp.name,
-                "emp_id": emp.id,
-                "balances": bal_data,
-                "requests": req_data,
-                "attendance": att_data
-            }
-            
-            # Save to upload_dir
-            target_path = os.path.join(upload_dir, "satishkumar_debug.json")
-            with open(target_path, "w") as f:
-                json.dump(dump_data, f)
-            print(f"DEBUG DUMP SUCCESSFUL AT {target_path}")
-        db.close()
-    except Exception as e:
-        print(f"DEBUG DUMP ERROR: {e}")
-        
     return {"message": "OmniERP API Running"}
 
 @app.get("/api/debug/uploads")
