@@ -48,6 +48,8 @@ export default function Requests() {
   const [odForm, setODForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState('');
+  const [leaveBalances, setLeaveBalances] = useState([]);
+  const [balancesLoading, setBalancesLoading] = useState(false);
 
   const { user } = useAuth();
 
@@ -109,6 +111,17 @@ export default function Requests() {
     finally { setLoading(false); }
   }
 
+  async function fetchLeaveBalances(empId) {
+    if (!empId) return;
+    setBalancesLoading(true);
+    try {
+      const year = new Date().getFullYear();
+      const r = await api.get('/hr/leave/balances', { params: { employee_id: empId, year } });
+      setLeaveBalances(r.data || []);
+    } catch { setLeaveBalances([]); }
+    finally { setBalancesLoading(false); }
+  }
+
   async function applyLeave() {
     const finalForm = { ...leaveForm };
     if (!user?.is_superadmin && user?.employee_id) {
@@ -129,6 +142,7 @@ export default function Requests() {
       toast.success('Leave request submitted');
       setShowLeaveModal(false);
       setLeaveForm({ is_half_day: false });
+      setLeaveBalances([]);
       fetchRequests();
     } catch (e) { toast.error(e.response?.data?.detail || 'Failed to apply'); }
     finally { setSaving(false); }
@@ -206,7 +220,7 @@ export default function Requests() {
             <button style={tabStyle(tab === 'od')} onClick={() => setTab('od')}>On-Duty Requests</button>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <button className="btn btn-primary" onClick={() => { setLeaveForm({ is_half_day: false, employee_id: selectedEmp }); setShowLeaveModal(true); }}
+            <button className="btn btn-primary" onClick={() => { const eid = selectedEmp || user?.employee_id; setLeaveForm({ is_half_day: false, employee_id: eid }); setShowLeaveModal(true); fetchLeaveBalances(eid); }}
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <PlusCircle size={14} /> Apply Leave
             </button>
@@ -337,16 +351,16 @@ export default function Requests() {
       {/* Leave Apply Modal */}
       {showLeaveModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 440, maxWidth: '100%' }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 480, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontWeight: 700 }}>Apply Leave</h3>
-              <button onClick={() => setShowLeaveModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+              <button onClick={() => { setShowLeaveModal(false); setLeaveBalances([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
               {user?.is_superadmin && (
                 <div>
                   <label style={labelStyle}>Employee</label>
-                  <select value={leaveForm.employee_id || ''} onChange={e => setLeaveForm({ ...leaveForm, employee_id: parseInt(e.target.value) })} style={inputStyle}>
+                  <select value={leaveForm.employee_id || ''} onChange={e => { const eid = parseInt(e.target.value); setLeaveForm({ ...leaveForm, employee_id: eid }); fetchLeaveBalances(eid); }} style={inputStyle}>
                     <option value="">— Select —</option>
                     {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
                   </select>
@@ -359,6 +373,54 @@ export default function Requests() {
                   {leaveTypes.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
                 </select>
               </div>
+
+              {/* Leave Balance Panel */}
+              {leaveBalances.length > 0 && (
+                <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>
+                    Your Leave Balances ({new Date().getFullYear()})
+                  </div>
+                  {balancesLoading ? (
+                    <div style={{ color: 'var(--text2)', fontSize: 13 }}>Loading balances...</div>
+                  ) : (
+                    leaveBalances.map(b => {
+                      const total = (b.allocated_days || 0) + (b.carry_forwarded || 0);
+                      const used = b.used_days || 0;
+                      const remaining = Math.max(0, total - used);
+                      const pct = total > 0 ? Math.min(100, Math.round((remaining / total) * 100)) : 0;
+                      const isSelected = leaveForm.leave_type_id === b.leave_type_id;
+                      const color = isSelected ? 'var(--accent)' : (remaining <= 0 ? '#ef4444' : '#22c55e');
+                      return (
+                        <div key={b.id} style={{
+                          marginBottom: 8,
+                          padding: '6px 8px',
+                          borderRadius: 6,
+                          background: isSelected ? 'var(--accent)10' : 'transparent',
+                          border: isSelected ? '1px solid var(--accent)' : '1px solid transparent',
+                          transition: 'all 0.2s'
+                        }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--accent)' : 'var(--text)' }}>
+                              {b.leave_type_name} ({b.leave_type_code})
+                            </span>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: remaining <= 0 ? '#ef4444' : 'var(--text2)' }}>
+                              {remaining} / {total} days
+                            </span>
+                          </div>
+                          <div style={{ height: 4, borderRadius: 4, background: 'var(--border)', overflow: 'hidden' }}>
+                            <div style={{ height: '100%', width: `${pct}%`, background: color, borderRadius: 4, transition: 'width 0.3s ease' }} />
+                          </div>
+                          {isSelected && remaining <= 0 && (
+                            <div style={{ fontSize: 11, color: '#f59e0b', marginTop: 4, fontWeight: 600 }}>
+                              ⚠ No balance remaining — leave may go to LOP
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div><label style={labelStyle}>From Date</label><input type="date" value={leaveForm.from_date || ''} onChange={e => setLeaveForm({ ...leaveForm, from_date: e.target.value })} style={inputStyle} /></div>
                 <div><label style={labelStyle}>To Date</label><input type="date" value={leaveForm.to_date || ''} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} style={inputStyle} /></div>

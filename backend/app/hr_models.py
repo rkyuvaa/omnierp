@@ -120,6 +120,25 @@ class HRLeaveBalance(Base):
 
 
 # ─────────────────────────────────────────────
+# LOP WATERFALL RULES (admin-defined priority)
+# ─────────────────────────────────────────────
+class HRLopWaterfallRule(Base):
+    """Ordered rules that define which leave types to consume before marking LOP.
+    priority=1 is tried first. If that leave type has no balance, priority=2 is tried, etc.
+    """
+    __tablename__ = "hr_lop_waterfall_rules"
+    id = Column(Integer, primary_key=True, index=True)
+    leave_type_id = Column(Integer, ForeignKey("hr_leave_types.id"))
+    priority = Column(Integer, default=1)               # 1 = first to try
+    respect_monthly_limit = Column(Boolean, default=True)  # Skip if monthly limit hit
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    leave_type = relationship("HRLeaveType")
+
+
+# ─────────────────────────────────────────────
 # LEAVE REQUESTS
 # ─────────────────────────────────────────────
 class HRLeaveRequest(Base):
@@ -268,6 +287,7 @@ class HRAttendanceRecord(Base):
     onduty_request_id = Column(Integer, ForeignKey("hr_onduty_requests.id"), nullable=True)
     correction_reason = Column(Text, nullable=True)
     corrected_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    comp_off_hours = Column(Float, default=0)   # Overtime hours that earned comp-off this day
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 

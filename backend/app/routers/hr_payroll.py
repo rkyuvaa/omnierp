@@ -7,7 +7,7 @@ from calendar import monthrange
 from app.database import get_db
 from app.models import User, FormDefinition
 from app.auth import get_current_user, require_admin
-from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord, HRConfig, HRLeaveRequest
+from app.hr_models import HRPayrollRecord, HREmployee, HRAttendanceRecord, HRLeaveBalance, HRLeaveType, HRSalaryTemplate, HRSalaryComponent, HRArrearRecord, HRConfig, HRLeaveRequest, HRLopWaterfallRule
 from app.routers.hr_config import get_hr_config
 from app.utils.pdf import generate_payslip_html, render_to_pdf
 from sqlalchemy import extract
@@ -388,34 +388,63 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 absent_days_count += 1
 
     auto_consumed = []
-    # Auto-consume available paid leaves to cover LOP
+    # Auto-consume available paid leaves to cover LOP using admin-configured waterfall rules.
+    # Falls back to alphabetical order if no rules are configured.
     if lop_days > 0:
-        priority_codes = ["CL", "SL", "PL", "EL"]
-        def get_priority(bal_item):
-            code = (bal_item.leave_type.code or "").upper() if bal_item.leave_type else ""
-            if code in priority_codes:
-                return priority_codes.index(code)
-            return len(priority_codes)
-            
-        sorted_balances = sorted(
-            [b for b in balances if b.leave_type and b.leave_type.is_paid and b.leave_type.code != "LOP" and b.leave_type.is_active],
-            key=get_priority
-        )
-        
-        for bal in sorted_balances:
-            remaining = max(0.0, bal.allocated_days - bal.used_days)
-            if remaining > 0:
-                consume = min(lop_days, remaining)
-                bal.used_days += consume
-                auto_consumed.append({
-                    "leave_type_id": bal.leave_type_id,
-                    "leave_type_name": bal.leave_type.name,
-                    "days": consume
-                })
-                lop_days -= consume
-                leave_days += consume
+        waterfall_rules = db.query(HRLopWaterfallRule).filter(
+            HRLopWaterfallRule.is_active == True
+        ).order_by(HRLopWaterfallRule.priority).all()
+
+        if waterfall_rules:
+            # Admin-configured waterfall: use rules in priority order
+            for rule in waterfall_rules:
                 if lop_days <= 0:
                     break
+                bal = balance_map.get(rule.leave_type_id)
+                if not bal or not bal.leave_type:
+                    continue
+                if not bal.leave_type.is_paid or not bal.leave_type.is_active:
+                    continue
+
+                # Check monthly limit if rule requires it
+                if rule.respect_monthly_limit and bal.monthly_limit and bal.monthly_limit > 0:
+                    # Count how many leave days of this type were already used this month
+                    monthly_used = paid_leaves_by_type.get(rule.leave_type_id, 0)
+                    if monthly_used >= bal.monthly_limit:
+                        continue  # monthly cap hit — skip to next waterfall rule
+
+                remaining = max(0.0, bal.allocated_days - bal.used_days)
+                if remaining > 0:
+                    consume = min(lop_days, remaining)
+                    bal.used_days += consume
+                    auto_consumed.append({
+                        "leave_type_id": bal.leave_type_id,
+                        "leave_type_name": bal.leave_type.name,
+                        "days": consume
+                    })
+                    lop_days -= consume
+                    leave_days += consume
+        else:
+            # Fallback: no rules configured — use any active paid leave alphabetically
+            sorted_balances = sorted(
+                [b for b in balances if b.leave_type and b.leave_type.is_paid
+                 and b.leave_type.code not in ["LOP", "CO"] and b.leave_type.is_active],
+                key=lambda b: b.leave_type.code or ""
+            )
+            for bal in sorted_balances:
+                remaining = max(0.0, bal.allocated_days - bal.used_days)
+                if remaining > 0:
+                    consume = min(lop_days, remaining)
+                    bal.used_days += consume
+                    auto_consumed.append({
+                        "leave_type_id": bal.leave_type_id,
+                        "leave_type_name": bal.leave_type.name,
+                        "days": consume
+                    })
+                    lop_days -= consume
+                    leave_days += consume
+                    if lop_days <= 0:
+                        break
 
     # Detect: does the employee have LOP days BUT also has available paid leave balance?
     lop_alert = _compute_lop_alert(db, emp, lop_days, year)

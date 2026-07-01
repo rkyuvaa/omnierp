@@ -9,7 +9,8 @@ from app.models import User, Branch
 from app.auth import get_current_user, require_admin
 from app.hr_models import (
     HRAttendancePunch, HRAttendanceRecord, HREmployee,
-    HRShift, HRHoliday, HRLeaveRequest, HROnDutyRequest
+    HRShift, HRHoliday, HRLeaveRequest, HROnDutyRequest,
+    HRLeaveBalance, HRLeaveType, HRConfig
 )
 
 router = APIRouter()
@@ -28,6 +29,114 @@ STATUS_COLORS = {
     "holiday":    "#8b5cf6",
     "weekly_off": "#94a3b8",
 }
+
+# ── Comp-Off Accrual Helper ───────────────────────────────────────────────────
+def _process_comp_off(db: Session, record: HRAttendanceRecord):
+    """After attendance consolidation, check if overtime qualifies for comp-off.
+    Updates record.comp_off_hours and the employee's CO leave balance.
+    Only runs if comp_off_enabled config is True and activation_date is set.
+    """
+    from datetime import date as _date
+    # Read configs
+    def _cfg(key, default=None):
+        row = db.query(HRConfig).filter(HRConfig.key == key).first()
+        return row.value if row else default
+
+    enabled = _cfg("comp_off_enabled", False)
+    if not enabled:
+        # Clear any previously accrued comp_off_hours
+        if record.comp_off_hours and record.comp_off_hours > 0:
+            _reverse_comp_off(db, record)
+            record.comp_off_hours = 0
+        return
+
+    # Only accrue from the activation date onward
+    activation_str = _cfg("comp_off_activation_date", None)
+    if activation_str:
+        try:
+            activation_date = _date.fromisoformat(str(activation_str))
+            if record.date < activation_date:
+                return
+        except Exception:
+            pass
+
+    threshold = float(_cfg("comp_off_threshold_hours", 9.0))
+    hours_per_day = float(_cfg("comp_off_hours_per_day", 8.0))
+    co_type_id = _cfg("comp_off_leave_type_id", None)
+
+    if not co_type_id:
+        # Auto-find or create Comp-Off leave type
+        co_type = db.query(HRLeaveType).filter(HRLeaveType.code == "CO").first()
+        if not co_type:
+            return  # Will be created by setup endpoint; skip silently
+        co_type_id = co_type.id
+
+    hours_worked = record.hours_worked or 0
+    prev_comp_off_hours = record.comp_off_hours or 0
+
+    if hours_worked > threshold and hours_per_day > 0:
+        excess = hours_worked - threshold
+        new_comp_off_hours = round(excess, 4)
+    else:
+        new_comp_off_hours = 0
+
+    delta_hours = new_comp_off_hours - prev_comp_off_hours
+    if delta_hours == 0:
+        return  # No change needed
+
+    delta_days = round(delta_hours / hours_per_day, 4)
+    record.comp_off_hours = new_comp_off_hours
+
+    # Update leave balance
+    year = record.date.year
+    balance = db.query(HRLeaveBalance).filter(
+        HRLeaveBalance.employee_id == record.employee_id,
+        HRLeaveBalance.leave_type_id == co_type_id,
+        HRLeaveBalance.year == year,
+    ).first()
+    if not balance:
+        balance = HRLeaveBalance(
+            employee_id=record.employee_id,
+            leave_type_id=co_type_id,
+            year=year,
+            allocated_days=0,
+            used_days=0,
+            carry_forwarded=0,
+            monthly_limit=0,
+        )
+        db.add(balance)
+        db.flush()
+
+    balance.allocated_days = round(max(0.0, balance.allocated_days + delta_days), 4)
+
+
+def _reverse_comp_off(db: Session, record: HRAttendanceRecord):
+    """Reverse previously accrued comp-off hours for this record."""
+    from datetime import date as _date
+    if not record.comp_off_hours or record.comp_off_hours <= 0:
+        return
+
+    def _cfg(key, default=None):
+        row = db.query(HRConfig).filter(HRConfig.key == key).first()
+        return row.value if row else default
+
+    hours_per_day = float(_cfg("comp_off_hours_per_day", 8.0))
+    co_type_id = _cfg("comp_off_leave_type_id", None)
+    if not co_type_id:
+        co_type = db.query(HRLeaveType).filter(HRLeaveType.code == "CO").first()
+        if not co_type:
+            return
+        co_type_id = co_type.id
+
+    delta_days = round(record.comp_off_hours / hours_per_day, 4)
+    year = record.date.year
+    balance = db.query(HRLeaveBalance).filter(
+        HRLeaveBalance.employee_id == record.employee_id,
+        HRLeaveBalance.leave_type_id == co_type_id,
+        HRLeaveBalance.year == year,
+    ).first()
+    if balance:
+        balance.allocated_days = round(max(0.0, balance.allocated_days - delta_days), 4)
 
 # ── Haversine Proximity Helpers ───────────────────────────────────────────────
 def haversine_distance(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
@@ -199,6 +308,9 @@ def compute_record(db: Session, employee_id: int, target_date: date):
             else:
                 record.status = "present"
 
+        db.commit()
+        # Process comp-off accrual for this attendance record
+        _process_comp_off(db, record)
         db.commit()
         return record
 

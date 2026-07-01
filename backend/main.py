@@ -4,7 +4,7 @@ from app.database import engine, Base
 from fastapi.staticfiles import StaticFiles
 import os
 from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin, admin_settings, tasks
-from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions
+from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions, hr_lop_rules
 from app.routers import bank
 from app.routers import finance
 from app.routers import expenses
@@ -116,6 +116,8 @@ def _safe_add_columns():
         ("expense_categories", "max_limit", "DOUBLE PRECISION"),
         ("expense_claims", "reimbursement_ref", "VARCHAR(100)"),
         ("expense_claims", "reimbursement_mode", "VARCHAR(20)"),
+        # Comp-Off hours on attendance records
+        ("hr_attendance_records", "comp_off_hours", "DOUBLE PRECISION DEFAULT 0"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:
@@ -181,6 +183,7 @@ app.include_router(hr_notifications.router, prefix="/api/hr/notifications", tags
 
 app.include_router(hr_push_subscriptions.router, prefix="/api/hr/push-subscriptions", tags=["HR-Push-Subscriptions"])
 app.include_router(hr_config.router, prefix="/api/hr/config", tags=["HR-Config"])
+app.include_router(hr_lop_rules.router, prefix="/api/hr/lop-rules", tags=["HR-LOP-Rules"])
 app.include_router(bank.router, prefix="/api/bank", tags=["Bank"])
 app.include_router(finance.router, prefix="/api/finance", tags=["Finance"])
 app.include_router(expenses.router, prefix="/api/expenses", tags=["Expenses"])
