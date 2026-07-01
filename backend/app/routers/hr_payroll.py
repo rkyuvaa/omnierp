@@ -177,6 +177,33 @@ def _compute_lop_alert(db: Session, employee, lop_days: float, year: int):
     return None
 
 
+def _revert_auto_consumed_leaves(db: Session, record: HRPayrollRecord):
+    """Restore employee's leave balance from a draft payroll record before deleting or recalculating it."""
+    if not record or not record.components_breakdown:
+        return
+    
+    breakdown = record.components_breakdown
+    if isinstance(breakdown, str):
+        try:
+            import json
+            breakdown = json.loads(breakdown)
+        except Exception:
+            return
+            
+    old_consumed = breakdown.get("auto_consumed_leaves", [])
+    for item in old_consumed:
+        lt_id = item.get("leave_type_id")
+        days = item.get("days", 0.0)
+        if lt_id and days > 0:
+            bal = db.query(HRLeaveBalance).filter(
+                HRLeaveBalance.employee_id == record.employee_id,
+                HRLeaveBalance.leave_type_id == lt_id,
+                HRLeaveBalance.year == record.year
+            ).first()
+            if bal:
+                bal.used_days = max(0.0, bal.used_days - days)
+
+
 def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int, lop_base: str = "gross", arrears_held_list: list = None, arrears_paid_list: list = None) -> dict:
     # arrears_held_list/arrears_paid_list should be list of (amount, remarks)
     arrears_held_list = arrears_held_list or []
@@ -360,6 +387,36 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 lop_days += 1
                 absent_days_count += 1
 
+    auto_consumed = []
+    # Auto-consume available paid leaves to cover LOP
+    if lop_days > 0:
+        priority_codes = ["CL", "SL", "PL", "EL"]
+        def get_priority(bal_item):
+            code = (bal_item.leave_type.code or "").upper() if bal_item.leave_type else ""
+            if code in priority_codes:
+                return priority_codes.index(code)
+            return len(priority_codes)
+            
+        sorted_balances = sorted(
+            [b for b in balances if b.leave_type and b.leave_type.is_paid and b.leave_type.code != "LOP" and b.leave_type.is_active],
+            key=get_priority
+        )
+        
+        for bal in sorted_balances:
+            remaining = max(0.0, bal.allocated_days - bal.used_days)
+            if remaining > 0:
+                consume = min(lop_days, remaining)
+                bal.used_days += consume
+                auto_consumed.append({
+                    "leave_type_id": bal.leave_type_id,
+                    "leave_type_name": bal.leave_type.name,
+                    "days": consume
+                })
+                lop_days -= consume
+                leave_days += consume
+                if lop_days <= 0:
+                    break
+
     # Detect: does the employee have LOP days BUT also has available paid leave balance?
     lop_alert = _compute_lop_alert(db, emp, lop_days, year)
 
@@ -466,6 +523,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             "employer_contributions": employer_contributions
         },
         "lop_alert": lop_alert,
+        "auto_consumed": auto_consumed,
     }
 
 
@@ -535,14 +593,28 @@ def generate_payroll(data: PayrollGenerate, db: Session = Depends(get_db), curre
 
         if not emp.is_active and not held_list and not paid_list and not has_any_pending:
             if existing and existing.status == "draft":
+                _revert_auto_consumed_leaves(db, existing)
                 db.delete(existing)
             results.append({"employee_id": emp_id, "status": "skipped", "reason": "Inactive and has no arrears"})
             continue
 
+        # Revert previously auto-consumed leaves before recalculation
+        if existing:
+            _revert_auto_consumed_leaves(db, existing)
+            db.flush()
+
         calc = _calculate_payroll(db, emp, data.month, data.year, data.lop_calculation_base, held_list, paid_list)
 
-        # lop_alert is a runtime flag only — not stored in DB
+        # lop_alert and auto_consumed are runtime flags/structures only
         lop_alert = calc.pop("lop_alert", None)
+        auto_consumed = calc.pop("auto_consumed", [])
+
+        # Embed auto-consumed leaves list in the components breakdown
+        if "components_breakdown" in calc:
+            # Copy to avoid mutating original or if it's already structured
+            breakdown = dict(calc["components_breakdown"])
+            breakdown["auto_consumed_leaves"] = auto_consumed
+            calc["components_breakdown"] = breakdown
 
         if existing:
             for k, v in calc.items():
@@ -743,6 +815,7 @@ def delete_payroll_record(record_id: int, db: Session = Depends(get_db), current
     if not record: raise HTTPException(404, "Payroll record not found")
     if record.status == "finalized":
         _revert_one_time_deductions(db, record)
+    _revert_auto_consumed_leaves(db, record)
     db.delete(record)
     db.commit()
     return {"message": "Payroll record deleted"}
@@ -756,6 +829,7 @@ def bulk_delete_payroll(data: BulkDeleteRequest, db: Session = Depends(get_db), 
     for record in records:
         if record.status == "finalized":
             _revert_one_time_deductions(db, record)
+        _revert_auto_consumed_leaves(db, record)
         db.delete(record)
     db.commit()
     return {"message": f"Deleted {len(data.record_ids)} records"}
