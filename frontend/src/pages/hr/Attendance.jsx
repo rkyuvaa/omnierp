@@ -354,6 +354,73 @@ export default function Attendance() {
     toast.success('Violation scan complete');
   }
 
+  const handleExport = () => {
+    // 1. Headers
+    const headers = [
+      'Employee Name',
+      'Employee ID',
+      ...days.map(d => `${d.dayOfWeek} ${d.num}`),
+      'P',
+      'A',
+      'LV',
+      'HOL',
+      'WO'
+    ];
+
+    // 2. Rows
+    const csvRows = [headers.map(h => `"${h}"`).join(',')];
+
+    filteredEmployees.forEach(emp => {
+      const empRecs = records[String(emp.id)] || {};
+      
+      let pCount = 0, aCount = 0, lvCount = 0, holCount = 0, woCount = 0;
+      const dayLabels = days.map(d => {
+        const s = getEffStatus(d, empRecs, emp);
+        const cfg = s ? STATUS_CONFIG[s] : null;
+        
+        if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
+        else if (s === 'half_day') { pCount += 0.5; aCount += 0.5; }
+        else if (s === 'absent') aCount += 1;
+        else if (s === 'leave') lvCount += 1;
+        else if (s === 'holiday') holCount += 1;
+        else if (s === 'weekly_off') woCount += 1;
+        
+        return cfg ? cfg.label : '';
+      });
+
+      const escapedName = emp.name.replace(/"/g, '""');
+      const escapedId = emp.employee_id.replace(/"/g, '""');
+
+      const row = [
+        `"${escapedName}"`,
+        `"${escapedId}"`,
+        ...dayLabels.map(l => `"${l}"`),
+        pCount,
+        aCount,
+        lvCount,
+        holCount,
+        woCount
+      ];
+      csvRows.push(row.join(','));
+    });
+
+    // 3. Trigger download with UTF-8 BOM so Excel opens it correctly
+    const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([BOM, csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    
+    const monthName = MONTH_NAMES[month - 1] || 'month';
+    link.setAttribute('download', `attendance_export_${monthName}_${year}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Attendance exported successfully!');
+  };
+
+
   // Filter employees based on search
   const filteredEmployees = employees.filter(emp => 
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -453,6 +520,28 @@ export default function Attendance() {
           {/* Action Buttons */}
           {isHRAdmin && (
             <>
+              <button 
+                onClick={handleExport} 
+                className="btn" 
+                style={{ 
+                  background: 'var(--bg2)', 
+                  border: '1px solid rgba(226, 232, 240, 0.8)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 6, 
+                  fontWeight: 700, 
+                  fontSize: 13,
+                  borderRadius: 10,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                  transition: 'all 0.2s',
+                  flexShrink: 0
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
+              >
+                <Download size={14} style={{ color: '#16a34a' }} /> Export
+              </button>
+
               <button 
                 onClick={() => {
                   setImportOpen(true);
