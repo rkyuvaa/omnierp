@@ -570,8 +570,14 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
     results.forEach(comp => {
       if (comp._compType === 'deduction' && comp.deduct_from === 'basic') {
         const basic = results.find(r => r.code === 'BASIC' || r.name?.toLowerCase().includes('basic'));
+        const fixed = results.find(r => r.code === 'FIX' || r.name?.toLowerCase().includes('fixed') || r.name?.toLowerCase().includes('special'))
+                      || results.filter(r => r._compType === 'earning' && r.code !== 'BASIC' && !r.name?.toLowerCase().includes('basic')).pop();
         if (basic) {
-          basic.amount = Math.max(0, basic.amount - comp.amount);
+          const deductAmt = Math.min(basic.amount, comp.amount);
+          basic.amount = basic.amount - deductAmt;
+          if (fixed) {
+            fixed.amount = fixed.amount + deductAmt;
+          }
         }
       }
     });
@@ -583,7 +589,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
     const totalCTC = totalEarnings + totalContributions;
 
     const basicDeductions = results.filter(r => r._compType === 'deduction' && r.deduct_from === 'basic').reduce((acc, r) => acc + r.amount, 0);
-    const netPayBeforeBasicDeductions = netPay + 2 * basicDeductions;
+    const netPayBeforeBasicDeductions = netPay + basicDeductions;
 
     return { results, totalEarnings, totalDeductions, totalContributions, netPay, netPayBeforeBasicDeductions, totalCTC, gross: ctc };
   }

@@ -160,10 +160,20 @@ def _calculate_components(ctc: float, components: list):
     for r in result_list:
         if r.get("component_type") == "deduction" and r.get("deduct_from") == "basic":
             basic_item = next((x for x in result_list if x.get("code") == "BASIC" or "basic" in x.get("name", "").lower()), None)
+            fixed_item = next((x for x in result_list if x.get("code") == "FIX" or "fixed" in x.get("name", "").lower() or "special" in x.get("name", "").lower()), None)
+            if not fixed_item:
+                earning_items = [x for x in result_list if x.get("component_type") == "earning" and x.get("code") != "BASIC" and "basic" not in x.get("name", "").lower()]
+                if earning_items:
+                    fixed_item = earning_items[-1]
             if basic_item:
-                basic_item["amount"] = round(max(0.0, basic_item["amount"] - r["amount"]), 2)
+                deduct_amt = min(basic_item["amount"], r["amount"])
+                basic_item["amount"] = round(basic_item["amount"] - deduct_amt, 2)
                 basic_code = basic_item.get("code", "BASIC")
                 computed[basic_code] = basic_item["amount"]
+                if fixed_item:
+                    fixed_item["amount"] = round(fixed_item["amount"] + deduct_amt, 2)
+                    fixed_code = fixed_item.get("code", fixed_item["name"].upper().replace(" ", "_"))
+                    computed[fixed_code] = fixed_item["amount"]
 
     return result_list, computed
 
