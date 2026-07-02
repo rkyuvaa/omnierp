@@ -650,7 +650,22 @@ def run_sync(db: Session = Depends(get_db)):
                 logs.append(f"Synced employee '{emp.name}'")
                 
     db.commit()
-    return {"status": "success", "logs": logs}
+    
+    from app.hr_models import HRArrearRecord
+    all_arrs = db.query(HRArrearRecord).all()
+    arrear_list = [{
+        "id": a.id,
+        "employee_id": a.employee_id,
+        "amount_held": float(a.amount_held or 0),
+        "held_month": a.held_month,
+        "held_year": a.held_year,
+        "status": a.status,
+        "paid_in_month": a.paid_in_month,
+        "paid_in_year": a.paid_in_year,
+        "remarks": a.remarks
+    } for a in all_arrs]
+
+    return {"status": "success", "logs": logs, "database_arrears": arrear_list}
 
 @router.get("/debug/{emp_id}")
 def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
