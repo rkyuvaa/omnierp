@@ -245,7 +245,7 @@ def payroll_export_excel(
         # Build Header List
         headers = [
             "Emp ID", "Name", "Designation", "Department", "UAN", "ESI Number",
-            "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty"
+            "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty", "Week Off"
         ]
         headers.extend(regular_earnings_cols)
         headers.append("Gross Earnings")
@@ -286,6 +286,33 @@ def payroll_export_excel(
             deductions = breakdown.get('deductions', {})
             employer_cont = breakdown.get('employer_contributions', {})
 
+            # Count week off days
+            import calendar
+            days_in_month = calendar.monthrange(year, month)[1]
+            
+            has_attendance = db.query(HRAttendanceRecord).filter(
+                HRAttendanceRecord.employee_id == pr.employee_id,
+                HRAttendanceRecord.date >= date(year, month, 1),
+                HRAttendanceRecord.date <= date(year, month, days_in_month)
+            ).first() is not None
+            
+            if has_attendance:
+                week_offs = db.query(HRAttendanceRecord).filter(
+                    HRAttendanceRecord.employee_id == pr.employee_id,
+                    HRAttendanceRecord.date >= date(year, month, 1),
+                    HRAttendanceRecord.date <= date(year, month, days_in_month),
+                    HRAttendanceRecord.status == "weekly_off"
+                ).count()
+            else:
+                from app.routers.hr_payroll import get_hr_config
+                global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+                DAY_MAP = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                week_offs = 0
+                for d_day in range(1, days_in_month + 1):
+                    dt_day = date(year, month, d_day)
+                    if DAY_MAP[dt_day.weekday()] not in global_working_days:
+                        week_offs += 1
+
             row_data = {
                 "Emp ID": emp.employee_id,
                 "Name": emp.name,
@@ -299,6 +326,7 @@ def payroll_export_excel(
                 "Leave": pr.leave_days,
                 "LOP": pr.lop_days,
                 "On Duty": pr.on_duty_days,
+                "Week Off": week_offs,
             }
 
             # Populate regular earnings
@@ -370,7 +398,7 @@ def payroll_export_excel(
             for col_num, header in enumerate(headers, 1):
                 val = row_data.get(header, "")
                 cell = ws.cell(row=row_num, column=col_num, value=val)
-                if isinstance(val, (int, float)) and header not in ["Emp ID", "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty"]:
+                if isinstance(val, (int, float)) and header not in ["Emp ID", "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty", "Week Off"]:
                     cell.number_format = '#,##0.00'
                     cell.alignment = Alignment(horizontal="right")
             row_num += 1
