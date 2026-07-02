@@ -208,133 +208,169 @@ def payroll_export_excel(
             cell.font = Font(bold=True, color="FFFFFF")
             cell.fill = header_fill
             cell.alignment = Alignment(horizontal="center")
-        buf = io.BytesIO()
-        wb.save(buf); buf.seek(0)
-        filename = f"payroll_{year}_{str(month).zfill(2)}.xlsx"
-        return StreamingResponse(buf, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                                 headers={"Content-Disposition": f"attachment; filename={filename}"})
+    else:
+        emp_map = {pr.employee_id: pr.employee for pr in payroll_records if pr.employee}
+        all_regular_earning_keys = set()
+        all_arrear_earning_keys = set()
+        all_deduction_keys = set()
+        all_employer_cont_keys = set()
 
-    emp_map = {pr.employee_id: pr.employee for pr in payroll_records if pr.employee}
-    all_regular_earning_keys = set()
-    all_arrear_earning_keys = set()
-    all_deduction_keys = set()
-    all_employer_cont_keys = set()
+        for pr in payroll_records:
+            breakdown = pr.components_breakdown or {}
+            earnings = breakdown.get('earnings', {})
+            deductions = breakdown.get('deductions', {})
+            employer_cont = breakdown.get('employer_contributions', {})
 
-    for pr in payroll_records:
-        breakdown = pr.components_breakdown or {}
-        earnings = breakdown.get('earnings', {})
-        deductions = breakdown.get('deductions', {})
-        employer_cont = breakdown.get('employer_contributions', {})
+            for k in earnings.keys():
+                if 'Arrear' in k:
+                    all_arrear_earning_keys.add(k)
+                else:
+                    all_regular_earning_keys.add(k)
+            for k in deductions.keys():
+                all_deduction_keys.add(k)
+            for k in employer_cont.keys():
+                all_employer_cont_keys.add(k)
 
-        for k in earnings.keys():
-            if 'Arrear' in k:
-                all_arrear_earning_keys.add(k)
-            else:
-                all_regular_earning_keys.add(k)
-        for k in deductions.keys():
-            all_deduction_keys.add(k)
-        for k in employer_cont.keys():
-            all_employer_cont_keys.add(k)
+        regular_earnings_cols = sorted(list(all_regular_earning_keys))
+        # Keep "Basic Salary" or "Basic" first in regular earnings if present
+        for b_key in ["Basic Salary", "Basic"]:
+            if b_key in regular_earnings_cols:
+                regular_earnings_cols.remove(b_key)
+                regular_earnings_cols.insert(0, b_key)
 
-    regular_earnings_cols = sorted(list(all_regular_earning_keys))
-    # Keep "Basic Salary" or "Basic" first in regular earnings if present
-    for b_key in ["Basic Salary", "Basic"]:
-        if b_key in regular_earnings_cols:
-            regular_earnings_cols.remove(b_key)
-            regular_earnings_cols.insert(0, b_key)
+        arrear_earnings_cols = sorted(list(all_arrear_earning_keys))
+        deductions_cols = sorted(list(all_deduction_keys))
+        employer_cont_cols = sorted(list(all_employer_cont_keys))
 
-    arrear_earnings_cols = sorted(list(all_arrear_earning_keys))
-    deductions_cols = sorted(list(all_deduction_keys))
-    employer_cont_cols = sorted(list(all_employer_cont_keys))
+        # Build Header List
+        headers = [
+            "Emp ID", "Name", "Designation", "Department", "UAN", "ESI Number",
+            "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty"
+        ]
+        headers.extend(regular_earnings_cols)
+        headers.append("Gross Earnings")
 
-    # Build Header List
-    headers = [
-        "Emp ID", "Name", "Designation", "Department", "UAN", "ESI Number",
-        "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty"
-    ]
-    headers.extend(regular_earnings_cols)
-    headers.append("Gross Earnings")
+        if arrear_earnings_cols:
+            headers.extend(arrear_earnings_cols)
+            headers.append("Gross with Arrears")
 
-    if arrear_earnings_cols:
-        headers.extend(arrear_earnings_cols)
-        headers.append("Gross with Arrears")
+        headers.extend(deductions_cols)
+        headers.append("Total Deductions")
 
-    headers.extend(deductions_cols)
-    headers.append("Total Deductions")
+        headers.extend(employer_cont_cols)
+        headers.append("Total Employer Contributions")
 
-    headers.extend(employer_cont_cols)
-    headers.append("Total Employer Contributions")
+        headers.append("Monthly CTC")
+        headers.append("Net Salary")
 
-    headers.append("Monthly CTC")
-    headers.append("Net Salary")
+        header_fill = PatternFill("solid", fgColor="1a472a")
+        for col, h in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=h)
+            cell.font = Font(bold=True, color="FFFFFF")
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
 
-    header_fill = PatternFill("solid", fgColor="1a472a")
-    for col, h in enumerate(headers, 1):
-        cell = ws.cell(row=1, column=col, value=h)
+        row_num = 2
+        for pr in payroll_records:
+            emp = emp_map.get(pr.employee_id)
+            if not emp:
+                continue
+            breakdown = pr.components_breakdown or {}
+            earnings = breakdown.get('earnings', {})
+            deductions = breakdown.get('deductions', {})
+            employer_cont = breakdown.get('employer_contributions', {})
+
+            row_data = {
+                "Emp ID": emp.employee_id,
+                "Name": emp.name,
+                "Designation": emp.designation,
+                "Department": emp.department.name if emp.department else "-",
+                "UAN": emp.uan or "-",
+                "ESI Number": emp.esi_number or "-",
+                "Working Days": pr.working_days,
+                "Present": pr.present_days,
+                "Absent": pr.absent_days,
+                "Leave": pr.leave_days,
+                "LOP": pr.lop_days,
+                "On Duty": pr.on_duty_days,
+            }
+
+            # Populate regular earnings
+            for col_name in regular_earnings_cols:
+                row_data[col_name] = float(earnings.get(col_name, 0))
+            regular_gross = sum(float(v) for k, v in earnings.items() if 'Arrear' not in k)
+            row_data["Gross Earnings"] = regular_gross
+
+            # Populate arrears
+            if arrear_earnings_cols:
+                for col_name in arrear_earnings_cols:
+                    row_data[col_name] = float(earnings.get(col_name, 0))
+                row_data["Gross with Arrears"] = float(pr.total_earnings or 0)
+
+            # Populate deductions
+            for col_name in deductions_cols:
+                row_data[col_name] = float(deductions.get(col_name, 0))
+            row_data["Total Deductions"] = float(pr.total_deductions or 0)
+
+            # Populate employer contributions
+            for col_name in employer_cont_cols:
+                row_data[col_name] = float(employer_cont.get(col_name, 0))
+            total_employer_cont = sum(float(v) for v in employer_cont.values())
+            row_data["Total Employer Contributions"] = total_employer_cont
+
+            # Populate Monthly CTC and Net Salary
+            row_data["Monthly CTC"] = regular_gross + total_employer_cont
+            row_data["Net Salary"] = float(round(pr.net_salary or 0))
+
+            # Write values to cells
+            for col_num, header in enumerate(headers, 1):
+                val = row_data.get(header, "")
+                cell = ws.cell(row=row_num, column=col_num, value=val)
+                if isinstance(val, (int, float)) and header not in ["Emp ID", "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty"]:
+                    cell.number_format = '#,##0.00'
+                    cell.alignment = Alignment(horizontal="right")
+            row_num += 1
+
+    # --- Add Pending Arrears Sheet ---
+    ws_arrears = wb.create_sheet(title="Pending Arrears")
+    
+    arrear_headers = ["Emp ID", "Name", "Designation", "Department", "Held Month/Year", "Pending Amount", "Status", "Remarks"]
+    arrear_header_fill = PatternFill("solid", fgColor="d97706") # Amber header to match Arrears styling
+    
+    for col_num, h in enumerate(arrear_headers, 1):
+        cell = ws_arrears.cell(row=1, column=col_num, value=h)
         cell.font = Font(bold=True, color="FFFFFF")
-        cell.fill = header_fill
+        cell.fill = arrear_header_fill
         cell.alignment = Alignment(horizontal="center")
-
-    row_num = 2
-    for pr in payroll_records:
-        emp = emp_map.get(pr.employee_id)
+        
+    arrear_records = db.query(HRArrearRecord).join(HREmployee, HRArrearRecord.employee_id == HREmployee.id).filter(
+        HRArrearRecord.status.in_(["held", "one_time"]),
+        HRArrearRecord.amount_held > 0
+    ).order_by(HREmployee.name).all()
+    
+    a_row_num = 2
+    for arr in arrear_records:
+        emp = arr.employee
         if not emp:
             continue
-        breakdown = pr.components_breakdown or {}
-        earnings = breakdown.get('earnings', {})
-        deductions = breakdown.get('deductions', {})
-        employer_cont = breakdown.get('employer_contributions', {})
-
-        row_data = {
-            "Emp ID": emp.employee_id,
-            "Name": emp.name,
-            "Designation": emp.designation,
-            "Department": emp.department.name if emp.department else "-",
-            "UAN": emp.uan or "-",
-            "ESI Number": emp.esi_number or "-",
-            "Working Days": pr.working_days,
-            "Present": pr.present_days,
-            "Absent": pr.absent_days,
-            "Leave": pr.leave_days,
-            "LOP": pr.lop_days,
-            "On Duty": pr.on_duty_days,
-        }
-
-        # Populate regular earnings
-        for col_name in regular_earnings_cols:
-            row_data[col_name] = float(earnings.get(col_name, 0))
-        regular_gross = sum(float(v) for k, v in earnings.items() if 'Arrear' not in k)
-        row_data["Gross Earnings"] = regular_gross
-
-        # Populate arrears
-        if arrear_earnings_cols:
-            for col_name in arrear_earnings_cols:
-                row_data[col_name] = float(earnings.get(col_name, 0))
-            row_data["Gross with Arrears"] = float(pr.total_earnings or 0)
-
-        # Populate deductions
-        for col_name in deductions_cols:
-            row_data[col_name] = float(deductions.get(col_name, 0))
-        row_data["Total Deductions"] = float(pr.total_deductions or 0)
-
-        # Populate employer contributions
-        for col_name in employer_cont_cols:
-            row_data[col_name] = float(employer_cont.get(col_name, 0))
-        total_employer_cont = sum(float(v) for v in employer_cont.values())
-        row_data["Total Employer Contributions"] = total_employer_cont
-
-        # Populate Monthly CTC and Net Salary
-        row_data["Monthly CTC"] = regular_gross + total_employer_cont
-        row_data["Net Salary"] = float(round(pr.net_salary or 0))
-
-        # Write values to cells
-        for col_num, header in enumerate(headers, 1):
-            val = row_data.get(header, "")
-            cell = ws.cell(row=row_num, column=col_num, value=val)
-            if isinstance(val, (int, float)) and header not in ["Emp ID", "Working Days", "Present", "Absent", "Leave", "LOP", "On Duty"]:
-                cell.number_format = '#,##0.00'
-                cell.alignment = Alignment(horizontal="right")
-        row_num += 1
+            
+        held_period = f"{arr.held_month}/{arr.held_year}" if arr.held_month else "-"
+        status_text = "Pending Hold" if arr.status == "held" else "One Time Hold"
+        
+        ws_arrears.cell(row=a_row_num, column=1, value=emp.employee_id)
+        ws_arrears.cell(row=a_row_num, column=2, value=emp.name)
+        ws_arrears.cell(row=a_row_num, column=3, value=emp.designation or "-")
+        ws_arrears.cell(row=a_row_num, column=4, value=emp.department.name if emp.department else "-")
+        ws_arrears.cell(row=a_row_num, column=5, value=held_period)
+        
+        cell_amt = ws_arrears.cell(row=a_row_num, column=6, value=float(arr.amount_held or 0))
+        cell_amt.number_format = '#,##0.00'
+        cell_amt.alignment = Alignment(horizontal="right")
+        
+        ws_arrears.cell(row=a_row_num, column=7, value=status_text)
+        ws_arrears.cell(row=a_row_num, column=8, value=arr.remarks or "")
+        
+        a_row_num += 1
 
     buf = io.BytesIO()
     wb.save(buf); buf.seek(0)
