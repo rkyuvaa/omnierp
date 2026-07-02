@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 from app.database import get_db
 from app.models import User
 from app.auth import get_current_user
-from app.hr_models import HRAttendanceRecord, HREmployee, HRLeaveBalance, HRLeaveType, HRPayrollRecord
+from app.hr_models import HRAttendanceRecord, HREmployee, HRLeaveBalance, HRLeaveType, HRPayrollRecord, HRArrearRecord
 import io, openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 
