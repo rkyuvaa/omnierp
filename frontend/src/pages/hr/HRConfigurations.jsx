@@ -743,7 +743,8 @@ export default function HRConfigurations() {
                             cap_amount: master?.cap_amount,
                             slabs: master?.slabs,
                             apply_if_gross_below: master?.apply_if_gross_below,
-                            apply_if_gross_above: master?.apply_if_gross_above
+                            apply_if_gross_above: master?.apply_if_gross_above,
+                            deduct_from: master?.deduct_from || 'gross'
                           }; 
                           setForm({ ...form, components: sc }); 
                         }} style={inputStyle}>
