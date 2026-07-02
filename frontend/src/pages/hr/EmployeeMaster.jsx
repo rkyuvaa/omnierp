@@ -582,7 +582,10 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
     const netPay = totalEarnings - totalDeductions;
     const totalCTC = totalEarnings + totalContributions;
 
-    return { results, totalEarnings, totalDeductions, totalContributions, netPay, totalCTC, gross: ctc };
+    const basicDeductions = results.filter(r => r._compType === 'deduction' && r.deduct_from === 'basic').reduce((acc, r) => acc + r.amount, 0);
+    const netPayBeforeBasicDeductions = netPay + 2 * basicDeductions;
+
+    return { results, totalEarnings, totalDeductions, totalContributions, netPay, netPayBeforeBasicDeductions, totalCTC, gross: ctc };
   }
 
   function findGrossForNet(targetNet, compList) {
@@ -593,11 +596,12 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
     for (let i = 0; i < 50; i++) {
       const mid = (low + high) / 2;
       const details = calculateSalaryDetails(mid, compList);
-      if (Math.abs(details.netPay - targetNet) < 0.00001) {
+      const calcNet = details.netPayBeforeBasicDeductions !== undefined ? details.netPayBeforeBasicDeductions : details.netPay;
+      if (Math.abs(calcNet - targetNet) < 0.00001) {
         bestGross = mid;
         break;
       }
-      if (details.netPay < targetNet) low = mid;
+      if (calcNet < targetNet) low = mid;
       else high = mid;
     }
     return Math.round(bestGross * 100) / 100;
