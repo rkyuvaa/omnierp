@@ -570,6 +570,25 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
 
 
 
+@router.get("/debug_components")
+def debug_components(db: Session = Depends(get_db)):
+    from app.hr_models import HRSalaryComponent, HRSalaryTemplate
+    comps = db.query(HRSalaryComponent).all()
+    templates = db.query(HRSalaryTemplate).all()
+    return {
+        "components": [{
+            "id": c.id,
+            "code": c.code,
+            "name": c.name,
+            "deduct_from": getattr(c, "deduct_from", "gross")
+        } for c in comps],
+        "templates": [{
+            "id": t.id,
+            "name": t.name,
+            "components": t.components
+        } for t in templates]
+    }
+
 @router.get("/debug/{emp_id}")
 def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Debug endpoint to inspect salary component resolution for an employee"""
