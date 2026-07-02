@@ -70,10 +70,49 @@ def create_component(data: SalaryComponentCreate, db: Session = Depends(get_db),
 def update_component(comp_id: int, data: SalaryComponentUpdate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     c = db.query(HRSalaryComponent).filter(HRSalaryComponent.id == comp_id).first()
     if not c: raise HTTPException(404, "Not found")
+    
+    old_deduct_from = getattr(c, "deduct_from", "gross")
     for k, v in data.model_dump().items():
         setattr(c, k, v)
     c.code = c.code.upper()
-    db.commit(); db.refresh(c)
+    db.commit()
+    db.refresh(c)
+    
+    # Propagate deduct_from changes to templates and employees dynamically
+    if old_deduct_from != c.deduct_from:
+        from app.hr_models import HRSalaryTemplate, HREmployee
+        # 1. Update templates
+        templates = db.query(HRSalaryTemplate).all()
+        for t in templates:
+            if t.components:
+                comps = list(t.components)
+                updated = False
+                for item in comps:
+                    if item.get("component_id") == c.id or item.get("code") == c.code:
+                        if item.get("deduct_from") != c.deduct_from:
+                            item["deduct_from"] = c.deduct_from
+                            updated = True
+                if updated:
+                    t.components = comps
+                    db.add(t)
+                    
+        # 2. Update employee records
+        employees = db.query(HREmployee).all()
+        for emp in employees:
+            if emp.salary_components:
+                comps = list(emp.salary_components)
+                updated = False
+                for item in comps:
+                    if item.get("component_id") == c.id or item.get("code") == c.code or item.get("name") == c.name:
+                        if item.get("deduct_from") != c.deduct_from:
+                            item["deduct_from"] = c.deduct_from
+                            updated = True
+                if updated:
+                    emp.salary_components = comps
+                    db.add(emp)
+                    
+        db.commit()
+        
     return _serialize(c)
 
 @router.delete("/{comp_id}")
