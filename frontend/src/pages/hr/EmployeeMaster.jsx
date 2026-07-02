@@ -579,10 +579,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
     const totalEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
     const totalDeductions = results.filter(r => r._compType === 'deduction').reduce((acc, r) => acc + r.amount, 0);
     const totalContributions = results.filter(r => r._compType === 'employer_contribution').reduce((acc, r) => acc + r.amount, 0);
-    
-    // Deductions that are deducted from Basic should NOT be subtracted again in the Net Pay calculation!
-    const activeDeductions = results.filter(r => r._compType === 'deduction' && r.deduct_from !== 'basic').reduce((acc, r) => acc + r.amount, 0);
-    const netPay = totalEarnings - activeDeductions;
+    const netPay = totalEarnings - totalDeductions;
     const totalCTC = totalEarnings + totalContributions;
 
     return { results, totalEarnings, totalDeductions, totalContributions, netPay, totalCTC, gross: ctc };

@@ -540,10 +540,9 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     arrears_held_total = sum(a[0] for a in arrears_held_list)
     arrears_paid_total = sum(a[0] for a in arrears_paid_list)
 
-    deduct_from_basic_total = sum(r["amount"] for r in result_list if r["component_type"] == "deduction" and r.get("deduct_from") == "basic")
     total_earnings = round(sum(earnings.values()), 2)
     total_deductions = round(sum(deductions.values()), 2)
-    net_salary = round(max(0.0, total_earnings - (total_deductions - deduct_from_basic_total)), 2)
+    net_salary = round(max(0.0, total_earnings - total_deductions), 2)
 
     return {
         "working_days": total_working_days_in_month,
