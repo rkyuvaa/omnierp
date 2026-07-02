@@ -138,6 +138,56 @@ def _safe_add_columns():
         except Exception as e:
             print(f"⚠️ Error seeding default branch radius: {e}")
 
+        # Sync deduct_from settings for all existing templates and employees
+        try:
+            res = conn.execute(_text("SELECT id, code, deduct_from FROM hr_salary_components")).fetchall()
+            comp_map = {row[0]: row[2] for row in res}
+            code_map = {row[1]: row[2] for row in res}
+            
+            # 1. Update salary templates
+            templates = conn.execute(_text("SELECT id, name, components FROM hr_salary_templates")).fetchall()
+            for t_id, t_name, comps in templates:
+                if comps and isinstance(comps, list):
+                    updated = False
+                    for c in comps:
+                        cid = c.get("component_id")
+                        code = c.get("code")
+                        expected = comp_map.get(cid) or code_map.get(code)
+                        if expected and c.get("deduct_from") != expected:
+                            c["deduct_from"] = expected
+                            updated = True
+                    if updated:
+                        import json
+                        conn.execute(
+                            _text("UPDATE hr_salary_templates SET components = :comps WHERE id = :id"),
+                            {"comps": json.dumps(comps), "id": t_id}
+                        )
+                        conn.commit()
+                        print(f"✅ Synced template components for '{t_name}'")
+                        
+            # 2. Update employee profiles
+            employees = conn.execute(_text("SELECT id, name, salary_components FROM hr_employees")).fetchall()
+            for emp_id, emp_name, comps in employees:
+                if comps and isinstance(comps, list):
+                    updated = False
+                    for c in comps:
+                        cid = c.get("component_id")
+                        code = c.get("code") or c.get("name")
+                        expected = comp_map.get(cid) or code_map.get(code)
+                        if expected and c.get("deduct_from") != expected:
+                            c["deduct_from"] = expected
+                            updated = True
+                    if updated:
+                        import json
+                        conn.execute(
+                            _text("UPDATE hr_employees SET salary_components = :comps WHERE id = :id"),
+                            {"comps": json.dumps(comps), "id": emp_id}
+                        )
+                        conn.commit()
+                        print(f"✅ Synced employee salary components for '{emp_name}'")
+        except Exception as e:
+            print(f"⚠️ Error running template/employee deduct_from sync: {e}")
+
 try:
     _safe_add_columns()
 except Exception as e:
