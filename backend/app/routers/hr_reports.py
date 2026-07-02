@@ -335,10 +335,10 @@ def payroll_export_excel(
                     cell.alignment = Alignment(horizontal="right")
             row_num += 1
 
-    # --- Add Pending Arrears Sheet ---
-    ws_arrears = wb.create_sheet(title="Pending Arrears")
+    # --- Add Arrears Tracker Sheet ---
+    ws_arrears = wb.create_sheet(title="Arrears Tracker")
     
-    arrear_headers = ["Emp ID", "Name", "Designation", "Department", "Held Month/Year", "Pending Amount", "Status", "Remarks"]
+    arrear_headers = ["Emp ID", "Name", "Designation", "Department", "Held Period (M/Y)", "Amount", "Status", "Paid/Deducted Period (M/Y)", "Remarks"]
     arrear_header_fill = PatternFill("solid", fgColor="d97706") # Amber header to match Arrears styling
     
     for col_num, h in enumerate(arrear_headers, 1):
@@ -347,10 +347,11 @@ def payroll_export_excel(
         cell.fill = arrear_header_fill
         cell.alignment = Alignment(horizontal="center")
         
-    arrear_records = db.query(HRArrearRecord).join(HREmployee, HRArrearRecord.employee_id == HREmployee.id).filter(
-        HRArrearRecord.status.in_(["held", "one_time"]),
-        HRArrearRecord.amount_held > 0
-    ).order_by(HREmployee.name).all()
+    arrear_records = db.query(HRArrearRecord).join(HREmployee, HRArrearRecord.employee_id == HREmployee.id).order_by(
+        HREmployee.name, 
+        HRArrearRecord.held_year.desc(), 
+        HRArrearRecord.held_month.desc()
+    ).all()
     
     a_row_num = 2
     for arr in arrear_records:
@@ -359,7 +360,8 @@ def payroll_export_excel(
             continue
             
         held_period = f"{arr.held_month}/{arr.held_year}" if arr.held_month else "-"
-        status_text = "Pending Hold" if arr.status == "held" else "One Time Hold"
+        paid_period = f"{arr.paid_in_month}/{arr.paid_in_year}" if arr.paid_in_month else "-"
+        status_text = arr.status.upper()
         
         ws_arrears.cell(row=a_row_num, column=1, value=emp.employee_id)
         ws_arrears.cell(row=a_row_num, column=2, value=emp.name)
@@ -372,7 +374,8 @@ def payroll_export_excel(
         cell_amt.alignment = Alignment(horizontal="right")
         
         ws_arrears.cell(row=a_row_num, column=7, value=status_text)
-        ws_arrears.cell(row=a_row_num, column=8, value=arr.remarks or "")
+        ws_arrears.cell(row=a_row_num, column=8, value=paid_period)
+        ws_arrears.cell(row=a_row_num, column=9, value=arr.remarks or "")
         
         a_row_num += 1
 
