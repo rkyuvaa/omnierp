@@ -250,6 +250,7 @@ def payroll_export_excel(
         headers.extend(regular_earnings_cols)
         headers.append("Gross Earnings")
         headers.append("Arrears Paid")
+        headers.append("Arrears Paid Details")
 
         if arrear_earnings_cols:
             headers.extend(arrear_earnings_cols)
@@ -258,12 +259,14 @@ def payroll_export_excel(
         headers.extend(deductions_cols)
         headers.append("Total Deductions")
         headers.append("Arrears Held")
+        headers.append("Arrears Held Details")
 
         headers.extend(employer_cont_cols)
         headers.append("Total Employer Contributions")
 
         headers.append("Monthly CTC")
         headers.append("Net Salary")
+        headers.append("Pending Arrears Balance")
 
         header_fill = PatternFill("solid", fgColor="1a472a")
         for col, h in enumerate(headers, 1):
@@ -304,6 +307,17 @@ def payroll_export_excel(
             row_data["Gross Earnings"] = regular_gross
             row_data["Arrears Paid"] = float(pr.arrears_paid or 0)
 
+            # Query all arrear records for this employee to build details
+            all_arrs = db.query(HRArrearRecord).filter(HRArrearRecord.employee_id == pr.employee_id).all()
+
+            # 1. Arrears Paid Details
+            paid_items = []
+            for a in all_arrs:
+                if a.status == "paid" and a.paid_in_month == month and a.paid_in_year == year:
+                    rem = a.remarks or "Paid"
+                    paid_items.append(f"{rem} ({a.held_month}/{a.held_year}): ₹{a.amount_held}")
+            row_data["Arrears Paid Details"] = "; ".join(paid_items) if paid_items else "-"
+
             # Populate arrears
             if arrear_earnings_cols:
                 for col_name in arrear_earnings_cols:
@@ -316,6 +330,19 @@ def payroll_export_excel(
             row_data["Total Deductions"] = float(pr.total_deductions or 0)
             row_data["Arrears Held"] = float(pr.arrears_held or 0)
 
+            # 2. Arrears Held Details
+            held_items = []
+            for a in all_arrs:
+                # Newly held
+                is_new_hold = (a.status == "held" and a.held_month == month and a.held_year == year)
+                # Deducted (collected from salary)
+                is_deducted = (a.status == "deducted" and a.paid_in_month == month and a.paid_in_year == year) or \
+                              (a.status == "one_time" and a.held_month == month and a.held_year == year)
+                if is_new_hold or is_deducted:
+                    rem = a.remarks or "Held/Deducted"
+                    held_items.append(f"{rem} ({a.held_month}/{a.held_year}): ₹{a.amount_held}")
+            row_data["Arrears Held Details"] = "; ".join(held_items) if held_items else "-"
+
             # Populate employer contributions
             for col_name in employer_cont_cols:
                 row_data[col_name] = float(employer_cont.get(col_name, 0))
@@ -325,6 +352,14 @@ def payroll_export_excel(
             # Populate Monthly CTC and Net Salary
             row_data["Monthly CTC"] = regular_gross + total_employer_cont
             row_data["Net Salary"] = float(round(pr.net_salary or 0))
+
+            # 3. Pending Arrears Balance
+            pending_items = []
+            for a in all_arrs:
+                if a.status in ["held", "one_time"] and float(a.amount_held or 0) > 0:
+                    rem = a.remarks or "Pending"
+                    pending_items.append(f"{rem} ({a.held_month}/{a.held_year}): ₹{a.amount_held}")
+            row_data["Pending Arrears Balance"] = "; ".join(pending_items) if pending_items else "-"
 
             # Write values to cells
             for col_num, header in enumerate(headers, 1):
