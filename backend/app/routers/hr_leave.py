@@ -76,7 +76,7 @@ def _notify(db: Session, user_id: int, title: str, message: str, ref_type: str =
         print(f"Failed to send push: {e}")
 
 
-def _recompute_attendance(db: Session, employee_id: int, target_date: date):
+def _recompute_attendance(db: Session, employee_id: int, target_date: date, leave_request_id: int = None):
     """Mark attendance record as 'leave' when leave is approved"""
     record = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == employee_id,
@@ -86,6 +86,8 @@ def _recompute_attendance(db: Session, employee_id: int, target_date: date):
         record = HRAttendanceRecord(employee_id=employee_id, date=target_date)
         db.add(record)
     record.status = "leave"
+    if leave_request_id:
+        record.leave_request_id = leave_request_id
     record.updated_at = datetime.utcnow()
 
 # ── Leave Type Routes ────────────────────────────────────────────────────────
@@ -561,7 +563,7 @@ def approve_leave(req_id: int, data: LeaveAction, background_tasks: BackgroundTa
     # Update attendance records
     current_date = req.from_date
     while current_date <= req.to_date:
-        _recompute_attendance(db, req.employee_id, current_date)
+        _recompute_attendance(db, req.employee_id, current_date, req.id)
         current_date += timedelta(days=1)
 
     # Notify employee
