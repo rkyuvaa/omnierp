@@ -266,6 +266,7 @@ def payroll_export_excel(
 
         headers.append("Monthly CTC")
         headers.append("Net Salary")
+        headers.append("Total Pending Arrears")
         headers.append("Pending Arrears Balance")
 
         header_fill = PatternFill("solid", fgColor="1a472a")
@@ -353,12 +354,16 @@ def payroll_export_excel(
             row_data["Monthly CTC"] = regular_gross + total_employer_cont
             row_data["Net Salary"] = float(round(pr.net_salary or 0))
 
-            # 3. Pending Arrears Balance
+            # 3. Pending Arrears Balance & Total Pending Arrears
             pending_items = []
+            total_pending_amt = 0.0
             for a in all_arrs:
                 if a.status in ["held", "one_time"] and float(a.amount_held or 0) > 0:
+                    amt = float(a.amount_held or 0)
+                    total_pending_amt += amt
                     rem = a.remarks or "Pending"
                     pending_items.append(f"{rem} ({a.held_month}/{a.held_year}): ₹{a.amount_held}")
+            row_data["Total Pending Arrears"] = total_pending_amt
             row_data["Pending Arrears Balance"] = "; ".join(pending_items) if pending_items else "-"
 
             # Write values to cells
