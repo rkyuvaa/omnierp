@@ -409,6 +409,7 @@ class HRSalaryComponent(Base):
     slabs = Column(JSON, nullable=True)  # [{"min":0,"max":10000,"value":0},{"min":10001,"max":null,"value":200}]
     apply_if_gross_below = Column(Float, nullable=True)  # ESI: only if gross ≤ 21000
     apply_if_gross_above = Column(Float, nullable=True)  # TDS: only if gross ≥ 100000
+    deduct_from = Column(String(50), default="gross")  # gross | basic
     show_on_payslip = Column(Boolean, default=True)
     is_active = Column(Boolean, default=True)
     sort_order = Column(Integer, default=0)  # Controls payslip display order

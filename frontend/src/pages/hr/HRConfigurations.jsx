@@ -488,6 +488,7 @@ export default function HRConfigurations() {
                  modal === 'holiday' ? 'Holiday' : 
                  modal === 'biometric' ? 'Biometric Machine' :
                  modal === 'lop_rule' ? 'Add LOP Waterfall Rule' :
+                 modal === 'salary_component' ? 'Salary Component' :
                  'Salary Template'}
               </h3>
               <button onClick={() => setModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
@@ -594,13 +595,20 @@ export default function HRConfigurations() {
                   <div><label style={labelStyle}>Component Name</label><input value={form.name || ''} onChange={e => setForm({ ...form, name: e.target.value })} style={inputStyle} placeholder="e.g. Basic Salary" /></div>
                   <div><label style={labelStyle}>Code</label><input value={form.code || ''} onChange={e => setForm({ ...form, code: e.target.value.toUpperCase() })} style={inputStyle} placeholder="BASIC" /></div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: form.component_type === 'deduction' ? '1fr 1fr 1fr' : '1fr 1fr', gap: 12 }}>
                   <div><label style={labelStyle}>Type</label>
                     <select value={form.component_type || 'earning'} onChange={e => setForm({ ...form, component_type: e.target.value })} style={inputStyle}>
                       <option value="earning">Earning</option>
                       <option value="deduction">Deduction</option>
                       <option value="employer_contribution">Employer Contribution</option>
                     </select></div>
+                  {form.component_type === 'deduction' && (
+                    <div><label style={labelStyle}>Deduct From</label>
+                      <select value={form.deduct_from || 'gross'} onChange={e => setForm({ ...form, deduct_from: e.target.value })} style={inputStyle}>
+                        <option value="gross">Gross Earnings</option>
+                        <option value="basic">Basic Salary</option>
+                      </select></div>
+                  )}
                   <div><label style={labelStyle}>Calculation Type</label>
                     <select value={form.calc_type || 'percentage_of_ctc'} onChange={e => setForm({ ...form, calc_type: e.target.value, slabs: e.target.value === 'slab' ? (form.slabs?.length ? form.slabs : [{ min: 0, max: 10000, value: 0 }]) : form.slabs })} style={inputStyle}>
                       <option value="percentage_of_ctc">% of Gross Salary</option>

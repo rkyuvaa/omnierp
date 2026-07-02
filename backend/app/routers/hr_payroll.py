@@ -67,6 +67,7 @@ def _resolve_components(db: Session, emp: HREmployee):
                         "slabs": comp.slabs,
                         "apply_if_gross_below": comp.apply_if_gross_below,
                         "apply_if_gross_above": comp.apply_if_gross_above,
+                        "deduct_from": item.get("deduct_from") or getattr(comp, "deduct_from", "gross") or "gross",
                         "show_on_payslip": comp.show_on_payslip,
                         "sort_order": comp.sort_order,
                     })
@@ -85,6 +86,7 @@ def _resolve_components(db: Session, emp: HREmployee):
             "slabs": comp.get("slabs"),
             "apply_if_gross_below": comp.get("apply_if_gross_below"),
             "apply_if_gross_above": comp.get("apply_if_gross_above"),
+            "deduct_from": comp.get("deduct_from", "gross"),
             "show_on_payslip": comp.get("show_on_payslip", True),
             "sort_order": comp.get("sort_order", 99),
         })
@@ -153,6 +155,15 @@ def _calculate_components(ctc: float, components: list):
         code = comp.get("code", comp["name"].upper().replace(" ", "_"))
         computed[code] = amount
         result_list.append({**comp, "amount": amount})
+
+    # Deduct from Basic Salary logic
+    for r in result_list:
+        if r.get("component_type") == "deduction" and r.get("deduct_from") == "basic":
+            basic_item = next((x for x in result_list if x.get("code") == "BASIC" or "basic" in x.get("name", "").lower()), None)
+            if basic_item:
+                basic_item["amount"] = round(max(0.0, basic_item["amount"] - r["amount"]), 2)
+                basic_code = basic_item.get("code", "BASIC")
+                computed[basic_code] = basic_item["amount"]
 
     return result_list, computed
 
@@ -529,9 +540,10 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     arrears_held_total = sum(a[0] for a in arrears_held_list)
     arrears_paid_total = sum(a[0] for a in arrears_paid_list)
 
+    deduct_from_basic_total = sum(r["amount"] for r in result_list if r["component_type"] == "deduction" and r.get("deduct_from") == "basic")
     total_earnings = round(sum(earnings.values()), 2)
     total_deductions = round(sum(deductions.values()), 2)
-    net_salary = round(max(0.0, total_earnings - total_deductions), 2)
+    net_salary = round(max(0.0, total_earnings - (total_deductions - deduct_from_basic_total)), 2)
 
     return {
         "working_days": total_working_days_in_month,

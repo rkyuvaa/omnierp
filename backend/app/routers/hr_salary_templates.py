@@ -19,6 +19,7 @@ class SalaryComponent(BaseModel):
     value: float
     cap_amount: Optional[float] = None
     slabs: Optional[List[dict]] = None
+    deduct_from: Optional[str] = "gross"  # gross | basic
 
 class SalaryTemplateCreate(BaseModel):
     name: str

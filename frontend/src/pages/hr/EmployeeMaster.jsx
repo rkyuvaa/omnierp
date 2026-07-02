@@ -516,6 +516,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
           slabs: master.slabs,
           apply_if_gross_below: master.apply_if_gross_below,
           apply_if_gross_above: master.apply_if_gross_above,
+          deduct_from: (c.deduct_from !== undefined && c.deduct_from !== null) ? c.deduct_from : master.deduct_from,
           sort_order: master.sort_order,
         };
       }
@@ -565,10 +566,23 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
       results.push({ ...comp, amount, _calcType: calcType, _compType: compType });
     });
 
+    // Deduct from Basic Salary logic
+    results.forEach(comp => {
+      if (comp._compType === 'deduction' && comp.deduct_from === 'basic') {
+        const basic = results.find(r => r.code === 'BASIC' || r.name?.toLowerCase().includes('basic'));
+        if (basic) {
+          basic.amount = Math.max(0, basic.amount - comp.amount);
+        }
+      }
+    });
+
     const totalEarnings = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
     const totalDeductions = results.filter(r => r._compType === 'deduction').reduce((acc, r) => acc + r.amount, 0);
     const totalContributions = results.filter(r => r._compType === 'employer_contribution').reduce((acc, r) => acc + r.amount, 0);
-    const netPay = totalEarnings - totalDeductions;
+    
+    // Deductions that are deducted from Basic should NOT be subtracted again in the Net Pay calculation!
+    const activeDeductions = results.filter(r => r._compType === 'deduction' && r.deduct_from !== 'basic').reduce((acc, r) => acc + r.amount, 0);
+    const netPay = totalEarnings - activeDeductions;
     const totalCTC = totalEarnings + totalContributions;
 
     return { results, totalEarnings, totalDeductions, totalContributions, netPay, totalCTC, gross: ctc };

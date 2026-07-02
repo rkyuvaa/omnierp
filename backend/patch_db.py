@@ -40,6 +40,7 @@ def patch_db():
             ("hr", "hr_employees", "enable_mobile_punch", "BOOLEAN DEFAULT FALSE"),
             ("hr", "hr_employees", "uan", "VARCHAR(50)"),
             ("hr", "hr_employees", "esi_number", "VARCHAR(50)"),
+            ("hr", "hr_salary_components", "deduct_from", "VARCHAR(50) DEFAULT 'gross'"),
             
             # Users module
             ("users", "users", "last_active_at", "TIMESTAMP WITHOUT TIME ZONE"),

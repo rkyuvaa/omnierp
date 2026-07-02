@@ -27,6 +27,7 @@ class SalaryComponentCreate(BaseModel):
     slabs: Optional[list] = None  # [{"min":0,"max":10000,"value":0}, ...]
     apply_if_gross_below: Optional[float] = None  # ESI: only if gross ≤ 21000
     apply_if_gross_above: Optional[float] = None  # TDS: only if gross ≥ 100000
+    deduct_from: Optional[str] = "gross"  # gross | basic
     show_on_payslip: bool = True
     sort_order: int = 0
 
@@ -45,6 +46,7 @@ def _serialize(c: HRSalaryComponent):
         "slabs": c.slabs or [],
         "apply_if_gross_below": getattr(c, 'apply_if_gross_below', None),
         "apply_if_gross_above": getattr(c, 'apply_if_gross_above', None),
+        "deduct_from": getattr(c, 'deduct_from', 'gross'),
         "show_on_payslip": c.show_on_payslip,
         "is_active": c.is_active,
         "sort_order": c.sort_order,

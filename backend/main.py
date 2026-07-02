@@ -118,6 +118,8 @@ def _safe_add_columns():
         ("expense_claims", "reimbursement_mode", "VARCHAR(20)"),
         # Comp-Off hours on attendance records
         ("hr_attendance_records", "comp_off_hours", "DOUBLE PRECISION DEFAULT 0"),
+        # Salary components Deduct From option
+        ("hr_salary_components", "deduct_from", "VARCHAR(50) DEFAULT 'gross'"),
     ]
     with engine.connect() as conn:
         for table, col, col_type in migrations:
