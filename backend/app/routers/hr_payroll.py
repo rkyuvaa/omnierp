@@ -602,6 +602,8 @@ def debug_components(db: Session = Depends(get_db)):
 @router.get("/run_sync")
 def run_sync(db: Session = Depends(get_db)):
     from app.hr_models import HRSalaryComponent, HRSalaryTemplate, HREmployee
+    from sqlalchemy.orm.attributes import flag_modified
+    import copy
     
     comps = db.query(HRSalaryComponent).all()
     comp_map = {c.id: c.deduct_from for c in comps}
@@ -613,7 +615,7 @@ def run_sync(db: Session = Depends(get_db)):
     templates = db.query(HRSalaryTemplate).all()
     for t in templates:
         if t.components:
-            t_comps = list(t.components)
+            t_comps = copy.deepcopy(t.components)
             updated = False
             for c in t_comps:
                 cid = c.get("component_id")
@@ -624,6 +626,7 @@ def run_sync(db: Session = Depends(get_db)):
                     updated = True
             if updated:
                 t.components = t_comps
+                flag_modified(t, "components")
                 db.add(t)
                 logs.append(f"Synced template '{t.name}'")
                 
@@ -631,7 +634,7 @@ def run_sync(db: Session = Depends(get_db)):
     employees = db.query(HREmployee).all()
     for emp in employees:
         if emp.salary_components:
-            emp_comps = list(emp.salary_components)
+            emp_comps = copy.deepcopy(emp.salary_components)
             updated = False
             for c in emp_comps:
                 cid = c.get("component_id")
@@ -642,6 +645,7 @@ def run_sync(db: Session = Depends(get_db)):
                     updated = True
             if updated:
                 emp.salary_components = emp_comps
+                flag_modified(emp, "salary_components")
                 db.add(emp)
                 logs.append(f"Synced employee '{emp.name}'")
                 
