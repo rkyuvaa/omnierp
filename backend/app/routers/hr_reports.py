@@ -249,6 +249,7 @@ def payroll_export_excel(
         ]
         headers.extend(regular_earnings_cols)
         headers.append("Gross Earnings")
+        headers.append("Arrears Paid")
 
         if arrear_earnings_cols:
             headers.extend(arrear_earnings_cols)
@@ -256,6 +257,7 @@ def payroll_export_excel(
 
         headers.extend(deductions_cols)
         headers.append("Total Deductions")
+        headers.append("Arrears Held")
 
         headers.extend(employer_cont_cols)
         headers.append("Total Employer Contributions")
@@ -300,6 +302,7 @@ def payroll_export_excel(
                 row_data[col_name] = float(earnings.get(col_name, 0))
             regular_gross = sum(float(v) for k, v in earnings.items() if 'Arrear' not in k)
             row_data["Gross Earnings"] = regular_gross
+            row_data["Arrears Paid"] = float(pr.arrears_paid or 0)
 
             # Populate arrears
             if arrear_earnings_cols:
@@ -311,6 +314,7 @@ def payroll_export_excel(
             for col_name in deductions_cols:
                 row_data[col_name] = float(deductions.get(col_name, 0))
             row_data["Total Deductions"] = float(pr.total_deductions or 0)
+            row_data["Arrears Held"] = float(pr.arrears_held or 0)
 
             # Populate employer contributions
             for col_name in employer_cont_cols:
