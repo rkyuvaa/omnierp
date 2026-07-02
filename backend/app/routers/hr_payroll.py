@@ -599,6 +599,55 @@ def debug_components(db: Session = Depends(get_db)):
         } for t in templates]
     }
 
+@router.get("/run_sync")
+def run_sync(db: Session = Depends(get_db)):
+    from app.hr_models import HRSalaryComponent, HRSalaryTemplate, HREmployee
+    
+    comps = db.query(HRSalaryComponent).all()
+    comp_map = {c.id: c.deduct_from for c in comps}
+    code_map = {c.code: c.deduct_from for c in comps}
+    
+    logs = []
+    
+    # 1. Sync templates
+    templates = db.query(HRSalaryTemplate).all()
+    for t in templates:
+        if t.components:
+            t_comps = list(t.components)
+            updated = False
+            for c in t_comps:
+                cid = c.get("component_id")
+                code = c.get("code")
+                expected = comp_map.get(cid) or code_map.get(code)
+                if expected and c.get("deduct_from") != expected:
+                    c["deduct_from"] = expected
+                    updated = True
+            if updated:
+                t.components = t_comps
+                db.add(t)
+                logs.append(f"Synced template '{t.name}'")
+                
+    # 2. Sync employees
+    employees = db.query(HREmployee).all()
+    for emp in employees:
+        if emp.salary_components:
+            emp_comps = list(emp.salary_components)
+            updated = False
+            for c in emp_comps:
+                cid = c.get("component_id")
+                code = c.get("code") or c.get("name")
+                expected = comp_map.get(cid) or code_map.get(code)
+                if expected and c.get("deduct_from") != expected:
+                    c["deduct_from"] = expected
+                    updated = True
+            if updated:
+                emp.salary_components = emp_comps
+                db.add(emp)
+                logs.append(f"Synced employee '{emp.name}'")
+                
+    db.commit()
+    return {"status": "success", "logs": logs}
+
 @router.get("/debug/{emp_id}")
 def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     """Debug endpoint to inspect salary component resolution for an employee"""
