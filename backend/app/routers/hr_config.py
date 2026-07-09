@@ -105,3 +105,8 @@ def get_comp_off_setup(db: Session = Depends(get_db), current_user = Depends(get
     keys = ["comp_off_enabled", "comp_off_threshold_hours", "comp_off_hours_per_day",
             "comp_off_leave_type_id", "comp_off_expiry_months", "comp_off_activation_date"]
     return {k: get_hr_config(db, k, None) for k in keys}
+
+@router.get("/debug-db")
+def debug_db(db: Session = Depends(get_db)):
+    configs = db.query(HRConfig).filter(HRConfig.key.like("comp_off_%")).all()
+    return [{"key": c.key, "value": c.value, "type": str(type(c.value))} for c in configs]
