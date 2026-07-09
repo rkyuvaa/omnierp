@@ -58,6 +58,7 @@ class CompOffSetupPayload(BaseModel):
 def comp_off_setup(payload: CompOffSetupPayload, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     """Configure Comp-Off auto-accrual. Auto-creates the CO leave type if not specified."""
     from app.hr_models import HRLeaveType
+    print(f"[DEBUG COMP-OFF] Received payload: {payload.dict()}", flush=True)
 
     lt_id = payload.leave_type_id
     if not lt_id:
@@ -87,15 +88,19 @@ def comp_off_setup(payload: CompOffSetupPayload, db: Session = Depends(get_db), 
         "comp_off_expiry_months": payload.expiry_months,
         "comp_off_activation_date": payload.activation_date,
     }
+    print(f"[DEBUG COMP-OFF] Saving configs: {configs_to_save}", flush=True)
     for key, value in configs_to_save.items():
         cfg = db.query(HRConfig).filter(HRConfig.key == key).first()
         if cfg:
             cfg.value = value
             cfg.updated_at = datetime.utcnow()
+            print(f"[DEBUG COMP-OFF] Updated key: {key} = {value}", flush=True)
         else:
             cfg = HRConfig(key=key, value=value)
             db.add(cfg)
+            print(f"[DEBUG COMP-OFF] Created key: {key} = {value}", flush=True)
     db.commit()
+    print("[DEBUG COMP-OFF] Db committed successfully!", flush=True)
     return {"message": "Comp-Off settings saved", "leave_type_id": lt_id}
 
 
