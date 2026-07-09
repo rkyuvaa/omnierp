@@ -60,7 +60,7 @@ export default function HRConfigurations() {
           threshold_hours: d.comp_off_threshold_hours ?? 9.0,
           hours_per_day: d.comp_off_hours_per_day ?? 8.0,
           leave_type_id: d.comp_off_leave_type_id || null,
-          expiry_months: d.comp_off_expiry_months || null,
+          expiry_months: d.comp_off_expiry_months ?? null,
           activation_date: d.comp_off_activation_date || new Date().toISOString().split('T')[0],
         });
         setLeaveTypes(lt.data.filter(t => t.is_active));
@@ -949,8 +949,8 @@ export default function HRConfigurations() {
                   <div style={{ fontSize: 11, color: 'var(--text2)' }}>Automatically add overtime hours to Comp-Off balance</div>
                 </div>
                 <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={!!compOffSettings.enabled} onChange={e => setCompOffSettings({ ...compOffSettings, enabled: e.target.checked })} style={{ opacity: 0, width: 0, height: 0 }} />
-                  <span style={{ position: 'absolute', inset: 0, borderRadius: 12, background: compOffSettings.enabled ? 'var(--accent)' : '#d1d5db', transition: '0.2s' }}>
+                  <input type="checkbox" checked={!!compOffSettings.enabled} onChange={e => setCompOffSettings({ ...compOffSettings, enabled: e.target.checked })} style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', zIndex: 2, margin: 0 }} />
+                  <span style={{ position: 'absolute', inset: 0, borderRadius: 12, background: compOffSettings.enabled ? 'var(--accent)' : '#d1d5db', transition: '0.2s', zIndex: 1 }}>
                     <span style={{ position: 'absolute', left: compOffSettings.enabled ? 22 : 2, top: 2, width: 20, height: 20, borderRadius: '50%', background: '#fff', transition: '0.2s', boxShadow: '0 1px 4px rgba(0,0,0,0.2)' }} />
                   </span>
                 </label>
