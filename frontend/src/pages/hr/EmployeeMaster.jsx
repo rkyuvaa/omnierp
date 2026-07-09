@@ -32,6 +32,29 @@ export default function EmployeeMaster() {
   const [activeTab, setActiveTab] = useState('list'); // list | detail
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [importFile, setImportFile] = useState(null);
+  const [sortColumn, setSortColumn] = useState('employee_id');
+  const [sortDirection, setSortDirection] = useState('asc');
+
+  const COLUMN_KEYS = {
+    'Emp ID': 'employee_id',
+    'Name': 'name',
+    'Designation': 'designation',
+    'Department': 'department_name',
+    'Branch': 'branch_name',
+    'Shift': 'shift_name',
+    'Status': 'is_active'
+  };
+
+  const handleSort = (columnLabel) => {
+    const key = COLUMN_KEYS[columnLabel];
+    if (!key) return;
+    if (sortColumn === key) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(key);
+      setSortDirection('asc');
+    }
+  };
 
   useEffect(() => {
     fetchAll();
@@ -188,11 +211,30 @@ export default function EmployeeMaster() {
     openDetail(list[prevIndex]);
   }
 
-  const filtered = employees.filter(e =>
-    e.name?.toLowerCase().includes(search.toLowerCase()) ||
-    e.employee_id?.toLowerCase().includes(search.toLowerCase()) ||
-    e.email?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = [...employees]
+    .filter(e =>
+      e.name?.toLowerCase().includes(search.toLowerCase()) ||
+      e.employee_id?.toLowerCase().includes(search.toLowerCase()) ||
+      e.email?.toLowerCase().includes(search.toLowerCase())
+    )
+    .sort((a, b) => {
+      let valA = a[sortColumn];
+      let valB = b[sortColumn];
+      if (valA === null || valA === undefined) valA = '';
+      if (valB === null || valB === undefined) valB = '';
+      
+      if (typeof valA === 'boolean' && typeof valB === 'boolean') {
+        return sortDirection === 'asc'
+          ? (valA === valB ? 0 : valA ? 1 : -1)
+          : (valA === valB ? 0 : valA ? -1 : 1);
+      }
+      
+      const strA = String(valA).toLowerCase();
+      const strB = String(valB).toLowerCase();
+      if (strA < strB) return sortDirection === 'asc' ? -1 : 1;
+      if (strA > strB) return sortDirection === 'asc' ? 1 : -1;
+      return 0;
+    });
 
   return (
     <Layout title="Employee Master">
@@ -230,9 +272,37 @@ export default function EmployeeMaster() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
-                      {['Emp ID','Name','Designation','Department','Branch','Shift','Status','Actions'].map(h => (
-                        <th key={h} style={{ padding: '10px 12px', textAlign: 'left', fontWeight: 700, color: 'var(--text2)', fontSize: 12, textTransform: 'uppercase', letterSpacing: '0.5px' }}>{h}</th>
-                      ))}
+                      {['Emp ID','Name','Designation','Department','Branch','Shift','Status','Actions'].map(h => {
+                        const isSortable = h !== 'Actions';
+                        const key = COLUMN_KEYS[h];
+                        const isCurrent = sortColumn === key;
+                        return (
+                          <th 
+                            key={h} 
+                            onClick={() => isSortable && handleSort(h)}
+                            style={{ 
+                              padding: '10px 12px', 
+                              textAlign: 'left', 
+                              fontWeight: 700, 
+                              color: isCurrent ? 'var(--accent)' : 'var(--text2)', 
+                              fontSize: 12, 
+                              textTransform: 'uppercase', 
+                              letterSpacing: '0.5px',
+                              cursor: isSortable ? 'pointer' : 'default',
+                              userSelect: 'none'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                              {h}
+                              {isSortable && (
+                                <span style={{ opacity: isCurrent ? 1 : 0.3, display: 'inline-flex', alignItems: 'center', fontSize: 10 }}>
+                                  {isCurrent ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ' ↕'}
+                                </span>
+                              )}
+                            </div>
+                          </th>
+                        );
+                      })}
                     </tr>
                   </thead>
                   <tbody>
