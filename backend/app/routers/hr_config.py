@@ -80,6 +80,7 @@ def comp_off_setup(payload: CompOffSetupPayload, db: Session = Depends(get_db), 
         lt_id = co_type.id
 
     # Save all comp-off settings
+    from sqlalchemy.orm.attributes import flag_modified
     configs_to_save = {
         "comp_off_enabled": payload.enabled,
         "comp_off_threshold_hours": payload.threshold_hours,
@@ -93,6 +94,7 @@ def comp_off_setup(payload: CompOffSetupPayload, db: Session = Depends(get_db), 
         cfg = db.query(HRConfig).filter(HRConfig.key == key).first()
         if cfg:
             cfg.value = value
+            flag_modified(cfg, "value")
             cfg.updated_at = datetime.utcnow()
             print(f"[DEBUG COMP-OFF] Updated key: {key} = {value}", flush=True)
         else:
