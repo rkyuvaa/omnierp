@@ -18,13 +18,6 @@ def get_all_configs(db: Session = Depends(get_db), current_user = Depends(get_cu
     configs = db.query(HRConfig).all()
     return {c.key: c.value for c in configs}
 
-@router.get("/{key}")
-def get_config(key: str, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
-    db_config = db.query(HRConfig).filter(HRConfig.key == key).first()
-    if not db_config:
-        return {"key": key, "value": None}
-    return {"key": db_config.key, "value": db_config.value}
-
 @router.post("/")
 def update_config(config: HRConfigSchema, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     db_config = db.query(HRConfig).filter(HRConfig.key == config.key).first()
@@ -117,3 +110,10 @@ def get_comp_off_setup(db: Session = Depends(get_db), current_user = Depends(get
 def debug_db(db: Session = Depends(get_db)):
     configs = db.query(HRConfig).filter(HRConfig.key.like("comp_off_%")).all()
     return [{"key": c.key, "value": c.value, "type": str(type(c.value))} for c in configs]
+
+@router.get("/{key}")
+def get_config(key: str, db: Session = Depends(get_db), current_user = Depends(get_current_user)):
+    db_config = db.query(HRConfig).filter(HRConfig.key == key).first()
+    if not db_config:
+        return {"key": key, "value": None}
+    return {"key": db_config.key, "value": db_config.value}
