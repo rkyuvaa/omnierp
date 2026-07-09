@@ -76,9 +76,16 @@ def _process_comp_off(db: Session, record: HRAttendanceRecord):
 
     if hours_worked > threshold and hours_per_day > 0:
         excess = hours_worked - threshold
-        new_comp_off_hours = round(excess, 4)
+        half_day_hours = hours_per_day / 2.0
+        
+        if excess >= hours_per_day:
+            new_comp_off_hours = hours_per_day
+        elif excess >= half_day_hours:
+            new_comp_off_hours = half_day_hours
+        else:
+            new_comp_off_hours = 0.0
     else:
-        new_comp_off_hours = 0
+        new_comp_off_hours = 0.0
 
     delta_hours = new_comp_off_hours - prev_comp_off_hours
     if delta_hours == 0:
