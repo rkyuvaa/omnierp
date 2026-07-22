@@ -117,34 +117,44 @@ export default function Login() {
   return (
     <div className="login-wrapper">
       <style>{`
+        html, body {
+          min-height: 100%;
+          overflow-y: auto !important;
+          -webkit-overflow-scrolling: touch;
+        }
         .login-wrapper {
           display: flex;
           align-items: center;
           justify-content: center;
           min-height: 100vh;
+          min-height: 100dvh;
           background: #f4fbf0;
-          padding: 24px;
+          padding: 24px 16px;
+          box-sizing: border-box;
+          overflow-y: auto;
+          -webkit-overflow-scrolling: touch;
           font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
         .login-card-container {
           width: 100%;
           max-width: 450px;
-          height: 540px;
           background: #fff;
           border-radius: 16px;
           box-shadow: 0 20px 40px rgba(25, 84, 2, 0.08);
           display: flex;
-          overflow: hidden;
+          overflow: visible;
+          margin: auto 0;
         }
         .login-right-panel {
           width: 100%;
-          height: 100%;
           background: #ffffff;
           display: flex;
           flex-direction: column;
           justify-content: space-between;
-          padding: 40px;
+          padding: 40px 32px;
           box-sizing: border-box;
+          gap: 24px;
+          border-radius: 16px;
         }
         @keyframes levitate {
           0% { transform: translateY(0); }
@@ -207,14 +217,20 @@ export default function Login() {
           to { opacity: 1; transform: translateY(0); }
         }
         
-        @media (max-width: 480px) {
+        @media (max-width: 600px), (max-height: 700px) {
+          .login-wrapper {
+            padding: 16px 12px !important;
+            align-items: flex-start !important;
+          }
           .login-card-container {
-            height: auto !important;
-            border-radius: 12px !important;
-            box-shadow: 0 10px 25px rgba(25, 84, 2, 0.05) !important;
+            border-radius: 14px !important;
+            box-shadow: 0 10px 25px rgba(25, 84, 2, 0.08) !important;
+            margin-top: auto !important;
+            margin-bottom: auto !important;
           }
           .login-right-panel {
-            padding: 28px 20px !important;
+            padding: 24px 18px !important;
+            gap: 16px !important;
           }
         }
       `}</style>
@@ -275,7 +291,11 @@ export default function Login() {
                     type="email"
                     value={email}
                     onChange={handleEmailChange}
-                    onFocus={() => setEmailFocused(true)}
+                    onFocus={(e) => {
+                      setEmailFocused(true);
+                      const target = e.target;
+                      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+                    }}
                     onBlur={() => setEmailFocused(false)}
                     required
                     style={{
@@ -318,7 +338,11 @@ export default function Login() {
                     type={passwordVisible ? 'text' : 'password'}
                     value={password}
                     onChange={handlePasswordChange}
-                    onFocus={() => setPasswordFocused(true)}
+                    onFocus={(e) => {
+                      setPasswordFocused(true);
+                      const target = e.target;
+                      setTimeout(() => target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
+                    }}
                     onBlur={() => setPasswordFocused(false)}
                     required
                     style={{

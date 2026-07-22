@@ -157,21 +157,32 @@ def send_template_email(
     """
     template = db.query(EmailTemplate).filter(EmailTemplate.name == template_name).first()
     if not template:
-        raise ValueError(f"Email template '{template_name}' not found in the database")
+        try:
+            from app.routers.admin_settings import seed_email_templates
+            seed_email_templates(db)
+            template = db.query(EmailTemplate).filter(EmailTemplate.name == template_name).first()
+        except Exception as seed_err:
+            logger.warning(f"Could not auto-seed email templates: {seed_err}")
 
-    # Safe placeholder replacement using format dictionary
-    try:
-        # Interpolate variables safely
-        subject = template.subject.format(**variables)
-        body_html = template.body_html.format(**variables)
-    except KeyError as ke:
-        logger.warning(f"Template placeholder mismatch for key: {str(ke)}. Falling back to simple replacement.")
-        # Fallback string replace just in case of formatting key errors
-        subject = template.subject
-        body_html = template.body_html
-        for k, v in variables.items():
-            subject = subject.replace(f"{{{k}}}", str(v))
-            body_html = body_html.replace(f"{{{k}}}", str(v))
+    if template:
+        # Safe placeholder replacement using format dictionary
+        try:
+            # Interpolate variables safely
+            subject = template.subject.format(**variables)
+            body_html = template.body_html.format(**variables)
+        except KeyError as ke:
+            logger.warning(f"Template placeholder mismatch for key: {str(ke)}. Falling back to simple replacement.")
+            # Fallback string replace just in case of formatting key errors
+            subject = template.subject
+            body_html = template.body_html
+            for k, v in variables.items():
+                subject = subject.replace(f"{{{k}}}", str(v))
+                body_html = body_html.replace(f"{{{k}}}", str(v))
+    else:
+        # Fallback template if missing in DB
+        subject = f"Notification: {template_name.replace('_', ' ').title()}"
+        items_html = "".join([f"<li><strong>{k.replace('_', ' ').title()}:</strong> {v}</li>" for k, v in variables.items() if k != "action_url"])
+        body_html = f"<div style='font-family: sans-serif; padding: 20px; color: #333;'><h3>{subject}</h3><ul>{items_html}</ul></div>"
 
     return send_email(
         db=db,

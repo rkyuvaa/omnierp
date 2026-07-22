@@ -507,15 +507,34 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False, origin
                     print(f"⚠️ Failed to send manager leave email to {manager.email}: {mgr_err}")
 
             # Send informational email to CC recipients
-            cc_ids = getattr(req, "cc_employee_ids", None) or []
-            if cc_ids:
-                cc_emps = db.query(HREmployee).filter(HREmployee.id.in_(cc_ids)).all()
+            raw_cc = getattr(req, "cc_employee_ids", None)
+            cc_ids = []
+            if raw_cc:
+                if isinstance(raw_cc, str):
+                    try:
+                        import json
+                        cc_ids = json.loads(raw_cc)
+                    except:
+                        cc_ids = []
+                elif isinstance(raw_cc, list):
+                    cc_ids = raw_cc
+            
+            clean_cc_ids = []
+            for cid in cc_ids:
+                try:
+                    clean_cc_ids.append(int(cid))
+                except (ValueError, TypeError):
+                    pass
+
+            if clean_cc_ids:
+                cc_emps = db.query(HREmployee).filter(HREmployee.id.in_(clean_cc_ids)).all()
                 for cc_emp in cc_emps:
-                    if cc_emp.email and "@" in cc_emp.email:
+                    target_email = cc_emp.email or (cc_emp.user.email if cc_emp.user else None)
+                    if target_email and "@" in target_email:
                         try:
                             send_template_email(
                                 db=db,
-                                to_email=cc_emp.email,
+                                to_email=target_email,
                                 template_name="leave_cc_notice",
                                 variables={
                                     "employee_name": req.employee.name,
@@ -527,7 +546,9 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False, origin
                                 }
                             )
                         except Exception as cc_err:
-                            print(f"⚠️ Failed to send CC leave email to {cc_emp.email}: {cc_err}")
+                            print(f"⚠️ Failed to send CC leave email to {target_email}: {cc_err}")
+                    else:
+                        print(f"⚠️ CC employee #{cc_emp.id} ({cc_emp.name}) has no valid email on Employee or User record.")
     except Exception as e:
         print(f"⚠️ Failed to send leave email for req {req_id}: {e}")
     finally:
