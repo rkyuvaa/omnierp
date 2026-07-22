@@ -54,14 +54,16 @@ export default function Requests() {
   const { user } = useAuth();
 
   useEffect(() => {
-    if (user?.is_superadmin) {
-      api.get('/hr/employees/', { params: { is_active: true } })
-        .then(r => {
-          setEmployees(r.data);
-          if (r.data[0]) setSelectedEmp(r.data[0].id);
-        })
-        .catch(e => console.error(e));
-    } else {
+    api.get('/hr/employees/', { params: { is_active: true } })
+      .then(r => {
+        setEmployees(r.data || []);
+        if (user?.is_superadmin && r.data && r.data[0]) {
+          setSelectedEmp(r.data[0].id);
+        }
+      })
+      .catch(e => console.error(e));
+
+    if (!user?.is_superadmin) {
       setSelectedEmp(user?.employee_id || '');
     }
     api.get('/hr/leave/types').then(r => setLeaveTypes(r.data.filter(t => t.is_active)));

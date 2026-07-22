@@ -63,14 +63,14 @@ class EmployeeUpdate(BaseModel):
     esi_number: Optional[str] = None
 
 # ── Serializer ────────────────────────────────────────────────────────────────
-def serialize(e: HREmployee):
+def serialize(e: HREmployee, is_admin: bool = True):
     return {
         "id": e.id,
         "employee_id": e.employee_id,
         "user_id": e.user_id,
         "name": e.name,
         "email": e.email,
-        "phone": e.phone,
+        "phone": e.phone if is_admin else None,
         "designation": e.designation,
         "department_id": e.department_id,
         "department_name": e.department.name if e.department else None,
@@ -81,16 +81,16 @@ def serialize(e: HREmployee):
         "cc_manager_ids": getattr(e, "cc_manager_ids", []) or [],
         "shift_id": e.shift_id,
         "shift_name": e.shift.name if e.shift else None,
-        "date_of_joining": str(e.date_of_joining) if e.date_of_joining else None,
-        "date_of_leaving": str(e.date_of_leaving) if e.date_of_leaving else None,
-        "basic_salary": float(e.basic_salary or 0),
-        "salary_components": e.salary_components or [],
-        "biometric_id": e.biometric_id,
-        "salary_template_id": e.salary_template_id,
+        "date_of_joining": str(e.date_of_joining) if (e.date_of_joining and is_admin) else None,
+        "date_of_leaving": str(e.date_of_leaving) if (e.date_of_leaving and is_admin) else None,
+        "basic_salary": float(e.basic_salary or 0) if is_admin else 0,
+        "salary_components": (e.salary_components or []) if is_admin else [],
+        "biometric_id": e.biometric_id if is_admin else None,
+        "salary_template_id": e.salary_template_id if is_admin else None,
         "salary_category": e.salary_category or "regular",
         "enable_mobile_punch": e.enable_mobile_punch or False,
-        "uan": e.uan or "",
-        "esi_number": e.esi_number or "",
+        "uan": (e.uan or "") if is_admin else "",
+        "esi_number": (e.esi_number or "") if is_admin else "",
         "is_active": e.is_active,
         "created_at": str(e.created_at),
     }
@@ -107,29 +107,29 @@ def list_employees(
     current_user: User = Depends(get_current_user)
 ):
     from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee_optional
-        emp = get_current_employee_optional(current_user, db)
-        if not emp:
-            return []
-        return [serialize(emp)]
-
+    admin_flag = is_hr_admin(current_user, db)
     q = db.query(HREmployee)
+
+    if not admin_flag:
+        # Non-admins can list active employees for CC / manager dropdowns
+        q = q.filter(HREmployee.is_active == True)
+    else:
+        if is_active is not None:
+            q = q.filter(HREmployee.is_active == is_active)
+
     if branch_id:
         q = q.filter(HREmployee.branch_id == branch_id)
     if department_id:
         q = q.filter(HREmployee.department_id == department_id)
     if shift_id:
         q = q.filter(HREmployee.shift_id == shift_id)
-    if is_active is not None:
-        q = q.filter(HREmployee.is_active == is_active)
     if search:
         q = q.filter(
             HREmployee.name.ilike(f"%{search}%") |
             HREmployee.employee_id.ilike(f"%{search}%") |
             HREmployee.email.ilike(f"%{search}%")
         )
-    return [serialize(e) for e in q.order_by(HREmployee.name).all()]
+    return [serialize(e, is_admin=admin_flag) for e in q.order_by(HREmployee.name).all()]
 
 
 @router.post("/")
