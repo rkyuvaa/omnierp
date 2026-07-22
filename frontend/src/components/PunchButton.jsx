@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../hooks/useAuth';
 import toast from 'react-hot-toast';
-import { LogIn, LogOut, Camera, X, Loader, MapPin } from 'lucide-react';
+import { LogIn, LogOut, Camera, X, Loader, MapPin, Clock, CheckCircle2, UserCheck } from 'lucide-react';
 
 /* ──────────────────────────────────────────────────────────────────────
    STATE COLOURS
@@ -39,6 +39,7 @@ export default function PunchButton() {
   const [state, setState] = useState('none');   // 'none' | 'in' | 'done'
   const [todayData, setTodayData] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
   const [step, setStep] = useState('idle');     // idle | locating | camera | submitting
   const [location, setLocation] = useState(null);
   const [locationName, setLocationName] = useState('');
@@ -48,8 +49,8 @@ export default function PunchButton() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  /* Only render for employees with mobile punch enabled */
-  if (!user?.enable_mobile_punch || !user?.employee_id) return null;
+  /* Render check-in badge for all users linked to an employee record */
+  if (!user?.employee_id) return null;
 
   /* ── Load today's status on mount + every 60 s ─────────────────── */
   useEffect(() => {
@@ -68,10 +69,14 @@ export default function PunchButton() {
     } catch { /* silently ignore */ }
   }
 
-  /* ── Button click: start the punch flow ────────────────────────── */
+  /* ── Button click: start the punch flow or open info modal ────────── */
   function openFlow() {
+    if (!user?.enable_mobile_punch) {
+      setShowInfoModal(true);
+      return;
+    }
     if (state === 'done') {
-      toast.success('You have already checked in and out today!');
+      setShowInfoModal(true);
       return;
     }
     setStep('locating');
@@ -196,55 +201,70 @@ export default function PunchButton() {
 
   return (
     <>
-      {/* ── Inline Topbar Button ─────────────────────────────────────── */}
+      {/* ── Inline Topbar Check-In Time Badge ───────────────────────── */}
       <button
         onClick={openFlow}
-        title={cfg.label}
+        title={user?.enable_mobile_punch ? cfg.label : "Today's Attendance Status"}
         style={{
-          padding: '4px 16px',
+          padding: '4px 14px',
           borderRadius: 12,
-          border: `2px solid ${cfg.ring}`,
-          background: cfg.gradient,
-          boxShadow: cfg.shadow,
-          cursor: state === 'done' ? 'not-allowed' : 'pointer',
+          border: user?.enable_mobile_punch ? `2px solid ${cfg.ring}` : '1px solid var(--border)',
+          background: user?.enable_mobile_punch ? cfg.gradient : (state === 'in' ? 'linear-gradient(135deg,#15803d 0%,#16a34a 100%)' : (state === 'done' ? 'linear-gradient(135deg,#1e293b 0%,#334155 100%)' : 'var(--bg3)')),
+          boxShadow: user?.enable_mobile_punch ? cfg.shadow : '0 2px 8px rgba(0,0,0,0.06)',
+          cursor: 'pointer',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           outline: 'none',
-          color: '#fff',
+          color: user?.enable_mobile_punch || state !== 'none' ? '#fff' : 'var(--text2)',
           flexShrink: 0,
           transition: 'all 0.2s ease',
           lineHeight: '1.25',
-          minWidth: 120,
+          minWidth: 110,
         }}
-        onMouseEnter={e => { if (state !== 'done') e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'; }}
+        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px) scale(1.02)'; }}
         onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
       >
         {state === 'none' && (
-          <>
-            <span style={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <LogIn size={12} color="#fff" strokeWidth={2.5} /> Check In
-            </span>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: 600, marginTop: 1 }}>--:--</span>
-          </>
+          user?.enable_mobile_punch ? (
+            <>
+              <span style={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <LogIn size={12} color="#fff" strokeWidth={2.5} /> Check In
+              </span>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: 600, marginTop: 1 }}>--:--</span>
+            </>
+          ) : (
+            <>
+              <span style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <Clock size={12} color="var(--text3)" /> Check-In
+              </span>
+              <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginTop: 1 }}>--:--</span>
+            </>
+          )
         )}
         {state === 'in' && (
           <>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
-              In: {formatTime(todayData?.check_in)}
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>
+              🟢 In: {formatTime(todayData?.check_in)}
             </span>
-            <span style={{ fontSize: 12, fontWeight: 800, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-              <LogOut size={12} color="#fff" strokeWidth={2.5} /> Check Out
-            </span>
+            {user?.enable_mobile_punch ? (
+              <span style={{ fontSize: 11, fontWeight: 800, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <LogOut size={11} color="#fff" strokeWidth={2.5} /> Check Out
+              </span>
+            ) : (
+              <span style={{ fontSize: 10, color: '#86efac', fontWeight: 700, marginTop: 1 }}>
+                {todayData?.status ? todayData.status.toUpperCase() : 'PRESENT'}
+              </span>
+            )}
           </>
         )}
         {state === 'done' && (
           <>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>
               In: {formatTime(todayData?.check_in)}
             </span>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 1 }}>
+            <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, marginTop: 1 }}>
               Out: {formatTime(todayData?.check_out)}
             </span>
           </>
@@ -389,6 +409,71 @@ export default function PunchButton() {
                 </div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Attendance Status Info Modal ─────────────────────────────────── */}
+      {showInfoModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
+        }}>
+          <div style={{
+            background: 'var(--bg2)',
+            borderRadius: 16,
+            padding: 24,
+            width: '100%',
+            maxWidth: 360,
+            boxShadow: '0 20px 40px rgba(0,0,0,0.2)',
+            border: '1px solid var(--border)',
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Clock size={20} style={{ color: 'var(--accent)' }} />
+                <span style={{ fontWeight: 700, fontSize: 16 }}>Today's Attendance</span>
+              </div>
+              <button onClick={() => setShowInfoModal(false)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 8, padding: 6, cursor: 'pointer', color: 'var(--text2)' }}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>Status</span>
+                <span style={{ fontSize: 12, fontWeight: 700, padding: '3px 10px', borderRadius: 999, background: todayData?.check_in ? '#dcfce7' : '#f1f5f9', color: todayData?.check_in ? '#16a34a' : '#64748b' }}>
+                  {todayData?.status ? todayData.status.toUpperCase() : (todayData?.check_in ? 'PRESENT' : 'NOT CHECKED IN')}
+                </span>
+              </div>
+
+              <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>Check-In Time</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: todayData?.check_in ? '#16a34a' : 'var(--text3)' }}>
+                  {todayData?.check_in ? formatTime(todayData.check_in) : '--:--'}
+                </span>
+              </div>
+
+              <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>Check-Out Time</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: todayData?.check_out ? '#dc2626' : 'var(--text3)' }}>
+                  {todayData?.check_out ? formatTime(todayData.check_out) : 'Pending'}
+                </span>
+              </div>
+
+              {todayData?.hours_worked > 0 && (
+                <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: '12px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 500 }}>Total Hours</span>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                    {todayData.hours_worked.toFixed(2)} hours
+                  </span>
+                </div>
+              )}
+            </div>
+
+            <button onClick={() => setShowInfoModal(false)} className="btn btn-primary" style={{ width: '100%', marginTop: 20, justifyContent: 'center' }}>
+              Close
+            </button>
           </div>
         </div>
       )}
