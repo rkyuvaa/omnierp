@@ -346,7 +346,7 @@ def seed_email_templates(db: Session):
             "body_html": """<div style="background-color: #EEF2F7; padding: 40px 20px; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif; min-height: 100%;">
   <div style="width: 100%; max-width: 875px; background-color: #ffffff; border: 1px solid #cbd5e0; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04); box-sizing: border-box; margin: 0 auto;">
     <div>
-      <h2 style="color: #2563eb; margin-top: 0; font-size: 22px; font-weight: 700;">📌 Leave Application Notice (CC)</h2>
+      <h2 style="color: #2563eb; margin-top: 0; font-size: 22px; font-weight: 700;">📌 Leave Information</h2>
       <p style="color: #2d3748; font-size: 14px; line-height: 1.6;"><strong style="color: #0d1117;">{employee_name}</strong> has submitted a leave request and tagged you in CC for informational purposes.</p>
       <div style="background-color: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
         <table style="width: 100%; border-collapse: collapse;">
