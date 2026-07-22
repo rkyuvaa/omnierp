@@ -504,7 +504,7 @@ def my_today_status(db: Session = Depends(get_db), current_user: User = Depends(
 
     emp = get_current_employee_optional(current_user, db)
     
-    # Robust fallback search if not linked yet
+    # Robust fallback search if not linked yet by user_id
     if not emp and current_user.email:
         emp = db.query(HREmployee).filter(func.lower(HREmployee.email) == current_user.email.lower()).first()
         if emp:
@@ -512,13 +512,23 @@ def my_today_status(db: Session = Depends(get_db), current_user: User = Depends(
             db.commit()
             db.refresh(emp)
 
-    # Auto-create Employee profile for Superadmin/Admin if missing
-    if not emp and current_user.is_superadmin:
+    # Fallback search by name if email is empty or mismatched
+    if not emp and current_user.name:
+        emp = db.query(HREmployee).filter(func.lower(HREmployee.name) == current_user.name.lower()).first()
+        if emp and not emp.user_id:
+            emp.user_id = current_user.id
+            db.commit()
+            db.refresh(emp)
+
+    # Auto-create Employee profile for ANY authenticated user if missing
+    if not emp:
         try:
+            emp_count = db.query(HREmployee).count() + 1
+            prefix = "ADM" if current_user.is_superadmin else "EMP"
             emp = HREmployee(
                 user_id=current_user.id,
-                employee_id=f"ADM{current_user.id:03d}",
-                name=current_user.name or "Admin",
+                employee_id=f"{prefix}{emp_count:03d}",
+                name=current_user.name or "User",
                 email=current_user.email,
                 joining_date=datetime.now().date(),
                 status="active"
@@ -528,7 +538,7 @@ def my_today_status(db: Session = Depends(get_db), current_user: User = Depends(
             db.refresh(emp)
         except Exception as e:
             db.rollback()
-            print(f"Error auto-creating superadmin employee: {e}")
+            print(f"Error auto-creating employee profile: {e}")
 
     if not emp:
         return {
