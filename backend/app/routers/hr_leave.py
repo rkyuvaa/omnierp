@@ -475,34 +475,59 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False, origin
                 variables=variables
             )
 
-        # ── Email to MANAGER on new application ──
+        # ── Email to MANAGER & CC recipients on new application ──
         else:
             manager = db.query(HREmployee).filter(HREmployee.id == req.l1_approver_id).first() if req.l1_approver_id else None
-            if not manager or not manager.email or "@" not in manager.email:
-                return
-            import os
-            frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
-            if not frontend_url and origin:
-                frontend_url = origin.rstrip("/")
-            if not frontend_url:
-                frontend_url = "http://localhost"
-            action_url = f"{frontend_url}/hr/approvals?type=leave&id={req.id}"
-            variables = {
-                "employee_name": req.employee.name,
-                "leave_type": req.leave_type.name if req.leave_type else "Leave",
-                "from_date": str(req.from_date),
-                "to_date": str(req.to_date),
-                "total_days": str(req.total_days),
-                "reason": req.reason or "No reason provided",
-                "approver_name": manager.name,
-                "action_url": action_url,
-            }
-            send_template_email(
-                db=db,
-                to_email=manager.email,
-                template_name="leave_new_request",
-                variables=variables
-            )
+            if manager and manager.email and "@" in manager.email:
+                import os
+                frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
+                if not frontend_url and origin:
+                    frontend_url = origin.rstrip("/")
+                if not frontend_url:
+                    frontend_url = "http://localhost"
+                action_url = f"{frontend_url}/hr/approvals?type=leave&id={req.id}"
+                variables = {
+                    "employee_name": req.employee.name,
+                    "leave_type": req.leave_type.name if req.leave_type else "Leave",
+                    "from_date": str(req.from_date),
+                    "to_date": str(req.to_date),
+                    "total_days": str(req.total_days),
+                    "reason": req.reason or "No reason provided",
+                    "approver_name": manager.name,
+                    "action_url": action_url,
+                }
+                try:
+                    send_template_email(
+                        db=db,
+                        to_email=manager.email,
+                        template_name="leave_new_request",
+                        variables=variables
+                    )
+                except Exception as mgr_err:
+                    print(f"⚠️ Failed to send manager leave email to {manager.email}: {mgr_err}")
+
+            # Send informational email to CC recipients
+            cc_ids = getattr(req, "cc_employee_ids", None) or []
+            if cc_ids:
+                cc_emps = db.query(HREmployee).filter(HREmployee.id.in_(cc_ids)).all()
+                for cc_emp in cc_emps:
+                    if cc_emp.email and "@" in cc_emp.email:
+                        try:
+                            send_template_email(
+                                db=db,
+                                to_email=cc_emp.email,
+                                template_name="leave_cc_notice",
+                                variables={
+                                    "employee_name": req.employee.name,
+                                    "leave_type": req.leave_type.name if req.leave_type else "Leave",
+                                    "from_date": str(req.from_date),
+                                    "to_date": str(req.to_date),
+                                    "total_days": str(req.total_days),
+                                    "reason": req.reason or "No reason provided",
+                                }
+                            )
+                        except Exception as cc_err:
+                            print(f"⚠️ Failed to send CC leave email to {cc_emp.email}: {cc_err}")
     except Exception as e:
         print(f"⚠️ Failed to send leave email for req {req_id}: {e}")
     finally:

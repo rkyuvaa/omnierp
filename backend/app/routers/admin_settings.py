@@ -338,6 +338,41 @@ def seed_email_templates(db: Session):
   </div>
 </div>"""
         },
+        # ── CC Notification on Leave application ──
+        {
+            "name": "leave_cc_notice",
+            "subject": "FYI: Leave Request from {employee_name}",
+            "placeholders": ["employee_name", "leave_type", "from_date", "to_date", "total_days", "reason"],
+            "body_html": """<div style="background-color: #EEF2F7; padding: 40px 20px; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif; min-height: 100%;">
+  <div style="width: 100%; max-width: 875px; background-color: #ffffff; border: 1px solid #cbd5e0; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04); box-sizing: border-box; margin: 0 auto;">
+    <div>
+      <h2 style="color: #2563eb; margin-top: 0; font-size: 22px; font-weight: 700;">📌 Leave Application Notice (CC)</h2>
+      <p style="color: #2d3748; font-size: 14px; line-height: 1.6;"><strong style="color: #0d1117;">{employee_name}</strong> has submitted a leave request and tagged you in CC for informational purposes.</p>
+      <div style="background-color: #f8fafc; padding: 24px; border-radius: 12px; border: 1px solid #e2e8f0; margin: 24px 0;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="color: #718096; font-size: 13.5px; padding: 12px 0; width: 35%; font-weight: 500;">Employee:</td>
+            <td style="font-weight: 700; color: #0d1117; padding: 12px 0; text-align: right;">{employee_name}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="color: #718096; font-size: 13.5px; padding: 12px 0; font-weight: 500;">Leave Type:</td>
+            <td style="font-weight: 700; color: #0d1117; padding: 12px 0; text-align: right;">{leave_type}</td>
+          </tr>
+          <tr style="border-bottom: 1px solid #e2e8f0;">
+            <td style="color: #718096; font-size: 13.5px; padding: 12px 0; font-weight: 500;">Duration:</td>
+            <td style="font-weight: 700; color: #0d1117; padding: 12px 0; text-align: right;">{from_date} to {to_date} ({total_days} day(s))</td>
+          </tr>
+          <tr>
+            <td style="color: #718096; font-size: 13.5px; padding: 12px 0; font-weight: 500;">Reason:</td>
+            <td style="font-weight: 700; color: #0d1117; padding: 12px 0; text-align: right;">{reason}</td>
+          </tr>
+        </table>
+      </div>
+      <p style="font-size: 12px; color: #718096;">Note: This email is for your information. Action/Approval is handled by the primary manager.</p>
+    </div>
+  </div>
+</div>"""
+        },
         # ── Manager notification on On-Duty application ──
         {
             "name": "onduty_new_request",
