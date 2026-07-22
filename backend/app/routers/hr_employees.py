@@ -24,6 +24,7 @@ class EmployeeCreate(BaseModel):
     branch_id: Optional[int] = None
     manager_id: Optional[int] = None
     manager_l2_id: Optional[int] = None
+    cc_manager_ids: Optional[List[int]] = []
     shift_id: Optional[int] = None
     date_of_joining: Optional[date] = None
     basic_salary: Optional[float] = 0
@@ -46,6 +47,7 @@ class EmployeeUpdate(BaseModel):
     branch_id: Optional[int] = None
     manager_id: Optional[int] = None
     manager_l2_id: Optional[int] = None
+    cc_manager_ids: Optional[List[int]] = None
     shift_id: Optional[int] = None
     date_of_joining: Optional[date] = None
     date_of_leaving: Optional[date] = None
@@ -76,6 +78,7 @@ def serialize(e: HREmployee):
         "branch_name": e.branch.name if e.branch else None,
         "manager_id": e.manager_id,
         "manager_l2_id": getattr(e, "manager_l2_id", None),
+        "cc_manager_ids": getattr(e, "cc_manager_ids", []) or [],
         "shift_id": e.shift_id,
         "shift_name": e.shift.name if e.shift else None,
         "date_of_joining": str(e.date_of_joining) if e.date_of_joining else None,

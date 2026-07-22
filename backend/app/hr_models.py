@@ -19,7 +19,8 @@ class HREmployee(Base):
     department_id = Column(Integer, ForeignKey("departments.id"), nullable=True)
     branch_id = Column(Integer, ForeignKey("branches.id"), nullable=True)
     manager_id = Column(Integer, nullable=True)           # FK to hr_employees.id (L1 Manager)
-    manager_l2_id = Column(Integer, nullable=True)        # FK to hr_employees.id (L2 Manager)
+    manager_l2_id = Column(Integer, nullable=True)        # FK to hr_employees.id (L2 Manager - legacy)
+    cc_manager_ids = Column(JSON, default=[])             # List of hr_employees.id in CC
     shift_id = Column(Integer, ForeignKey("hr_shifts.id"), nullable=True)
     date_of_joining = Column(Date, nullable=True)
     date_of_leaving = Column(Date, nullable=True)
@@ -170,6 +171,8 @@ class HRLeaveRequest(Base):
     l2_status = Column(String(20), nullable=True)          # pending/approved/rejected/not_required
     l2_remarks = Column(Text, nullable=True)
     l2_approved_at = Column(DateTime, nullable=True)
+
+    cc_employee_ids = Column(JSON, default=[])             # List of hr_employees.id tagged as CC for this leave request
 
     auto_approve_at = Column(DateTime, nullable=True)      # created_at + 6 hours
     is_auto_approved = Column(Boolean, default=False)

@@ -41,6 +41,7 @@ class LeaveApply(BaseModel):
     is_half_day: bool = False
     half_day_session: Optional[str] = None
     reason: Optional[str] = None
+    cc_employee_ids: Optional[List[int]] = None
 
 class LeaveAction(BaseModel):
     remarks: Optional[str] = None
@@ -282,6 +283,9 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                 
                 auto_approve_hours = get_hr_config(db, "leave_auto_approve_hours", 6)
                 auto_approve_at = datetime.utcnow() + timedelta(hours=float(auto_approve_hours))
+                # Determine final CC employee IDs
+                cc_ids = data.cc_employee_ids if data.cc_employee_ids is not None else (getattr(emp, "cc_manager_ids", []) or [])
+
                 ref_paid = _next_leave_ref(db)
                 req_paid = HRLeaveRequest(
                     reference=ref_paid,
@@ -296,6 +300,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                     approver_id=emp.manager_id,
                     l1_approver_id=emp.manager_id,
                     l2_approver_id=getattr(emp, 'manager_l2_id', None),
+                    cc_employee_ids=cc_ids,
                     auto_approve_at=auto_approve_at,
                 )
                 db.add(req_paid)
@@ -315,6 +320,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                     approver_id=emp.manager_id,
                     l1_approver_id=emp.manager_id,
                     l2_approver_id=getattr(emp, 'manager_l2_id', None),
+                    cc_employee_ids=cc_ids,
                     auto_approve_at=auto_approve_at,
                 )
                 db.add(req_unpaid)
@@ -326,6 +332,15 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                                 "Leave Split Submitted",
                                 f"{emp.name} requested leave which was split: {paid_days}d of {leave_type.name} and {unpaid_days}d of LOP.",
                                 "leave", req_paid.id)
+                # Notify CC recipients
+                if cc_ids:
+                    cc_emps = db.query(HREmployee).filter(HREmployee.id.in_(cc_ids)).all()
+                    for cc_emp in cc_emps:
+                        if cc_emp.user_id:
+                            _notify(db, cc_emp.user_id,
+                                    "Leave Request CC Notice",
+                                    f"{emp.name} requested leave (Split) from {data.from_date} to {data.to_date}.",
+                                    "leave", req_paid.id)
                 db.commit()
                 background_tasks.add_task(_send_leave_email_notification, req_paid.id, True, origin)
                 return {
@@ -336,6 +351,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                 }
 
     # Normal single request creation
+    cc_ids = data.cc_employee_ids if data.cc_employee_ids is not None else (getattr(emp, "cc_manager_ids", []) or [])
     auto_approve_hours = get_hr_config(db, "leave_auto_approve_hours", 6)
     auto_approve_at = datetime.utcnow() + timedelta(hours=float(auto_approve_hours))
     req = HRLeaveRequest(
@@ -351,6 +367,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
         approver_id=emp.manager_id,
         l1_approver_id=emp.manager_id,
         l2_approver_id=getattr(emp, 'manager_l2_id', None),
+        cc_employee_ids=cc_ids,
         auto_approve_at=auto_approve_at,
     )
     db.add(req); db.commit(); db.refresh(req)
@@ -363,6 +380,15 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                     "Leave Request Pending",
                     f"{emp.name} has applied for {leave_type.name} from {data.from_date} to {data.to_date}.",
                     "leave", req.id)
+    # Notify CC recipients (informational only)
+    if cc_ids:
+        cc_emps = db.query(HREmployee).filter(HREmployee.id.in_(cc_ids)).all()
+        for cc_emp in cc_emps:
+            if cc_emp.user_id:
+                _notify(db, cc_emp.user_id,
+                        "Leave Request CC Notice",
+                        f"{emp.name} has applied for {leave_type.name} from {data.from_date} to {data.to_date}.",
+                        "leave", req.id)
     db.commit()
     background_tasks.add_task(_send_leave_email_notification, req.id, True, origin)
     return {"id": req.id, "reference": req.reference, "status": req.status, "auto_approve_at": auto_approve_at.isoformat() + "Z"}
@@ -659,6 +685,7 @@ def _serialize_request(r: HRLeaveRequest):
         "l1_status": getattr(r, 'l1_status', None),
         "l2_approver_id": getattr(r, 'l2_approver_id', None),
         "l2_status": getattr(r, 'l2_status', None),
+        "cc_employee_ids": getattr(r, 'cc_employee_ids', []) or [],
         "is_auto_approved": r.is_auto_approved,
         "auto_approve_at": r.auto_approve_at.isoformat() + "Z" if r.auto_approve_at else None,
         "seconds_until_auto_approve": remaining,

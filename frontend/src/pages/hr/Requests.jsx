@@ -220,7 +220,13 @@ export default function Requests() {
             <button style={tabStyle(tab === 'od')} onClick={() => setTab('od')}>On-Duty Requests</button>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
-            <button className="btn btn-primary" onClick={() => { const eid = selectedEmp || user?.employee_id; setLeaveForm({ is_half_day: false, employee_id: eid }); setShowLeaveModal(true); fetchLeaveBalances(eid); }}
+            <button className="btn btn-primary" onClick={() => { 
+              const eid = selectedEmp || user?.employee_id; 
+              const currentEmp = employees.find(e => e.id === parseInt(eid)) || employees.find(e => e.id === eid);
+              setLeaveForm({ is_half_day: false, employee_id: eid, cc_employee_ids: currentEmp?.cc_manager_ids || [] }); 
+              setShowLeaveModal(true); 
+              fetchLeaveBalances(eid); 
+            }}
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13 }}>
               <PlusCircle size={14} /> Apply Leave
             </button>
@@ -436,6 +442,35 @@ export default function Requests() {
                 )}
               </div>
               <div><label style={labelStyle}>Reason</label><textarea value={leaveForm.reason || ''} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} /></div>
+              <div>
+                <label style={labelStyle}>CC (Informational notification sent upon submission)</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                  {(leaveForm.cc_employee_ids || []).map(ccId => {
+                    const ccEmp = employees.find(e => e.id === ccId);
+                    return (
+                      <span key={ccId} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12 }}>
+                        {ccEmp ? ccEmp.name : `Emp #${ccId}`}
+                        <X size={12} style={{ cursor: 'pointer', color: 'var(--text3)' }} onClick={() => {
+                          setLeaveForm({ ...leaveForm, cc_employee_ids: (leaveForm.cc_employee_ids || []).filter(id => id !== ccId) });
+                        }} />
+                      </span>
+                    );
+                  })}
+                </div>
+                <select value="" onChange={e => {
+                  if (!e.target.value) return;
+                  const val = parseInt(e.target.value);
+                  const curr = leaveForm.cc_employee_ids || [];
+                  if (!curr.includes(val)) {
+                    setLeaveForm({ ...leaveForm, cc_employee_ids: [...curr, val] });
+                  }
+                }} style={inputStyle}>
+                  <option value="">+ Add CC Person...</option>
+                  {employees.filter(emp => emp.id !== parseInt(leaveForm.employee_id || selectedEmp || user?.employee_id) && !(leaveForm.cc_employee_ids || []).includes(emp.id)).map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name} ({emp.employee_id})</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button onClick={() => setShowLeaveModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>

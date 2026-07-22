@@ -85,6 +85,8 @@ def _safe_add_columns():
         ("users", "totp_enabled", "BOOLEAN DEFAULT FALSE"),
         ("users", "fcm_token", "TEXT"),
         ("hr_employees", "manager_l2_id", "INTEGER"),
+        ("hr_employees", "cc_manager_ids", "JSON DEFAULT '[]'::json"),
+        ("hr_leave_requests", "cc_employee_ids", "JSON DEFAULT '[]'::json"),
         ("hr_leave_requests", "l1_approver_id", "INTEGER"),
         ("hr_leave_requests", "l1_status", "VARCHAR(20) DEFAULT 'pending'"),
         ("hr_leave_requests", "l1_remarks", "TEXT"),

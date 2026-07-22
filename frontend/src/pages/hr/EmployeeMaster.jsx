@@ -82,16 +82,16 @@ export default function EmployeeMaster() {
   async function openCreate() {
     try {
       const res = await api.get('/hr/employees/next-id');
-      setForm({ employee_id: res.data.next_id, is_active: true, salary_components: [] });
+      setForm({ employee_id: res.data.next_id, is_active: true, salary_components: [], cc_manager_ids: [] });
     } catch {
-      setForm({ employee_id: 'EMP001', is_active: true, salary_components: [] });
+      setForm({ employee_id: 'EMP001', is_active: true, salary_components: [], cc_manager_ids: [] });
     }
     setEditEmp(null);
     setShowModal(true);
   }
 
   function openEdit(emp) {
-    setForm({ ...emp });
+    setForm({ ...emp, cc_manager_ids: emp.cc_manager_ids || [] });
     setEditEmp(emp);
     setShowModal(true);
   }
@@ -412,10 +412,32 @@ export default function EmployeeMaster() {
                 </select>
               </div>
               <div>
-                <label style={labelStyle}>2nd Level Manager (L2)</label>
-                <select value={form.manager_l2_id || ''} onChange={e => setForm({ ...form, manager_l2_id: e.target.value ? parseInt(e.target.value) : null })} style={inputStyle}>
-                  <option value="">— Select L2 Manager —</option>
-                  {employees.filter(emp => emp.id !== form.id).map(emp => <option key={emp.id} value={emp.id}>{emp.name}</option>)}
+                <label style={labelStyle}>CC Persons (Informational Notification on Leave Request)</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                  {(form.cc_manager_ids || []).map(ccId => {
+                    const ccEmp = employees.find(e => e.id === ccId);
+                    return (
+                      <span key={ccId} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12 }}>
+                        {ccEmp ? ccEmp.name : `Emp #${ccId}`}
+                        <X size={12} style={{ cursor: 'pointer', color: 'var(--text3)' }} onClick={() => {
+                          setForm({ ...form, cc_manager_ids: (form.cc_manager_ids || []).filter(id => id !== ccId) });
+                        }} />
+                      </span>
+                    );
+                  })}
+                </div>
+                <select value="" onChange={e => {
+                  if (!e.target.value) return;
+                  const val = parseInt(e.target.value);
+                  const curr = form.cc_manager_ids || [];
+                  if (!curr.includes(val)) {
+                    setForm({ ...form, cc_manager_ids: [...curr, val] });
+                  }
+                }} style={inputStyle}>
+                  <option value="">+ Add CC Person...</option>
+                  {employees.filter(emp => emp.id !== form.id && !(form.cc_manager_ids || []).includes(emp.id)).map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name} ({emp.employee_id})</option>
+                  ))}
                 </select>
               </div>
               <div>
