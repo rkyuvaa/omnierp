@@ -496,6 +496,77 @@ def manual_punch(data: PunchManual, db: Session = Depends(get_db), current_user:
     compute_record(db, data.employee_id, data.punch_time.date())
     return {"message": "Manual punch recorded"}
 
+@router.get("/my-today")
+def my_today_status(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.auth import get_current_employee_optional
+    from app.hr_models import HREmployee
+    from sqlalchemy import func
+
+    emp = get_current_employee_optional(current_user, db)
+    
+    # Robust fallback search if not linked yet
+    if not emp and current_user.email:
+        emp = db.query(HREmployee).filter(func.lower(HREmployee.email) == current_user.email.lower()).first()
+        if emp:
+            emp.user_id = current_user.id
+            db.commit()
+            db.refresh(emp)
+
+    # Auto-create Employee profile for Superadmin/Admin if missing
+    if not emp and current_user.is_superadmin:
+        try:
+            emp = HREmployee(
+                user_id=current_user.id,
+                employee_id=f"ADM{current_user.id:03d}",
+                name=current_user.name or "Admin",
+                email=current_user.email,
+                joining_date=datetime.now().date(),
+                status="active"
+            )
+            db.add(emp)
+            db.commit()
+            db.refresh(emp)
+        except Exception as e:
+            db.rollback()
+            print(f"Error auto-creating superadmin employee: {e}")
+
+    if not emp:
+        return {
+            "status": "no_employee",
+            "employee_id": None,
+            "enable_mobile_punch": False,
+            "check_in": None,
+            "check_out": None,
+        }
+
+    today = datetime.now().date()
+    record = compute_record(db, emp.id, today)
+    if not record:
+        return {
+            "status": "no_record",
+            "employee_id": emp.id,
+            "employee_name": emp.name,
+            "enable_mobile_punch": emp.enable_mobile_punch or False,
+            "check_in": None,
+            "check_out": None,
+            "hours_worked": 0,
+        }
+    return {
+        "employee_id": emp.id,
+        "employee_name": emp.name,
+        "enable_mobile_punch": emp.enable_mobile_punch or False,
+        "date": str(today),
+        "status": record.status,
+        "check_in": str(record.check_in) if record.check_in else None,
+        "check_out": str(record.check_out) if record.check_out else None,
+        "hours_worked": record.hours_worked,
+        "is_late": record.is_late,
+        "late_minutes": record.late_minutes,
+        "check_in_photo": record.check_in_photo,
+        "check_in_location": record.check_in_location,
+        "status_color": STATUS_COLORS.get(record.status, "#94a3b8"),
+    }
+
 @router.get("/today/{employee_id}")
 def today_status(employee_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     from app.auth import is_hr_admin

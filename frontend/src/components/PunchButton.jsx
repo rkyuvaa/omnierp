@@ -49,9 +49,6 @@ export default function PunchButton() {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
 
-  /* Render check-in badge for all users linked to an employee record */
-  if (!user?.employee_id) return null;
-
   /* ── Load today's status on mount + every 60 s ─────────────────── */
   useEffect(() => {
     loadToday();
@@ -61,7 +58,7 @@ export default function PunchButton() {
 
   async function loadToday() {
     try {
-      const res = await api.get(`/hr/attendance/today/${user.employee_id}`);
+      const res = await api.get('/hr/attendance/my-today');
       setTodayData(res.data);
       if (res.data.check_in && res.data.check_out) setState('done');
       else if (res.data.check_in) setState('in');
@@ -69,9 +66,11 @@ export default function PunchButton() {
     } catch { /* silently ignore */ }
   }
 
+  const isMobilePunch = todayData?.enable_mobile_punch || user?.enable_mobile_punch;
+
   /* ── Button click: start the punch flow or open info modal ────────── */
   function openFlow() {
-    if (!user?.enable_mobile_punch) {
+    if (!isMobilePunch) {
       setShowInfoModal(true);
       return;
     }
@@ -156,10 +155,11 @@ export default function PunchButton() {
 
   /* ── Submit punch ────────────────────────────────────────────────── */
   async function submitPunch() {
-    if (!photoBlob || !location) return;
+    const empId = todayData?.employee_id || user?.employee_id;
+    if (!photoBlob || !location || !empId) return;
     setStep('submitting');
     const fd = new FormData();
-    fd.append('employee_id', user.employee_id);
+    fd.append('employee_id', empId);
     fd.append('latitude', location.latitude);
     fd.append('longitude', location.longitude);
     fd.append('location_name', locationName);
@@ -204,20 +204,20 @@ export default function PunchButton() {
       {/* ── Inline Topbar Check-In Time Badge ───────────────────────── */}
       <button
         onClick={openFlow}
-        title={user?.enable_mobile_punch ? cfg.label : "Today's Attendance Status"}
+        title={isMobilePunch ? cfg.label : "Today's Attendance Status"}
         style={{
           padding: '4px 14px',
           borderRadius: 12,
-          border: user?.enable_mobile_punch ? `2px solid ${cfg.ring}` : '1px solid var(--border)',
-          background: user?.enable_mobile_punch ? cfg.gradient : (state === 'in' ? 'linear-gradient(135deg,#15803d 0%,#16a34a 100%)' : (state === 'done' ? 'linear-gradient(135deg,#1e293b 0%,#334155 100%)' : 'var(--bg3)')),
-          boxShadow: user?.enable_mobile_punch ? cfg.shadow : '0 2px 8px rgba(0,0,0,0.06)',
+          border: isMobilePunch ? `2px solid ${cfg.ring}` : '1px solid var(--border)',
+          background: isMobilePunch ? cfg.gradient : (state === 'in' ? 'linear-gradient(135deg,#15803d 0%,#16a34a 100%)' : (state === 'done' ? 'linear-gradient(135deg,#1e293b 0%,#334155 100%)' : 'var(--bg3)')),
+          boxShadow: isMobilePunch ? cfg.shadow : '0 2px 8px rgba(0,0,0,0.06)',
           cursor: 'pointer',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
           outline: 'none',
-          color: user?.enable_mobile_punch || state !== 'none' ? '#fff' : 'var(--text2)',
+          color: isMobilePunch || state !== 'none' ? '#fff' : 'var(--text2)',
           flexShrink: 0,
           transition: 'all 0.2s ease',
           lineHeight: '1.25',
@@ -227,7 +227,7 @@ export default function PunchButton() {
         onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0) scale(1)'; }}
       >
         {state === 'none' && (
-          user?.enable_mobile_punch ? (
+          isMobilePunch ? (
             <>
               <span style={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <LogIn size={12} color="#fff" strokeWidth={2.5} /> Check In
@@ -248,7 +248,7 @@ export default function PunchButton() {
             <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>
               🟢 In: {formatTime(todayData?.check_in)}
             </span>
-            {user?.enable_mobile_punch ? (
+            {isMobilePunch ? (
               <span style={{ fontSize: 11, fontWeight: 800, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <LogOut size={11} color="#fff" strokeWidth={2.5} /> Check Out
               </span>
