@@ -223,6 +223,12 @@ def _is_sandwich_day(db: Session, employee_id: int, target_date: date) -> bool:
         
     return is_absent_or_leave(rec_prev, prev_date) and is_absent_or_leave(rec_next, next_date)
 
+# Helper to parse "HH:MM" string to datetime on a target date
+def _parse_time_str(time_str: str, target_date: date) -> datetime:
+    parts = time_str.split(":")
+    h, m = int(parts[0]), int(parts[1])
+    return datetime.combine(target_date, datetime.min.time().replace(hour=h, minute=m))
+
 # ── Core: compute attendance status for one employee on one date ──────────────
 def compute_record(db: Session, employee_id: int, target_date: date):
     emp = db.query(HREmployee).filter(HREmployee.id == employee_id).first()
@@ -242,7 +248,7 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         record = HRAttendanceRecord(employee_id=employee_id, date=target_date)
         db.add(record)
 
-    # 1. Check for physical punches first
+    # Fetch physical punches
     day_start = datetime.combine(target_date, datetime.min.time())
     day_end = datetime.combine(target_date, datetime.max.time())
     punches = db.query(HRAttendancePunch).filter(
@@ -251,120 +257,187 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         HRAttendancePunch.punch_time <= day_end
     ).order_by(HRAttendancePunch.punch_time).all()
 
+    # Fetch approved On-Duty requests
+    approved_ods = db.query(HROnDutyRequest).filter(
+        HROnDutyRequest.employee_id == employee_id,
+        HROnDutyRequest.date == target_date,
+        HROnDutyRequest.status.in_(["approved", "auto_approved"])
+    ).all()
+
+    shift = emp.shift
+    shift_start_dt = None
+    shift_end_dt = None
+    shift_duration = 8.0
+    grace_dt = None
+    half_day_hours = 4.0
+    
+    if shift:
+        shift_start_h, shift_start_m = map(int, shift.start_time.split(":"))
+        shift_end_h, shift_end_m = map(int, shift.end_time.split(":"))
+        shift_start_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_start_h, minute=shift_start_m))
+        shift_end_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_end_h, minute=shift_end_m))
+        shift_duration = (shift_end_dt - shift_start_dt).total_seconds() / 3600.0
+        grace_dt = shift_start_dt + timedelta(minutes=shift.grace_minutes)
+        half_day_hours = shift.half_day_hours or 4.0
+
+    # 1. CASE: PHYSICAL PUNCHES EXIST (Merged Timeline with OD if any)
     if punches:
-        check_in = punches[0].punch_time
-        check_out = None
+        phys_check_in = punches[0].punch_time
+        phys_check_out = None
         if len(punches) > 1:
-            # Avoid treating accidental double-punches (within 5 minutes) as check-out
-            if (punches[-1].punch_time - check_in).total_seconds() >= 300:
-                check_out = punches[-1].punch_time
-                
-        record.check_in = check_in
-        record.check_out = check_out
+            if (punches[-1].punch_time - phys_check_in).total_seconds() >= 300:
+                phys_check_out = punches[-1].punch_time
+
         record.check_in_photo = punches[0].photo_url
         record.check_in_location = punches[0].location_name
-
-        hours_worked = 0
-        if check_out and check_out != check_in:
-            hours_worked = (check_out - check_in).total_seconds() / 3600
-        record.hours_worked = round(hours_worked, 2)
-
-        # Clear active leave/on-duty references since the employee worked physically
         record.leave_request_id = None
-        record.onduty_request_id = None
 
-        shift = emp.shift
-        # Compare against shift
+        od_hours_total = 0.0
+        morning_od_covers = False
+        evening_od_covers = False
+        primary_od_id = None
+        od_intervals = []
+
+        if approved_ods:
+            primary_od_id = approved_ods[0].id
+            for od in approved_ods:
+                try:
+                    od_s = _parse_time_str(od.from_time, target_date)
+                    od_e = _parse_time_str(od.to_time, target_date)
+                    dur = (od_e - od_s).total_seconds() / 3600.0
+                    if dur > 0:
+                        od_hours_total += dur
+                        od_intervals.append((od_s, od_e))
+                    
+                    # Check Morning OD coverage (covers shift start up to/near phys_check_in)
+                    if shift_start_dt and od_s <= (grace_dt or shift_start_dt):
+                        if od_e >= (phys_check_in - timedelta(minutes=30)) or od_s <= phys_check_in:
+                            morning_od_covers = True
+
+                    # Check Evening OD coverage (covers shift end from/near phys_check_in or phys_check_out)
+                    if shift_end_dt and od_e >= (shift_end_dt - timedelta(minutes=30)):
+                        if phys_check_out is None or od_s <= (phys_check_out + timedelta(minutes=30)):
+                            evening_od_covers = True
+                except Exception as ex:
+                    print(f"⚠️ Error parsing OD time interval: {ex}")
+
+        # Compute physical office hours
+        phys_hours = 0.0
+        if phys_check_out and phys_check_out > phys_check_in:
+            phys_hours = (phys_check_out - phys_check_in).total_seconds() / 3600.0
+            # Deduct overlap between physical presence and OD intervals
+            for od_s, od_e in od_intervals:
+                overlap_start = max(phys_check_in, od_s)
+                overlap_end = min(phys_check_out, od_e)
+                if overlap_end > overlap_start:
+                    overlap_hours = (overlap_end - overlap_start).total_seconds() / 3600.0
+                    phys_hours = max(0.0, phys_hours - overlap_hours)
+        elif not phys_check_out and evening_od_covers and od_intervals:
+            # Employee punched IN, then left for Evening OD directly without biometric OUT punch
+            evening_starts = [s for s, e in od_intervals if e >= (shift_end_dt - timedelta(minutes=30))] if shift_end_dt else []
+            earliest_evening_od_start = min(evening_starts) if evening_starts else phys_check_in
+            if earliest_evening_od_start > phys_check_in:
+                phys_hours = (earliest_evening_od_start - phys_check_in).total_seconds() / 3600.0
+
+        total_working_hours = phys_hours + od_hours_total
+        record.hours_worked = round(total_working_hours, 2)
+        record.onduty_request_id = primary_od_id
+
+        # Effective Check-In & Check-Out times for display
+        effective_check_in = phys_check_in
+        if morning_od_covers and od_intervals:
+            earliest_od_start = min([s for s, e in od_intervals])
+            effective_check_in = min(phys_check_in, earliest_od_start)
+        
+        effective_check_out = phys_check_out
+        if evening_od_covers and od_intervals:
+            latest_od_end = max([e for s, e in od_intervals])
+            effective_check_out = max(phys_check_out or latest_od_end, latest_od_end)
+
+        record.check_in = effective_check_in
+        record.check_out = effective_check_out
+
+        # Late Coming Evaluation (Approved Morning OD overrides Late)
         if shift:
-            shift_start_h, shift_start_m = map(int, shift.start_time.split(":"))
-            shift_end_h, shift_end_m = map(int, shift.end_time.split(":"))
-            shift_start_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_start_h, minute=shift_start_m))
-            shift_end_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_end_h, minute=shift_end_m))
-            shift_duration = (shift_end_dt - shift_start_dt).total_seconds() / 3600
+            if morning_od_covers:
+                record.is_late = False
+                record.late_minutes = 0
+            else:
+                is_late = phys_check_in > grace_dt
+                record.is_late = is_late
+                record.late_minutes = max(0, int((phys_check_in - grace_dt).total_seconds() / 60)) if is_late else 0
 
-            grace_dt = shift_start_dt + timedelta(minutes=shift.grace_minutes)
-            is_late = check_in > grace_dt
-            late_minutes = max(0, int((check_in - grace_dt).total_seconds() / 60)) if is_late else 0
+            # Early Departure Evaluation (Approved Evening OD overrides Early Exit / Missing OUT)
+            if evening_od_covers:
+                record.left_early = False
+                record.early_by_minutes = 0
+            elif phys_check_out:
+                if phys_check_out < shift_end_dt:
+                    record.left_early = True
+                    record.early_by_minutes = int((shift_end_dt - phys_check_out).total_seconds() / 60)
+                else:
+                    record.left_early = False
+                    record.early_by_minutes = 0
+            else:
+                record.left_early = False
+                record.early_by_minutes = 0
 
-            record.is_late = is_late
-            record.late_minutes = late_minutes
-
-            # Half day thresholds
-            half_day_late_dt = shift_start_dt + timedelta(minutes=shift.half_day_late_minutes or 240)
-            half_day_early_dt = shift_end_dt - timedelta(minutes=shift.half_day_early_minutes or 240)
-
-            if check_out and hours_worked < shift.half_day_hours:
+            # Final Status Determination
+            if total_working_hours < half_day_hours:
                 record.status = "half_day"
-            elif check_in > half_day_late_dt:
-                record.status = "half_day"
-            elif check_out and check_out < half_day_early_dt:
-                record.status = "half_day"
-            elif is_late:
+            elif record.is_late:
                 record.status = "late"
             else:
                 record.status = "present"
-
-            # Early departure
-            if check_out and check_out < shift_end_dt:
-                record.left_early = True
-                record.early_by_minutes = int((shift_end_dt - check_out).total_seconds() / 60)
         else:
             # Default logic if no shift is assigned
-            if hours_worked > 0 and hours_worked < 4.0:
+            if total_working_hours > 0 and total_working_hours < 4.0:
                 record.status = "half_day"
             else:
                 record.status = "present"
 
         db.commit()
-        # Process comp-off accrual for this attendance record
         _process_comp_off(db, record)
         db.commit()
         return record
 
-    # 2. If NO punches exist, fall back to passive statuses in priority order
-    # Check holiday
-    holiday = db.query(HRHoliday).filter(
-        HRHoliday.date == target_date,
-        HRHoliday.is_active == True,
-        (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
-    ).first()
+    # 2. CASE: NO PHYSICAL PUNCHES, BUT APPROVED OD EXISTS (Full Day / Pure On Duty)
+    if approved_ods:
+        primary_od = approved_ods[0]
+        od_hours_total = 0.0
+        earliest_start = None
+        latest_end = None
+        
+        for od in approved_ods:
+            try:
+                od_s = _parse_time_str(od.from_time, target_date)
+                od_e = _parse_time_str(od.to_time, target_date)
+                dur = (od_e - od_s).total_seconds() / 3600.0
+                if dur > 0:
+                    od_hours_total += dur
+                if earliest_start is None or od_s < earliest_start:
+                    earliest_start = od_s
+                if latest_end is None or od_e > latest_end:
+                    latest_end = od_e
+            except Exception as ex:
+                print(f"⚠️ Error parsing OD time interval: {ex}")
 
-    if holiday:
-        record.status = "holiday"
-        record.check_in = None
-        record.check_out = None
-        record.hours_worked = 0
-        db.commit()
-        return record
+        # Default hours to shift duration if OD covers full shift
+        hours_to_record = od_hours_total
+        if shift:
+            if od_hours_total >= shift.half_day_hours:
+                hours_to_record = max(od_hours_total, shift_duration)
 
-    # Approved leave?
-    leave_req = db.query(HRLeaveRequest).filter(
-        HRLeaveRequest.employee_id == employee_id,
-        HRLeaveRequest.from_date <= target_date,
-        HRLeaveRequest.to_date >= target_date,
-        HRLeaveRequest.status.in_(["approved", "auto_approved"])
-    ).first()
-    if leave_req:
-        record.status = "leave"
-        record.leave_request_id = leave_req.id
-        record.check_in = None
-        record.check_out = None
-        record.hours_worked = 0
-        db.commit()
-        return record
-
-    # Approved on-duty?
-    od_req = db.query(HROnDutyRequest).filter(
-        HROnDutyRequest.employee_id == employee_id,
-        HROnDutyRequest.date == target_date,
-        HROnDutyRequest.status.in_(["approved", "auto_approved"])
-    ).first()
-    if od_req:
         record.status = "on_duty"
-        record.onduty_request_id = od_req.id
-        record.check_in = None
-        record.check_out = None
-        record.hours_worked = 0
+        record.onduty_request_id = primary_od.id
+        record.leave_request_id = None
+        record.check_in = earliest_start or (shift_start_dt if shift else None)
+        record.check_out = latest_end or (shift_end_dt if shift else None)
+        record.hours_worked = round(hours_to_record, 2)
+        record.is_late = False
+        record.late_minutes = 0
+        record.left_early = False
+        record.early_by_minutes = 0
         db.commit()
         return record
 

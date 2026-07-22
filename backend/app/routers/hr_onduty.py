@@ -276,16 +276,11 @@ def approve_onduty(req_id: int, data: OnDutyAction, background_tasks: Background
         req.approver_remarks = data.remarks
         req.approved_at = datetime.utcnow()
 
-    # Update attendance record to on_duty
-    record = db.query(HRAttendanceRecord).filter(
-        HRAttendanceRecord.employee_id == req.employee_id,
-        HRAttendanceRecord.date == req.date
-    ).first()
-    if not record:
-        record = HRAttendanceRecord(employee_id=req.employee_id, date=req.date)
-        db.add(record)
-    record.status = "on_duty"
-    record.onduty_request_id = req.id
+    db.commit()
+
+    # Automatically compute and merge attendance (OD + Biometric punches)
+    from app.routers.hr_attendance import compute_record
+    compute_record(db, req.employee_id, req.date)
 
     if req.employee and req.employee.user_id:
         _notify(db, req.employee.user_id, "On-Duty Approved ✓",
