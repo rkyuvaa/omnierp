@@ -1,7 +1,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog, Receipt } from 'lucide-react';
-import { useState } from 'react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog, Receipt, Menu } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import TwoFactorSetup from './TwoFactorSetup';
 
 const mainItems = [{to:'/',label:'Dashboard',icon:LayoutDashboard}];
@@ -35,9 +35,8 @@ const adminItems = [
 
 const NavItem=({to,label,icon:Icon,active,onClick})=>(<Link to={to} onClick={onClick} className={`nav-item ${active?'active':''}`} style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,textDecoration:'none',fontSize:14,fontWeight:active?600:500,color:active?'#ffffff':'var(--text2)',background:active?'var(--accent)':'transparent'}} onMouseEnter={e=>{if(!active){e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)';}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)';}}}><Icon size={18} style={{opacity:active?1:0.8}}/>{label}</Link>);
 
-function HRModule({ isActive, handleNav }) {
+function HRModule({ isActive, handleNav, isExpanded, onToggle }) {
   const { user } = useAuth();
-  const [expanded, setExpanded] = useState(true);
   
   if (!user?.is_superadmin) {
     const p = user?.module_permissions?.hr;
@@ -64,22 +63,30 @@ function HRModule({ isActive, handleNav }) {
 
   const isHRActive = filteredHRItems.some(i => isActive(i.to));
   return (
-    <div>
+    <div style={{ marginBottom: 4 }}>
       <button
-        onClick={() => setExpanded(e => !e)}
-        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isHRActive?600:500,color:isHRActive?'var(--text)':'var(--text2)',background:isHRActive?'var(--bg3)':'transparent',textAlign:'left'}}
+        onClick={onToggle}
+        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isHRActive?600:500,color:isHRActive?'var(--text)':'var(--text2)',background:isHRActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
       >
         <Clock size={18} style={{opacity:0.8}}/>
         <span style={{flex:1}}>Attendance & HR</span>
-        {expanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }} />
       </button>
-      {expanded && (
-        <div style={{paddingLeft:16}}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateRows: isExpanded ? '1fr' : '0fr',
+          transition: 'grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease',
+          opacity: isExpanded ? 1 : 0,
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ minHeight: 0, paddingLeft: 16 }}>
           {filteredHRItems.map(i => (
             <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -94,26 +101,33 @@ const financeItems = [
   {to:'/finance/config',       label:'Configuration',  icon:Cog},
 ];
 
-function FinanceModule({ isActive, handleNav }) {
-  const [expanded, setExpanded] = useState(true);
+function FinanceModule({ isActive, handleNav, isExpanded, onToggle }) {
   const isFinanceActive = financeItems.some(i => isActive(i.to));
   return (
-    <div style={{marginBottom:24}}>
+    <div style={{marginBottom:4}}>
       <button
-        onClick={() => setExpanded(e => !e)}
-        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isFinanceActive?600:500,color:isFinanceActive?'var(--text)':'var(--text2)',background:isFinanceActive?'var(--bg3)':'transparent',textAlign:'left'}}
+        onClick={onToggle}
+        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isFinanceActive?600:500,color:isFinanceActive?'var(--text)':'var(--text2)',background:isFinanceActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
       >
         <TrendingUp size={18} style={{opacity:0.8}}/>
         <span style={{flex:1}}>Finance</span>
-        {expanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }} />
       </button>
-      {expanded && (
-        <div style={{paddingLeft:16}}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateRows: isExpanded ? '1fr' : '0fr',
+          transition: 'grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease',
+          opacity: isExpanded ? 1 : 0,
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ minHeight: 0, paddingLeft: 16 }}>
           {financeItems.map(i => (
             <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
@@ -125,9 +139,8 @@ const expenseSubItems = [
   {to:'/expenses/categories',label:'Categories',     icon:SlidersHorizontal, adminOnly: true},
 ];
 
-function ExpensesModule({ isActive, handleNav }) {
+function ExpensesModule({ isActive, handleNav, isExpanded, onToggle }) {
   const { user } = useAuth();
-  const [expanded, setExpanded] = useState(true);
 
   const filteredItems = expenseSubItems.filter(i => {
     if (i.adminOnly) return !!user?.is_superadmin;
@@ -137,37 +150,63 @@ function ExpensesModule({ isActive, handleNav }) {
 
   const isExpensesActive = filteredItems.some(i => isActive(i.to));
   return (
-    <div style={{marginBottom: 24}}>
+    <div style={{marginBottom: 4}}>
       <button
-        onClick={() => setExpanded(e => !e)}
-        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isExpensesActive?600:500,color:isExpensesActive?'var(--text)':'var(--text2)',background:isExpensesActive?'var(--bg3)':'transparent',textAlign:'left'}}
+        onClick={onToggle}
+        style={{display:'flex',alignItems:'center',gap:12,padding:'10px 14px',borderRadius:8,marginBottom:4,width:'100%',border:'none',cursor:'pointer',fontSize:14,fontWeight:isExpensesActive?600:500,color:isExpensesActive?'var(--text)':'var(--text2)',background:isExpensesActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
       >
         <Receipt size={18} style={{opacity:0.8}}/>
         <span style={{flex:1}}>Expenses & Reimb.</span>
-        {expanded ? <ChevronDown size={14}/> : <ChevronRight size={14}/>}
+        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }} />
       </button>
-      {expanded && (
-        <div style={{paddingLeft:16}}>
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateRows: isExpanded ? '1fr' : '0fr',
+          transition: 'grid-template-rows 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.25s ease',
+          opacity: isExpanded ? 1 : 0,
+          overflow: 'hidden'
+        }}
+      >
+        <div style={{ minHeight: 0, paddingLeft: 16 }}>
           {filteredItems.map(i => (
             <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>
           ))}
         </div>
-      )}
+      </div>
     </div>
   );
 }
 
-export default function Sidebar({ isOpen, onClose }) {
+export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
 
   const { user, logout } = useAuth();
   const location = useLocation();
   const [showProfileModal, setShowProfileModal] = useState(false);
+
+  const getInitialModule = (path) => {
+    if (path.startsWith('/hr')) return 'hr';
+    if (path.startsWith('/expenses')) return 'expenses';
+    if (path.startsWith('/finance')) return 'finance';
+    return null;
+  };
+
+  const [openModule, setOpenModule] = useState(() => getInitialModule(location.pathname));
+
+  useEffect(() => {
+    const mod = getInitialModule(location.pathname);
+    setOpenModule(mod);
+  }, [location.pathname]);
+
+  const handleModuleToggle = (modKey) => {
+    setOpenModule(prev => prev === modKey ? null : modKey);
+  };
   
   const isActive = (to) => to === '/' ? location.pathname === '/' : location.pathname.startsWith(to) && to !== '/';
   const handleNav = () => { if (window.innerWidth <= 768) onClose(); };
   
   return (
-    <aside className={`sidebar ${isOpen ? 'open' : ''}`} style={{display:'flex', flexDirection:'column', height: '100vh', borderRight: '1px solid var(--border)', background: 'var(--bg)'}}>
+    <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`} style={{display:'flex', flexDirection:'column', height: '100vh', borderRight: '1px solid var(--border)', background: 'var(--bg)'}}>
       <div className="sidebar-header" style={{padding:'24px 20px', display:'flex', alignItems:'center', gap:12}}>
         <img src="/favicon.png" style={{width:32, height:32, objectFit:'contain'}} alt="Logo" />
         <span style={{color:'var(--text)', fontSize:20, fontWeight:700, letterSpacing:'-0.5px'}}>KIM ERP</span>
@@ -175,7 +214,67 @@ export default function Sidebar({ isOpen, onClose }) {
       
       <div className="sidebar-nav" style={{flex:1, padding:'10px 16px', overflowY:'auto'}}>
         <div style={{marginBottom:24}}>
-          {mainItems.map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav}/>)}
+          {mainItems.map(i => (
+            <div key={i.to} style={{ display: 'flex', alignItems: 'center' }}>
+              <Link
+                to={i.to}
+                onClick={handleNav}
+                className={`nav-item ${isActive(i.to) ? 'active' : ''}`}
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '10px 14px',
+                  borderRadius: 8,
+                  marginBottom: 4,
+                  textDecoration: 'none',
+                  fontSize: 14,
+                  fontWeight: isActive(i.to) ? 600 : 500,
+                  color: isActive(i.to) ? '#ffffff' : 'var(--text2)',
+                  background: isActive(i.to) ? 'var(--accent)' : 'transparent',
+                  transition: 'background 0.2s, color 0.2s'
+                }}
+                onMouseEnter={e => { if (!isActive(i.to)) { e.currentTarget.style.background = 'var(--bg3)'; e.currentTarget.style.color = 'var(--text)'; } }}
+                onMouseLeave={e => { if (!isActive(i.to)) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)'; } }}
+              >
+                <i.icon size={18} style={{ opacity: isActive(i.to) ? 1 : 0.8 }} />
+                <span style={{ flex: 1 }}>{i.label}</span>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (onToggleSidebar) onToggleSidebar();
+                    else if (onClose) onClose();
+                  }}
+                  title="Toggle Sidebar"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: 28,
+                    height: 28,
+                    borderRadius: 6,
+                    border: 'none',
+                    background: 'transparent',
+                    color: isActive(i.to) ? '#ffffff' : 'var(--text2)',
+                    cursor: 'pointer',
+                    padding: 0,
+                    marginLeft: 4,
+                    transition: 'background 0.2s, color 0.2s'
+                  }}
+                  onMouseEnter={e => {
+                    e.currentTarget.style.background = isActive(i.to) ? 'rgba(255,255,255,0.25)' : 'var(--border)';
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.background = 'transparent';
+                  }}
+                >
+                  <Menu size={18} />
+                </button>
+              </Link>
+            </div>
+          ))}
         </div>
         
         <div style={{marginBottom:24}}>
@@ -188,17 +287,32 @@ export default function Sidebar({ isOpen, onClose }) {
             return p && (p.can_read || p.can_create || p.can_edit || p.can_delete);
           }).map(i => <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav} />)}
           {user?.active_modules?.includes('hr') && (
-            <HRModule isActive={isActive} handleNav={handleNav} />
+            <HRModule
+              isActive={isActive}
+              handleNav={handleNav}
+              isExpanded={openModule === 'hr'}
+              onToggle={() => handleModuleToggle('hr')}
+            />
           )}
           {user?.active_modules?.includes('expenses') && (
-            <ExpensesModule isActive={isActive} handleNav={handleNav} />
+            <ExpensesModule
+              isActive={isActive}
+              handleNav={handleNav}
+              isExpanded={openModule === 'expenses'}
+              onToggle={() => handleModuleToggle('expenses')}
+            />
           )}
         </div>
         
         {user?.is_superadmin && (
           <div>
             {user?.active_modules?.includes('finance') && (
-              <FinanceModule isActive={isActive} handleNav={handleNav} />
+              <FinanceModule
+                isActive={isActive}
+                handleNav={handleNav}
+                isExpanded={openModule === 'finance'}
+                onToggle={() => handleModuleToggle('finance')}
+              />
             )}
             <div style={{marginBottom:24}}>
               <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom:12, paddingLeft:14}}>Admin</div>
