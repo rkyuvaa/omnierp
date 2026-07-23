@@ -119,6 +119,8 @@ const ExpenseApprovals = safeLazy(() => import('./pages/expenses/ExpenseApproval
 const ExpenseCategories = safeLazy(() => import('./pages/expenses/ExpenseCategories'));
 const ExpenseSettlement = safeLazy(() => import('./pages/expenses/ExpenseSettlement'));
 
+import { LayoutShell } from './components/Layout';
+
 // Integrated PrivateRoute
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
@@ -149,50 +151,54 @@ export default function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/login/2fa" element={<TwoFactorChallenge />} />
-              <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
-              <Route path="/crm" element={<PrivateRoute><Leads /></PrivateRoute>} />
-              <Route path="/crm/:id" element={<PrivateRoute><LeadForm /></PrivateRoute>} />
-              <Route path="/service" element={<PrivateRoute><ServiceList /></PrivateRoute>} />
-              <Route path="/service/:id" element={<PrivateRoute><ServiceForm /></PrivateRoute>} />
-              <Route path="/konwertcare" element={<PrivateRoute><KonwertCareList /></PrivateRoute>} />
-              <Route path="/konwertcare/:id" element={<PrivateRoute><KonwertCareForm /></PrivateRoute>} />
-              <Route path="/installation" element={<PrivateRoute><InstallationList /></PrivateRoute>} />
-              <Route path="/installation/:id" element={<PrivateRoute><InstallationForm /></PrivateRoute>} />
-              <Route path="/warranty/products" element={<PrivateRoute><ProductList /></PrivateRoute>} />
-              <Route path="/warranty/products/:id" element={<PrivateRoute><ProductDetail /></PrivateRoute>} />
-              <Route path="/warranty/bom" element={<PrivateRoute><BOMList /></PrivateRoute>} />
-              <Route path="/warranty/bom/:id" element={<PrivateRoute><BOMDetail /></PrivateRoute>} />
-              <Route path="/warranty/components/:id" element={<PrivateRoute><ComponentDetail /></PrivateRoute>} />
-              <Route path="/admin/users" element={<PrivateRoute><Users /></PrivateRoute>} />
-              <Route path="/admin/branches" element={<PrivateRoute><Branches /></PrivateRoute>} />
-              <Route path="/admin/roles" element={<PrivateRoute><Roles /></PrivateRoute>} />
-              <Route path="/admin/modules" element={<PrivateRoute><Modules /></PrivateRoute>} />
-              <Route path="/admin/backups" element={<PrivateRoute><BackupManagement /></PrivateRoute>} />
-              <Route path="/admin/settings" element={<PrivateRoute><MailingSettings /></PrivateRoute>} />
-              <Route path="/audit" element={<PrivateRoute><AuditLog /></PrivateRoute>} />
-              <Route path="/studio" element={<PrivateRoute><Studio /></PrivateRoute>} />
-              <Route path="/hr/employees" element={<PrivateRoute><EmployeeMaster /></PrivateRoute>} />
-              <Route path="/hr/attendance" element={<PrivateRoute><Attendance /></PrivateRoute>} />
-              <Route path="/hr/requests" element={<PrivateRoute><Requests /></PrivateRoute>} />
-              <Route path="/hr/approvals" element={<PrivateRoute><Approvals /></PrivateRoute>} />
-              <Route path="/hr/payroll" element={<PrivateRoute><Payroll /></PrivateRoute>} />
-              <Route path="/hr/configurations" element={<PrivateRoute><HRConfigurations /></PrivateRoute>} />
-              <Route path="/bank/dashboard" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
-              <Route path="/tasks" element={<PrivateRoute><TaskList /></PrivateRoute>} />
-              {/* Finance Module */}
-              <Route path="/finance/dashboard" element={<PrivateRoute><FinanceDashboard /></PrivateRoute>} />
-              <Route path="/finance/transactions" element={<PrivateRoute><FinanceTransactions /></PrivateRoute>} />
-              <Route path="/finance/import" element={<PrivateRoute><FinanceImport /></PrivateRoute>} />
-              <Route path="/finance/weekly" element={<PrivateRoute><FinanceWeeklyBuckets /></PrivateRoute>} />
-              <Route path="/finance/pivot" element={<PrivateRoute><FinancePivotReport /></PrivateRoute>} />
-              <Route path="/finance/report" element={<PrivateRoute><ManagementReport /></PrivateRoute>} />
-              <Route path="/finance/config" element={<PrivateRoute><FinanceConfig /></PrivateRoute>} />
-              {/* Expenses Module */}
-              <Route path="/expenses/dashboard" element={<PrivateRoute><ExpenseDashboard /></PrivateRoute>} />
-              <Route path="/expenses/my" element={<PrivateRoute><MyExpenses /></PrivateRoute>} />
-              <Route path="/expenses/approvals" element={<PrivateRoute><ExpenseApprovals /></PrivateRoute>} />
-              <Route path="/expenses/categories" element={<PrivateRoute><ExpenseCategories /></PrivateRoute>} />
-              <Route path="/expenses/advance/:id/settlement" element={<PrivateRoute><ExpenseSettlement /></PrivateRoute>} />
+
+              {/* Persistent App Shell for All Authenticated Routes */}
+              <Route element={<PrivateRoute><LayoutShell /></PrivateRoute>}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/crm" element={<Leads />} />
+                <Route path="/crm/:id" element={<LeadForm />} />
+                <Route path="/service" element={<ServiceList />} />
+                <Route path="/service/:id" element={<ServiceForm />} />
+                <Route path="/konwertcare" element={<KonwertCareList />} />
+                <Route path="/konwertcare/:id" element={<KonwertCareForm />} />
+                <Route path="/installation" element={<InstallationList />} />
+                <Route path="/installation/:id" element={<InstallationForm />} />
+                <Route path="/warranty/products" element={<ProductList />} />
+                <Route path="/warranty/products/:id" element={<ProductDetail />} />
+                <Route path="/warranty/bom" element={<BOMList />} />
+                <Route path="/warranty/bom/:id" element={<BOMDetail />} />
+                <Route path="/warranty/components/:id" element={<ComponentDetail />} />
+                <Route path="/admin/users" element={<Users />} />
+                <Route path="/admin/branches" element={<Branches />} />
+                <Route path="/admin/roles" element={<Roles />} />
+                <Route path="/admin/modules" element={<Modules />} />
+                <Route path="/admin/backups" element={<BackupManagement />} />
+                <Route path="/admin/settings" element={<MailingSettings />} />
+                <Route path="/audit" element={<AuditLog />} />
+                <Route path="/studio" element={<Studio />} />
+                <Route path="/hr/employees" element={<EmployeeMaster />} />
+                <Route path="/hr/attendance" element={<Attendance />} />
+                <Route path="/hr/requests" element={<Requests />} />
+                <Route path="/hr/approvals" element={<Approvals />} />
+                <Route path="/hr/payroll" element={<Payroll />} />
+                <Route path="/hr/configurations" element={<HRConfigurations />} />
+                <Route path="/bank/dashboard" element={<FinanceDashboard />} />
+                <Route path="/tasks" element={<TaskList />} />
+                {/* Finance Module */}
+                <Route path="/finance/dashboard" element={<FinanceDashboard />} />
+                <Route path="/finance/transactions" element={<FinanceTransactions />} />
+                <Route path="/finance/import" element={<FinanceImport />} />
+                <Route path="/finance/weekly" element={<FinanceWeeklyBuckets />} />
+                <Route path="/finance/pivot" element={<FinancePivotReport />} />
+                <Route path="/finance/report" element={<ManagementReport />} />
+                <Route path="/finance/config" element={<FinanceConfig />} />
+                {/* Expenses Module */}
+                <Route path="/expenses/dashboard" element={<ExpenseDashboard />} />
+                <Route path="/expenses/my" element={<MyExpenses />} />
+                <Route path="/expenses/approvals" element={<ExpenseApprovals />} />
+                <Route path="/expenses/categories" element={<ExpenseCategories />} />
+                <Route path="/expenses/advance/:id/settlement" element={<ExpenseSettlement />} />
+              </Route>
             </Routes>
           </Suspense>
         </AuthProvider>
