@@ -114,7 +114,10 @@ def _safe_add_columns():
         ("bank_accounts", "opening_balance", "DOUBLE PRECISION DEFAULT 0"),
         ("bank_accounts", "last_statement_balance", "DOUBLE PRECISION"),
         ("bank_accounts", "last_import_at", "TIMESTAMP"),
-        # Expenses module new columns (handled by create_all, kept here for safety)
+        # Expense & Advance module new columns
+        ("hr_employees", "advance_opening_balance", "DOUBLE PRECISION DEFAULT 0"),
+        ("expense_advance_requests", "paid_at", "TIMESTAMP"),
+        ("expense_advance_requests", "payout_remarks", "TEXT"),
         ("expense_categories", "max_limit", "DOUBLE PRECISION"),
         ("expense_claims", "reimbursement_ref", "VARCHAR(100)"),
         ("expense_claims", "reimbursement_mode", "VARCHAR(20)"),
@@ -122,7 +125,6 @@ def _safe_add_columns():
         ("expense_advance_settlement_lines", "account_verification", "VARCHAR(150)"),
         # Comp-Off hours on attendance records
         ("hr_attendance_records", "comp_off_hours", "DOUBLE PRECISION DEFAULT 0"),
-        # Salary components Deduct From option
         ("hr_salary_components", "deduct_from", "VARCHAR(50) DEFAULT 'gross'"),
     ]
     with engine.connect() as conn:
