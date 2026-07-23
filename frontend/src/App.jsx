@@ -117,6 +117,7 @@ const ExpenseDashboard = safeLazy(() => import('./pages/expenses/ExpenseDashboar
 const MyExpenses = safeLazy(() => import('./pages/expenses/MyExpenses'));
 const ExpenseApprovals = safeLazy(() => import('./pages/expenses/ExpenseApprovals'));
 const ExpenseCategories = safeLazy(() => import('./pages/expenses/ExpenseCategories'));
+const ExpenseConfigurations = safeLazy(() => import('./pages/expenses/ExpenseConfigurations'));
 const ExpenseSettlement = safeLazy(() => import('./pages/expenses/ExpenseSettlement'));
 
 import { LayoutShell } from './components/Layout';
@@ -196,7 +197,9 @@ export default function App() {
                 <Route path="/expenses/dashboard" element={<ExpenseDashboard />} />
                 <Route path="/expenses/my" element={<MyExpenses />} />
                 <Route path="/expenses/approvals" element={<ExpenseApprovals />} />
-                <Route path="/expenses/categories" element={<ExpenseCategories />} />
+                <Route path="/expenses/categories" element={<ExpenseConfigurations />} />
+                <Route path="/expenses/configurations" element={<ExpenseConfigurations />} />
+                <Route path="/expenses/config" element={<ExpenseConfigurations />} />
                 <Route path="/expenses/advance/:id/settlement" element={<ExpenseSettlement />} />
               </Route>
             </Routes>

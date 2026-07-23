@@ -136,7 +136,7 @@ const expenseSubItems = [
   {to:'/expenses/dashboard', label:'Dashboard',      icon:LayoutDashboard},
   {to:'/expenses/my',        label:'My Expenses',    icon:Receipt},
   {to:'/expenses/approvals', label:'Approvals',      icon:CheckSquare},
-  {to:'/expenses/categories',label:'Categories',     icon:SlidersHorizontal, adminOnly: true},
+  {to:'/expenses/configurations', label:'Configurations', icon:SlidersHorizontal, adminOnly: true},
 ];
 
 function ExpensesModule({ isActive, handleNav, isExpanded, onToggle }) {

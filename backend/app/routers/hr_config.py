@@ -35,6 +35,16 @@ def get_hr_config(db: Session, key: str, default: Any = None):
     db_config = db.query(HRConfig).filter(HRConfig.key == key).first()
     return db_config.value if db_config else default
 
+def set_hr_config(db: Session, key: str, value: Any):
+    db_config = db.query(HRConfig).filter(HRConfig.key == key).first()
+    if db_config:
+        db_config.value = value
+        db_config.updated_at = datetime.utcnow()
+    else:
+        db_config = HRConfig(key=key, value=value)
+        db.add(db_config)
+    db.commit()
+
 
 # ─────────────────────────────────────────────
 # COMP-OFF SETUP
