@@ -1419,57 +1419,59 @@ export default function MyExpenses() {
                               />
                             </td>
 
-                            {/* Bills Attached (Attach / View / Download) */}
+                            {/* Bills Attached (Single Bill Max: Attach OR View/Download/Remove) */}
                             <td style={{ padding: '8px' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                                {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
-                                  <div
-                                    key={fIdx}
-                                    style={{
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      gap: 4,
-                                      background: 'var(--bg3)',
-                                      borderRadius: 4,
-                                      padding: '3px 6px',
-                                      fontSize: 11,
-                                      border: '1px solid var(--border)',
-                                    }}
-                                  >
-                                    <span style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 600, fontSize: 10.5 }}>
-                                      Bill #{fIdx + 1}
-                                    </span>
-                                    {/* View */}
-                                    <a
-                                      href={`/api/uploads/expenses/${file}`}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      title="View Bill"
-                                      style={{ color: 'var(--accent)', padding: 2, display: 'flex', alignItems: 'center' }}
+                              {row.bill_attachments && row.bill_attachments.length > 0 ? (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                  {row.bill_attachments.map((file, fIdx) => (
+                                    <div
+                                      key={fIdx}
+                                      style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 4,
+                                        background: 'var(--bg3)',
+                                        borderRadius: 4,
+                                        padding: '4px 6px',
+                                        fontSize: 11,
+                                        border: '1px solid var(--border)',
+                                      }}
                                     >
-                                      <Eye size={12} />
-                                    </a>
-                                    {/* Download */}
-                                    <a
-                                      href={`/api/uploads/expenses/${file}`}
-                                      download={`Bill_${file}`}
-                                      title="Download Bill"
-                                      style={{ color: 'var(--text2)', padding: 2, display: 'flex', alignItems: 'center' }}
-                                    >
-                                      <Download size={12} />
-                                    </a>
-                                    {/* Remove */}
-                                    <button
-                                      type="button"
-                                      onClick={() => removeLineAttachment(idx, fIdx)}
-                                      title="Remove"
-                                      style={{ background: 'none', border: 'none', color: '#ef4444', padding: 2, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                                    >
-                                      <X size={12} />
-                                    </button>
-                                  </div>
-                                ))}
-
+                                      <span style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 600, fontSize: 10.5 }}>
+                                        Bill #1
+                                      </span>
+                                      {/* View */}
+                                      <a
+                                        href={`/api/uploads/expenses/${file}`}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        title="View Bill"
+                                        style={{ color: 'var(--accent)', padding: 2, display: 'flex', alignItems: 'center' }}
+                                      >
+                                        <Eye size={12} />
+                                      </a>
+                                      {/* Download */}
+                                      <a
+                                        href={`/api/uploads/expenses/${file}`}
+                                        download={`Bill_${file}`}
+                                        title="Download Bill"
+                                        style={{ color: 'var(--text2)', padding: 2, display: 'flex', alignItems: 'center' }}
+                                      >
+                                        <Download size={12} />
+                                      </a>
+                                      {/* Remove */}
+                                      <button
+                                        type="button"
+                                        onClick={() => removeLineAttachment(idx, fIdx)}
+                                        title="Remove Attachment"
+                                        style={{ background: 'none', border: 'none', color: '#ef4444', padding: 2, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                      >
+                                        <X size={12} />
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
                                 <button
                                   type="button"
                                   onClick={() => triggerLineUpload(idx)}
@@ -1478,7 +1480,7 @@ export default function MyExpenses() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: 4,
-                                    padding: '4px 8px',
+                                    padding: '5px 10px',
                                     borderRadius: 4,
                                     border: '1px dashed var(--accent)',
                                     background: 'transparent',
@@ -1486,12 +1488,13 @@ export default function MyExpenses() {
                                     cursor: 'pointer',
                                     fontSize: 11,
                                     fontWeight: 600,
+                                    width: '100%',
                                   }}
                                 >
                                   <Paperclip size={11} />
                                   {uploadingRowIdx === idx ? 'Uploading...' : 'Attach Bill'}
                                 </button>
-                              </div>
+                              )}
                             </td>
 
                             {/* Delete Line */}

@@ -367,6 +367,38 @@ def list_claims(
     return [_ser_claim(c) for c in q.order_by(ExpenseClaim.created_at.desc()).all()]
 
 
+# ── Expense Configurations & Policies ───────────────────────────────────────
+class ExpenseConfigPayload(BaseModel):
+    l2_threshold_amount: Optional[float] = 5000.0
+    auto_approve_hours: Optional[int] = 24
+    max_advance_amount: Optional[float] = 50000.0
+    allow_multiple_active_advances: Optional[bool] = False
+    policy_notes: Optional[str] = ""
+
+@router.get("/config")
+def get_expense_config(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.routers.hr_config import get_hr_config
+    return {
+        "l2_threshold_amount": get_hr_config(db, "expense_l2_threshold", 5000.0),
+        "auto_approve_hours": get_hr_config(db, "expense_auto_approve_hours", 24),
+        "max_advance_amount": get_hr_config(db, "expense_max_advance_amount", 50000.0),
+        "allow_multiple_active_advances": get_hr_config(db, "expense_allow_multiple_advances", False),
+        "policy_notes": get_hr_config(db, "expense_policy_notes", "Receipts are required for all claims above ₹500.")
+    }
+
+@router.post("/config")
+def update_expense_config(data: ExpenseConfigPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Admin access required to update configurations")
+    from app.routers.hr_config import set_hr_config
+    set_hr_config(db, "expense_l2_threshold", data.l2_threshold_amount)
+    set_hr_config(db, "expense_auto_approve_hours", data.auto_approve_hours)
+    set_hr_config(db, "expense_max_advance_amount", data.max_advance_amount)
+    set_hr_config(db, "expense_allow_multiple_advances", data.allow_multiple_active_advances)
+    set_hr_config(db, "expense_policy_notes", data.policy_notes)
+    return {"message": "Expense configurations updated successfully"}
+
+
 @router.get("/{claim_id}")
 def get_claim(
     claim_id: int,
@@ -1380,37 +1412,5 @@ def close_advance(
                         advance.id)
                         
     return {"message": "Advance closed successfully", "id": advance.id}
-
-
-# ── Expense Configurations & Policies ───────────────────────────────────────
-class ExpenseConfigPayload(BaseModel):
-    l2_threshold_amount: Optional[float] = 5000.0
-    auto_approve_hours: Optional[int] = 24
-    max_advance_amount: Optional[float] = 50000.0
-    allow_multiple_active_advances: Optional[bool] = False
-    policy_notes: Optional[str] = ""
-
-@router.get("/config")
-def get_expense_config(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    from app.routers.hr_config import get_hr_config
-    return {
-        "l2_threshold_amount": get_hr_config(db, "expense_l2_threshold", 5000.0),
-        "auto_approve_hours": get_hr_config(db, "expense_auto_approve_hours", 24),
-        "max_advance_amount": get_hr_config(db, "expense_max_advance_amount", 50000.0),
-        "allow_multiple_active_advances": get_hr_config(db, "expense_allow_multiple_advances", False),
-        "policy_notes": get_hr_config(db, "expense_policy_notes", "Receipts are required for all claims above ₹500.")
-    }
-
-@router.post("/config")
-def update_expense_config(data: ExpenseConfigPayload, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    if not is_hr_admin(current_user, db):
-        raise HTTPException(403, "Admin access required to update configurations")
-    from app.routers.hr_config import set_hr_config
-    set_hr_config(db, "expense_l2_threshold", data.l2_threshold_amount)
-    set_hr_config(db, "expense_auto_approve_hours", data.auto_approve_hours)
-    set_hr_config(db, "expense_max_advance_amount", data.max_advance_amount)
-    set_hr_config(db, "expense_allow_multiple_advances", data.allow_multiple_active_advances)
-    set_hr_config(db, "expense_policy_notes", data.policy_notes)
-    return {"message": "Expense configurations updated successfully"}
 
 
