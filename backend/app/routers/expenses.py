@@ -520,11 +520,13 @@ def get_all_employee_ledgers_summary(
         ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
         bal = last_tx.running_balance if last_tx else 0.0
         
+        dept_name = emp.department.name if (emp.department and hasattr(emp.department, 'name')) else (str(getattr(emp, 'department_id', '')) if getattr(emp, 'department_id', None) else "")
+        
         result.append({
             "employee_id": emp.id,
             "employee_name": emp.name,
             "employee_code": emp.employee_code,
-            "department": emp.department,
+            "department": dept_name,
             "opening_balance": 0.0,
             "unsettled_amount": unsettled,
             "reimbursement_pending": pending_reimb,
