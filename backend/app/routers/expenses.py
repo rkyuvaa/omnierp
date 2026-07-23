@@ -582,6 +582,7 @@ class AdvanceRequestSubmit(BaseModel):
     required_date: Optional[date] = None
     attachment_filename: Optional[str] = None
     is_submit: bool = True # True = submitted, False = draft
+    lines: Optional[List['SettlementLineInput']] = []
 
 class AdvanceAction(BaseModel):
     remarks: Optional[str] = None
@@ -784,6 +785,27 @@ def create_advance_request(
     db.add(advance)
     db.commit()
     db.refresh(advance)
+    
+    if data.lines:
+        for l in data.lines:
+            s_line = ExpenseAdvanceSettlementLine(
+                advance_id=advance.id,
+                date=l.date,
+                expense_type=l.expense_type,
+                cost_code=l.cost_code,
+                cost_to=l.cost_to,
+                from_location=l.from_location,
+                to_location=l.to_location,
+                description=l.description,
+                paid_to=l.paid_to,
+                gst_number=l.gst_number,
+                gst_rate=l.gst_rate or 0.0,
+                amount=l.amount,
+                bill_attachments=l.bill_attachments or [],
+                account_verification=l.account_verification
+            )
+            db.add(s_line)
+        db.commit()
     
     if status_str == "submitted" and emp.manager_id:
         manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()

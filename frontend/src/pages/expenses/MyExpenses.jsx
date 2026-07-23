@@ -108,11 +108,52 @@ export default function MyExpenses() {
     attachment_filename: '',
     is_submit: true,
   });
+  const [advanceLines, setAdvanceLines] = useState([]);
   const [advanceAttachmentName, setAdvanceAttachmentName] = useState('');
   const [advanceSaving, setAdvanceSaving] = useState(false);
   const [advanceUploading, setAdvanceUploading] = useState(false);
   const [showLedgerModal, setShowLedgerModal] = useState(false);
   const advanceFileRef = useRef();
+
+  function createBlankAdvanceLine() {
+    return {
+      date: new Date().toISOString().split('T')[0],
+      expense_type: '',
+      cost_code: '',
+      cost_to: '',
+      from_location: '',
+      to_location: '',
+      description: '',
+      paid_to: '',
+      gst_number: '',
+      gst_rate: 0,
+      amount: 0,
+      bill_attachments: [],
+      account_verification: '',
+    };
+  }
+
+  function addAdvanceLine() {
+    setAdvanceLines(prev => [...prev, createBlankAdvanceLine()]);
+  }
+
+  function deleteAdvanceLine(idx) {
+    setAdvanceLines(prev => {
+      const updated = prev.filter((_, i) => i !== idx);
+      const totalSum = updated.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      setAdvanceForm(f => ({ ...f, amount: totalSum > 0 ? totalSum.toString() : f.amount }));
+      return updated;
+    });
+  }
+
+  function updateAdvanceLineField(idx, field, value) {
+    setAdvanceLines(prev => {
+      const updated = prev.map((row, i) => i === idx ? { ...row, [field]: value } : row);
+      const totalSum = updated.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0);
+      setAdvanceForm(f => ({ ...f, amount: totalSum > 0 ? totalSum.toString() : f.amount }));
+      return updated;
+    });
+  }
 
   useEffect(() => {
     if (activeTab === 'reimbursements') {
@@ -242,10 +283,11 @@ export default function MyExpenses() {
       amount: '',
       purpose: '',
       project_code: '',
-      required_date: '',
+      required_date: new Date().toISOString().split('T')[0],
       attachment_filename: '',
       is_submit: true,
     });
+    setAdvanceLines([createBlankAdvanceLine()]);
     setAdvanceAttachmentName('');
     setShowAdvanceModal(true);
   }
@@ -260,6 +302,7 @@ export default function MyExpenses() {
       attachment_filename: adv.attachment_filename || '',
       is_submit: true,
     });
+    setAdvanceLines(adv.lines && adv.lines.length > 0 ? adv.lines : [createBlankAdvanceLine()]);
     setAdvanceAttachmentName(adv.attachment_filename ? adv.attachment_filename.split('/').pop() : '');
     setShowAdvanceModal(true);
   }
@@ -275,23 +318,31 @@ export default function MyExpenses() {
       attachment_filename: '',
       is_submit: true,
     });
+    setAdvanceLines([]);
     setAdvanceAttachmentName('');
   }
 
   async function handleAdvanceSubmit(submitFlag) {
-    if (!advanceForm.amount || !advanceForm.purpose) {
-      toast.error('Amount and Purpose are required');
+    if (!advanceForm.purpose) {
+      toast.error('Purpose / Business reason is required');
+      return;
+    }
+    const finalAmount = parseFloat(advanceForm.amount) || advanceLines.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    if (!finalAmount || finalAmount <= 0) {
+      toast.error('Please enter an advance amount or line item amounts');
       return;
     }
     setAdvanceSaving(true);
     try {
+      const validLines = advanceLines.filter(l => l.expense_type || l.amount > 0 || l.description);
       const payload = {
-        amount: parseFloat(advanceForm.amount),
+        amount: finalAmount,
         purpose: advanceForm.purpose,
         project_code: advanceForm.project_code || null,
         required_date: advanceForm.required_date || null,
         attachment_filename: advanceForm.attachment_filename || null,
         is_submit: submitFlag,
+        lines: validLines,
       };
 
       if (editingAdvance) {
@@ -1050,15 +1101,15 @@ export default function MyExpenses() {
               style={{
                 background: 'var(--bg)',
                 borderRadius: 16,
-                padding: 28,
-                width: 520,
-                maxWidth: '100%',
+                padding: 24,
+                width: '95vw',
+                maxWidth: 1200,
                 maxHeight: '90vh',
                 overflowY: 'auto',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
                 <h3 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Wallet size={18} style={{ color: 'var(--accent)' }} />
                   {editingAdvance ? 'Edit Advance Request' : 'New Advance Request'}
@@ -1072,7 +1123,8 @@ export default function MyExpenses() {
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                {/* Header Info Inputs */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
                   <div>
                     <label style={labelStyle}>
                       Request Amount (₹) <span style={{ color: '#ef4444' }}>*</span>
@@ -1084,7 +1136,7 @@ export default function MyExpenses() {
                       placeholder="0.00"
                       value={advanceForm.amount}
                       onChange={e => setAdvanceForm(f => ({ ...f, amount: e.target.value }))}
-                      style={inputStyle}
+                      style={{ ...inputStyle, fontWeight: 700, fontSize: 14 }}
                     />
                   </div>
                   <div>
@@ -1096,17 +1148,39 @@ export default function MyExpenses() {
                       style={inputStyle}
                     />
                   </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 14 }}>
                   <div>
                     <label style={labelStyle}>Project / Cost Code</label>
                     <input
                       type="text"
-                      placeholder="e.g. PRJ-101 or cost center code"
+                      placeholder="e.g. PRJ-101"
                       value={advanceForm.project_code}
                       onChange={e => setAdvanceForm(f => ({ ...f, project_code: e.target.value }))}
                       style={inputStyle}
+                    />
+                  </div>
+                  <div>
+                    <label style={labelStyle}>Supporting Doc (Optional)</label>
+                    <button
+                      onClick={() => advanceFileRef.current?.click()}
+                      style={{
+                        ...inputStyle,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                        color: advanceForm.attachment_filename ? '#22c55e' : 'var(--text2)',
+                        borderColor: advanceForm.attachment_filename ? '#22c55e' : 'var(--border)',
+                      }}
+                    >
+                      <Paperclip size={13} />
+                      {advanceUploading ? 'Uploading...' : advanceAttachmentName ? advanceAttachmentName.slice(0, 16) + '...' : 'Upload Doc'}
+                    </button>
+                    <input
+                      ref={advanceFileRef}
+                      type="file"
+                      style={{ display: 'none' }}
+                      onChange={handleAdvanceAttachmentUpload}
                     />
                   </div>
                 </div>
@@ -1115,57 +1189,182 @@ export default function MyExpenses() {
                   <label style={labelStyle}>
                     Purpose / Business Reason <span style={{ color: '#ef4444' }}>*</span>
                   </label>
-                  <textarea
-                    placeholder="Provide a detailed reason for requesting cash advance..."
+                  <input
+                    type="text"
+                    placeholder="Provide detailed purpose for cash advance request..."
                     value={advanceForm.purpose}
                     onChange={e => setAdvanceForm(f => ({ ...f, purpose: e.target.value }))}
-                    rows={3}
-                    style={{ ...inputStyle, resize: 'vertical', fontFamily: 'inherit' }}
+                    style={inputStyle}
                   />
                 </div>
 
-                {/* Supporting Document Upload */}
-                <div>
-                  <label style={labelStyle}>Supporting Documents (Optional)</label>
-                  <div
-                    onClick={() => advanceFileRef.current?.click()}
-                    style={{
-                      border: `2px dashed ${advanceForm.attachment_filename ? '#22c55e' : 'var(--border)'}`,
-                      borderRadius: 10,
-                      padding: '18px 20px',
-                      cursor: 'pointer',
-                      textAlign: 'center',
-                      background: advanceForm.attachment_filename ? '#22c55e08' : 'var(--bg3)',
-                      transition: 'all 0.2s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = 'var(--accent)')}
-                    onMouseLeave={e =>
-                      (e.currentTarget.style.borderColor = advanceForm.attachment_filename ? '#22c55e' : 'var(--border)')
-                    }
-                  >
-                    {advanceUploading ? (
-                      <div style={{ color: 'var(--text3)', fontSize: 13 }}>Uploading...</div>
-                    ) : advanceForm.attachment_filename ? (
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, color: '#22c55e', fontSize: 13, fontWeight: 600 }}>
-                        <CheckCircle size={16} /> {advanceAttachmentName}
-                      </div>
-                    ) : (
-                      <div style={{ color: 'var(--text3)', fontSize: 13 }}>
-                        <Upload size={20} style={{ display: 'block', margin: '0 auto 6px' }} />
-                        Click to upload (PDF, Image, Word, Excel, Zip)
-                      </div>
-                    )}
+                {/* ── ITEMIZED EXPENSE & ADVANCE REQUEST SHEET TABLE ───────────────── */}
+                <div style={{ marginTop: 8 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <FileText size={15} style={{ color: 'var(--accent)' }} /> Itemized Expense / Request Breakdown Sheet
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addAdvanceLine}
+                      style={{
+                        padding: '5px 12px',
+                        borderRadius: 6,
+                        border: '1px solid var(--accent)',
+                        background: 'var(--accent)',
+                        color: '#fff',
+                        cursor: 'pointer',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <Plus size={13} /> Add Line Item
+                    </button>
                   </div>
-                  <input
-                    ref={advanceFileRef}
-                    type="file"
-                    style={{ display: 'none' }}
-                    onChange={handleAdvanceAttachmentUpload}
-                  />
+
+                  <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
+                        <thead>
+                          <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 10, color: 'var(--text3)', letterSpacing: '0.4px' }}>
+                            <th style={{ padding: '8px 6px', textAlign: 'center', width: 35 }}>S#</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 110 }}>Date *</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 120 }}>Type *</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 90 }}>Cost Code</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 90 }}>Cost to</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 85 }}>From</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 85 }}>To</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 130 }}>Description</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 100 }}>Paid to</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 120 }}>GST # (bill on Co GST)</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'right', width: 100 }}>Amt (Rs. Ps) *</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 110 }}>Bills Attached</th>
+                            <th style={{ padding: '8px 6px', textAlign: 'center', width: 35 }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {advanceLines.map((row, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                              <td style={{ padding: '6px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)' }}>{idx + 1}</td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="date"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.date}
+                                  onChange={e => updateAdvanceLineField(idx, 'date', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <select
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.expense_type}
+                                  onChange={e => updateAdvanceLineField(idx, 'expense_type', e.target.value)}
+                                >
+                                  <option value="">Select Type</option>
+                                  {categories.map(c => (
+                                    <option key={c.id} value={c.name}>{c.name}</option>
+                                  ))}
+                                </select>
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Cost Code"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.cost_code || ''}
+                                  onChange={e => updateAdvanceLineField(idx, 'cost_code', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Cost Center"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.cost_to || ''}
+                                  onChange={e => updateAdvanceLineField(idx, 'cost_to', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="From"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.from_location || ''}
+                                  onChange={e => updateAdvanceLineField(idx, 'from_location', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="To"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.to_location || ''}
+                                  onChange={e => updateAdvanceLineField(idx, 'to_location', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Description"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.description || ''}
+                                  onChange={e => updateAdvanceLineField(idx, 'description', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="Paid to"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
+                                  value={row.paid_to || ''}
+                                  onChange={e => updateAdvanceLineField(idx, 'paid_to', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="text"
+                                  placeholder="GSTIN"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                                  value={row.gst_number || ''}
+                                  onChange={e => updateAdvanceLineField(idx, 'gst_number', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="0.01"
+                                  placeholder="0.00"
+                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11, fontWeight: 700, textAlign: 'right' }}
+                                  value={row.amount}
+                                  onChange={e => updateAdvanceLineField(idx, 'amount', e.target.value)}
+                                />
+                              </td>
+                              <td style={{ padding: '6px' }}>
+                                <span style={{ fontSize: 11, color: 'var(--text3)' }}>Optional</span>
+                              </td>
+                              <td style={{ padding: '6px', textAlign: 'center' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => deleteAdvanceLine(idx)}
+                                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 2 }}
+                                >
+                                  <X size={14} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
                 <button
                   onClick={closeAdvanceModal}
                   style={{
