@@ -23,6 +23,8 @@ import {
   ChevronRight,
   ArrowUpRight,
   ArrowDownLeft,
+  Eye,
+  Download,
 } from 'lucide-react';
 
 const INR = v =>
@@ -115,6 +117,54 @@ export default function MyExpenses() {
   const [showLedgerModal, setShowLedgerModal] = useState(false);
   const advanceFileRef = useRef();
 
+  const [uploadingRowIdx, setUploadingRowIdx] = useState(null);
+  const lineFileRef = useRef();
+
+  function triggerLineUpload(idx) {
+    setUploadingRowIdx(idx);
+    lineFileRef.current?.click();
+  }
+
+  async function handleLineFileUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file || uploadingRowIdx === null) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const r = await api.post('/expenses/upload-receipt', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      const fname = r.data.filename;
+      setAdvanceLines(prev =>
+        prev.map((row, i) => {
+          if (i === uploadingRowIdx) {
+            const current = row.bill_attachments || [];
+            return { ...row, bill_attachments: [...current, fname] };
+          }
+          return row;
+        })
+      );
+      toast.success('Bill attached successfully!');
+    } catch {
+      toast.error('Failed to upload bill');
+    } finally {
+      setUploadingRowIdx(null);
+      if (lineFileRef.current) lineFileRef.current.value = '';
+    }
+  }
+
+  function removeLineAttachment(rowIdx, fileIdx) {
+    setAdvanceLines(prev =>
+      prev.map((row, i) => {
+        if (i === rowIdx) {
+          const updated = (row.bill_attachments || []).filter((_, fI) => fI !== fileIdx);
+          return { ...row, bill_attachments: updated };
+        }
+        return row;
+      })
+    );
+  }
+
   function createBlankAdvanceLine() {
     return {
       date: new Date().toISOString().split('T')[0],
@@ -125,6 +175,7 @@ export default function MyExpenses() {
       to_location: '',
       description: '',
       paid_to: '',
+      has_gst_bill: false,
       gst_number: '',
       gst_rate: 0,
       amount: 0,
@@ -323,13 +374,10 @@ export default function MyExpenses() {
   }
 
   async function handleAdvanceSubmit(submitFlag) {
-    if (!advanceForm.purpose) {
-      toast.error('Purpose / Business reason is required');
-      return;
-    }
+    const defaultPurpose = advanceForm.purpose || advanceLines.find(l => l.description)?.description || 'Itemized Cash Advance Request';
     const finalAmount = parseFloat(advanceForm.amount) || advanceLines.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
     if (!finalAmount || finalAmount <= 0) {
-      toast.error('Please enter an advance amount or line item amounts');
+      toast.error('Please enter line item amounts for your advance request');
       return;
     }
     setAdvanceSaving(true);
@@ -337,7 +385,7 @@ export default function MyExpenses() {
       const validLines = advanceLines.filter(l => l.expense_type || l.amount > 0 || l.description);
       const payload = {
         amount: finalAmount,
-        purpose: advanceForm.purpose,
+        purpose: defaultPurpose,
         project_code: advanceForm.project_code || null,
         required_date: advanceForm.required_date || null,
         attachment_filename: advanceForm.attachment_filename || null,
@@ -1083,6 +1131,14 @@ export default function MyExpenses() {
           </div>
         )}
 
+        {/* Hidden Line File Upload Input */}
+        <input
+          ref={lineFileRef}
+          type="file"
+          style={{ display: 'none' }}
+          onChange={handleLineFileUpload}
+        />
+
         {/* ── SUBMIT CASH ADVANCE REQUEST MODAL ──────────────────────────────── */}
         {showAdvanceModal && (
           <div
@@ -1103,13 +1159,14 @@ export default function MyExpenses() {
                 borderRadius: 16,
                 padding: 24,
                 width: '95vw',
-                maxWidth: 1200,
+                maxWidth: 1240,
                 maxHeight: '90vh',
                 overflowY: 'auto',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
+              {/* Modal Header */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h3 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Wallet size={18} style={{ color: 'var(--accent)' }} />
                   {editingAdvance ? 'Edit Advance Request' : 'New Advance Request'}
@@ -1122,249 +1179,342 @@ export default function MyExpenses() {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                {/* Header Info Inputs */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 12 }}>
+              {/* Minimal Top Header Bar (Date & Live Auto-Sum Total) */}
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 18,
+                  background: 'var(--bg3)',
+                  padding: '12px 18px',
+                  borderRadius: 10,
+                  border: '1px solid var(--border)',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                   <div>
-                    <label style={labelStyle}>
-                      Request Amount (₹) <span style={{ color: '#ef4444' }}>*</span>
+                    <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 4 }}>
+                      Required Date
                     </label>
-                    <input
-                      type="number"
-                      min="1"
-                      step="0.01"
-                      placeholder="0.00"
-                      value={advanceForm.amount}
-                      onChange={e => setAdvanceForm(f => ({ ...f, amount: e.target.value }))}
-                      style={{ ...inputStyle, fontWeight: 700, fontSize: 14 }}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Required Date</label>
                     <input
                       type="date"
                       value={advanceForm.required_date}
                       onChange={e => setAdvanceForm(f => ({ ...f, required_date: e.target.value }))}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Project / Cost Code</label>
-                    <input
-                      type="text"
-                      placeholder="e.g. PRJ-101"
-                      value={advanceForm.project_code}
-                      onChange={e => setAdvanceForm(f => ({ ...f, project_code: e.target.value }))}
-                      style={inputStyle}
-                    />
-                  </div>
-                  <div>
-                    <label style={labelStyle}>Supporting Doc (Optional)</label>
-                    <button
-                      onClick={() => advanceFileRef.current?.click()}
-                      style={{
-                        ...inputStyle,
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 6,
-                        color: advanceForm.attachment_filename ? '#22c55e' : 'var(--text2)',
-                        borderColor: advanceForm.attachment_filename ? '#22c55e' : 'var(--border)',
-                      }}
-                    >
-                      <Paperclip size={13} />
-                      {advanceUploading ? 'Uploading...' : advanceAttachmentName ? advanceAttachmentName.slice(0, 16) + '...' : 'Upload Doc'}
-                    </button>
-                    <input
-                      ref={advanceFileRef}
-                      type="file"
-                      style={{ display: 'none' }}
-                      onChange={handleAdvanceAttachmentUpload}
+                      style={{ ...inputStyle, width: 160, padding: '6px 10px' }}
                     />
                   </div>
                 </div>
 
-                <div>
-                  <label style={labelStyle}>
-                    Purpose / Business Reason <span style={{ color: '#ef4444' }}>*</span>
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="Provide detailed purpose for cash advance request..."
-                    value={advanceForm.purpose}
-                    onChange={e => setAdvanceForm(f => ({ ...f, purpose: e.target.value }))}
-                    style={inputStyle}
-                  />
-                </div>
-
-                {/* ── ITEMIZED EXPENSE & ADVANCE REQUEST SHEET TABLE ───────────────── */}
-                <div style={{ marginTop: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <FileText size={15} style={{ color: 'var(--accent)' }} /> Itemized Expense / Request Breakdown Sheet
-                    </div>
-                    <button
-                      type="button"
-                      onClick={addAdvanceLine}
-                      style={{
-                        padding: '5px 12px',
-                        borderRadius: 6,
-                        border: '1px solid var(--accent)',
-                        background: 'var(--accent)',
-                        color: '#fff',
-                        cursor: 'pointer',
-                        fontSize: 11,
-                        fontWeight: 700,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4,
-                      }}
-                    >
-                      <Plus size={13} /> Add Line Item
-                    </button>
+                {/* Total Calculated Amount */}
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 2 }}>
+                    Total Request Amount
                   </div>
-
-                  <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11.5 }}>
-                        <thead>
-                          <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 10, color: 'var(--text3)', letterSpacing: '0.4px' }}>
-                            <th style={{ padding: '8px 6px', textAlign: 'center', width: 35 }}>S#</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 110 }}>Date *</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 120 }}>Type *</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 90 }}>Cost Code</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 90 }}>Cost to</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 85 }}>From</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 85 }}>To</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 130 }}>Description</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 100 }}>Paid to</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 120 }}>GST # (bill on Co GST)</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'right', width: 100 }}>Amt (Rs. Ps) *</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'left', width: 110 }}>Bills Attached</th>
-                            <th style={{ padding: '8px 6px', textAlign: 'center', width: 35 }}></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {advanceLines.map((row, idx) => (
-                            <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                              <td style={{ padding: '6px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)' }}>{idx + 1}</td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="date"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.date}
-                                  onChange={e => updateAdvanceLineField(idx, 'date', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <select
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.expense_type}
-                                  onChange={e => updateAdvanceLineField(idx, 'expense_type', e.target.value)}
-                                >
-                                  <option value="">Select Type</option>
-                                  {categories.map(c => (
-                                    <option key={c.id} value={c.name}>{c.name}</option>
-                                  ))}
-                                </select>
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="text"
-                                  placeholder="Cost Code"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.cost_code || ''}
-                                  onChange={e => updateAdvanceLineField(idx, 'cost_code', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="text"
-                                  placeholder="Cost Center"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.cost_to || ''}
-                                  onChange={e => updateAdvanceLineField(idx, 'cost_to', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="text"
-                                  placeholder="From"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.from_location || ''}
-                                  onChange={e => updateAdvanceLineField(idx, 'from_location', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="text"
-                                  placeholder="To"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.to_location || ''}
-                                  onChange={e => updateAdvanceLineField(idx, 'to_location', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="text"
-                                  placeholder="Description"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.description || ''}
-                                  onChange={e => updateAdvanceLineField(idx, 'description', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="text"
-                                  placeholder="Paid to"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11 }}
-                                  value={row.paid_to || ''}
-                                  onChange={e => updateAdvanceLineField(idx, 'paid_to', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="text"
-                                  placeholder="GSTIN"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11, fontFamily: 'monospace', textTransform: 'uppercase' }}
-                                  value={row.gst_number || ''}
-                                  onChange={e => updateAdvanceLineField(idx, 'gst_number', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <input
-                                  type="number"
-                                  min="0"
-                                  step="0.01"
-                                  placeholder="0.00"
-                                  style={{ ...inputStyle, padding: '5px 6px', fontSize: 11, fontWeight: 700, textAlign: 'right' }}
-                                  value={row.amount}
-                                  onChange={e => updateAdvanceLineField(idx, 'amount', e.target.value)}
-                                />
-                              </td>
-                              <td style={{ padding: '6px' }}>
-                                <span style={{ fontSize: 11, color: 'var(--text3)' }}>Optional</span>
-                              </td>
-                              <td style={{ padding: '6px', textAlign: 'center' }}>
-                                <button
-                                  type="button"
-                                  onClick={() => deleteAdvanceLine(idx)}
-                                  style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 2 }}
-                                >
-                                  <X size={14} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
+                    ₹ {advanceLines.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 20, justifyContent: 'flex-end' }}>
+              {/* ── ITEMIZED EXPENSE BREAKDOWN SHEET TABLE ────────────────────── */}
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <FileText size={15} style={{ color: 'var(--accent)' }} /> Itemized Expense / Request Breakdown Sheet
+                  </div>
+                  <button
+                    type="button"
+                    onClick={addAdvanceLine}
+                    style={{
+                      padding: '6px 14px',
+                      borderRadius: 6,
+                      border: 'none',
+                      background: 'var(--accent)',
+                      color: '#fff',
+                      cursor: 'pointer',
+                      fontSize: 12,
+                      fontWeight: 700,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 5,
+                    }}
+                  >
+                    <Plus size={14} /> Add Line Item
+                  </button>
+                </div>
+
+                <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                      <thead>
+                        <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 10.5, color: 'var(--text3)', letterSpacing: '0.4px' }}>
+                          <th style={{ padding: '10px 8px', textAlign: 'center', width: 35 }}>S#</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 125 }}>Date *</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 130 }}>Type *</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 100 }}>Cost Code</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 100 }}>Cost to</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 95 }}>From</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 95 }}>To</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 150 }}>Description</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 110 }}>Paid to</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 130 }}>GST Bill</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'right', width: 110 }}>Amt (Rs. Ps) *</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 160 }}>Bills Attached</th>
+                          <th style={{ padding: '10px 8px', textAlign: 'center', width: 40 }}></th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {advanceLines.map((row, idx) => (
+                          <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                            <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
+                              {idx + 1}
+                            </td>
+
+                            {/* Date */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="date"
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.date}
+                                onChange={e => updateAdvanceLineField(idx, 'date', e.target.value)}
+                              />
+                            </td>
+
+                            {/* Type / Expense Category */}
+                            <td style={{ padding: '8px' }}>
+                              <select
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.expense_type}
+                                onChange={e => updateAdvanceLineField(idx, 'expense_type', e.target.value)}
+                              >
+                                <option value="">Select Type</option>
+                                {categories.map(c => (
+                                  <option key={c.id} value={c.name}>{c.name}</option>
+                                ))}
+                              </select>
+                            </td>
+
+                            {/* Cost Code */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="text"
+                                placeholder="Cost Code"
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.cost_code || ''}
+                                onChange={e => updateAdvanceLineField(idx, 'cost_code', e.target.value)}
+                              />
+                            </td>
+
+                            {/* Cost to */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="text"
+                                placeholder="Cost Center"
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.cost_to || ''}
+                                onChange={e => updateAdvanceLineField(idx, 'cost_to', e.target.value)}
+                              />
+                            </td>
+
+                            {/* From */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="text"
+                                placeholder="From"
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.from_location || ''}
+                                onChange={e => updateAdvanceLineField(idx, 'from_location', e.target.value)}
+                              />
+                            </td>
+
+                            {/* To */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="text"
+                                placeholder="To"
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.to_location || ''}
+                                onChange={e => updateAdvanceLineField(idx, 'to_location', e.target.value)}
+                              />
+                            </td>
+
+                            {/* Description */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="text"
+                                placeholder="Description/Remarks"
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.description || ''}
+                                onChange={e => updateAdvanceLineField(idx, 'description', e.target.value)}
+                              />
+                            </td>
+
+                            {/* Paid to */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="text"
+                                placeholder="Vendor/Merchant"
+                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                value={row.paid_to || ''}
+                                onChange={e => updateAdvanceLineField(idx, 'paid_to', e.target.value)}
+                              />
+                            </td>
+
+                            {/* GST Bill (Yes/No Toggle + GSTIN) */}
+                            <td style={{ padding: '8px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                <select
+                                  value={row.has_gst_bill ? 'Yes' : 'No'}
+                                  onChange={e => {
+                                    const isYes = e.target.value === 'Yes';
+                                    updateAdvanceLineField(idx, 'has_gst_bill', isYes);
+                                    if (!isYes) updateAdvanceLineField(idx, 'gst_number', '');
+                                  }}
+                                  style={{
+                                    padding: '5px 8px',
+                                    borderRadius: 6,
+                                    border: '1px solid var(--border)',
+                                    background: row.has_gst_bill ? '#dcfce7' : 'var(--bg3)',
+                                    color: row.has_gst_bill ? '#15803d' : 'var(--text2)',
+                                    fontWeight: 700,
+                                    fontSize: 11,
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  <option value="No">No GST Bill</option>
+                                  <option value="Yes">Yes (GST Bill)</option>
+                                </select>
+
+                                {row.has_gst_bill && (
+                                  <input
+                                    type="text"
+                                    placeholder="GSTIN Number"
+                                    value={row.gst_number || ''}
+                                    onChange={e => updateAdvanceLineField(idx, 'gst_number', e.target.value)}
+                                    style={{
+                                      padding: '4px 6px',
+                                      borderRadius: 4,
+                                      border: '1px solid var(--border)',
+                                      background: 'var(--bg)',
+                                      fontFamily: 'monospace',
+                                      textTransform: 'uppercase',
+                                      fontSize: 10.5,
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            </td>
+
+                            {/* Amt (Rs. Ps) */}
+                            <td style={{ padding: '8px' }}>
+                              <input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="0.00"
+                                style={{ ...inputStyle, padding: '6px 8px', fontWeight: 700, textAlign: 'right' }}
+                                value={row.amount}
+                                onChange={e => updateAdvanceLineField(idx, 'amount', e.target.value)}
+                              />
+                            </td>
+
+                            {/* Bills Attached (Attach / View / Download) */}
+                            <td style={{ padding: '8px' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
+                                  <div
+                                    key={fIdx}
+                                    style={{
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      gap: 4,
+                                      background: 'var(--bg3)',
+                                      borderRadius: 4,
+                                      padding: '3px 6px',
+                                      fontSize: 11,
+                                      border: '1px solid var(--border)',
+                                    }}
+                                  >
+                                    <span style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 600, fontSize: 10.5 }}>
+                                      Bill #{fIdx + 1}
+                                    </span>
+                                    {/* View */}
+                                    <a
+                                      href={`/api/uploads/expenses/${file}`}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      title="View Bill"
+                                      style={{ color: 'var(--accent)', padding: 2, display: 'flex', alignItems: 'center' }}
+                                    >
+                                      <Eye size={12} />
+                                    </a>
+                                    {/* Download */}
+                                    <a
+                                      href={`/api/uploads/expenses/${file}`}
+                                      download={`Bill_${file}`}
+                                      title="Download Bill"
+                                      style={{ color: 'var(--text2)', padding: 2, display: 'flex', alignItems: 'center' }}
+                                    >
+                                      <Download size={12} />
+                                    </a>
+                                    {/* Remove */}
+                                    <button
+                                      type="button"
+                                      onClick={() => removeLineAttachment(idx, fIdx)}
+                                      title="Remove"
+                                      style={{ background: 'none', border: 'none', color: '#ef4444', padding: 2, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+                                    >
+                                      <X size={12} />
+                                    </button>
+                                  </div>
+                                ))}
+
+                                <button
+                                  type="button"
+                                  onClick={() => triggerLineUpload(idx)}
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: 4,
+                                    padding: '4px 8px',
+                                    borderRadius: 4,
+                                    border: '1px dashed var(--accent)',
+                                    background: 'transparent',
+                                    color: 'var(--accent)',
+                                    cursor: 'pointer',
+                                    fontSize: 11,
+                                    fontWeight: 600,
+                                  }}
+                                >
+                                  <Paperclip size={11} />
+                                  {uploadingRowIdx === idx ? 'Uploading...' : 'Attach Bill'}
+                                </button>
+                              </div>
+                            </td>
+
+                            {/* Delete Line */}
+                            <td style={{ padding: '8px', textAlign: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => deleteAdvanceLine(idx)}
+                                title="Remove Line"
+                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }}
+                              >
+                                <X size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              {/* Modal Actions */}
+              <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
                 <button
                   onClick={closeAdvanceModal}
                   style={{

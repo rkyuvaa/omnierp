@@ -22,6 +22,8 @@ import {
   Wallet,
   TrendingDown,
   Info,
+  Eye,
+  Download,
 } from 'lucide-react';
 
 const INR = v =>
@@ -397,8 +399,8 @@ export default function ExpenseSettlement() {
               <thead>
                 <tr>
                   {/* Headers matching Excel format */}
-                  <th style={{ ...cellHeaderStyle, width: 45, textAlign: 'center' }}>S#</th>
-                  <th style={{ ...cellHeaderStyle, width: 115 }}>Date *</th>
+                  <th style={{ ...cellHeaderStyle, width: 35, textAlign: 'center' }}>S#</th>
+                  <th style={{ ...cellHeaderStyle, width: 125 }}>Date *</th>
                   <th style={{ ...cellHeaderStyle, width: 130 }}>Type *</th>
                   <th style={{ ...cellHeaderStyle, width: 100 }}>Cost Code</th>
                   <th style={{ ...cellHeaderStyle, width: 100 }}>Cost to</th>
@@ -406,11 +408,11 @@ export default function ExpenseSettlement() {
                   <th style={{ ...cellHeaderStyle, width: 95 }}>To</th>
                   <th style={{ ...cellHeaderStyle, width: 150 }}>Description</th>
                   <th style={{ ...cellHeaderStyle, width: 110 }}>Paid to</th>
-                  <th style={{ ...cellHeaderStyle, width: 130 }}>GST # (bill on Co GST)</th>
+                  <th style={{ ...cellHeaderStyle, width: 130 }}>GST Bill</th>
                   <th style={{ ...cellHeaderStyle, width: 110, textAlign: 'right' }}>Amt (Rs. Ps) *</th>
-                  <th style={{ ...cellHeaderStyle, width: 180 }}>Bills Attached</th>
+                  <th style={{ ...cellHeaderStyle, width: 160 }}>Bills Attached</th>
                   <th style={{ ...cellHeaderStyle, width: 130 }}>A/c verification</th>
-                  {!isReadOnly && <th style={{ ...cellHeaderStyle, width: 45, textAlign: 'center' }}></th>}
+                  {!isReadOnly && <th style={{ ...cellHeaderStyle, width: 40, textAlign: 'center' }}></th>}
                 </tr>
               </thead>
               <tbody>
@@ -521,16 +523,51 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* GST # (bill on Co GST) */}
+                    {/* GST Bill (Yes/No Toggle + GSTIN) */}
                     <td style={{ padding: '8px' }}>
-                      <input
-                        type="text"
-                        placeholder="GSTIN (e.g. 29AAAAA0000A1Z5)"
-                        value={row.gst_number || ''}
-                        disabled={isReadOnly}
-                        onChange={e => updateRowField(idx, 'gst_number', e.target.value)}
-                        style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
-                      />
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        <select
+                          disabled={isReadOnly}
+                          value={row.gst_number || row.has_gst_bill ? 'Yes' : 'No'}
+                          onChange={e => {
+                            const isYes = e.target.value === 'Yes';
+                            updateRowField(idx, 'has_gst_bill', isYes);
+                            if (!isYes) updateRowField(idx, 'gst_number', '');
+                          }}
+                          style={{
+                            padding: '5px 8px',
+                            borderRadius: 6,
+                            border: '1px solid var(--border)',
+                            background: (row.gst_number || row.has_gst_bill) ? '#dcfce7' : 'var(--bg3)',
+                            color: (row.gst_number || row.has_gst_bill) ? '#15803d' : 'var(--text2)',
+                            fontWeight: 700,
+                            fontSize: 11,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <option value="No">No GST Bill</option>
+                          <option value="Yes">Yes (GST Bill)</option>
+                        </select>
+
+                        {(row.has_gst_bill || row.gst_number) && (
+                          <input
+                            type="text"
+                            placeholder="GSTIN Number"
+                            disabled={isReadOnly}
+                            value={row.gst_number || ''}
+                            onChange={e => updateRowField(idx, 'gst_number', e.target.value)}
+                            style={{
+                              padding: '4px 6px',
+                              borderRadius: 4,
+                              border: '1px solid var(--border)',
+                              background: 'var(--bg)',
+                              fontFamily: 'monospace',
+                              textTransform: 'uppercase',
+                              fontSize: 10.5,
+                            }}
+                          />
+                        )}
+                      </div>
                     </td>
 
                     {/* Amt (Rs. Ps) */}
@@ -547,42 +584,44 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* Bills Attached */}
+                    {/* Bills Attached (Attach / View / Download) */}
                     <td style={{ padding: '8px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        {/* List current attachments */}
                         {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
                           <div
                             key={fIdx}
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              justifyContent: 'space-between',
+                              gap: 4,
                               background: 'var(--bg3)',
                               borderRadius: 4,
-                              padding: '2px 6px',
+                              padding: '3px 6px',
                               fontSize: 11,
                               border: '1px solid var(--border)',
-                              gap: 6,
                             }}
                           >
+                            <span style={{ flex: 1, textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', fontWeight: 600, fontSize: 10.5 }}>
+                              Bill #{fIdx + 1}
+                            </span>
+                            {/* View */}
                             <a
                               href={`/api/uploads/expenses/${file}`}
                               target="_blank"
                               rel="noreferrer"
-                              style={{
-                                color: 'var(--accent)',
-                                textDecoration: 'none',
-                                textOverflow: 'ellipsis',
-                                overflow: 'hidden',
-                                whiteSpace: 'nowrap',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                flex: 1,
-                              }}
+                              title="View Bill"
+                              style={{ color: 'var(--accent)', padding: 2, display: 'flex', alignItems: 'center' }}
                             >
-                              <Paperclip size={11} /> Bill {fIdx + 1}
+                              <Eye size={12} />
+                            </a>
+                            {/* Download */}
+                            <a
+                              href={`/api/uploads/expenses/${file}`}
+                              download={`Bill_${file}`}
+                              title="Download Bill"
+                              style={{ color: 'var(--text2)', padding: 2, display: 'flex', alignItems: 'center' }}
+                            >
+                              <Download size={12} />
                             </a>
                             {!isReadOnly && (
                               <button
@@ -592,7 +631,7 @@ export default function ExpenseSettlement() {
                                   border: 'none',
                                   color: '#ef4444',
                                   cursor: 'pointer',
-                                  padding: 0,
+                                  padding: 2,
                                   display: 'flex',
                                   alignItems: 'center',
                                 }}
@@ -603,9 +642,9 @@ export default function ExpenseSettlement() {
                           </div>
                         ))}
 
-                        {/* Upload trigger */}
                         {!isReadOnly && (
                           <button
+                            type="button"
                             onClick={() => triggerUpload(idx)}
                             style={{
                               display: 'flex',
@@ -614,8 +653,19 @@ export default function ExpenseSettlement() {
                               gap: 4,
                               padding: '4px 8px',
                               borderRadius: 4,
-                              border: '1px dashed var(--border)',
+                              border: '1px dashed var(--accent)',
                               background: 'transparent',
+                              color: 'var(--accent)',
+                              cursor: 'pointer',
+                              fontSize: 11,
+                              fontWeight: 600,
+                            }}
+                          >
+                            <Paperclip size={11} /> Attach Bill
+                          </button>
+                        )}
+                      </div>
+                    </td>
                               color: 'var(--text3)',
                               cursor: 'pointer',
                               fontSize: 11,
