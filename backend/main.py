@@ -118,6 +118,8 @@ def _safe_add_columns():
         ("expense_categories", "max_limit", "DOUBLE PRECISION"),
         ("expense_claims", "reimbursement_ref", "VARCHAR(100)"),
         ("expense_claims", "reimbursement_mode", "VARCHAR(20)"),
+        ("expense_advance_settlement_lines", "gst_number", "VARCHAR(100)"),
+        ("expense_advance_settlement_lines", "account_verification", "VARCHAR(150)"),
         # Comp-Off hours on attendance records
         ("hr_attendance_records", "comp_off_hours", "DOUBLE PRECISION DEFAULT 0"),
         # Salary components Deduct From option

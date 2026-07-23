@@ -131,9 +131,11 @@ class ExpenseAdvanceSettlementLine(Base):
     to_location = Column(String(150), nullable=True)
     description = Column(Text, nullable=True)
     paid_to = Column(String(150), nullable=True)
+    gst_number = Column(String(100), nullable=True) # GST # (bill on Co GST)
     gst_rate = Column(Float, default=0.0) # percentage (e.g. 18.0)
     amount = Column(Float, default=0.0)
     bill_attachments = Column(JSON, default=[]) # list of filenames ["receipt_123.png"]
+    account_verification = Column(String(150), nullable=True) # A/c verification status / notes
 
     advance = relationship("ExpenseAdvanceRequest", back_populates="settlement_lines")
 

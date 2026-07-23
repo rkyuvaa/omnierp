@@ -599,9 +599,11 @@ class SettlementLineInput(BaseModel):
     to_location: Optional[str] = None
     description: Optional[str] = None
     paid_to: Optional[str] = None
+    gst_number: Optional[str] = None
     gst_rate: Optional[float] = 0.0
     amount: float
     bill_attachments: Optional[List[str]] = []
+    account_verification: Optional[str] = None
 
 class SettlementSubmit(BaseModel):
     lines: List[SettlementLineInput]
@@ -621,9 +623,11 @@ def _ser_settlement_line(l: ExpenseAdvanceSettlementLine) -> dict:
         "to_location": l.to_location,
         "description": l.description,
         "paid_to": l.paid_to,
+        "gst_number": l.gst_number,
         "gst_rate": float(l.gst_rate or 0),
         "amount": float(l.amount or 0),
-        "bill_attachments": l.bill_attachments or []
+        "bill_attachments": l.bill_attachments or [],
+        "account_verification": l.account_verification
     }
 
 def _ser_advance(a: ExpenseAdvanceRequest) -> dict:
@@ -1162,9 +1166,11 @@ def submit_settlement(
             to_location=line.to_location,
             description=line.description,
             paid_to=line.paid_to,
+            gst_number=line.gst_number,
             gst_rate=line.gst_rate or 0.0,
             amount=line.amount,
-            bill_attachments=line.bill_attachments or []
+            bill_attachments=line.bill_attachments or [],
+            account_verification=line.account_verification
         )
         db.add(s_line)
         

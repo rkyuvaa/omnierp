@@ -96,9 +96,11 @@ export default function ExpenseSettlement() {
       to_location: '',
       description: '',
       paid_to: '',
+      gst_number: '',
       gst_rate: 0,
       amount: 0,
       bill_attachments: [],
+      account_verification: '',
     };
   }
 
@@ -394,24 +396,31 @@ export default function ExpenseSettlement() {
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
                 <tr>
-                  {/* Headers */}
-                  <th style={{ ...cellHeaderStyle, width: 110 }}>Date *</th>
-                  <th style={{ ...cellHeaderStyle, width: 120 }}>Expense Type *</th>
-                  <th style={{ ...cellHeaderStyle, width: 90 }}>Cost Code</th>
-                  <th style={{ ...cellHeaderStyle, width: 100 }}>Cost To</th>
-                  <th style={{ ...cellHeaderStyle, width: 100 }}>From Location</th>
-                  <th style={{ ...cellHeaderStyle, width: 100 }}>To Location</th>
+                  {/* Headers matching Excel format */}
+                  <th style={{ ...cellHeaderStyle, width: 45, textAlign: 'center' }}>S#</th>
+                  <th style={{ ...cellHeaderStyle, width: 115 }}>Date *</th>
+                  <th style={{ ...cellHeaderStyle, width: 130 }}>Type *</th>
+                  <th style={{ ...cellHeaderStyle, width: 100 }}>Cost Code</th>
+                  <th style={{ ...cellHeaderStyle, width: 100 }}>Cost to</th>
+                  <th style={{ ...cellHeaderStyle, width: 95 }}>From</th>
+                  <th style={{ ...cellHeaderStyle, width: 95 }}>To</th>
                   <th style={{ ...cellHeaderStyle, width: 150 }}>Description</th>
-                  <th style={{ ...cellHeaderStyle, width: 100 }}>Paid To</th>
-                  <th style={{ ...cellHeaderStyle, width: 70 }}>GST %</th>
-                  <th style={{ ...cellHeaderStyle, width: 100 }}>Amount (Rs) *</th>
-                  <th style={{ ...cellHeaderStyle, width: 220 }}>Bill Attachments</th>
-                  {!isReadOnly && <th style={{ ...cellHeaderStyle, width: 50, textAlign: 'center' }}></th>}
+                  <th style={{ ...cellHeaderStyle, width: 110 }}>Paid to</th>
+                  <th style={{ ...cellHeaderStyle, width: 130 }}>GST # (bill on Co GST)</th>
+                  <th style={{ ...cellHeaderStyle, width: 110, textAlign: 'right' }}>Amt (Rs. Ps) *</th>
+                  <th style={{ ...cellHeaderStyle, width: 180 }}>Bills Attached</th>
+                  <th style={{ ...cellHeaderStyle, width: 130 }}>A/c verification</th>
+                  {!isReadOnly && <th style={{ ...cellHeaderStyle, width: 45, textAlign: 'center' }}></th>}
                 </tr>
               </thead>
               <tbody>
                 {lines.map((row, idx) => (
                   <tr key={idx} style={{ borderTop: '1px solid var(--border)' }}>
+                    {/* S# */}
+                    <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
+                      {idx + 1}
+                    </td>
+
                     {/* Date */}
                     <td style={{ padding: '8px' }}>
                       <input
@@ -423,7 +432,7 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* Expense Type / Category */}
+                    {/* Type / Expense Category */}
                     <td style={{ padding: '8px' }}>
                       <select
                         value={row.expense_type}
@@ -452,11 +461,11 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* Cost To */}
+                    {/* Cost to */}
                     <td style={{ padding: '8px' }}>
                       <input
                         type="text"
-                        placeholder="e.g. Project/Client"
+                        placeholder="Cost Center/Client"
                         value={row.cost_to || ''}
                         disabled={isReadOnly}
                         onChange={e => updateRowField(idx, 'cost_to', e.target.value)}
@@ -464,11 +473,11 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* From Location */}
+                    {/* From */}
                     <td style={{ padding: '8px' }}>
                       <input
                         type="text"
-                        placeholder="From"
+                        placeholder="From Location"
                         value={row.from_location || ''}
                         disabled={isReadOnly}
                         onChange={e => updateRowField(idx, 'from_location', e.target.value)}
@@ -476,11 +485,11 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* To Location */}
+                    {/* To */}
                     <td style={{ padding: '8px' }}>
                       <input
                         type="text"
-                        placeholder="To"
+                        placeholder="To Location"
                         value={row.to_location || ''}
                         disabled={isReadOnly}
                         onChange={e => updateRowField(idx, 'to_location', e.target.value)}
@@ -492,7 +501,7 @@ export default function ExpenseSettlement() {
                     <td style={{ padding: '8px' }}>
                       <input
                         type="text"
-                        placeholder="Remarks/details"
+                        placeholder="Description/Remarks"
                         value={row.description || ''}
                         disabled={isReadOnly}
                         onChange={e => updateRowField(idx, 'description', e.target.value)}
@@ -500,7 +509,7 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* Paid To */}
+                    {/* Paid to */}
                     <td style={{ padding: '8px' }}>
                       <input
                         type="text"
@@ -512,21 +521,19 @@ export default function ExpenseSettlement() {
                       />
                     </td>
 
-                    {/* GST % */}
+                    {/* GST # (bill on Co GST) */}
                     <td style={{ padding: '8px' }}>
                       <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        placeholder="0"
-                        value={row.gst_rate}
+                        type="text"
+                        placeholder="GSTIN (e.g. 29AAAAA0000A1Z5)"
+                        value={row.gst_number || ''}
                         disabled={isReadOnly}
-                        onChange={e => updateRowField(idx, 'gst_rate', e.target.value)}
-                        style={inputStyle}
+                        onChange={e => updateRowField(idx, 'gst_number', e.target.value)}
+                        style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
                       />
                     </td>
 
-                    {/* Amount */}
+                    {/* Amt (Rs. Ps) */}
                     <td style={{ padding: '8px' }}>
                       <input
                         type="number"
@@ -536,11 +543,11 @@ export default function ExpenseSettlement() {
                         value={row.amount}
                         disabled={isReadOnly}
                         onChange={e => updateRowField(idx, 'amount', e.target.value)}
-                        style={{ ...inputStyle, fontWeight: 700 }}
+                        style={{ ...inputStyle, fontWeight: 700, textAlign: 'right' }}
                       />
                     </td>
 
-                    {/* Bill Attachments */}
+                    {/* Bills Attached */}
                     <td style={{ padding: '8px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {/* List current attachments */}
@@ -627,6 +634,18 @@ export default function ExpenseSettlement() {
                           </button>
                         )}
                       </div>
+                    </td>
+
+                    {/* A/c verification */}
+                    <td style={{ padding: '8px' }}>
+                      <input
+                        type="text"
+                        placeholder="A/c Status/Notes"
+                        value={row.account_verification || ''}
+                        disabled={isReadOnly}
+                        onChange={e => updateRowField(idx, 'account_verification', e.target.value)}
+                        style={{ ...inputStyle, fontSize: 11 }}
+                      />
                     </td>
 
                     {/* Delete button */}
