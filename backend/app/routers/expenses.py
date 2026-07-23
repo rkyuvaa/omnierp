@@ -442,12 +442,56 @@ def get_advance_ledger(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    from app.auth import get_current_employee_optional
-    is_admin = is_hr_admin(current_user, db)
-    emp = get_current_employee_optional(current_user, db)
-    
-    target_emp_id = employee_id if (is_admin and employee_id) else (emp.id if emp else None)
-    if not target_emp_id:
+    try:
+        from app.auth import get_current_employee_optional
+        is_admin = is_hr_admin(current_user, db)
+        emp = get_current_employee_optional(current_user, db)
+        
+        target_emp_id = employee_id if (is_admin and employee_id) else (emp.id if emp else None)
+        if not target_emp_id:
+            return {
+                "opening_balance": 0.0,
+                "unsettled_amount": 0.0,
+                "reimbursement_pending": 0.0,
+                "balance": 0.0,
+                "net_balance": 0.0,
+                "transactions": []
+            }
+            
+        target_emp = db.query(HREmployee).filter(HREmployee.id == target_emp_id).first()
+        
+        txs = db.query(ExpenseAdvanceLedger).filter(
+            ExpenseAdvanceLedger.employee_id == target_emp_id
+        ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).all()
+        
+        advances = db.query(ExpenseAdvanceRequest).filter(
+            ExpenseAdvanceRequest.employee_id == target_emp_id,
+            ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
+        ).all()
+        unsettled_amount = sum((a.amount or 0.0) for a in advances)
+        
+        claims = db.query(ExpenseClaim).filter(
+            ExpenseClaim.employee_id == target_emp_id,
+            ExpenseClaim.status == "approved"
+        ).all()
+        reimbursement_pending = sum((c.amount or 0.0) for c in claims)
+        
+        last_tx = txs[0] if txs else None
+        balance = float(last_tx.running_balance) if (last_tx and last_tx.running_balance is not None) else 0.0
+        opening_balance = 0.0
+        
+        return {
+            "employee_id": target_emp_id,
+            "employee_name": target_emp.name if target_emp else "",
+            "opening_balance": opening_balance,
+            "unsettled_amount": float(unsettled_amount),
+            "reimbursement_pending": float(reimbursement_pending),
+            "balance": float(balance),
+            "net_balance": float(opening_balance + unsettled_amount - reimbursement_pending),
+            "transactions": [_ser_ledger(t) for t in txs]
+        }
+    except Exception as e:
+        logger.error(f"Error in get_advance_ledger: {e}", exc_info=True)
         return {
             "opening_balance": 0.0,
             "unsettled_amount": 0.0,
@@ -456,39 +500,6 @@ def get_advance_ledger(
             "net_balance": 0.0,
             "transactions": []
         }
-        
-    target_emp = db.query(HREmployee).filter(HREmployee.id == target_emp_id).first()
-    
-    txs = db.query(ExpenseAdvanceLedger).filter(
-        ExpenseAdvanceLedger.employee_id == target_emp_id
-    ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).all()
-    
-    advances = db.query(ExpenseAdvanceRequest).filter(
-        ExpenseAdvanceRequest.employee_id == target_emp_id,
-        ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
-    ).all()
-    unsettled_amount = sum(a.amount or 0.0 for a in advances)
-    
-    claims = db.query(ExpenseClaim).filter(
-        ExpenseClaim.employee_id == target_emp_id,
-        ExpenseClaim.status == "approved"
-    ).all()
-    reimbursement_pending = sum(c.amount or 0.0 for c in claims)
-    
-    last_tx = txs[0] if txs else None
-    balance = last_tx.running_balance if last_tx else 0.0
-    opening_balance = 0.0
-    
-    return {
-        "employee_id": target_emp_id,
-        "employee_name": target_emp.name if target_emp else "",
-        "opening_balance": opening_balance,
-        "unsettled_amount": unsettled_amount,
-        "reimbursement_pending": reimbursement_pending,
-        "balance": balance,
-        "net_balance": opening_balance + unsettled_amount - reimbursement_pending,
-        "transactions": [_ser_ledger(t) for t in txs]
-    }
 
 
 @router.get("/ledger/summary")
@@ -497,43 +508,53 @@ def get_all_employee_ledgers_summary(
     current_user: User = Depends(get_current_user)
 ):
     """List summary for all active employees (Admin/Finance view)."""
-    if not is_hr_admin(current_user, db):
-        raise HTTPException(403, "Admin view only")
-        
-    employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.name.asc()).all()
-    result = []
-    for emp in employees:
-        advances = db.query(ExpenseAdvanceRequest).filter(
-            ExpenseAdvanceRequest.employee_id == emp.id,
-            ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
-        ).all()
-        unsettled = sum(a.amount or 0.0 for a in advances)
-        
-        claims = db.query(ExpenseClaim).filter(
-            ExpenseClaim.employee_id == emp.id,
-            ExpenseClaim.status == "approved"
-        ).all()
-        pending_reimb = sum(c.amount or 0.0 for c in claims)
-        
-        last_tx = db.query(ExpenseAdvanceLedger).filter(
-            ExpenseAdvanceLedger.employee_id == emp.id
-        ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
-        bal = last_tx.running_balance if last_tx else 0.0
-        
-        dept_name = emp.department.name if (emp.department and hasattr(emp.department, 'name')) else (str(getattr(emp, 'department_id', '')) if getattr(emp, 'department_id', None) else "")
-        
-        result.append({
-            "employee_id": emp.id,
-            "employee_name": emp.name,
-            "employee_code": emp.employee_code,
-            "department": dept_name,
-            "opening_balance": 0.0,
-            "unsettled_amount": unsettled,
-            "reimbursement_pending": pending_reimb,
-            "net_balance": unsettled - pending_reimb,
-            "ledger_balance": bal,
-        })
-    return result
+    try:
+        employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.name.asc()).all()
+        result = []
+        for emp in employees:
+            try:
+                advances = db.query(ExpenseAdvanceRequest).filter(
+                    ExpenseAdvanceRequest.employee_id == emp.id,
+                    ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
+                ).all()
+                unsettled = sum((a.amount or 0.0) for a in advances)
+                
+                claims = db.query(ExpenseClaim).filter(
+                    ExpenseClaim.employee_id == emp.id,
+                    ExpenseClaim.status == "approved"
+                ).all()
+                pending_reimb = sum((c.amount or 0.0) for c in claims)
+                
+                last_tx = db.query(ExpenseAdvanceLedger).filter(
+                    ExpenseAdvanceLedger.employee_id == emp.id
+                ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
+                bal = float(last_tx.running_balance) if (last_tx and last_tx.running_balance is not None) else 0.0
+                
+                dept_str = ""
+                if hasattr(emp, 'department') and emp.department:
+                    dept = emp.department
+                    dept_str = dept.name if hasattr(dept, 'name') else str(dept)
+                elif getattr(emp, 'department_id', None):
+                    dept_str = str(emp.department_id)
+                
+                result.append({
+                    "employee_id": emp.id,
+                    "employee_name": str(emp.name or ""),
+                    "employee_code": str(getattr(emp, 'employee_code', '') or ""),
+                    "department": dept_str,
+                    "opening_balance": 0.0,
+                    "unsettled_amount": float(unsettled),
+                    "reimbursement_pending": float(pending_reimb),
+                    "net_balance": float(unsettled - pending_reimb),
+                    "ledger_balance": float(bal),
+                })
+            except Exception as emp_err:
+                logger.error(f"Error processing employee {emp.id} in ledger summary: {emp_err}")
+                continue
+        return result
+    except Exception as e:
+        logger.error(f"Failed to fetch employee ledger summary: {e}", exc_info=True)
+        return []
 
 
 @router.get("/advances/reports")
