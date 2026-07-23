@@ -399,6 +399,170 @@ def update_expense_config(data: ExpenseConfigPayload, db: Session = Depends(get_
     return {"message": "Expense configurations updated successfully"}
 
 
+@router.get("/advances/my")
+def list_my_advances(
+    status: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.auth import get_current_employee_optional
+    emp = get_current_employee_optional(current_user, db)
+    if not emp:
+        return []
+    q = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.employee_id == emp.id)
+    if status:
+        q = q.filter(ExpenseAdvanceRequest.status == status)
+    return [_ser_advance(a) for a in q.order_by(ExpenseAdvanceRequest.created_at.desc()).all()]
+
+
+@router.get("/advances/pending-approvals")
+def list_pending_advance_approvals(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.auth import get_current_employee_optional
+    is_admin = is_hr_admin(current_user, db)
+    emp = get_current_employee_optional(current_user, db)
+    
+    q = db.query(ExpenseAdvanceRequest).filter(
+        ExpenseAdvanceRequest.status.in_(["submitted", "under_review", "settlement_submitted"])
+    )
+    
+    if not is_admin:
+        if not emp:
+            return []
+        q = q.filter(ExpenseAdvanceRequest.approver_id == emp.id)
+        
+    return [_ser_advance(a) for a in q.order_by(ExpenseAdvanceRequest.created_at.desc()).all()]
+
+
+@router.get("/advances/ledger")
+def get_advance_ledger(
+    employee_id: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.auth import get_current_employee_optional
+    is_admin = is_hr_admin(current_user, db)
+    emp = get_current_employee_optional(current_user, db)
+    
+    target_emp_id = employee_id if (is_admin and employee_id) else (emp.id if emp else None)
+    if not target_emp_id:
+        return {
+            "opening_balance": 0.0,
+            "unsettled_amount": 0.0,
+            "reimbursement_pending": 0.0,
+            "balance": 0.0,
+            "net_balance": 0.0,
+            "transactions": []
+        }
+        
+    target_emp = db.query(HREmployee).filter(HREmployee.id == target_emp_id).first()
+    
+    txs = db.query(ExpenseAdvanceLedger).filter(
+        ExpenseAdvanceLedger.employee_id == target_emp_id
+    ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).all()
+    
+    advances = db.query(ExpenseAdvanceRequest).filter(
+        ExpenseAdvanceRequest.employee_id == target_emp_id,
+        ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
+    ).all()
+    unsettled_amount = sum(a.amount or 0.0 for a in advances)
+    
+    claims = db.query(ExpenseClaim).filter(
+        ExpenseClaim.employee_id == target_emp_id,
+        ExpenseClaim.status == "approved"
+    ).all()
+    reimbursement_pending = sum(c.amount or 0.0 for c in claims)
+    
+    last_tx = txs[0] if txs else None
+    balance = last_tx.running_balance if last_tx else 0.0
+    opening_balance = 0.0
+    
+    return {
+        "employee_id": target_emp_id,
+        "employee_name": target_emp.name if target_emp else "",
+        "opening_balance": opening_balance,
+        "unsettled_amount": unsettled_amount,
+        "reimbursement_pending": reimbursement_pending,
+        "balance": balance,
+        "net_balance": opening_balance + unsettled_amount - reimbursement_pending,
+        "transactions": [_ser_ledger(t) for t in txs]
+    }
+
+
+@router.get("/ledger/summary")
+def get_all_employee_ledgers_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List summary for all active employees (Admin/Finance view)."""
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Admin view only")
+        
+    employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.name.asc()).all()
+    result = []
+    for emp in employees:
+        advances = db.query(ExpenseAdvanceRequest).filter(
+            ExpenseAdvanceRequest.employee_id == emp.id,
+            ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
+        ).all()
+        unsettled = sum(a.amount or 0.0 for a in advances)
+        
+        claims = db.query(ExpenseClaim).filter(
+            ExpenseClaim.employee_id == emp.id,
+            ExpenseClaim.status == "approved"
+        ).all()
+        pending_reimb = sum(c.amount or 0.0 for c in claims)
+        
+        last_tx = db.query(ExpenseAdvanceLedger).filter(
+            ExpenseAdvanceLedger.employee_id == emp.id
+        ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
+        bal = last_tx.running_balance if last_tx else 0.0
+        
+        result.append({
+            "employee_id": emp.id,
+            "employee_name": emp.name,
+            "employee_code": emp.employee_code,
+            "department": emp.department,
+            "opening_balance": 0.0,
+            "unsettled_amount": unsettled,
+            "reimbursement_pending": pending_reimb,
+            "net_balance": unsettled - pending_reimb,
+            "ledger_balance": bal,
+        })
+    return result
+
+
+@router.get("/advances/reports")
+def get_advances_report(
+    employee_id: Optional[int] = None,
+    status: Optional[str] = None,
+    from_date: Optional[date] = None,
+    to_date: Optional[date] = None,
+    project_code: Optional[str] = None,
+    search: Optional[str] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Admin view only")
+        
+    q = db.query(ExpenseAdvanceRequest)
+    if employee_id:
+        q = q.filter(ExpenseAdvanceRequest.employee_id == employee_id)
+    if status:
+        q = q.filter(ExpenseAdvanceRequest.status == status)
+    if project_code:
+        q = q.filter(ExpenseAdvanceRequest.project_code.ilike(f"%{project_code}%"))
+    if from_date:
+        q = q.filter(ExpenseAdvanceRequest.required_date >= from_date)
+    if to_date:
+        q = q.filter(ExpenseAdvanceRequest.required_date <= to_date)
+        
+    return [_ser_advance(a) for a in q.order_by(ExpenseAdvanceRequest.created_at.desc()).all()]
+
+
 @router.get("/{claim_id}")
 def get_claim(
     claim_id: int,
@@ -1015,176 +1179,7 @@ def update_advance_request(
     return _ser_advance(advance)
 
 
-@router.get("/advances/my")
-def list_my_advances(
-    status: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    from app.auth import get_current_employee_optional
-    emp = get_current_employee_optional(current_user, db)
-    if not emp:
-        return []
-    q = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.employee_id == emp.id)
-    if status:
-        q = q.filter(ExpenseAdvanceRequest.status == status)
-    return [_ser_advance(a) for a in q.order_by(ExpenseAdvanceRequest.created_at.desc()).all()]
 
-
-@router.get("/advances/pending-approvals")
-def list_pending_advance_approvals(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    from app.auth import get_current_employee_optional
-    is_admin = is_hr_admin(current_user, db)
-    emp = get_current_employee_optional(current_user, db)
-    
-    # Pending either request approval or settlement approval
-    q = db.query(ExpenseAdvanceRequest).filter(
-        ExpenseAdvanceRequest.status.in_(["submitted", "under_review", "settlement_submitted"])
-    )
-    
-    if not is_admin:
-        if not emp:
-            return []
-        q = q.filter(ExpenseAdvanceRequest.approver_id == emp.id)
-        
-    return [_ser_advance(a) for a in q.order_by(ExpenseAdvanceRequest.created_at.desc()).all()]
-
-
-@router.get("/advances/ledger")
-def get_advance_ledger(
-    employee_id: Optional[int] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    from app.auth import get_current_employee_optional
-    is_admin = is_hr_admin(current_user, db)
-    emp = get_current_employee_optional(current_user, db)
-    
-    target_emp_id = employee_id if (is_admin and employee_id) else (emp.id if emp else None)
-    if not target_emp_id:
-        return {
-            "opening_balance": 0.0,
-            "unsettled_amount": 0.0,
-            "reimbursement_pending": 0.0,
-            "balance": 0.0,
-            "net_balance": 0.0,
-            "transactions": []
-        }
-        
-    target_emp = db.query(HREmployee).filter(HREmployee.id == target_emp_id).first()
-    
-    txs = db.query(ExpenseAdvanceLedger).filter(
-        ExpenseAdvanceLedger.employee_id == target_emp_id
-    ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).all()
-    
-    # Calculate unsettled advances (advances paid/disbursed or partially settled)
-    advances = db.query(ExpenseAdvanceRequest).filter(
-        ExpenseAdvanceRequest.employee_id == target_emp_id,
-        ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
-    ).all()
-    unsettled_amount = sum(a.amount or 0.0 for a in advances)
-    
-    # Calculate reimbursement pending (approved expense claims pending payment)
-    claims = db.query(ExpenseClaim).filter(
-        ExpenseClaim.employee_id == target_emp_id,
-        ExpenseClaim.status == "approved"
-    ).all()
-    reimbursement_pending = sum(c.amount or 0.0 for c in claims)
-    
-    last_tx = txs[0] if txs else None
-    balance = last_tx.running_balance if last_tx else 0.0
-    opening_balance = 0.0 # Standard default
-    
-    return {
-        "employee_id": target_emp_id,
-        "employee_name": target_emp.name if target_emp else "",
-        "opening_balance": opening_balance,
-        "unsettled_amount": unsettled_amount,
-        "reimbursement_pending": reimbursement_pending,
-        "balance": balance,
-        "net_balance": opening_balance + unsettled_amount - reimbursement_pending,
-        "transactions": [_ser_ledger(t) for t in txs]
-    }
-
-
-@router.get("/ledger/summary")
-def get_all_employee_ledgers_summary(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    """List summary for all active employees (Admin/Finance view)."""
-    if not is_hr_admin(current_user, db):
-        raise HTTPException(403, "Admin view only")
-        
-    employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.name.asc()).all()
-    result = []
-    for emp in employees:
-        advances = db.query(ExpenseAdvanceRequest).filter(
-            ExpenseAdvanceRequest.employee_id == emp.id,
-            ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
-        ).all()
-        unsettled = sum(a.amount or 0.0 for a in advances)
-        
-        claims = db.query(ExpenseClaim).filter(
-            ExpenseClaim.employee_id == emp.id,
-            ExpenseClaim.status == "approved"
-        ).all()
-        pending_reimb = sum(c.amount or 0.0 for c in claims)
-        
-        last_tx = db.query(ExpenseAdvanceLedger).filter(
-            ExpenseAdvanceLedger.employee_id == emp.id
-        ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
-        bal = last_tx.running_balance if last_tx else 0.0
-        
-        result.append({
-            "employee_id": emp.id,
-            "employee_name": emp.name,
-            "employee_code": emp.employee_code,
-            "department": emp.department,
-            "opening_balance": 0.0,
-            "unsettled_amount": unsettled,
-            "reimbursement_pending": pending_reimb,
-            "net_balance": unsettled - pending_reimb,
-            "ledger_balance": bal,
-        })
-    return result
-
-
-@router.get("/advances/reports")
-def get_advances_report(
-    employee_id: Optional[int] = None,
-    status: Optional[str] = None,
-    from_date: Optional[date] = None,
-    to_date: Optional[date] = None,
-    project_code: Optional[str] = None,
-    search: Optional[str] = None,
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    if not is_hr_admin(current_user, db):
-        raise HTTPException(403, "Admin view only")
-        
-    q = db.query(ExpenseAdvanceRequest)
-    if employee_id:
-        q = q.filter(ExpenseAdvanceRequest.employee_id == employee_id)
-    if status:
-        q = q.filter(ExpenseAdvanceRequest.status == status)
-    if project_code:
-        q = q.filter(ExpenseAdvanceRequest.project_code.ilike(f"%{project_code}%"))
-    if from_date:
-        q = q.filter(ExpenseAdvanceRequest.required_date >= from_date)
-    if to_date:
-        q = q.filter(ExpenseAdvanceRequest.required_date <= to_date)
-    if search:
-        q = q.filter(
-            (ExpenseAdvanceRequest.reference.ilike(f"%{search}%")) |
-            (ExpenseAdvanceRequest.purpose.ilike(f"%{search}%"))
-        )
-        
-    return [_ser_advance(a) for a in q.order_by(ExpenseAdvanceRequest.created_at.desc()).all()]
 
 
 @router.get("/advances/{adv_id}")

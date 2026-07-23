@@ -59,7 +59,7 @@ export default function ExpenseLedger() {
 
   async function fetchEmployees() {
     try {
-      const r = await api.get('/hr/employees');
+      const r = await api.get('/hr/employees/');
       setEmployees(r.data.filter(e => e.is_active));
     } catch {
       // Fail silently
