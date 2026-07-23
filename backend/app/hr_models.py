@@ -33,6 +33,7 @@ class HREmployee(Base):
     uan = Column(String(50), nullable=True)                  # Universal Account Number
     esi_number = Column(String(50), nullable=True)           # Employee State Insurance Number
     photo_url = Column(String(500), nullable=True)
+    advance_opening_balance = Column(Float, default=0.0)      # Opening balance for advance/reimbursement
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

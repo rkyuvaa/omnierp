@@ -9,13 +9,14 @@ import {
   Clock,
   CheckCircle,
   TrendingUp,
-  TrendingDown,
   User,
   DollarSign,
   Send,
   FileText,
   AlertCircle,
   RefreshCw,
+  Edit3,
+  PlusCircle,
 } from 'lucide-react';
 
 const INR = v =>
@@ -45,6 +46,13 @@ export default function ExpenseLedger() {
   const [payoutAdv, setPayoutAdv] = useState(null);
   const [payoutRemarks, setPayoutRemarks] = useState('');
   const [payoutSaving, setPayoutSaving] = useState(false);
+
+  // Opening Balance Modal State
+  const [showObModal, setShowObModal] = useState(false);
+  const [obEmpId, setObEmpId] = useState('');
+  const [obAmount, setObAmount] = useState('');
+  const [obRemarks, setObRemarks] = useState('');
+  const [obSaving, setObSaving] = useState(false);
 
   useEffect(() => {
     if (isAdmin) {
@@ -115,6 +123,39 @@ export default function ExpenseLedger() {
     }
   }
 
+  async function handleObSubmit() {
+    if (!obEmpId || obAmount === '') {
+      toast.error('Please select an employee and enter an opening balance');
+      return;
+    }
+    setObSaving(true);
+    try {
+      await api.post('/expenses/ledger/opening-balance', {
+        employee_id: parseInt(obEmpId, 10),
+        opening_balance: parseFloat(obAmount),
+        remarks: obRemarks,
+      });
+      toast.success('Opening balance updated successfully!');
+      setShowObModal(false);
+      setObEmpId('');
+      setObAmount('');
+      setObRemarks('');
+      if (activeView === 'summary') fetchAllSummary();
+      fetchLedger(selectedEmpId);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update opening balance');
+    } finally {
+      setObSaving(false);
+    }
+  }
+
+  const openObModalForEmp = (empId, currentOb = 0) => {
+    setObEmpId(empId.toString());
+    setObAmount(currentOb.toString());
+    setObRemarks('');
+    setShowObModal(true);
+  };
+
   return (
     <Layout title="Employee Expense & Advance Ledger">
       <div style={{ padding: '0 24px 24px' }}>
@@ -130,7 +171,7 @@ export default function ExpenseLedger() {
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
             {isAdmin && (
               <div style={{ display: 'flex', gap: 6, background: 'var(--bg3)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
                 <button
@@ -161,7 +202,7 @@ export default function ExpenseLedger() {
                     cursor: 'pointer',
                   }}
                 >
-                  All Employees Summary
+                  Active Employees Summary
                 </button>
               </div>
             )}
@@ -190,8 +231,32 @@ export default function ExpenseLedger() {
               </select>
             )}
 
+            {isAdmin && (
+              <button
+                onClick={() => openObModalForEmp(selectedEmpId || (ledgerData.employee_id || ''), ledgerData.opening_balance || 0)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #16a34a',
+                  background: '#f0fdf4',
+                  color: '#15803d',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Edit3 size={15} /> Set Opening Balance
+              </button>
+            )}
+
             <button
-              onClick={() => fetchLedger(selectedEmpId)}
+              onClick={() => {
+                if (activeView === 'summary') fetchAllSummary();
+                fetchLedger(selectedEmpId);
+              }}
               style={{
                 padding: '8px 12px',
                 borderRadius: 8,
@@ -221,10 +286,22 @@ export default function ExpenseLedger() {
               borderRadius: 14,
               padding: 20,
               boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+              position: 'relative',
             }}
           >
             <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Opening Balance <Wallet size={16} style={{ color: '#6366f1' }} />
+              <span>Opening Balance</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {isAdmin && (
+                  <Edit3
+                    size={14}
+                    style={{ color: '#6366f1', cursor: 'pointer' }}
+                    title="Edit Opening Balance"
+                    onClick={() => openObModalForEmp(selectedEmpId || (ledgerData.employee_id || ''), ledgerData.opening_balance || 0)}
+                  />
+                )}
+                <Wallet size={16} style={{ color: '#6366f1' }} />
+              </div>
             </div>
             <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)' }}>
               {INR(ledgerData.opening_balance)}
@@ -441,14 +518,19 @@ export default function ExpenseLedger() {
             )}
           </div>
         ) : (
-          /* ── ALL EMPLOYEES SUMMARY VIEW (ADMIN/FINANCE) ──────────────────── */
+          /* ── ALL EMPLOYEES SUMMARY VIEW (ONLY ACTIVE / PENDING / NON-ZERO BALANCES) ── */
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <h3 style={{ margin: 0, fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
-                All Employees Ledger & Outstanding Balance Summary
-              </h3>
-              <span style={{ fontSize: 12, color: 'var(--text3)' }}>
-                {allSummary.length} Employees Active
+              <div>
+                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
+                  Active Employees Ledger Summary
+                </h3>
+                <span style={{ fontSize: 12, color: 'var(--text3)' }}>
+                  Only showing employees with active advances, pending reimbursements, or opening balances (Nil/0.00 balance employees excluded).
+                </span>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                {allSummary.length} Active Records
               </span>
             </div>
 
@@ -466,50 +548,217 @@ export default function ExpenseLedger() {
                   </tr>
                 </thead>
                 <tbody>
-                  {allSummary.map(emp => (
-                    <tr key={emp.employee_id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)' }}>
-                        {emp.employee_name}
-                      </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text3)', fontSize: 12 }}>
-                        {emp.employee_code || '-'} {emp.department ? `(${emp.department})` : ''}
-                      </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text2)' }}>
-                        {INR(emp.opening_balance)}
-                      </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#f59e0b' }}>
-                        {INR(emp.unsettled_amount)}
-                      </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>
-                        {INR(emp.reimbursement_pending)}
-                      </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: emp.net_balance > 0 ? '#10b981' : 'var(--text)' }}>
-                        {INR(emp.net_balance)}
-                      </td>
-                      <td style={{ padding: '12px 16px', textAlign: 'center' }}>
-                        <button
-                          onClick={() => {
-                            setSelectedEmpId(emp.employee_id.toString());
-                            setActiveView('statement');
-                          }}
-                          style={{
-                            padding: '4px 10px',
-                            borderRadius: 6,
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg3)',
-                            color: 'var(--text2)',
-                            fontSize: 12,
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          View Statement
-                        </button>
+                  {allSummary.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>
+                        No active employees with pending advances, reimbursements, or opening balances.
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    allSummary.map(emp => (
+                      <tr key={emp.employee_id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)' }}>
+                          {emp.employee_name}
+                        </td>
+                        <td style={{ padding: '12px 16px', color: 'var(--text3)', fontSize: 12 }}>
+                          {emp.employee_code || '-'} {emp.department ? `(${emp.department})` : ''}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text2)' }}>
+                          {INR(emp.opening_balance)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#f59e0b' }}>
+                          {INR(emp.unsettled_amount)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>
+                          {INR(emp.reimbursement_pending)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: emp.net_balance > 0 ? '#10b981' : 'var(--text)' }}>
+                          {INR(emp.net_balance)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+                            <button
+                              onClick={() => {
+                                setSelectedEmpId(emp.employee_id.toString());
+                                setActiveView('statement');
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 6,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg3)',
+                                color: 'var(--text2)',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Statement
+                            </button>
+                            <button
+                              onClick={() => openObModalForEmp(emp.employee_id, emp.opening_balance)}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: 6,
+                                border: '1px solid #22c55e',
+                                background: '#f0fdf4',
+                                color: '#15803d',
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                              title="Edit Opening Balance"
+                            >
+                              <Edit3 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── SET OPENING BALANCE MODAL ─────────────────────────────────────── */}
+        {showObModal && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.55)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16,
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--bg)',
+                borderRadius: 16,
+                padding: 24,
+                width: 450,
+                maxWidth: '100%',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 16px 0', fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Wallet size={20} style={{ color: 'var(--accent)' }} />
+                Set / Edit Employee Opening Balance
+              </h3>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+                  Select Employee *
+                </label>
+                <select
+                  value={obEmpId}
+                  onChange={e => setObEmpId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <option value="">Select Employee</option>
+                  {employees.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.name} ({e.employee_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+                  Opening Balance Amount (₹) *
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 5000"
+                  value={obAmount}
+                  onChange={e => setObAmount(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+                  Remarks / Reference (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Previous year carry forward..."
+                  value={obRemarks}
+                  onChange={e => setObRemarks(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowObModal(false)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg2)',
+                    color: 'var(--text2)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleObSubmit}
+                  disabled={obSaving}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    cursor: obSaving ? 'not-allowed' : 'pointer',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    opacity: obSaving ? 0.7 : 1,
+                  }}
+                >
+                  {obSaving ? 'Saving...' : 'Save Opening Balance'}
+                </button>
+              </div>
             </div>
           </div>
         )}

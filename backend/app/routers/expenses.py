@@ -459,6 +459,7 @@ def get_advance_ledger(
             }
             
         target_emp = db.query(HREmployee).filter(HREmployee.id == target_emp_id).first()
+        opening_balance = float(getattr(target_emp, 'advance_opening_balance', 0.0) or 0.0) if target_emp else 0.0
         
         txs = db.query(ExpenseAdvanceLedger).filter(
             ExpenseAdvanceLedger.employee_id == target_emp_id
@@ -478,12 +479,11 @@ def get_advance_ledger(
         
         last_tx = txs[0] if txs else None
         balance = float(last_tx.running_balance) if (last_tx and last_tx.running_balance is not None) else 0.0
-        opening_balance = 0.0
         
         return {
             "employee_id": target_emp_id,
             "employee_name": target_emp.name if target_emp else "",
-            "opening_balance": opening_balance,
+            "opening_balance": float(opening_balance),
             "unsettled_amount": float(unsettled_amount),
             "reimbursement_pending": float(reimbursement_pending),
             "balance": float(balance),
@@ -504,15 +504,17 @@ def get_advance_ledger(
 
 @router.get("/ledger/summary")
 def get_all_employee_ledgers_summary(
+    show_all: Optional[bool] = False,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List summary for all active employees (Admin/Finance view)."""
+    """List summary for active employees, excluding nil/zero balance employees unless show_all is true."""
     try:
         employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.name.asc()).all()
         result = []
         for emp in employees:
             try:
+                opening_balance = float(getattr(emp, 'advance_opening_balance', 0.0) or 0.0)
                 advances = db.query(ExpenseAdvanceRequest).filter(
                     ExpenseAdvanceRequest.employee_id == emp.id,
                     ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
@@ -530,6 +532,12 @@ def get_all_employee_ledgers_summary(
                 ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
                 bal = float(last_tx.running_balance) if (last_tx and last_tx.running_balance is not None) else 0.0
                 
+                net = opening_balance + unsettled - pending_reimb
+                
+                # Exclude Nil / 0.00 balance employees if show_all is False
+                if not show_all and opening_balance == 0 and unsettled == 0 and pending_reimb == 0 and net == 0 and bal == 0:
+                    continue
+
                 dept_str = ""
                 if hasattr(emp, 'department') and emp.department:
                     dept = emp.department
@@ -542,10 +550,10 @@ def get_all_employee_ledgers_summary(
                     "employee_name": str(emp.name or ""),
                     "employee_code": str(getattr(emp, 'employee_code', '') or ""),
                     "department": dept_str,
-                    "opening_balance": 0.0,
+                    "opening_balance": opening_balance,
                     "unsettled_amount": float(unsettled),
                     "reimbursement_pending": float(pending_reimb),
-                    "net_balance": float(unsettled - pending_reimb),
+                    "net_balance": float(net),
                     "ledger_balance": float(bal),
                 })
             except Exception as emp_err:
@@ -555,6 +563,54 @@ def get_all_employee_ledgers_summary(
     except Exception as e:
         logger.error(f"Failed to fetch employee ledger summary: {e}", exc_info=True)
         return []
+
+
+class OpeningBalancePayload(BaseModel):
+    employee_id: int
+    opening_balance: float
+    remarks: Optional[str] = ""
+
+@router.post("/ledger/opening-balance")
+def update_employee_opening_balance(
+    data: OpeningBalancePayload,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Set/update manual opening balance for an employee."""
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Admin / Accountant access required")
+        
+    emp = db.query(HREmployee).filter(HREmployee.id == data.employee_id).first()
+    if not emp:
+        raise HTTPException(404, "Employee not found")
+        
+    emp.advance_opening_balance = data.opening_balance
+    
+    # Check if an "Opening Balance" entry already exists in ExpenseAdvanceLedger
+    existing_ob = db.query(ExpenseAdvanceLedger).filter(
+        ExpenseAdvanceLedger.employee_id == emp.id,
+        ExpenseAdvanceLedger.description.ilike("%Opening Balance%")
+    ).first()
+    
+    if existing_ob:
+        existing_ob.amount = data.opening_balance
+        existing_ob.running_balance = data.opening_balance
+        if data.remarks:
+            existing_ob.description = f"Opening Balance: ₹{data.opening_balance:,.2f} ({data.remarks})"
+    else:
+        desc = f"Opening Balance Set: ₹{data.opening_balance:,.2f}"
+        if data.remarks:
+            desc += f" ({data.remarks})"
+        _log_ledger_transaction(
+            db=db,
+            employee_id=emp.id,
+            amount=data.opening_balance,
+            tx_type="credit",
+            desc=desc
+        )
+        
+    db.commit()
+    return {"message": f"Opening balance set to ₹{data.opening_balance:,.2f} for {emp.name}", "employee_id": emp.id}
 
 
 @router.get("/advances/reports")
