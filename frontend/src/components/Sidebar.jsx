@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog, Receipt, Menu } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog, Receipt, Menu, BookOpen } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import TwoFactorSetup from './TwoFactorSetup';
 
@@ -136,6 +136,7 @@ const expenseSubItems = [
   {to:'/expenses/dashboard', label:'Dashboard',      icon:LayoutDashboard},
   {to:'/expenses/my',        label:'My Expenses',    icon:Receipt},
   {to:'/expenses/approvals', label:'Approvals',      icon:CheckSquare},
+  {to:'/expenses/ledger',    label:'Ledger',         icon:BookOpen},
   {to:'/expenses/configurations', label:'Configurations', icon:SlidersHorizontal, adminOnly: true},
 ];
 

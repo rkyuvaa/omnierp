@@ -788,6 +788,116 @@ def _log_ledger_transaction(db: Session, employee_id: int, amount: float, tx_typ
     return new_balance
 
 
+def send_advance_request_email(db: Session, advance: ExpenseAdvanceRequest):
+    """Send formatted Cash Advance Request notification email to Approver matching Excel format."""
+    try:
+        emp = advance.employee
+        if not emp:
+            return
+        
+        # Determine recipient manager or HR admin email
+        approver = db.query(HREmployee).filter(HREmployee.id == advance.approver_id).first() if advance.approver_id else None
+        recipient_user = (approver.user if (approver and approver.user) else None)
+        
+        if not recipient_user or not recipient_user.email:
+            # Fallback to L1/L2 approver or HR Admin
+            admin_user = db.query(User).filter(User.is_superadmin == True, User.email != None).first()
+            recipient_user = admin_user
+            
+        if not recipient_user or not recipient_user.email:
+            return
+            
+        designation = getattr(emp, 'designation', 'Employee') or 'Employee'
+        req_date = advance.created_at.strftime('%d-%m-%Y') if advance.created_at else date.today().strftime('%d-%m-%Y')
+        required_date_str = advance.required_date.strftime('%d-%m-%Y') if advance.required_date else req_date
+        
+        lines = advance.lines or []
+        line_rows = ""
+        if lines:
+            for idx, l in enumerate(lines, 1):
+                desc_text = f"<b>{l.expense_type or 'Item'}</b> - {l.description or ''}" if l.expense_type else (l.description or 'Advance Line Item')
+                line_rows += f"""
+                <tr style="border-bottom: 1px solid #e2e8f0;">
+                    <td style="padding: 10px; text-align: center; font-weight: 700; color: #64748b;">{idx}</td>
+                    <td style="padding: 10px; color: #1e293b;">{desc_text}</td>
+                    <td style="padding: 10px; text-align: right; font-weight: 700; color: #0f172a;">₹ {l.amount:,.2f}</td>
+                </tr>
+                """
+        else:
+            line_rows = f"""
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+                <td style="padding: 10px; text-align: center; font-weight: 700; color: #64748b;">1</td>
+                <td style="padding: 10px; color: #1e293b;">{advance.purpose or 'Cash Advance Request'}</td>
+                <td style="padding: 10px; text-align: right; font-weight: 700; color: #0f172a;">₹ {advance.amount:,.2f}</td>
+            </tr>
+            """
+            
+        subject = f"📌 Cash Advance Request Notice - {emp.name} ({advance.reference or 'New'})"
+        
+        body_html = f"""
+        <div style="font-family: 'Segoe UI', Helvetica, Arial, sans-serif; max-width: 680px; margin: 0 auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 16px rgba(0,0,0,0.06);">
+          <div style="background: #15803d; padding: 22px 28px; color: #ffffff;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 800; letter-spacing: -0.3px;">📌 Cash Advance Request Notice</h2>
+            <p style="margin: 4px 0 0 0; font-size: 13px; opacity: 0.92;">Action Required: Employee Cash Advance Approval Request</p>
+          </div>
+          
+          <div style="padding: 28px; color: #1e293b;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 13.5px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px;">
+              <tr>
+                <td style="padding: 8px 12px; font-weight: 700; color: #475569; width: 160px;">Name of the Employee:</td>
+                <td style="padding: 8px 12px; font-weight: 700; color: #0f172a;">{emp.name}</td>
+                <td style="padding: 8px 12px; font-weight: 700; color: #475569; width: 140px;">Requested Date:</td>
+                <td style="padding: 8px 12px; font-weight: 600; color: #0f172a;">{req_date}</td>
+              </tr>
+              <tr>
+                <td style="padding: 8px 12px; font-weight: 700; color: #475569;">Designation:</td>
+                <td style="padding: 8px 12px; color: #0f172a;">{designation}</td>
+                <td style="padding: 8px 12px; font-weight: 700; color: #475569;">Required Date:</td>
+                <td style="padding: 8px 12px; font-weight: 600; color: #0f172a;">{required_date_str}</td>
+              </tr>
+            </table>
+
+            <h3 style="font-size: 13px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: 0.5px; margin: 20px 0 10px 0;">
+              Itemized Advance Breakdown
+            </h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12.5px; border: 1px solid #cbd5e1; border-radius: 6px; overflow: hidden;">
+              <thead>
+                <tr style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1; text-transform: uppercase; color: #475569; font-size: 11px; letter-spacing: 0.5px;">
+                  <th style="padding: 10px; text-align: center; width: 45px;">S.no</th>
+                  <th style="padding: 10px; text-align: left;">Description</th>
+                  <th style="padding: 10px; text-align: right; width: 130px;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                {line_rows}
+              </tbody>
+              <tfoot>
+                <tr style="background: #dcfce7; font-weight: bold; font-size: 14px; border-top: 2px solid #22c55e;">
+                  <td colspan="2" style="padding: 12px 10px; text-align: right; color: #15803d; text-transform: uppercase; font-size: 12px;">Total Amount:</td>
+                  <td style="padding: 12px 10px; text-align: right; color: #15803d; font-size: 16px; font-weight: 800;">₹ {advance.amount:,.2f}</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; margin-bottom: 24px;">
+              <div style="font-weight: 700; font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;">Purpose:</div>
+              <div style="font-size: 13.5px; color: #0f172a; line-height: 1.5;">{advance.purpose or 'Cash Advance Request'}</div>
+            </div>
+
+            <div style="text-align: center; margin-top: 28px;">
+              <a href="https://app.konwertindiamotors.com/expenses/approvals" style="background: #15803d; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 10px rgba(21,128,61,0.25);">
+                Review & Approve Request
+              </a>
+            </div>
+          </div>
+        </div>
+        """
+        from app.utils.email_service import send_email
+        send_email(db, recipient_user.email, subject, body_html)
+    except Exception as e:
+        print(f"Failed to send advance email: {e}")
+
+
 # ── API endpoints ───────────────────────────────────────────────────────────
 
 @router.post("/advances")
@@ -839,14 +949,16 @@ def create_advance_request(
             db.add(s_line)
         db.commit()
     
-    if status_str == "submitted" and emp.manager_id:
-        manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
-        if manager and manager.user_id:
-            _notify_advance(db, manager.user_id,
-                            "New Advance Request Pending",
-                            f"{emp.name} submitted an advance request of \u20b9{data.amount:,.2f} for approval.",
-                            advance.id)
-            db.commit()
+    if status_str == "submitted":
+        send_advance_request_email(db, advance)
+        if emp.manager_id:
+            manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
+            if manager and manager.user_id:
+                _notify_advance(db, manager.user_id,
+                                "New Advance Request Pending",
+                                f"{emp.name} submitted an advance request of \u20b9{data.amount:,.2f} for approval.",
+                                advance.id)
+                db.commit()
             
     return _ser_advance(advance)
 
@@ -943,29 +1055,102 @@ def list_pending_advance_approvals(
 
 @router.get("/advances/ledger")
 def get_advance_ledger(
+    employee_id: Optional[int] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     from app.auth import get_current_employee_optional
+    is_admin = is_hr_admin(current_user, db)
     emp = get_current_employee_optional(current_user, db)
-    if not emp:
-        return {"balance": 0.0, "transactions": []}
+    
+    target_emp_id = employee_id if (is_admin and employee_id) else (emp.id if emp else None)
+    if not target_emp_id:
+        return {
+            "opening_balance": 0.0,
+            "unsettled_amount": 0.0,
+            "reimbursement_pending": 0.0,
+            "balance": 0.0,
+            "net_balance": 0.0,
+            "transactions": []
+        }
         
+    target_emp = db.query(HREmployee).filter(HREmployee.id == target_emp_id).first()
+    
     txs = db.query(ExpenseAdvanceLedger).filter(
-        ExpenseAdvanceLedger.employee_id == emp.id
-    ).order_by(ExpenseAdvanceLedger.created_at.desc()).all()
+        ExpenseAdvanceLedger.employee_id == target_emp_id
+    ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).all()
     
-    # Get current balance from last transaction
-    last_tx = db.query(ExpenseAdvanceLedger).filter(
-        ExpenseAdvanceLedger.employee_id == emp.id
-    ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
+    # Calculate unsettled advances (advances paid/disbursed or partially settled)
+    advances = db.query(ExpenseAdvanceRequest).filter(
+        ExpenseAdvanceRequest.employee_id == target_emp_id,
+        ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
+    ).all()
+    unsettled_amount = sum(a.amount or 0.0 for a in advances)
     
+    # Calculate reimbursement pending (approved expense claims pending payment)
+    claims = db.query(ExpenseClaim).filter(
+        ExpenseClaim.employee_id == target_emp_id,
+        ExpenseClaim.status == "approved"
+    ).all()
+    reimbursement_pending = sum(c.amount or 0.0 for c in claims)
+    
+    last_tx = txs[0] if txs else None
     balance = last_tx.running_balance if last_tx else 0.0
+    opening_balance = 0.0 # Standard default
     
     return {
+        "employee_id": target_emp_id,
+        "employee_name": target_emp.name if target_emp else "",
+        "opening_balance": opening_balance,
+        "unsettled_amount": unsettled_amount,
+        "reimbursement_pending": reimbursement_pending,
         "balance": balance,
+        "net_balance": opening_balance + unsettled_amount - reimbursement_pending,
         "transactions": [_ser_ledger(t) for t in txs]
     }
+
+
+@router.get("/ledger/summary")
+def get_all_employee_ledgers_summary(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """List summary for all active employees (Admin/Finance view)."""
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Admin view only")
+        
+    employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.name.asc()).all()
+    result = []
+    for emp in employees:
+        advances = db.query(ExpenseAdvanceRequest).filter(
+            ExpenseAdvanceRequest.employee_id == emp.id,
+            ExpenseAdvanceRequest.status.in_(["paid", "partially_settled", "approved"])
+        ).all()
+        unsettled = sum(a.amount or 0.0 for a in advances)
+        
+        claims = db.query(ExpenseClaim).filter(
+            ExpenseClaim.employee_id == emp.id,
+            ExpenseClaim.status == "approved"
+        ).all()
+        pending_reimb = sum(c.amount or 0.0 for c in claims)
+        
+        last_tx = db.query(ExpenseAdvanceLedger).filter(
+            ExpenseAdvanceLedger.employee_id == emp.id
+        ).order_by(ExpenseAdvanceLedger.created_at.desc(), ExpenseAdvanceLedger.id.desc()).first()
+        bal = last_tx.running_balance if last_tx else 0.0
+        
+        result.append({
+            "employee_id": emp.id,
+            "employee_name": emp.name,
+            "employee_code": emp.employee_code,
+            "department": emp.department,
+            "opening_balance": 0.0,
+            "unsettled_amount": unsettled,
+            "reimbursement_pending": pending_reimb,
+            "net_balance": unsettled - pending_reimb,
+            "ledger_balance": bal,
+        })
+    return result
 
 
 @router.get("/advances/reports")
@@ -1084,24 +1269,56 @@ def approve_advance_request(
         advance.approved_at = datetime.utcnow()
         advance.approver_remarks = data.remarks
         
-        # Credit user's ledger!
-        _log_ledger_transaction(
-            db=db,
-            employee_id=advance.employee_id,
-            amount=advance.amount,
-            tx_type="credit",
-            desc=f"Advance approved: {advance.reference}",
-            advance_id=advance.id
-        )
-        
         if advance.employee and advance.employee.user_id:
             _notify_advance(db, advance.employee.user_id,
-                            "Advance Request Approved \u2713",
-                            f"Your advance request {advance.reference} of \u20b9{advance.amount:,.2f} has been approved and credited.",
+                            "Advance Request Approved (Pending Disburse) ✓",
+                            f"Your advance request {advance.reference} of ₹{advance.amount:,.2f} was approved by manager. Pending Accountant payout.",
                             advance.id)
             
     db.commit()
-    return {"message": "Approved", "id": advance.id}
+    return {"message": "Approved by Manager (Pending Accountant Payout)", "id": advance.id}
+
+
+@router.post("/advances/{adv_id}/payout")
+def payout_advance_request(
+    adv_id: int,
+    data: AdvanceAction,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Stage 3: Accountant payout / disburse action that credits amount to employee ledger."""
+    advance = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.id == adv_id).first()
+    if not advance:
+        raise HTTPException(404, "Advance request not found")
+        
+    if advance.status != "approved":
+        raise HTTPException(400, f"Cannot pay out advance in status {advance.status}. Must be approved first.")
+        
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Accountant / Admin access required for payout")
+        
+    advance.status = "paid"
+    advance.paid_at = datetime.utcnow()
+    advance.payout_remarks = data.remarks
+    
+    # ── Stage 3 Accountant Action: Credit Employee Ledger ───────────────────
+    _log_ledger_transaction(
+        db=db,
+        employee_id=advance.employee_id,
+        amount=advance.amount,
+        tx_type="credit",
+        desc=f"Advance Paid Out: {advance.reference}",
+        advance_id=advance.id
+    )
+    
+    if advance.employee and advance.employee.user_id:
+        _notify_advance(db, advance.employee.user_id,
+                        "Advance Amount Disbursed 💵",
+                        f"Your advance amount of ₹{advance.amount:,.2f} ({advance.reference}) has been disbursed by Accounts and credited to your ledger.",
+                        advance.id)
+                        
+    db.commit()
+    return {"message": "Advance disbursed and credited to employee ledger successfully", "id": advance.id}
 
 
 @router.post("/advances/{adv_id}/reject")
