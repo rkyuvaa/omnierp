@@ -1,21 +1,28 @@
-import { Component, lazy, Suspense } from 'react';
+import { Component, lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import { Toaster } from 'react-hot-toast';
 
-// Safe Lazy Loader to automatically recover from dynamic import chunk loading failures after new deployments
+// Safe Lazy Loader with preloader capabilities to prevent white flashes and handle post-deploy chunks
 function safeLazy(importFn) {
-  return lazy(() =>
-    importFn().catch((err) => {
-      console.warn("Chunk loading failed, reloading app for latest build...", err);
-      const isReloaded = sessionStorage.getItem("chunk_reload");
-      if (!isReloaded) {
-        sessionStorage.setItem("chunk_reload", "true");
-        window.location.reload();
-      }
-      throw err;
-    })
-  );
+  let promise = null;
+  const load = () => {
+    if (!promise) {
+      promise = importFn().catch((err) => {
+        console.warn("Chunk loading failed, reloading app for latest build...", err);
+        const isReloaded = sessionStorage.getItem("chunk_reload");
+        if (!isReloaded) {
+          sessionStorage.setItem("chunk_reload", "true");
+          window.location.reload();
+        }
+        throw err;
+      });
+    }
+    return promise;
+  };
+  const Comp = lazy(load);
+  Comp.preload = load;
+  return Comp;
 }
 
 class ErrorBoundary extends Component {
@@ -56,6 +63,17 @@ class ErrorBoundary extends Component {
   }
 }
 
+// Fallback loader that maintains theme background & sleek spinner (prevents white screen flash)
+const ModuleFallback = () => (
+  <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
+      <div style={{ width: 34, height: 34, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Loading Module...</span>
+    </div>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+);
+
 // Lazy Pages wrapped in safeLazy
 const Login = safeLazy(() => import('./pages/Login'));
 const TwoFactorChallenge = safeLazy(() => import('./pages/TwoFactorChallenge'));
@@ -87,7 +105,6 @@ const Requests = safeLazy(() => import('./pages/hr/Requests'));
 const Approvals = safeLazy(() => import('./pages/hr/Approvals'));
 const Payroll = safeLazy(() => import('./pages/hr/Payroll'));
 const HRConfigurations = safeLazy(() => import('./pages/hr/HRConfigurations'));
-const BankDashboard = safeLazy(() => import('./pages/hr/BankDashboard'));
 const TaskList = safeLazy(() => import('./pages/tasks/TaskList'));
 const FinanceDashboard = safeLazy(() => import('./pages/finance/FinanceDashboard'));
 const FinanceTransactions = safeLazy(() => import('./pages/finance/FinanceTransactions'));
@@ -105,17 +122,30 @@ const ExpenseSettlement = safeLazy(() => import('./pages/expenses/ExpenseSettlem
 // Integrated PrivateRoute
 const PrivateRoute = ({ children }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div style={{padding:20}}>Loading...</div>;
+  if (loading) return <ModuleFallback />;
   return user ? children : <Navigate to="/login" replace />;
 };
 
 export default function App() {
+  // Pre-fetch key page chunks in the background during idle time to make menu navigation instant
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      [
+        Dashboard, Leads, ServiceList, InstallationList,
+        EmployeeMaster, Attendance, Requests, Approvals,
+        ExpenseDashboard, MyExpenses, ExpenseApprovals,
+        FinanceDashboard, TaskList
+      ].forEach(comp => comp?.preload?.());
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <ErrorBoundary>
       <BrowserRouter>
         <AuthProvider>
           <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
-          <Suspense fallback={<div style={{ padding: 20, color: 'var(--text)', fontFamily: 'sans-serif' }}>Loading...</div>}>
+          <Suspense fallback={<ModuleFallback />}>
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/login/2fa" element={<TwoFactorChallenge />} />
