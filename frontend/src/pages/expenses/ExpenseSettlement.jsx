@@ -666,25 +666,6 @@ export default function ExpenseSettlement() {
                         )}
                       </div>
                     </td>
-                              color: 'var(--text3)',
-                              cursor: 'pointer',
-                              fontSize: 11,
-                              transition: 'all 0.15s',
-                            }}
-                            onMouseEnter={e => {
-                              e.currentTarget.style.borderColor = 'var(--accent)';
-                              e.currentTarget.style.color = 'var(--text2)';
-                            }}
-                            onMouseLeave={e => {
-                              e.currentTarget.style.borderColor = 'var(--border)';
-                              e.currentTarget.style.color = 'var(--text3)';
-                            }}
-                          >
-                            <Upload size={11} /> Add Bill
-                          </button>
-                        )}
-                      </div>
-                    </td>
 
                     {/* A/c verification */}
                     <td style={{ padding: '8px' }}>
