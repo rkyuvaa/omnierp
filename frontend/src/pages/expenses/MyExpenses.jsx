@@ -207,9 +207,9 @@ export default function MyExpenses() {
   }
 
   useEffect(() => {
+    api.get('/expenses/categories').then(r => setCategories(r.data)).catch(() => {});
     if (activeTab === 'reimbursements') {
       fetchClaims();
-      api.get('/expenses/categories').then(r => setCategories(r.data)).catch(() => {});
     } else {
       fetchAdvances();
       fetchLedger();
