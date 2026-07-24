@@ -268,7 +268,8 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
                         opacity: isPending ? 0.7 : 1,
                         borderStyle: isPending ? 'dashed' : 'solid',
                         borderWidth: isPending ? '1px 1px 1px 2px' : '0 0 0 2px',
-                        borderColor: isPending ? `${c.dot}70` : 'transparent'
+                        borderColor: isPending ? `${c.dot}70` : 'transparent',
+                        flexShrink: 0
                       }}
                     >
                       {l.employee_name}
