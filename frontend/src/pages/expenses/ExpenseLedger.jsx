@@ -1,0 +1,1019 @@
+import { useState, useEffect } from 'react';
+import Layout from '../../components/Layout';
+import api from '../../utils/api';
+import toast from 'react-hot-toast';
+import { useAuth } from '../../hooks/useAuth';
+import {
+  BookOpen,
+  Wallet,
+  Clock,
+  CheckCircle,
+  TrendingUp,
+  User,
+  DollarSign,
+  Send,
+  FileText,
+  AlertCircle,
+  RefreshCw,
+  Edit3,
+  PlusCircle,
+  Trash,
+} from 'lucide-react';
+
+const INR = v =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(v ?? 0);
+
+export default function ExpenseLedger() {
+  const { user } = useAuth();
+  const hasExpensesPermission = user?.module_permissions?.expenses?.can_edit || user?.module_permissions?.expenses?.can_delete;
+  const isAdmin = user?.is_superadmin || user?.role === 'admin' || user?.role === 'hr_admin' || user?.role === 'accountant' || !!hasExpensesPermission;
+  const [settings, setSettings] = useState({ accountant_id: null });
+  const [savingSettings, setSavingSettings] = useState(false);
+  const isAuthorizedAccountant = user?.is_superadmin || user?.is_accountant;
+
+  const [ledgerData, setLedgerData] = useState({
+    opening_balance: 0,
+    unsettled_amount: 0,
+    reimbursement_pending: 0,
+    balance: 0,
+    net_balance: 0,
+    transactions: [],
+  });
+  const [employees, setEmployees] = useState([]);
+  const [selectedEmpId, setSelectedEmpId] = useState('');
+  const [allSummary, setAllSummary] = useState([]);
+  const [activeView, setActiveView] = useState('statement'); // 'statement' | 'summary'
+  const [loading, setLoading] = useState(true);
+
+  // Accountant Payout Modal
+  const [approvedAdvances, setApprovedAdvances] = useState([]);
+  const [showPayoutModal, setShowPayoutModal] = useState(false);
+  const [payoutAdv, setPayoutAdv] = useState(null);
+  const [payoutRemarks, setPayoutRemarks] = useState('');
+  const [payoutSaving, setPayoutSaving] = useState(false);
+
+  // Opening Balance Modal State
+  const [showObModal, setShowObModal] = useState(false);
+  const [obEmpId, setObEmpId] = useState('');
+  const [obAmount, setObAmount] = useState('');
+  const [obRemarks, setObRemarks] = useState('');
+  const [obSaving, setObSaving] = useState(false);
+
+  useEffect(() => {
+    if (isAdmin) {
+      fetchEmployees();
+      fetchApprovedAdvances();
+      fetchSettings();
+      if (activeView === 'summary') {
+        fetchAllSummary();
+      }
+    }
+    fetchLedger(selectedEmpId);
+  }, [selectedEmpId, activeView]);
+
+  async function fetchEmployees() {
+    try {
+      const r = await api.get('/hr/employees/');
+      setEmployees(r.data.filter(e => e.is_active));
+    } catch {
+      // Fail silently
+    }
+  }
+
+  async function fetchSettings() {
+    try {
+      const r = await api.get('/expenses/settings');
+      setSettings(r.data);
+    } catch {
+      // ignore
+    }
+  }
+
+  async function saveSettings() {
+    setSavingSettings(true);
+    try {
+      await api.post('/expenses/settings', settings);
+      toast.success('Configuration saved successfully');
+    } catch {
+      toast.error('Failed to save configuration');
+    } finally {
+      setSavingSettings(false);
+    }
+  }
+
+  async function fetchApprovedAdvances() {
+    try {
+      const r = await api.get('/expenses/advances/reports?status=approved');
+      setApprovedAdvances(r.data);
+    } catch {
+      // Fail silently
+    }
+  }
+
+  async function fetchAllSummary() {
+    try {
+      const r = await api.get('/expenses/ledger/summary');
+      setAllSummary(r.data);
+    } catch {
+      toast.error('Failed to load employee ledger summaries');
+    }
+  }
+
+  async function fetchLedger(empId = '') {
+    setLoading(true);
+    try {
+      const url = empId ? `/expenses/advances/ledger?employee_id=${empId}` : '/expenses/advances/ledger';
+      const r = await api.get(url);
+      setLedgerData(r.data);
+    } catch {
+      toast.error('Failed to load ledger data');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleDeleteLedgerTx(txId) {
+    if (!window.confirm('Are you sure you want to delete this ledger transaction? This will recalculate the employee\'s running balance.')) return;
+    try {
+      await api.delete(`/expenses/ledger/${txId}`);
+      toast.success('Ledger transaction deleted successfully');
+      fetchLedger(selectedEmpId);
+    } catch {
+      toast.error('Failed to delete ledger transaction');
+    }
+  }
+
+  async function handlePayoutSubmit() {
+    if (!payoutAdv) return;
+    setPayoutSaving(true);
+    try {
+      await api.post(`/expenses/advances/${payoutAdv.id}/payout`, { remarks: payoutRemarks || 'Disbursed by Accounts' });
+      toast.success(`Advance ${payoutAdv.reference} disbursed and credited to employee ledger!`);
+      setShowPayoutModal(false);
+      setPayoutAdv(null);
+      setPayoutRemarks('');
+      fetchApprovedAdvances();
+      fetchLedger(selectedEmpId);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Payout failed');
+    } finally {
+      setPayoutSaving(false);
+    }
+  }
+
+  async function handleObSubmit() {
+    if (!obEmpId || obAmount === '') {
+      toast.error('Please select an employee and enter an opening balance');
+      return;
+    }
+    setObSaving(true);
+    try {
+      await api.post('/expenses/ledger/opening-balance', {
+        employee_id: parseInt(obEmpId, 10),
+        opening_balance: parseFloat(obAmount),
+        remarks: obRemarks,
+      });
+      toast.success('Opening balance updated successfully!');
+      setShowObModal(false);
+      setObEmpId('');
+      setObAmount('');
+      setObRemarks('');
+      if (activeView === 'summary') fetchAllSummary();
+      fetchLedger(selectedEmpId);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to update opening balance');
+    } finally {
+      setObSaving(false);
+    }
+  }
+
+  const openObModalForEmp = (empId, currentOb = 0) => {
+    setObEmpId(empId.toString());
+    setObAmount(currentOb.toString());
+    setObRemarks('');
+    setShowObModal(true);
+  };
+
+  return (
+    <Layout title="Employee Expense & Advance Ledger">
+      <div style={{ padding: '0 24px 24px' }}>
+        {/* Top Controls Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+          <div>
+            <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BookOpen size={22} style={{ color: 'var(--accent)' }} />
+              Employee Expense & Advance Ledger
+            </h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text3)' }}>
+              Stage 3 Accountant Settlement & Live Running Balance Statement
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {isAdmin && (
+              <div style={{ display: 'flex', gap: 6, background: 'var(--bg3)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
+                <button
+                  onClick={() => setActiveView('statement')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: activeView === 'statement' ? 'var(--bg)' : 'transparent',
+                    color: activeView === 'statement' ? 'var(--text)' : 'var(--text3)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  My / Employee Statement
+                </button>
+                <button
+                  onClick={() => setActiveView('summary')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: activeView === 'summary' ? 'var(--bg)' : 'transparent',
+                    color: activeView === 'summary' ? 'var(--text)' : 'var(--text3)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Active Employees Summary
+                </button>
+                <button
+                  onClick={() => setActiveView('settings')}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: 6,
+                    border: 'none',
+                    background: activeView === 'settings' ? 'var(--bg)' : 'transparent',
+                    color: activeView === 'settings' ? 'var(--text)' : 'var(--text3)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Settings
+                </button>
+              </div>
+            )}
+
+            {isAdmin && activeView === 'statement' && (
+              <select
+                value={selectedEmpId}
+                onChange={e => setSelectedEmpId(e.target.value)}
+                style={{
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  border: '1px solid var(--border)',
+                  background: 'var(--bg3)',
+                  color: 'var(--text)',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  outline: 'none',
+                }}
+              >
+                <option value="">My Ledger Statement</option>
+                {employees.map(e => (
+                  <option key={e.id} value={e.id}>
+                    {e.name} ({e.employee_code})
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {isAdmin && (
+              <button
+                onClick={() => openObModalForEmp(selectedEmpId || (ledgerData.employee_id || ''), ledgerData.opening_balance || 0)}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 8,
+                  border: '1px solid #16a34a',
+                  background: '#f0fdf4',
+                  color: '#15803d',
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  fontWeight: 700,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Edit3 size={15} /> Set Opening Balance
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                if (activeView === 'summary') fetchAllSummary();
+                fetchLedger(selectedEmpId);
+              }}
+              style={{
+                padding: '8px 12px',
+                borderRadius: 8,
+                border: '1px solid var(--border)',
+                background: 'var(--bg2)',
+                color: 'var(--text2)',
+                cursor: 'pointer',
+                fontSize: 13,
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 6,
+              }}
+            >
+              <RefreshCw size={14} /> Refresh
+            </button>
+          </div>
+        </div>
+
+        {/* ── KPI METRIC CARDS ───────────────────────────────────────────────── */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+          {/* Card 1: Opening Balance */}
+          <div
+            style={{
+              background: 'var(--bg2)',
+              border: '1px solid var(--border)',
+              borderRadius: 14,
+              padding: 20,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+              position: 'relative',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span>Opening Balance</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                {isAdmin && (
+                  <Edit3
+                    size={14}
+                    style={{ color: '#6366f1', cursor: 'pointer' }}
+                    title="Edit Opening Balance"
+                    onClick={() => openObModalForEmp(selectedEmpId || (ledgerData.employee_id || ''), ledgerData.opening_balance || 0)}
+                  />
+                )}
+                <Wallet size={16} style={{ color: '#6366f1' }} />
+              </div>
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)' }}>
+              {INR(ledgerData.opening_balance)}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+              Initial balance baseline
+            </div>
+          </div>
+
+          {/* Card 2: Unsettled Advance Amount */}
+          <div
+            style={{
+              background: 'var(--bg2)',
+              border: '1px solid var(--border)',
+              borderRadius: 14,
+              padding: 20,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Unsettled Amount <TrendingUp size={16} style={{ color: '#f59e0b' }} />
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#f59e0b' }}>
+              {INR(ledgerData.unsettled_amount)}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+              Active advances given (unsettled)
+            </div>
+          </div>
+
+          {/* Card 3: Reimbursement Pending */}
+          <div
+            style={{
+              background: 'var(--bg2)',
+              border: '1px solid var(--border)',
+              borderRadius: 14,
+              padding: 20,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Reimbursement Pending <Clock size={16} style={{ color: '#3b82f6' }} />
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#3b82f6' }}>
+              {INR(ledgerData.reimbursement_pending)}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+              Approved claims awaiting payout
+            </div>
+          </div>
+
+          {/* Card 4: Net Balance */}
+          <div
+            style={{
+              background: 'var(--bg2)',
+              border: '1px solid #10b98140',
+              borderRadius: 14,
+              padding: 20,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+            }}
+          >
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Net Balance <DollarSign size={16} style={{ color: '#10b981' }} />
+            </div>
+            <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>
+              {INR(ledgerData.net_balance)}
+            </div>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+              Running balance statement
+            </div>
+          </div>
+        </div>
+
+        {/* ── STAGE 3: ACCOUNTANT DISBURSEMENT ACTION BANNER (ADMIN/ACCOUNTANT VIEW) ── */}
+        {isAuthorizedAccountant && approvedAdvances.length > 0 && (
+          <div
+            style={{
+              background: '#f0fdf4',
+              border: '1px solid #22c55e60',
+              borderRadius: 12,
+              padding: '16px 20px',
+              marginBottom: 24,
+            }}
+          >
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#15803d', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <CheckCircle size={18} />
+                Stage 3 Accountant Action Required ({approvedAdvances.length} Manager-Approved Advances Pending Disburse)
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {approvedAdvances.map(adv => (
+                <div
+                  key={adv.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    background: '#ffffff',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    border: '1px solid #cbd5e1',
+                  }}
+                >
+                  <div>
+                    <span style={{ fontWeight: 700, fontSize: 13, color: '#0f172a' }}>{adv.employee_name}</span>
+                    <span style={{ fontSize: 12, color: '#64748b', marginLeft: 10 }}>Ref: {adv.reference}</span>
+                    <span style={{ fontSize: 12, color: '#64748b', marginLeft: 10 }}>Purpose: {adv.purpose}</span>
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                    <span style={{ fontWeight: 800, fontSize: 14, color: '#15803d' }}>₹ {adv.amount?.toLocaleString('en-IN')}</span>
+                    <button
+                      onClick={() => {
+                        setPayoutAdv(adv);
+                        setPayoutRemarks('');
+                        setShowPayoutModal(true);
+                      }}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: 6,
+                        border: 'none',
+                        background: '#15803d',
+                        color: '#ffffff',
+                        fontWeight: 700,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Send size={13} /> Disburse & Credit Ledger
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── MAIN LEDGER TABLE VIEW ────────────────────────────────────────── */}
+        {activeView === 'statement' && (
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <h3 style={{ margin: 0, fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
+                Transaction History Statement {ledgerData.employee_name && `— ${ledgerData.employee_name}`}
+              </h3>
+              <span style={{ fontSize: 12, color: 'var(--text3)' }}>
+                Showing {ledgerData.transactions?.length || 0} entries
+              </span>
+            </div>
+
+            {loading ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
+                Loading statement...
+              </div>
+            ) : ledgerData.transactions?.length === 0 ? (
+              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
+                No ledger transactions found for this employee.
+              </div>
+            ) : (
+              <div style={{ overflowX: 'auto' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 11, color: 'var(--text3)', letterSpacing: '0.4px' }}>
+                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Type</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Description</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Debit (Given)</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Credit (Settled)</th>
+                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Running Balance</th>
+                      {isAdmin && <th style={{ padding: '12px 16px', textAlign: 'center' }}>Actions</th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ledgerData.transactions.map((tx, idx) => (
+                      <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '12px 16px', color: 'var(--text2)', fontWeight: 600 }}>
+                          {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                        </td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span
+                            style={{
+                              padding: '3px 8px',
+                              borderRadius: 6,
+                              fontSize: 11,
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              background: tx.transaction_type === 'credit' ? '#dcfce7' : '#fee2e2',
+                              color: tx.transaction_type === 'credit' ? '#15803d' : '#b91c1c',
+                            }}
+                          >
+                            {tx.transaction_type}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', color: 'var(--text)' }}>
+                          {tx.description}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: tx.transaction_type === 'debit' ? '#ef4444' : 'var(--text3)' }}>
+                          {tx.transaction_type === 'debit' ? INR(tx.amount) : '-'}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: tx.transaction_type === 'credit' ? '#10b981' : 'var(--text3)' }}>
+                          {tx.transaction_type === 'credit' ? INR(tx.amount) : '-'}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: 'var(--text)' }}>
+                          {INR(tx.running_balance)}
+                        </td>
+                        {isAdmin && (
+                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                            <button
+                              onClick={() => handleDeleteLedgerTx(tx.id)}
+                              style={{
+                                background: 'transparent',
+                                border: 'none',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                padding: '4px',
+                                borderRadius: 4,
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = '#ef444410'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              title="Delete ledger transaction"
+                            >
+                              <Trash size={14} />
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {activeView === 'summary' && (
+          /* ── ALL EMPLOYEES SUMMARY VIEW (ONLY ACTIVE / PENDING / NON-ZERO BALANCES) ── */
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
+                  Active Employees Ledger Summary
+                </h3>
+                <span style={{ fontSize: 12, color: 'var(--text3)' }}>
+                  Only showing employees with active advances, pending reimbursements, or opening balances (Nil/0.00 balance employees excluded).
+                </span>
+              </div>
+              <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>
+                {allSummary.length} Active Records
+              </span>
+            </div>
+
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                <thead>
+                  <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 11, color: 'var(--text3)', letterSpacing: '0.4px' }}>
+                    <th style={{ padding: '12px 16px', textAlign: 'left' }}>Employee Name</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Opening Bal</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Unsettled Adv</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Pending Reimb</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>Pending Review</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Net Balance</th>
+                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allSummary.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>
+                        No active employees with pending advances, reimbursements, or opening balances.
+                      </td>
+                    </tr>
+                  ) : (
+                    allSummary.map(emp => (
+                      <tr key={emp.employee_id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)' }}>
+                          {emp.employee_name}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text2)' }}>
+                          {INR(emp.opening_balance)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#f59e0b' }}>
+                          {INR(emp.unsettled_amount)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>
+                          {INR(emp.reimbursement_pending)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          {emp.pending_review ? (
+                            <span
+                              style={{
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                padding: '3px 10px',
+                                borderRadius: 12,
+                                fontSize: 11,
+                                fontWeight: 700,
+                                background: '#fef3c720',
+                                color: '#f59e0b',
+                                border: '1px solid #f59e0b50',
+                              }}
+                            >
+                              <Clock size={11} /> Yes
+                            </span>
+                          ) : (
+                            <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>
+                          )}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: emp.net_balance > 0 ? '#10b981' : 'var(--text)' }}>
+                          {INR(emp.net_balance)}
+                        </td>
+                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
+                            <button
+                              onClick={() => {
+                                setSelectedEmpId(emp.employee_id.toString());
+                                setActiveView('statement');
+                              }}
+                              style={{
+                                padding: '4px 10px',
+                                borderRadius: 6,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg3)',
+                                color: 'var(--text2)',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                              }}
+                            >
+                              Statement
+                            </button>
+                            <button
+                              onClick={() => openObModalForEmp(emp.employee_id, emp.opening_balance)}
+                              style={{
+                                padding: '4px 8px',
+                                borderRadius: 6,
+                                border: '1px solid #22c55e',
+                                background: '#f0fdf4',
+                                color: '#15803d',
+                                fontSize: 12,
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                              }}
+                              title="Edit Opening Balance"
+                            >
+                              <Edit3 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeView === 'settings' && (
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 24, maxWidth: 600 }}>
+            <h3 style={{ margin: '0 0 20px', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
+              Expenses Flow Configuration
+            </h3>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>
+                  Configured Accountant / Distributor
+                </label>
+                <select
+                  value={settings.accountant_id || ''}
+                  onChange={e => setSettings({ ...settings, accountant_id: e.target.value ? parseInt(e.target.value) : null })}
+                  style={{
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                  }}
+                >
+                  <option value="">— Select Accountant —</option>
+                  {employees.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.name} ({e.employee_code || e.employee_id})
+                    </option>
+                  ))}
+                </select>
+                <span style={{ fontSize: 11.5, color: 'var(--text3)' }}>
+                  This employee will be authorized to disburse payments (Stage 3 Payout) and will see pending payouts on their ledger screen.
+                </span>
+              </div>
+              
+              <button
+                onClick={saveSettings}
+                disabled={savingSettings}
+                style={{
+                  alignSelf: 'flex-start',
+                  padding: '10px 20px',
+                  borderRadius: 8,
+                  background: 'var(--accent)',
+                  color: '#fff',
+                  border: 'none',
+                  fontWeight: 700,
+                  fontSize: 13,
+                  cursor: 'pointer',
+                  marginTop: 10,
+                }}
+              >
+                {savingSettings ? 'Saving...' : 'Save Configuration'}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── SET OPENING BALANCE MODAL ─────────────────────────────────────── */}
+        {showObModal && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.55)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16,
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--bg)',
+                borderRadius: 16,
+                padding: 24,
+                width: 450,
+                maxWidth: '100%',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 16px 0', fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Wallet size={20} style={{ color: 'var(--accent)' }} />
+                Set / Edit Employee Opening Balance
+              </h3>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+                  Select Employee *
+                </label>
+                <select
+                  value={obEmpId}
+                  onChange={e => setObEmpId(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                >
+                  <option value="">Select Employee</option>
+                  {employees.map(e => (
+                    <option key={e.id} value={e.id}>
+                      {e.name} ({e.employee_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+                  Opening Balance Amount (₹) *
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g. 5000"
+                  value={obAmount}
+                  onChange={e => setObAmount(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ marginBottom: 18 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+                  Remarks / Reference (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Previous year carry forward..."
+                  value={obRemarks}
+                  onChange={e => setObRemarks(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowObModal(false)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg2)',
+                    color: 'var(--text2)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleObSubmit}
+                  disabled={obSaving}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: 'var(--accent)',
+                    color: '#fff',
+                    cursor: obSaving ? 'not-allowed' : 'pointer',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    opacity: obSaving ? 0.7 : 1,
+                  }}
+                >
+                  {obSaving ? 'Saving...' : 'Save Opening Balance'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── ACCOUNTANT PAYOUT MODAL ────────────────────────────────────────── */}
+        {showPayoutModal && payoutAdv && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(0,0,0,0.55)',
+              zIndex: 1000,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16,
+            }}
+          >
+            <div
+              style={{
+                background: 'var(--bg)',
+                borderRadius: 16,
+                padding: 24,
+                width: 480,
+                maxWidth: '100%',
+                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+              }}
+            >
+              <h3 style={{ margin: '0 0 16px 0', fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>
+                Stage 3: Disburse Cash Advance & Log to Ledger
+              </h3>
+
+              <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: 14, marginBottom: 16, border: '1px solid var(--border)', fontSize: 13 }}>
+                <div style={{ marginBottom: 4 }}><strong>Employee:</strong> {payoutAdv.employee_name}</div>
+                <div style={{ marginBottom: 4 }}><strong>Reference #:</strong> {payoutAdv.reference}</div>
+                <div style={{ marginBottom: 4 }}><strong>Approved Amount:</strong> <span style={{ color: '#10b981', fontWeight: 800 }}>₹ {payoutAdv.amount?.toLocaleString('en-IN')}</span></div>
+                <div><strong>Purpose:</strong> {payoutAdv.purpose}</div>
+              </div>
+
+              <div style={{ marginBottom: 16 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+                  Payout Payment / Voucher Remarks
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Bank transfer / Cash voucher ref #..."
+                  value={payoutRemarks}
+                  onChange={e => setPayoutRemarks(e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '9px 12px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg3)',
+                    color: 'var(--text)',
+                    fontSize: 13,
+                    outline: 'none',
+                    boxSizing: 'border-box',
+                  }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+                <button
+                  onClick={() => setShowPayoutModal(false)}
+                  style={{
+                    padding: '9px 16px',
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg2)',
+                    color: 'var(--text2)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    fontSize: 13,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handlePayoutSubmit}
+                  disabled={payoutSaving}
+                  style={{
+                    padding: '9px 20px',
+                    borderRadius: 8,
+                    border: 'none',
+                    background: '#15803d',
+                    color: '#fff',
+                    cursor: payoutSaving ? 'not-allowed' : 'pointer',
+                    fontWeight: 700,
+                    fontSize: 13,
+                    opacity: payoutSaving ? 0.7 : 1,
+                  }}
+                >
+                  {payoutSaving ? 'Disbursing...' : 'Confirm Disburse'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Layout>
+  );
+}

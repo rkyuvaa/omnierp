@@ -1,0 +1,268 @@
+import { useState, useEffect, useRef } from 'react';
+import { Plus, FileText, Download, Pencil, Trash2, CheckCircle, Clock, X, RotateCcw } from 'lucide-react';
+import SignatureCanvas from 'react-signature-canvas';
+import { Modal, Badge, Loader } from '../../components/Shared';
+import api from '../../utils/api';
+import toast from 'react-hot-toast';
+
+export default function SubFormSection({ module, parentId, parentData, templateId = null, embedded = false }) {
+  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState([]);
+  const [submissions, setSubmissions] = useState([]);
+  const [activeForm, setActiveForm] = useState(null);
+
+  const load = async () => {
+    try {
+      const [tRes, sRes] = await Promise.all([
+        api.get(`/forms/studio/forms/${module}`),
+        api.get(`/forms/submissions/${module}/${parentId}`)
+      ]);
+      setTemplates(templateId ? tRes.data.filter(x => x.id === templateId) : tRes.data);
+      setSubmissions(templateId ? sRes.data.filter(x => x.form_definition_id === templateId) : sRes.data);
+    } catch { toast.error('Failed to load documents'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { load(); }, [module, parentId]);
+
+  const startNew = (template) => {
+    // Map initial data
+    const initialData = {};
+    (template.fields_config || []).forEach(f => {
+      const parentField = template.mapping_config[f.key];
+      if (parentField && parentData[parentField]) {
+        initialData[f.key] = parentData[parentField];
+      }
+    });
+
+    setActiveForm({
+      form_definition_id: template.id,
+      parent_id: parentId,
+      data: initialData,
+      status: 'draft',
+      definition: template
+    });
+  };
+
+  const editSubmission = async (sub) => {
+    try {
+      const res = await api.get(`/forms/submissions/${sub.id}`);
+      setActiveForm(res.data);
+    } catch { toast.error('Error fetching details'); }
+  };
+
+  const save = async (status) => {
+    try {
+      const payload = { ...activeForm, status };
+      if (activeForm.id) await api.put(`/forms/submissions/${activeForm.id}`, payload);
+      else await api.post('/forms/submissions', payload);
+      
+      toast.success(status === 'final' ? 'Document finalized' : 'Draft saved');
+      setActiveForm(null);
+      load();
+    } catch { toast.error('Error saving'); }
+  };
+
+  if (loading) return <Loader />;
+
+  if (embedded) {
+    return (
+      <div className="embedded-forms" style={{ gridColumn: '1/-1', marginTop: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexItems: 'center', marginBottom: 12 }}>
+          {templates.map(t => (
+            <button key={t.id} className="btn btn-primary btn-sm" onClick={() => startNew(t)}>
+              <Plus size={14}/> New {t.name}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {submissions.map(sub => (
+            <div key={sub.id} className="bg-white border rounded-lg p-2 flex justify-between items-center shadow-sm hover:border-accent transition-all cursor-default">
+              <div className="flex flex-col">
+                <span className="text-xs fw-800">{sub.reference_number}</span>
+                <span className="text-[10px] text-muted uppercase">{sub.status}</span>
+              </div>
+              <div className="flex gap-1">
+                <button className="btn btn-ghost p-1" style={{ height: 26 }} onClick={() => editSubmission(sub)}><Pencil size={11}/></button>
+                <button className="btn btn-ghost p-1" style={{ height: 26 }} onClick={() => window.open(`${api.defaults.baseURL}/forms/submissions/${sub.id}/pdf`, '_blank')}><Download size={11}/></button>
+              </div>
+            </div>
+          ))}
+        </div>
+        {activeForm && (
+          <SubmissionModal 
+            form={activeForm} 
+            setForm={setActiveForm} 
+            onSave={save} 
+            onClose={() => setActiveForm(null)} 
+          />
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-8">
+      <div className="section-title flex justify-between items-center mb-4">
+        <span>Documents & Reports</span>
+        <div className="flex gap-2">
+          {templates.map(t => (
+            <button key={t.id} className="btn btn-ghost btn-sm" onClick={() => startNew(t)}>
+              <Plus size={14}/> {t.name}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {submissions.map(sub => (
+          <div key={sub.id} className="card p-3 flex justify-between items-center hover-shadow transition-all border-l-4" style={{ borderLeftColor: sub.status === 'final' ? 'var(--green)' : 'var(--amber)' }}>
+            <div className="flex items-center gap-3">
+              <FileText className="text-muted" size={20} />
+              <div>
+                <div className="fw-600 text-sm">{sub.reference_number}</div>
+                <div className="text-xs text-muted">{sub.form_name} • {new Date(sub.created_at).toLocaleDateString()}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Badge color={sub.status === 'final' ? 'var(--green-dim)' : 'var(--amber-dim)'} style={{ color: sub.status === 'final' ? 'var(--green)' : 'var(--amber)' }}>
+                {sub.status === 'final' ? <CheckCircle size={10}/> : <Clock size={10}/>} {sub.status.toUpperCase()}
+              </Badge>
+              <button className="btn btn-ghost btn-sm" onClick={() => editSubmission(sub)}><Pencil size={14}/></button>
+              <button className="btn btn-ghost btn-sm" onClick={() => window.open(`${api.defaults.baseURL}/forms/submissions/${sub.id}/pdf`, '_blank')}><Download size={14}/></button>
+            </div>
+          </div>
+        ))}
+        {submissions.length === 0 && <div className="p-8 text-center text-muted border-2 border-dashed rounded-xl" style={{ gridColumn: '1/-1' }}>No documents created yet for this record.</div>}
+      </div>
+
+      {activeForm && (
+        <SubmissionModal 
+          form={activeForm} 
+          setForm={setActiveForm} 
+          onSave={save} 
+          onClose={() => setActiveForm(null)} 
+        />
+      )}
+    </div>
+  );
+}
+
+function SubmissionModal({ form, setForm, onSave, onClose }) {
+  const fields = form.fields_config || form.definition?.fields_config || [];
+  const isFinal = form.status === 'final';
+  const sigRef = useRef({});
+
+  const updateField = (key, val) => {
+    setForm(f => ({ ...f, data: { ...f.data, [key]: val } }));
+  };
+
+  const addTableRow = (key) => {
+    const current = form.data[key] || [];
+    updateField(key, [...current, {}]);
+  };
+
+  const updateTableRow = (key, idx, field, val) => {
+    const current = [...(form.data[key] || [])];
+    current[idx] = { ...current[idx], [field]: val };
+    updateField(key, current);
+  };
+
+  return (
+    <Modal size="lg" title={form.reference_number || `New ${form.definition?.name}`} onClose={onClose}
+      footer={!isFinal && <>
+        <button className="btn btn-ghost" onClick={onClose}>Cancel</button>
+        <button className="btn btn-ghost" onClick={() => onSave('draft')}>Save Draft</button>
+        <button className="btn btn-primary" onClick={() => onSave('final')}>Finalize & Submit</button>
+      </>}>
+      
+      <div className="form-grid" style={{ padding: 10 }}>
+        {fields.map(f => (
+          <div key={f.key} className="form-group" style={{ 
+            gridColumn: f.width === 'full' ? '1/-1' : f.width === 'half' ? 'span 2' : 'span 1',
+            marginBottom: 20
+          }}>
+            <label className="form-label mb-2 uppercase size-10 fw-800 text-muted letter-spacing-1">{f.label}</label>
+            
+            {f.type === 'textarea' ? (
+              <textarea className="form-input" disabled={isFinal} value={form.data[f.key] || ''} onChange={e => updateField(f.key, e.target.value)} rows={4} />
+            ) : f.type === 'info' ? (
+              <div className="p-4 bg-blue-50 text-blue-800 rounded-lg border border-blue-100 text-sm italic">{f.label}</div>
+            ) : f.type === 'signature' ? (
+              <div style={{ position: 'relative' }}>
+                {isFinal ? (
+                  <div className="border rounded-lg p-2 bg-gray-50 flex justify-center">
+                    <img src={form.data[f.key]} alt="Signature" style={{ maxHeight: 100 }} />
+                  </div>
+                ) : (
+                  <div className="border-2 border-dashed rounded-lg bg-gray-50 overflow-hidden" style={{ height: 160 }}>
+                    <SignatureCanvas 
+                      ref={(ref) => sigRef.current[f.key] = ref}
+                      penColor="black"
+                      canvasProps={{ width: 800, height: 160, className: 'sigCanvas' }}
+                      onEnd={() => {
+                        const data = sigRef.current[f.key].toDataURL();
+                        updateField(f.key, data);
+                      }}
+                    />
+                    <button 
+                      className="btn btn-ghost btn-sm" 
+                      onClick={() => { sigRef.current[f.key].clear(); updateField(f.key, null); }}
+                      style={{ position: 'absolute', top: 5, right: 5, padding: 4 }}
+                    >
+                      <RotateCcw size={12}/>
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : f.type === 'table' ? (
+              <div className="border rounded-lg overflow-hidden shadow-sm">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="p-2 border-b text-left size-9 fw-900 uppercase">Description</th>
+                      <th className="p-2 border-b w-24 text-center size-9 fw-900 uppercase">Qty</th>
+                      <th className="p-2 border-b text-right size-9 fw-900 uppercase">Value</th>
+                      <th className="p-2 border-b w-10"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(form.data[f.key] || []).map((row, idx) => (
+                      <tr key={idx}>
+                        <td className="p-2"><input className="form-input form-input-sm" disabled={isFinal} value={row.desc || ''} onChange={e => updateTableRow(f.key, idx, 'desc', e.target.value)} /></td>
+                        <td className="p-2"><input className="form-input form-input-sm text-center" disabled={isFinal} type="number" value={row.qty || ''} onChange={e => updateTableRow(f.key, idx, 'qty', e.target.value)} /></td>
+                        <td className="p-2"><input className="form-input form-input-sm text-right" disabled={isFinal} value={row.val || ''} onChange={e => updateTableRow(f.key, idx, 'val', e.target.value)} /></td>
+                        <td className="p-2">
+                          {!isFinal && <button className="btn btn-danger btn-sm p-1" style={{ height: 28, width: 28 }} onClick={() => {
+                            const next = form.data[f.key].filter((_, i) => i !== idx); updateField(f.key, next);
+                          }}><X size={12}/></button>}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {!isFinal && <button className="btn btn-ghost btn-sm w-full rounded-none border-t h-10 hover:bg-gray-50" onClick={() => addTableRow(f.key)}><Plus size={14}/> Add Row</button>}
+              </div>
+            ) : (
+              <input className="form-input" type={f.type} disabled={isFinal} value={form.data[f.key] || ''} onChange={e => updateField(f.key, e.target.value)} />
+            )}
+          </div>
+        ))}
+      </div>
+      {isFinal && (
+        <div className="mt-8 p-4 bg-green-50 text-green-700 rounded-xl border-l-4 border-green-500 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+             <div className="bg-green-100 p-2 rounded-full"><CheckCircle size={20}/></div>
+             <div>
+               <div className="fw-900 size-13 uppercase letter-spacing-1">Document Certified</div>
+               <div className="size-11 opacity-80">This document is final and cannot be modified.</div>
+             </div>
+          </div>
+          <button className="btn btn-primary btn-sm" onClick={() => window.open(`${api.defaults.baseURL}/forms/submissions/${form.id}/pdf`, '_blank')}>
+            <Download size={14}/> Download PDF
+          </button>
+        </div>
+      )}
+    </Modal>
+  );
+}

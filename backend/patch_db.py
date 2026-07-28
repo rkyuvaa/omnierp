@@ -1,0 +1,142 @@
+import sys
+import os
+from sqlalchemy import text
+from sqlalchemy.orm import Session
+
+# Add the backend directory to sys.path
+sys.path.append(os.path.join(os.getcwd(), "backend"))
+
+from app.database import engine, Base
+from app.models import *
+
+def patch_db():
+    print("Starting Deep Analysis & Patching of Database Schema...")
+    
+    with engine.connect() as conn:
+        # Define the columns that might be missing
+        patches = [
+            # Module, Table, Column, Type
+            ("crm", "crm_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
+            ("crm", "crm_tabs", "module", "VARCHAR(50) DEFAULT 'crm'"),
+            ("crm", "crm_fields", "module", "VARCHAR(50) DEFAULT 'crm'"),
+            ("crm", "crm_fields", "form_template_id", "INTEGER"),
+            ("crm", "crm_fields", "is_active", "BOOLEAN DEFAULT TRUE"),
+            ("crm", "activities", "installation_id", "INTEGER"),
+            
+            ("installation", "installation_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
+            ("installation", "installation_fields", "form_template_id", "INTEGER"),
+            ("installation", "installations", "schedule_date", "DATE"),
+            
+            ("service", "service_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
+            ("service", "service_fields", "form_template_id", "INTEGER"),
+
+            ("warranty", "warranty_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
+            ("warranty", "warranty_fields", "form_template_id", "INTEGER"),
+
+            ("konwertcare", "konwert_care_tabs", "visibility_stages", "JSON DEFAULT '[]'"),
+            ("konwertcare", "konwert_care_fields", "form_template_id", "INTEGER"),
+
+            # HR module
+            ("hr", "hr_employees", "enable_mobile_punch", "BOOLEAN DEFAULT FALSE"),
+            ("hr", "hr_employees", "uan", "VARCHAR(50)"),
+            ("hr", "hr_employees", "esi_number", "VARCHAR(50)"),
+            ("hr", "hr_salary_components", "deduct_from", "VARCHAR(50) DEFAULT 'gross'"),
+            
+            # Users module
+            ("users", "users", "last_active_at", "TIMESTAMP WITHOUT TIME ZONE"),
+        ]
+        
+        for module, table, col, col_type in patches:
+            try:
+                # Check if column exists
+                check_sql = text(f"SELECT column_name FROM information_schema.columns WHERE table_name='{table}' AND column_name='{col}';")
+                result = conn.execute(check_sql).fetchone()
+                
+                if not result:
+                    print(f"  [+] Adding {col} to {table}...")
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {col} {col_type};"))
+                    conn.commit()
+                else:
+                    print(f"  [ ] {col} already exists in {table}.")
+            except Exception as e:
+                print(f"  [!] Error patching {table}.{col}: {e}")
+
+        # Add Trigram Indexes for performance
+        try:
+            print("  [+] Enabling pg_trgm extension and creating indexes...")
+            conn.execute(text("CREATE EXTENSION IF NOT EXISTS pg_trgm;"))
+            
+            # GIN Indexes for CRM
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_leads_title_trgm ON leads USING gin (title gin_trgm_ops);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_leads_customer_name_trgm ON leads USING gin (customer_name gin_trgm_ops);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_leads_phone_trgm ON leads USING gin (phone gin_trgm_ops);"))
+            
+            # GIN Indexes for Installation
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_inst_customer_name_trgm ON installations USING gin (customer_name gin_trgm_ops);"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS idx_inst_vehicle_number_trgm ON installations USING gin (vehicle_number gin_trgm_ops);"))
+            
+            conn.commit()
+            print("  [✓] Trigram indexes created.")
+        except Exception as e:
+            print(f"  [!] Trigram index error: {e}")
+
+    # Also trigger Base.metadata.create_all to ensure NEW tables are created
+    print("Ensuring all new tables exist...")
+    Base.metadata.create_all(bind=engine)
+
+    # Sync deduct_from settings for all existing templates and employees
+    try:
+        print("Syncing deduct_from options for existing templates and employees...")
+        with engine.connect() as conn:
+            res = conn.execute(text("SELECT id, code, deduct_from FROM hr_salary_components")).fetchall()
+            comp_map = {row[0]: row[2] for row in res}
+            code_map = {row[1]: row[2] for row in res}
+            
+            # 1. Update salary templates
+            templates = conn.execute(text("SELECT id, name, components FROM hr_salary_templates")).fetchall()
+            for t_id, t_name, comps in templates:
+                if comps and isinstance(comps, list):
+                    updated = False
+                    for c in comps:
+                        cid = c.get("component_id")
+                        code = c.get("code")
+                        expected = comp_map.get(cid) or code_map.get(code)
+                        if expected and c.get("deduct_from") != expected:
+                            c["deduct_from"] = expected
+                            updated = True
+                    if updated:
+                        import json
+                        conn.execute(
+                            text("UPDATE hr_salary_templates SET components = :comps WHERE id = :id"),
+                            {"comps": json.dumps(comps), "id": t_id}
+                        )
+                        conn.commit()
+                        print(f"  [✓] Synced template components for '{t_name}'")
+                        
+            # 2. Update employee profiles
+            employees = conn.execute(text("SELECT id, name, salary_components FROM hr_employees")).fetchall()
+            for emp_id, emp_name, comps in employees:
+                if comps and isinstance(comps, list):
+                    updated = False
+                    for c in comps:
+                        cid = c.get("component_id")
+                        code = c.get("code") or c.get("name")
+                        expected = comp_map.get(cid) or code_map.get(code)
+                        if expected and c.get("deduct_from") != expected:
+                            c["deduct_from"] = expected
+                            updated = True
+                    if updated:
+                        import json
+                        conn.execute(
+                            text("UPDATE hr_employees SET salary_components = :comps WHERE id = :id"),
+                            {"comps": json.dumps(comps), "id": emp_id}
+                        )
+                        conn.commit()
+                        print(f"  [✓] Synced employee salary components for '{emp_name}'")
+    except Exception as e:
+        print(f"  [!] Error running template/employee deduct_from sync: {e}")
+
+    print("Database Patching Complete.")
+
+if __name__ == "__main__":
+    patch_db()

@@ -1,0 +1,622 @@
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import Layout from '../../components/Layout';
+import { Loader, Badge, Modal, Confirm } from '../../components/Shared';
+import { FieldModal, TabModal } from '../../components/StudioModals';
+import { FieldInput, isVisible } from '../../components/StudioComponents';
+import { useStages, useUsers } from '../../hooks/useData';
+import { useAuth } from '../../hooks/useAuth';
+import api, { BASE_URL } from '../../utils/api';
+import toast from 'react-hot-toast';
+import { ArrowLeft, Save, Plus, Check, Settings, Pencil, Trash2, Bell, Upload, Download, Eye, X, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import SubFormSection from "./SubFormSection";
+
+const emptyForm = (userId) => ({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to: userId||'', custom_data:{} });
+const emptyField = { field_name:'', field_label:'', field_type:'text', placeholder:'', options:[], required:false, width:'full', visibility_rule:null, sort_order:0 };
+const colSpan = { full:'1/-1', half:'span 2', quarter:'span 1' };
+const FIELD_TYPES = ['text','number','date','textarea','selection','boolean','checkbox','file'];
+const WIDTH_OPTIONS = [
+  { value:'full', label:'Full Row' },
+  { value:'half', label:'Half Row' },
+  { value:'quarter', label:'Quarter Row' },
+];
+const WIDTH_COLS = { full:'1/-1', half:'span 1', quarter:'span 1' };
+
+// ── Activity Type Manager ─────────────────────────────────────
+function ActivityTypeModal({ onClose, onSaved }) {
+  const { user } = useAuth();
+  const perms = user?.is_superadmin ? {can_read:true, can_create:true, can_edit:true, can_delete:true} : (user?.module_permissions?.['crm'] || {});
+
+  const [types, setTypes] = useState([]);
+  const [newName, setNewName] = useState('');
+  const [newIcon, setNewIcon] = useState('📝');
+  const [newColor, setNewColor] = useState('#6366f1');
+
+  useEffect(() => { api.get('/crm/activity-types').then(r => setTypes(r.data)); }, []);
+
+  const add = async () => {
+    if (!newName.trim()) return;
+    await api.post('/crm/activity-types', { name:newName.trim(), icon:newIcon, color:newColor, sort_order:types.length });
+    const r = await api.get('/crm/activity-types');
+    setTypes(r.data); setNewName(''); onSaved();
+  };
+
+  const remove = async (id) => {
+    if (!id) return;
+    await api.delete(`/crm/activity-types/${id}`);
+    const r = await api.get('/crm/activity-types');
+    setTypes(r.data); onSaved();
+  };
+
+  return (
+    <Modal title="Manage Activity Types" onClose={onClose}
+      footer={<button className="btn btn-ghost" onClick={onClose}>Close</button>}>
+      <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:16 }}>
+        {types.map(t => (
+          <div key={t.id||t.name} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 12px', background:'var(--bg3)', borderRadius:8 }}>
+            <span style={{ fontSize:18 }}>{t.icon}</span>
+            <span style={{ flex:1, fontWeight:600 }}>{t.name}</span>
+            <span style={{ width:16, height:16, borderRadius:'50%', background:t.color, display:'inline-block' }}/>
+            {t.id && <button className="btn btn-danger btn-sm" onClick={() => remove(t.id)}><Trash2 size={12}/></button>}
+          </div>
+        ))}
+      </div>
+      <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr auto', gap:8, alignItems:'end' }}>
+        <div className="form-group" style={{ margin:0 }}>
+          <label className="form-label">Name</label>
+          <input className="form-input" placeholder="e.g. meeting" value={newName} onChange={e => setNewName(e.target.value)}/>
+        </div>
+        <div className="form-group" style={{ margin:0 }}>
+          <label className="form-label">Icon</label>
+          <input className="form-input" value={newIcon} onChange={e => setNewIcon(e.target.value)} style={{ fontSize:18, textAlign:'center' }}/>
+        </div>
+        <div className="form-group" style={{ margin:0 }}>
+          <label className="form-label">Color</label>
+          <input type="color" value={newColor} onChange={e => setNewColor(e.target.value)}
+            style={{ width:'100%', height:38, border:'1px solid var(--border)', borderRadius:8, cursor:'pointer', padding:2 }}/>
+        </div>
+        <button className="btn btn-primary" onClick={add} style={{ height:38 }}><Plus size={14}/></button>
+      </div>
+    </Modal>
+  );
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function formatChangeLog(log) {
+  const changes = log.changes || {};
+  const userName = log.user || log.user_name || 'System';
+  if (log.action==='CREATE') return [`Created by ${userName}`];
+  if (log.action==='ACTIVITY') return [`${userName} added ${changes.type||'activity'}: ${changes.description||''}`];
+  const lines = [];
+  
+  const formatVal = (v) => {
+    if (v === null || v === undefined) return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    return String(v);
+  };
+
+  for (const [key, val] of Object.entries(changes)) {
+    const label = key.startsWith('custom:') ? key.replace('custom:','') : key;
+    if (val && typeof val==='object' && 'from' in val) {
+      lines.push(`${userName} changed ${label}: ${formatVal(val.from)} → ${formatVal(val.to)}`);
+    }
+  }
+  return lines.length ? lines : [`${userName} updated record`];
+}
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = (Date.now() - new Date(dateStr)) / 1000;
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+// ── Main Component ────────────────────────────────────────────
+export default function LeadForm() {
+  const { id } = useParams();
+  const isNew = id === 'new';
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const perms = user?.is_superadmin ? {can_read:true, can_create:true, can_edit:true, can_delete:true} : (user?.module_permissions?.['crm'] || {});
+  const isAdmin = user?.is_superadmin;
+
+  const [form, setForm] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [titleError, setTitleError] = useState(false);
+  const [activities, setActivities] = useState([]);
+  const [changeLogs, setChangeLogs] = useState([]);
+  const [tabs, setTabs] = useState([]);
+  const [activeTab, setActiveTab] = useState(0);
+  const [stageRules, setStageRules] = useState([]);
+  const [editLayout, setEditLayout] = useState(false);
+  const [activityTypes, setActivityTypes] = useState([]);
+  const [actType, setActType] = useState('');
+  const [actDesc, setActDesc] = useState('');
+  const [actDue, setActDue] = useState('');
+  const [fieldModal, setFieldModal] = useState(null);
+  const [tabModal, setTabModal] = useState(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [actTypeModal, setActTypeModal] = useState(false);
+  const [recentlySaved, setRecentlySaved] = useState(false);
+
+  const stages = useStages('crm');
+  const users = useUsers();
+
+  const loadTabs = useCallback(() => api.get('/studio/layout/crm/tabs').then(r => setTabs(r.data)), []);
+  const loadStageRules = useCallback(() => api.get('/studio/layout/crm/stage-rules').then(r => setStageRules(r.data)), []);
+  const loadActivityTypes = useCallback(() =>
+    api.get('/crm/activity-types').then(r => {
+      const data = Array.isArray(r.data) ? r.data : [];
+      setActivityTypes(data);
+      setActType(t => t || (data[0]?.name || ''));
+    }).catch(()=>{}), []);
+
+  useEffect(() => { loadTabs(); loadStageRules(); loadActivityTypes(); }, []);
+
+  // Auto-select tab based on stage
+  useEffect(() => {
+    if (form?.stage_id && tabs.length > 0 && activeTab === 0) {
+      const targetIdx = tabs.findIndex(t => t.default_on_stage === form.stage_id);
+      if (targetIdx !== -1) setActiveTab(targetIdx);
+    }
+  }, [form?.stage_id, tabs, activeTab]);
+
+  const [nav, setNav] = useState({ prev: null, next: null });
+
+  useEffect(() => {
+    if (isNew && user) {
+      setForm({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to:user.id, custom_data:{} });
+      setLoading(false);
+    } else if (!isNew) {
+      setLoading(true); 
+      api.get(`/crm/leads/${id}`).then(r => {
+        setForm({ title:'', customer_name:'', email:'', phone:'', stage_id:'', assigned_to:'', custom_data:{}, ...r.data });
+        setActivities(r.data.activities||[]);
+        setChangeLogs(r.data.change_logs||[]);
+        setLoading(false);
+      }).catch(() => setLoading(false));
+
+      api.get(`/crm/leads/${id}/navigation`).then(r => setNav(r.data)).catch(() => {});
+    }
+  }, [id, isNew, user]);
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      if (e.key === 'ArrowRight' && nav.next) {
+        navigate(`/crm/${nav.next}`);
+      } else if (e.key === 'ArrowLeft' && nav.prev) {
+        navigate(`/crm/${nav.prev}`);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [nav, navigate]);
+
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const setCustom = (k, v) => {
+    setForm(f => {
+      const newCustom = { ...f.custom_data, [k]: v };
+      const rule = stageRules.find(r => r.field_name === k);
+      if (rule) {
+        const hasValue = v !== '' && v !== false && v !== null &&
+          !(Array.isArray(v) && v.length === 0);
+        if (rule.condition_operator === 'equals') {
+          const matches = Array.isArray(v)
+            ? v.includes(rule.condition_value)
+            : String(v ?? '') === String(rule.condition_value ?? '');
+          if (matches) return { ...f, custom_data: newCustom, stage_id: rule.stage_id };
+        } else {
+          if (hasValue) return { ...f, custom_data: newCustom, stage_id: rule.stage_id };
+        }
+      }
+      return { ...f, custom_data: newCustom };
+    });
+  };
+
+  const save = async () => {
+    if (!form.title?.trim()) {
+      setTitleError(true);
+      toast.error('Record Title is required');
+      return;
+    }
+    setTitleError(false);
+    setSaving(true);
+    try {
+      const payload = { ...form, stage_id:form.stage_id||null, assigned_to:form.assigned_to||null, expected_revenue:0, notes:'' };
+      if (isNew) {
+        const r = await api.post('/crm/leads', payload);
+        toast.success('✓ Created successfully!', { duration: 4000 }); 
+        navigate(`/crm/${r.data.id}`);
+      } else {
+        await api.put(`/crm/leads/${id}`, payload);
+        api.get(`/crm/leads/${id}`).then(r => setChangeLogs(r.data.change_logs||[]));
+        toast.success('✓ Saved successfully!', { duration: 4000 });
+        setRecentlySaved(true);
+        setTimeout(() => setRecentlySaved(false), 3000);
+      }
+    } catch(e) { 
+      toast.error(e.response?.data?.detail || 'Failed to save', { duration: 4000 }); 
+    }
+    finally { setSaving(false); }
+  };
+
+  const updateStage = async (stageId) => {
+    if (!isAdmin) return;
+    try {
+      await api.put(`/crm/leads/${id}/stage`, { stage_id: stageId });
+      set('stage_id', stageId);
+      api.get(`/crm/leads/${id}`).then(r => setChangeLogs(r.data.change_logs||[]));
+      toast.success('Stage updated');
+    } catch { toast.error('Failed'); }
+  };
+
+  const addActivity = async () => {
+    if (!actDesc.trim()) { toast.error('Please enter a description'); return; }
+    const r = await api.post('/crm/activities', {
+      lead_id:parseInt(id), activity_type:actType, description:actDesc, due_date:actDue||null
+    });
+    setActivities(a => [r.data,...a]);
+    setActDesc(''); setActDue('');
+    api.get(`/crm/leads/${id}`).then(r => setChangeLogs(r.data.change_logs||[]));
+    toast.success('Activity added');
+  };
+
+  const markDone = async (aid) => {
+    await api.put(`/crm/activities/${aid}/done`);
+    setActivities(a => a.map(x => x.id===aid?{...x,done:true}:x));
+  };
+
+  const saveTab = async (tab) => {
+    if (tab.id) await api.put(`/studio/layout/crm/tabs/${tab.id}`, tab);
+    else await api.post('/studio/layout/crm/tabs', { ...tab, sort_order: tabs.length });
+    toast.success('Tab saved'); setTabModal(null); loadTabs();
+  };
+
+  const deleteTab = async (tid) => {
+    await api.delete(`/studio/layout/crm/tabs/${tid}`);
+    toast.success('Tab deleted');
+    setDeleteConfirm(null);
+    setActiveTab(0);
+    loadTabs();
+  };
+
+  const saveField = async (f) => {
+    const stageRule = f._stageRule;
+    const stageRuleOp = f._stageRuleOp || 'has_value';
+    const stageRuleVal = f._stageRuleVal || '';
+    const payload = { ...f };
+    delete payload._stageRule; delete payload._stageRuleOp; delete payload._stageRuleVal;
+    if (!payload.tab_id) payload.tab_id = fieldModal?.tabId || null;
+    if (f.id) await api.put(`/studio/layout/crm/fields/${f.id}`, payload);
+    else await api.post('/studio/layout/crm/fields', payload);
+    if (stageRule) {
+      try {
+        await api.post('/studio/layout/crm/stage-rules', {
+          field_name: payload.field_name,
+          stage_id: parseInt(stageRule),
+          condition_operator: stageRuleOp,
+          condition_value: stageRuleOp === 'equals' ? stageRuleVal : null
+        });
+      } catch (err) {
+        console.error("Failed to save stage rule", err);
+      }
+    } else {
+      const existing = stageRules.find(r => r.field_name === payload.field_name);
+      if (existing) {
+        try {
+          await api.delete(`/studio/layout/crm/stage-rules/${existing.id}`);
+        } catch (err) {
+          console.error("Failed to delete existing stage rule", err);
+        }
+      }
+    }
+    toast.success('Field saved'); setFieldModal(null); loadTabs(); loadStageRules();
+  };
+
+
+  const deleteField = async (fid) => {
+    await api.delete(`/studio/layout/crm/fields/${fid}`);
+    toast.success('Field deleted'); setDeleteConfirm(null); loadTabs();
+  };
+
+  const visibleTabs = useMemo(() => (tabs || []).filter(t => {
+    if (!t || !Array.isArray(t.visibility_stages) || t.visibility_stages.length === 0) return true;
+    const sId = Number(form?.stage_id);
+    if (!sId) return false;
+    return (t.visibility_stages || []).map(Number).includes(sId);
+  }), [tabs, form?.stage_id]);
+
+  useEffect(() => {
+    if (loading || !form) return;
+    if (activeTab >= visibleTabs.length && visibleTabs.length > 0) {
+      setActiveTab(0);
+    }
+  }, [visibleTabs.length, activeTab, loading, form]);
+
+  if (loading||!form) return <Layout title="Lead"><Loader/></Layout>;
+
+  const currentTab = (visibleTabs || [])[activeTab];
+  const actTypeMap = Object.fromEntries((activityTypes || []).map(t => [t.name, t]));
+  const gridStyle = { display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 };
+
+  return (
+    <Layout title={isNew ? 'New Record' : `Lead — ${form.reference || `#${id}`}`}>
+      <div className="toolbar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--card-bg)', border: '1px solid var(--border)', padding: '12px 16px', borderRadius: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button className="btn btn-ghost" onClick={() => navigate('/crm')}><ArrowLeft size={16} /> Back</button>
+          <div style={{ height: 20, width: 1, background: 'var(--border)' }}></div>
+          <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 700 }}>
+            {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : recentlySaved ? <><Check size={16}/> Saved</> : <><Save size={16} /> Save Changes</>}
+          </button>
+        </div>
+        
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {isAdmin && (
+            <button className="btn btn-ghost" onClick={()=>setEditLayout(e=>!e)}
+              style={editLayout?{background:'var(--accent-dim)',color:'var(--accent)',border:'1px solid var(--accent)', padding: '8px 16px', borderRadius: 8}:{ padding: '8px 16px', borderRadius: 8 }}>
+              <Settings size={16} style={{ marginRight: 6 }}/> {editLayout?'Exit Layout':'Edit Layout'}
+            </button>
+          )}
+          
+           {!isNew && (
+            <div style={{ display: 'flex', gap: 4, paddingLeft: 12, borderLeft: '1px solid var(--border)' }}>
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.prev ? 1 : 0.3 }} 
+                onClick={() => { if (nav.prev) { navigate(`/crm/${nav.prev}`); } }}
+                disabled={!nav.prev}
+                title="Previous Record"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <button 
+                className="btn btn-ghost" 
+                style={{ padding: '8px', borderRadius: 8, opacity: nav.next ? 1 : 0.3 }} 
+                onClick={() => { if (nav.next) { navigate(`/crm/${nav.next}`); } }}
+                disabled={!nav.next}
+                title="Next Record"
+              >
+                <ChevronRight size={20} />
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {!isNew && stages.length > 0 && (
+        <div style={{ display: 'flex', gap: 4, marginBottom: 16, width: '100%', marginTop: -4 }}>
+          {stages.map(s => {
+            const isCurrent = form.stage_id === s.id;
+            return (
+              <div key={s.id} onClick={() => isAdmin && updateStage(s.id)}
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: '4px 6px', borderRadius: 18, cursor: isAdmin ? "pointer" : "default", 
+                  flex: 1, height: 35, transition: 'all 0.2s',
+                  border: `1.5px solid ${isCurrent ? s.color : (s.color + '30')}`,
+                  background: isCurrent ? s.color : 'transparent',
+                  color: isCurrent ? '#ffffff' : s.color,
+                  boxShadow: isCurrent ? `0 3px 8px ${s.color}40` : 'none',
+                  minWidth: 0, opacity: isCurrent ? 1 : 0.7,
+                  textAlign: 'center'
+                }}>
+                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="detail-layout" style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: 24, width: "100%", maxWidth: "100%", boxSizing: "border-box", minWidth: 0 }}>
+        {/* LEFT */}
+        <div>
+          {/* Core fields */}
+          <div className="card mb-4">
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:12 }}>
+              <div className="form-group" style={{ gridColumn:'span 2' }}>
+                <label className="form-label">
+                  Vehicle Number <span style={{ color:'var(--red)' }}>*</span>
+                </label>
+                <input className="form-input" value={form.title}
+                  style={titleError?{borderColor:'var(--red)',boxShadow:'0 0 0 2px rgba(239,68,68,0.15)'}:{}}
+                  onChange={e => { set('title',e.target.value.toUpperCase()); if(e.target.value.trim()) setTitleError(false); }}
+                  placeholder="e.g. KA01AB1234"/>
+                {titleError&&<span style={{ fontSize:11, color:'var(--red)', marginTop:4, display:'block' }}>Vehicle Number is required</span>}
+              </div>
+              <div className="form-group" style={{ gridColumn:'span 2' }}>
+                <label className="form-label">Assigned To</label>
+                <select className="form-select" value={form.assigned_to||''} onChange={e => set('assigned_to',parseInt(e.target.value)||null)}>
+                  <option value="">— Unassigned —</option>
+                  {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group" style={{ gridColumn:'span 2' }}>
+                <label className="form-label">Customer Name</label>
+                <input className="form-input" value={form.customer_name||''} onChange={e => set('customer_name',e.target.value)}/>
+              </div>
+              <div className="form-group" style={{ gridColumn:'span 1' }}>
+                <label className="form-label">Email</label>
+                <input className="form-input" type="email" value={form.email||''} onChange={e => set('email',e.target.value)}/>
+              </div>
+              <div className="form-group" style={{ gridColumn:'span 1' }}>
+                <label className="form-label">Phone</label>
+                <input className="form-input" value={form.phone||''} onChange={e => set('phone',e.target.value)}/>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ width: "100%", maxWidth: "100%", minWidth: 0, overflow: "hidden" }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+               <div style={{ display:'flex', gap:8 }}>
+                  {editLayout && <button className="btn btn-ghost btn-sm" onClick={() => setTabModal({})}><Plus size={13}/> Add Tab</button>}
+               </div>
+            </div>
+          {visibleTabs.length > 0 && (
+            <div style={{ display:'flex', gap:4, alignItems:'center', flexWrap:'wrap', borderBottom:'2px solid var(--border)', marginBottom: 20 }}>
+              {(visibleTabs || []).map((t,i) => (
+                <div key={t.id} style={{ display:'flex', alignItems:'center', gap:2 }}>
+                  <button onClick={() => setActiveTab(i)} style={{
+                    padding:'8px 18px', border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                    background:'transparent', marginBottom:-2, transition:'all 0.15s',
+                    borderBottom:activeTab===i?'2px solid var(--accent)':'2px solid transparent',
+                    color:activeTab===i?'var(--accent)':'var(--text2)'
+                  }}>{t.name}</button>
+                  {editLayout && <>
+                    <button className="btn btn-ghost btn-sm" style={{ padding:'2px 4px' }} onClick={() => setTabModal(t)}><Pencil size={11}/></button>
+                    <button className="btn btn-danger btn-sm" style={{ padding:'2px 4px' }} onClick={() => setDeleteConfirm({type:'tab',id:t.id,name:t.name})}><Trash2 size={11}/></button>
+                  </>}
+                </div>
+              ))}
+            </div>
+          )}
+          </div>
+
+          {currentTab && (
+            <div className="card" style={{ borderTopLeftRadius:0, borderTopRightRadius:0, borderTop:'none' }}>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:12 }}>
+                {(currentTab.fields || []).filter(f => isVisible(f, form.custom_data)).map(f => (
+                  <div key={f.id} style={{ gridColumn:colSpan[f.width]||'1/-1', position:'relative' }}>
+                    {f.field_type !== 'boolean' && <label className="form-label">{f.field_label}{f.required && <span style={{ color:'var(--red)' }}> *</span>}</label>}
+                    {f.field_type === 'form' ? (
+                      <SubFormSection 
+                        module="crm" 
+                        parentId={form.id} 
+                        parentData={form} 
+                        templateId={f.form_template_id} 
+                        embedded={true} 
+                      />
+                    ) : (
+                      <FieldInput field={f} value={form.custom_data[f.field_name]} onChange={v => setCustom(f.field_name, v)}/>
+                    )}
+                    {editLayout && (
+                      <div style={{ position:'absolute', top:0, right:0, display:'flex', gap:4 }}>
+                        <button className="btn btn-ghost btn-sm" style={{ padding:'2px 6px' }} onClick={() => setFieldModal({field:{...f},tabId:currentTab.id})}><Pencil size={11}/></button>
+                        <button className="btn btn-danger btn-sm" style={{ padding:'2px 6px' }} onClick={() => setDeleteConfirm({type:'field',id:f.id,name:f.field_label})}><Trash2 size={11}/></button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+                {editLayout && (
+                  <div style={{ gridColumn:'1/-1', marginTop:8 }}>
+                    <button className="btn btn-ghost btn-sm"
+                      onClick={() => setFieldModal({field:{...emptyField, tab_id:currentTab.id, module: 'crm', sort_order:(currentTab.fields||[]).length}, tabId:currentTab.id})}>
+                      <Plus size={13}/> Add Field to "{currentTab.name}"
+                    </button>
+                  </div>
+                )}
+                {(currentTab.fields||[]).length===0&&!editLayout&&(
+                  <p className="text-muted text-sm" style={{ gridColumn:'1/-1' }}>No fields in this tab yet.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {tabs.length===0&&(
+            <div className="card" style={{ padding: '40px 20px', textAlign: 'center', color:'var(--text2)', fontSize:13 }}>
+              {editLayout ? (
+                <div>
+                  <p style={{ marginBottom: 16 }}>No tabs configured. Add a tab to start organizing your custom fields.</p>
+                  <button className="btn btn-primary" onClick={() => setTabModal({})}><Plus size={16}/> Create First Tab</button>
+                  <div style={{ marginTop: 12 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => setFieldModal({field:{...emptyField, tab_id:null, module: 'crm'}, tabId:null})}><Plus size={13}/> Add Field (No Tab)</button>
+                  </div>
+                </div>
+              ) : 'No additional fields configured.'}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT */}
+        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+          {/* Activity adder */}
+          {!isNew&&(
+            <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }}>
+              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:10 }}>
+                <span className="card-title" style={{ display:'flex', alignItems:'center', gap:6 }}><Bell size={14}/> Activity</span>
+                {isAdmin&&<button className="btn btn-ghost btn-sm" style={{ fontSize:11 }} onClick={() => setActTypeModal(true)}><Settings size={11}/> Types</button>}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                <div style={{ display:'flex', gap:8 }}>
+                  <select className="form-select" style={{ width:130 }} value={actType} onChange={e => setActType(e.target.value)}>
+                    {activityTypes.map(t => <option key={t.name} value={t.name}>{t.icon} {t.name}</option>)}
+                  </select>
+                  <input className="form-input" placeholder="Description..." value={actDesc}
+                    onChange={e => setActDesc(e.target.value)} onKeyDown={e => e.key==='Enter'&&addActivity()} style={{ flex:1 }}/>
+                </div>
+                <div style={{ display:"flex", gap:8, alignItems:"center", flexWrap:"wrap" }}>
+                  <label className="form-label" style={{ margin:0, whiteSpace:'nowrap', fontSize:12 }}>Due</label>
+                  <input className="form-input" type="datetime-local" value={actDue} onChange={e => setActDue(e.target.value)} style={{ flex:1 }}/>
+                  <button style={{ flexShrink: 0, minWidth: "max-content" }} className="btn btn-primary btn-sm" onClick={addActivity}><Plus size={13}/> Add</button>
+                </div>
+              </div>
+              {activities.length>0&&(
+                <div style={{ marginTop:12, display:'flex', flexDirection:'column', gap:6 }}>
+                  {activities.map(a => {
+                    const at = actTypeMap[a.type]||{color:'var(--accent)',icon:'📝'};
+                    return (
+                      <div key={a.id} style={{ display:'flex', gap:8, padding:'8px 10px', background:'var(--bg3)', borderRadius:8, opacity:a.done?0.45:1, alignItems:'flex-start' }}>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:2 }}>
+                            <Badge color={at.color}>{at.icon} {a.type}</Badge>
+                            {a.due_date&&!a.done&&<span style={{ fontSize:10, color:'var(--amber)' }}>due {new Date(a.due_date).toLocaleDateString()}</span>}
+                          </div>
+                          <div style={{ fontSize:12 }}>{a.description}</div>
+                          <div style={{ fontSize:10, color:'var(--text3)', marginTop:2 }}>{timeAgo(a.created_at)}</div>
+                        </div>
+                        {!a.done&&<button className="btn btn-ghost btn-sm" onClick={() => markDone(a.id)} title="Mark done"><Check size={12}/></button>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+          </div>
+          )}
+
+          {/* Change log */}
+          {!isNew&&(
+            <div className="card" style={{ maxWidth: "100%", minWidth: 0, overflowX: "hidden" }}>
+              <div className="card-header" style={{ marginBottom:8 }}>
+                <span className="card-title" style={{ fontSize:13 }}>Change Log</span>
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:2 }}>
+                {changeLogs.length===0&&<p className="text-muted text-sm">No changes yet.</p>}
+                {changeLogs.map(log => (
+                  <div key={log.id} style={{ padding:'6px 0', borderBottom:'1px solid var(--border)' }}>
+                    {formatChangeLog(log).map((line,i) => (
+                      <div key={i} style={{ fontSize:11, color:'var(--text2)', lineHeight:1.5 }}>{line}</div>
+                    ))}
+                    <div style={{ fontSize:10, color:'var(--text3)', marginTop:1 }}>{timeAgo(log.created_at)}</div>
+                  </div>
+                ))}
+              </div>
+          </div>
+          )}
+        </div>
+      </div>
+
+      {tabModal !== null && <TabModal initial={tabModal} stages={stages} onSave={saveTab} onClose={() => setTabModal(null)} />}
+      {fieldModal !== null && <FieldModal initial={{...fieldModal.field, module: 'crm'}} tabs={tabs} stages={stages} stageRules={stageRules} onSave={saveField} onClose={() => setFieldModal(null)} />}
+      {actTypeModal&&<ActivityTypeModal onClose={() => setActTypeModal(false)} onSaved={loadActivityTypes}/>}
+      {deleteConfirm&&(
+        <div className="modal-overlay">
+          <div className="modal" style={{ maxWidth:380 }}>
+            <div className="modal-body" style={{ textAlign:'center', padding:'32px 24px' }}>
+              <p style={{ marginBottom:20 }}>Delete <b>{deleteConfirm.name}</b>?</p>
+              <div className="flex gap-2" style={{ justifyContent:'center' }}>
+                <button className="btn btn-ghost" onClick={() => setDeleteConfirm(null)}>Cancel</button>
+                <button className="btn btn-danger" onClick={() => {
+                  if(deleteConfirm.type==='tab') deleteTab(deleteConfirm.id);
+                  else deleteField(deleteConfirm.id);
+                }}>Delete</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
+}
