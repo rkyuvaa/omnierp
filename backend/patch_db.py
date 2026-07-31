@@ -44,6 +44,21 @@ def patch_db():
             
             # Users module
             ("users", "users", "last_active_at", "TIMESTAMP WITHOUT TIME ZONE"),
+
+            # Expenses module
+            ("expenses", "expense_claims", "reference", "VARCHAR(30)"),
+            ("expenses", "expense_claims", "l1_approver_id", "INTEGER"),
+            ("expenses", "expense_claims", "l1_status", "VARCHAR(20) DEFAULT 'pending'"),
+            ("expenses", "expense_claims", "l1_remarks", "TEXT"),
+            ("expenses", "expense_claims", "l1_approved_at", "TIMESTAMP WITHOUT TIME ZONE"),
+            ("expenses", "expense_claims", "l2_approver_id", "INTEGER"),
+            ("expenses", "expense_claims", "l2_status", "VARCHAR(20)"),
+            ("expenses", "expense_claims", "l2_remarks", "TEXT"),
+            ("expenses", "expense_claims", "l2_approved_at", "TIMESTAMP WITHOUT TIME ZONE"),
+            ("expenses", "expense_claims", "reimbursement_mode", "VARCHAR(20)"),
+            ("expenses", "expense_claims", "reimbursed_at", "TIMESTAMP WITHOUT TIME ZONE"),
+            ("expenses", "expense_claims", "reimbursement_ref", "VARCHAR(100)"),
+            ("expenses", "hr_employees", "advance_opening_balance", "FLOAT DEFAULT 0.0"),
         ]
         
         for module, table, col, col_type in patches:

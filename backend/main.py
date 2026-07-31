@@ -25,8 +25,11 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# from patch_db import patch_db
-# patch_db()
+try:
+    from patch_db import patch_db
+    patch_db()
+except Exception as _pe:
+    print(f"⚠️ Database patch_db notice: {_pe}")
 
 Base.metadata.create_all(bind=engine)
 
