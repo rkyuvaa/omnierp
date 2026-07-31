@@ -319,100 +319,208 @@ export default function ExpenseApprovals() {
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {filteredClaims.map(c => (
-                  <div
-                    key={c.id}
-                    style={{
-                      background: 'var(--bg2)',
-                      border: '1px solid var(--border)',
-                      borderRadius: 12,
-                      padding: '16px 20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 16,
-                      transition: 'box-shadow 0.15s',
-                    }}
-                    onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)')}
-                    onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
-                  >
-                    <div style={{ width: 4, height: 52, borderRadius: 4, background: STATUS_COLORS[c.status] || '#888', flexShrink: 0 }} />
-                    
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                        <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--accent)', fontFamily: 'monospace' }}>{c.reference}</span>
-                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: `${STATUS_COLORS[c.status]}20`, color: STATUS_COLORS[c.status], textTransform: 'uppercase' }}>{c.status}</span>
-                      </div>
-                      <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <User size={13} style={{ color: 'var(--text3)' }} /> {c.employee_name}
-                        <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 12 }}>·</span>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>{c.category_name || 'Uncategorized'}</span>
-                      </div>
-                      <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>
-                        {c.description || 'No description'} · Expense date: {c.expense_date}
-                      </div>
-                    </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {filteredClaims.map(c => {
+                  const isExpanded = expandedSettlement === `claim_${c.id}`;
+                  const color = STATUS_COLORS[c.status] || '#888';
+                  return (
+                    <div
+                      key={c.id}
+                      style={{
+                        background: 'var(--bg2)',
+                        border: '1px solid var(--border)',
+                        borderRadius: 12,
+                        padding: '16px 20px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 12,
+                        transition: 'box-shadow 0.15s',
+                      }}
+                      onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)')}
+                      onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        <div style={{ width: 4, height: 52, borderRadius: 4, background: color, flexShrink: 0 }} />
+                        
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                            <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--accent)', fontFamily: 'monospace' }}>{c.reference || `(Claim #${c.id})`}</span>
+                            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: `${color}20`, color: color, textTransform: 'uppercase' }}>
+                              {c.status === 'approved' ? 'APPROVED – PENDING ACCOUNTS DISBURSEMENT' : c.status}
+                            </span>
+                          </div>
+                          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                            <User size={13} style={{ color: 'var(--text3)' }} /> {c.employee_name}
+                            <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 12 }}>·</span>
+                            <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>{c.purpose || c.description || 'Itemized Reimbursement Claim'}</span>
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>
+                            Expense date: {c.expense_date || '—'} · Submitted: {c.claim_date || '—'}
+                          </div>
+                          {c.reimbursement_ref && (
+                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
+                          )}
+                        </div>
 
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                      <div style={{ fontWeight: 800, fontSize: 19, color: 'var(--text)', marginRight: 4 }}>{INR(c.amount)}</div>
-                      {c.receipt_filename && (
-                        <a
-                          href={`/api/uploads/expenses/${c.receipt_filename}`}
-                          target="_blank"
-                          rel="noreferrer"
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                          <div style={{ fontWeight: 800, fontSize: 19, color: 'var(--text)', marginRight: 4 }}>{INR(c.amount)}</div>
+
+                          {c.lines && c.lines.length > 0 && (
+                            <button
+                              onClick={() => setExpandedSettlement(isExpanded ? null : `claim_${c.id}`)}
+                              style={{
+                                padding: '6px 12px',
+                                borderRadius: 6,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg3)',
+                                color: 'var(--text2)',
+                                cursor: 'pointer',
+                                fontWeight: 600,
+                                fontSize: 12,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              {isExpanded ? <>Hide Sheet <ChevronUp size={12} /></> : <>Review Sheet <ChevronDown size={12} /></>}
+                            </button>
+                          )}
+
+                          {c.receipt_filename && (
+                            <a
+                              href={`/api/uploads/expenses/${c.receipt_filename}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                padding: '6px 9px',
+                                borderRadius: 7,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg3)',
+                                color: 'var(--text2)',
+                                fontSize: 12,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                textDecoration: 'none',
+                              }}
+                            >
+                              <Paperclip size={12} /> Receipt
+                            </a>
+                          )}
+                          {c.status === 'pending' && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setActionModal({ record: c, type: 'approve_claim' });
+                                  setRemarks('');
+                                }}
+                                style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                              >
+                                Approve
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setActionModal({ record: c, type: 'reject_claim' });
+                                  setRemarks('');
+                                }}
+                                style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                              >
+                                Reject
+                              </button>
+                            </>
+                          )}
+                          {c.status === 'approved' && (isAuthorizedAccountant || user?.is_superadmin) && (
+                            <button
+                              onClick={() => {
+                                setActionModal({ record: c, type: 'reimburse_claim' });
+                                setReimbMode('direct');
+                                setReimbRef('');
+                              }}
+                              style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
+                            >
+                              💰 Disburse Payout
+                            </button>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Expandable itemized claim breakdown spreadsheet lines */}
+                      {isExpanded && c.lines && c.lines.length > 0 && (
+                        <div
                           style={{
-                            padding: '6px 9px',
-                            borderRadius: 7,
-                            border: '1px solid var(--border)',
-                            background: 'var(--bg3)',
-                            color: 'var(--text2)',
-                            fontSize: 12,
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            textDecoration: 'none',
+                            borderTop: '1px solid var(--border)',
+                            paddingTop: 12,
+                            marginTop: 4,
+                            overflowX: 'auto',
                           }}
                         >
-                          <Paperclip size={12} /> Receipt
-                        </a>
-                      )}
-                      {c.status === 'pending' && (
-                        <>
-                          <button
-                            onClick={() => {
-                              setActionModal({ record: c, type: 'approve_claim' });
-                              setRemarks('');
-                            }}
-                            style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
-                          >
-                            Approve
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActionModal({ record: c, type: 'reject_claim' });
-                              setRemarks('');
-                            }}
-                            style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {c.status === 'approved' && user?.is_superadmin && (
-                        <button
-                          onClick={() => {
-                            setActionModal({ record: c, type: 'reimburse_claim' });
-                            setReimbMode('direct');
-                            setReimbRef('');
-                          }}
-                          style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
-                        >
-                          Reimburse
-                        </button>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 8 }}>
+                            Itemized Expense Claim Breakdown Grid
+                          </div>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                            <thead>
+                              <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Date</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Category</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost Code</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>From / To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Description</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Vendor</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>GST %</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>Amount</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Bills</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {c.lines.map((row, rIdx) => (
+                                <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
+                                  <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '8px', fontWeight: 600 }}>{row.expense_type}</td>
+                                  <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '8px' }}>{row.cost_to || '—'}</td>
+                                  <td style={{ padding: '8px' }}>
+                                    {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
+                                  </td>
+                                  <td style={{ padding: '8px' }}>{row.description || '—'}</td>
+                                  <td style={{ padding: '8px' }}>{row.paid_to || '—'}</td>
+                                  <td style={{ padding: '8px', textAlign: 'right' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '8px' }}>
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                      {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
+                                        <a
+                                          key={fIdx}
+                                          href={`/api/uploads/expenses/${file}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 3,
+                                            background: 'var(--bg3)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: 4,
+                                            padding: '2px 6px',
+                                            fontSize: 10,
+                                            color: 'var(--accent)',
+                                            textDecoration: 'none',
+                                          }}
+                                        >
+                                          <Paperclip size={10} /> Bill {fIdx + 1}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </>

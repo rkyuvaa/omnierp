@@ -70,7 +70,32 @@ class ExpenseClaim(Base):
 
     employee = relationship("HREmployee", foreign_keys=[employee_id])
     approver = relationship("HREmployee", foreign_keys=[approver_id])
-    category = relationship("ExpenseCategory", back_populates="claims")
+    lines = relationship("ExpenseClaimLine", back_populates="claim", cascade="all, delete-orphan")
+
+
+# ─────────────────────────────────────────────
+# EXPENSE CLAIM LINES
+# ─────────────────────────────────────────────
+class ExpenseClaimLine(Base):
+    """Detailed itemized expense entries recorded on a reimbursement claim."""
+    __tablename__ = "expense_claim_lines"
+    id = Column(Integer, primary_key=True, index=True)
+    claim_id = Column(Integer, ForeignKey("expense_claims.id"))
+    date = Column(Date)
+    expense_type = Column(String(100))
+    cost_code = Column(String(100), nullable=True)
+    cost_to = Column(String(100), nullable=True)
+    from_location = Column(String(150), nullable=True)
+    to_location = Column(String(150), nullable=True)
+    description = Column(Text, nullable=True)
+    paid_to = Column(String(150), nullable=True)
+    gst_number = Column(String(100), nullable=True)
+    gst_rate = Column(Float, default=0.0)
+    amount = Column(Float, default=0.0)
+    bill_attachments = Column(JSON, default=[])
+    account_verification = Column(String(150), nullable=True)
+
+    claim = relationship("ExpenseClaim", back_populates="lines")
 
 
 # ─────────────────────────────────────────────

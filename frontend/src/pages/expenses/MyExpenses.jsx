@@ -345,8 +345,46 @@ export default function MyExpenses() {
     setReceiptName('');
   }
 
+  // State for itemized form modal (used by both Reimbursement Claims & Cash Advances)
+  const [modalFormType, setModalFormType] = useState('advance'); // 'claim' | 'advance'
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [expandedClaimId, setExpandedClaimId] = useState(null);
+
+  function openNewClaimModal() {
+    setModalFormType('claim');
+    setEditingRecord(null);
+    setAdvanceForm({
+      amount: '',
+      purpose: '',
+      project_code: '',
+      required_date: new Date().toISOString().split('T')[0],
+      attachment_filename: '',
+      is_submit: true,
+    });
+    setAdvanceLines([createBlankAdvanceLine()]);
+    setAdvanceAttachmentName('');
+    setShowAdvanceModal(true);
+  }
+
+  function openEditClaimModal(claim) {
+    setModalFormType('claim');
+    setEditingRecord(claim);
+    setAdvanceForm({
+      amount: claim.amount ? claim.amount.toString() : '',
+      purpose: claim.purpose || claim.description || '',
+      project_code: claim.project_code || '',
+      required_date: claim.expense_date || claim.claim_date || new Date().toISOString().split('T')[0],
+      attachment_filename: claim.receipt_filename || '',
+      is_submit: true,
+    });
+    setAdvanceLines(claim.lines && claim.lines.length > 0 ? claim.lines : [createBlankAdvanceLine()]);
+    setAdvanceAttachmentName(claim.receipt_filename ? claim.receipt_filename.split('/').pop() : '');
+    setShowAdvanceModal(true);
+  }
+
   function openNewAdvanceModal() {
-    setEditingAdvance(null);
+    setModalFormType('advance');
+    setEditingRecord(null);
     setAdvanceForm({
       amount: '',
       purpose: '',
@@ -361,7 +399,8 @@ export default function MyExpenses() {
   }
 
   function openEditAdvanceModal(adv) {
-    setEditingAdvance(adv);
+    setModalFormType('advance');
+    setEditingRecord(adv);
     setAdvanceForm({
       amount: adv.amount.toString(),
       purpose: adv.purpose || '',
@@ -377,7 +416,7 @@ export default function MyExpenses() {
 
   function closeAdvanceModal() {
     setShowAdvanceModal(false);
-    setEditingAdvance(null);
+    setEditingRecord(null);
     setAdvanceForm({
       amount: '',
       purpose: '',
@@ -390,11 +429,11 @@ export default function MyExpenses() {
     setAdvanceAttachmentName('');
   }
 
-  async function handleAdvanceSubmit(submitFlag) {
-    const defaultPurpose = advanceForm.purpose || advanceLines.find(l => l.description)?.description || 'Itemized Cash Advance Request';
+  async function handleFormSubmit(submitFlag) {
+    const defaultPurpose = advanceForm.purpose || advanceLines.find(l => l.description)?.description || (modalFormType === 'claim' ? 'Itemized Reimbursement Claim' : 'Itemized Cash Advance Request');
     const finalAmount = parseFloat(advanceForm.amount) || advanceLines.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
     if (!finalAmount || finalAmount <= 0) {
-      toast.error('Please enter line item amounts for your advance request');
+      toast.error('Please enter line item amounts for your request');
       return;
     }
     setAdvanceSaving(true);
@@ -403,23 +442,38 @@ export default function MyExpenses() {
       const payload = {
         amount: finalAmount,
         purpose: defaultPurpose,
+        description: defaultPurpose,
+        expense_date: advanceForm.required_date || null,
         project_code: advanceForm.project_code || null,
         required_date: advanceForm.required_date || null,
         attachment_filename: advanceForm.attachment_filename || null,
+        receipt_filename: advanceForm.attachment_filename || null,
         is_submit: submitFlag,
         lines: validLines,
       };
 
-      if (editingAdvance) {
-        await api.put(`/expenses/advances/${editingAdvance.id}`, payload);
-        toast.success(submitFlag ? 'Advance request resubmitted!' : 'Draft updated!');
+      if (modalFormType === 'claim') {
+        if (editingRecord) {
+          await api.put(`/expenses/${editingRecord.id}`, payload);
+          toast.success(submitFlag ? 'Reimbursement claim submitted!' : 'Draft claim updated!');
+        } else {
+          await api.post('/expenses/', payload);
+          toast.success(submitFlag ? 'Reimbursement claim submitted!' : 'Draft claim saved!');
+        }
+        closeAdvanceModal();
+        fetchClaims();
       } else {
-        await api.post('/expenses/advances', payload);
-        toast.success(submitFlag ? 'Advance request submitted!' : 'Draft saved!');
+        if (editingRecord) {
+          await api.put(`/expenses/advances/${editingRecord.id}`, payload);
+          toast.success(submitFlag ? 'Advance request resubmitted!' : 'Draft updated!');
+        } else {
+          await api.post('/expenses/advances', payload);
+          toast.success(submitFlag ? 'Advance request submitted!' : 'Draft saved!');
+        }
+        closeAdvanceModal();
+        fetchAdvances();
+        fetchLedger();
       }
-      closeAdvanceModal();
-      fetchAdvances();
-      fetchLedger();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Operation failed');
     } finally {
@@ -427,7 +481,16 @@ export default function MyExpenses() {
     }
   }
 
-  const selCat = categories.find(c => c.id === parseInt(form.category_id));
+  async function handleDeleteClaim(id) {
+    if (!window.confirm('Are you sure you want to delete this reimbursement claim?')) return;
+    try {
+      await api.delete(`/expenses/${id}`);
+      toast.success('Claim deleted successfully');
+      fetchClaims();
+    } catch {
+      toast.error('Failed to delete claim');
+    }
+  }
 
   return (
     <Layout title={activeTab === 'reimbursements' ? 'My Expenses & Claims' : 'My Cash Advances'}>
@@ -498,7 +561,7 @@ export default function MyExpenses() {
                 )
               )}
               <button
-                onClick={() => setShowModal(true)}
+                onClick={openNewClaimModal}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
@@ -541,6 +604,8 @@ export default function MyExpenses() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {claims.map(c => {
                   const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.pending;
+                  const isExpanded = expandedClaimId === c.id;
+
                   return (
                     <div
                       key={c.id}
@@ -550,146 +615,244 @@ export default function MyExpenses() {
                         borderRadius: 12,
                         padding: '16px 20px',
                         display: 'flex',
-                        alignItems: 'center',
-                        gap: 16,
+                        flexDirection: 'column',
+                        gap: 12,
                         transition: 'box-shadow 0.15s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)')}
                       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
                     >
-                      {/* Left accent bar */}
-                      <div style={{ width: 4, height: 48, borderRadius: 4, background: cfg.color, flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                        {/* Left accent bar */}
+                        <div style={{ width: 4, height: 48, borderRadius: 4, background: cfg.color, flexShrink: 0 }} />
 
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div
-                          style={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            marginBottom: 4,
-                            flexWrap: 'wrap',
-                          }}
-                        >
-                          <span
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div
                             style={{
-                              fontWeight: 800,
-                              fontSize: 14,
-                              color: 'var(--accent)',
-                              fontFamily: 'monospace',
-                            }}
-                          >
-                            {c.reference}
-                          </span>
-                          <span
-                            style={{
-                              fontSize: 11,
-                              fontWeight: 700,
-                              padding: '2px 9px',
-                              borderRadius: 20,
-                              background: cfg.bg,
-                              color: cfg.color,
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            {c.status}
-                          </span>
-                          {c.l1_approver_id && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                padding: '2px 7px',
-                                borderRadius: 4,
-                                border: '1px solid var(--border)',
-                                color:
-                                  c.l1_status === 'approved'
-                                    ? '#22c55e'
-                                    : c.l1_status === 'rejected'
-                                    ? '#ef4444'
-                                    : '#f59e0b',
-                              }}
-                            >
-                              L1: {(c.l1_status || 'PENDING').toUpperCase()}
-                            </span>
-                          )}
-                          {c.l2_approver_id && (
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                padding: '2px 7px',
-                                borderRadius: 4,
-                                border: '1px solid var(--border)',
-                                color:
-                                  c.l2_status === 'approved'
-                                    ? '#22c55e'
-                                    : c.l2_status === 'rejected'
-                                    ? '#ef4444'
-                                    : '#f59e0b',
-                              }}
-                            >
-                              L2: {(c.l2_status || 'PENDING').toUpperCase()}
-                            </span>
-                          )}
-                        </div>
-                        <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, marginBottom: 2 }}>
-                          {c.category_name || 'Uncategorized'} — {c.description || 'No description'}
-                        </div>
-                        <div style={{ fontSize: 12, color: 'var(--text3)' }}>
-                          Expense date: {c.expense_date} · Submitted: {c.claim_date}
-                        </div>
-                        {c.approver_remarks && (
-                          <div style={{ fontSize: 12, color: '#ef4444', marginTop: 4, fontStyle: 'italic' }}>
-                            Remark: {c.approver_remarks}
-                          </div>
-                        )}
-                        {c.reimbursement_ref && (
-                          <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>Ref: {c.reimbursement_ref}</div>
-                        )}
-                      </div>
-
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-                        <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{INR(c.amount)}</div>
-                        {c.receipt_filename && (
-                          <a
-                            href={`/api/uploads/expenses/${c.receipt_filename}`}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              padding: '6px 10px',
-                              borderRadius: 7,
-                              border: '1px solid var(--border)',
-                              background: 'var(--bg3)',
-                              color: 'var(--text2)',
-                              cursor: 'pointer',
-                              fontSize: 12,
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 5,
-                              textDecoration: 'none',
+                              gap: 10,
+                              marginBottom: 4,
+                              flexWrap: 'wrap',
                             }}
                           >
-                            <Paperclip size={13} /> Receipt
-                          </a>
-                        )}
-                        {c.status === 'pending' && (
-                          <button
-                            onClick={() => handleCancel(c.id)}
-                            style={{
-                              padding: '6px 10px',
-                              borderRadius: 7,
-                              border: '1px solid #ef4444',
-                              background: '#ef444415',
-                              color: '#ef4444',
-                              cursor: 'pointer',
-                              fontSize: 12,
-                              fontWeight: 600,
-                            }}
-                          >
-                            Cancel
-                          </button>
-                        )}
+                            <span
+                              style={{
+                                fontWeight: 800,
+                                fontSize: 14,
+                                color: 'var(--accent)',
+                                fontFamily: 'monospace',
+                              }}
+                            >
+                              {c.reference || `(Draft Claim #${c.id})`}
+                            </span>
+                            <span
+                              style={{
+                                fontSize: 11,
+                                fontWeight: 700,
+                                padding: '2px 9px',
+                                borderRadius: 20,
+                                background: cfg.bg,
+                                color: cfg.color,
+                                textTransform: 'uppercase',
+                              }}
+                            >
+                              {c.status === 'approved' ? 'APPROVED – PENDING ACCOUNTS DISBURSEMENT' : c.status}
+                            </span>
+                            {c.l1_approver_id && (
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  padding: '2px 7px',
+                                  borderRadius: 4,
+                                  border: '1px solid var(--border)',
+                                  color:
+                                    c.l1_status === 'approved'
+                                      ? '#22c55e'
+                                      : c.l1_status === 'rejected'
+                                      ? '#ef4444'
+                                      : '#f59e0b',
+                                }}
+                              >
+                                L1: {(c.l1_status || 'PENDING').toUpperCase()}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, marginBottom: 2 }}>
+                            {c.purpose || c.description || 'Itemized Reimbursement Claim'}
+                          </div>
+                          <div style={{ fontSize: 12, color: 'var(--text3)' }}>
+                            Expense date: {c.expense_date || '—'} · Submitted: {c.claim_date || '—'}
+                          </div>
+                          {c.approver_remarks && (
+                            <div style={{ fontSize: 12, color: '#ef4444', marginTop: 4, fontStyle: 'italic' }}>
+                              Remark: {c.approver_remarks}
+                            </div>
+                          )}
+                          {c.reimbursement_ref && (
+                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
+                          )}
+                        </div>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                          <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{INR(c.amount)}</div>
+
+                          {c.lines && c.lines.length > 0 && (
+                            <button
+                              onClick={() => setExpandedClaimId(isExpanded ? null : c.id)}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: 6,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg3)',
+                                color: 'var(--text2)',
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              {isExpanded ? 'Hide Sheet' : 'View Sheet'}
+                            </button>
+                          )}
+
+                          {(c.status === 'draft' || c.status === 'pending') && (
+                            <button
+                              onClick={() => openEditClaimModal(c)}
+                              style={{
+                                padding: '5px 10px',
+                                borderRadius: 6,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg3)',
+                                color: 'var(--text2)',
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 600,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                              }}
+                            >
+                              <Edit size={12} /> Edit
+                            </button>
+                          )}
+
+                          {c.receipt_filename && (
+                            <a
+                              href={`/api/uploads/expenses/${c.receipt_filename}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: 7,
+                                border: '1px solid var(--border)',
+                                background: 'var(--bg3)',
+                                color: 'var(--text2)',
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 5,
+                                textDecoration: 'none',
+                              }}
+                            >
+                              <Paperclip size={13} /> Receipt
+                            </a>
+                          )}
+                          {(c.status === 'pending' || c.status === 'draft') && (
+                            <button
+                              onClick={() => handleDeleteClaim(c.id)}
+                              style={{
+                                padding: '6px 10px',
+                                borderRadius: 7,
+                                border: '1px solid #ef4444',
+                                background: '#ef444415',
+                                color: '#ef4444',
+                                cursor: 'pointer',
+                                fontSize: 12,
+                                fontWeight: 600,
+                              }}
+                            >
+                              Cancel
+                            </button>
+                          )}
+                        </div>
                       </div>
+
+                      {/* Expandable itemized claim breakdown sheet */}
+                      {isExpanded && c.lines && c.lines.length > 0 && (
+                        <div
+                          style={{
+                            borderTop: '1px solid var(--border)',
+                            paddingTop: 12,
+                            marginTop: 4,
+                            overflowX: 'auto',
+                          }}
+                        >
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 8 }}>
+                            Itemized Expense Claim Breakdown Grid
+                          </div>
+                          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
+                            <thead>
+                              <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Date</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Category</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost Code</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>From / To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Description</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Vendor</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>GST %</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>Amount</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Bills</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {c.lines.map((row, rIdx) => (
+                                <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
+                                  <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '8px', fontWeight: 600 }}>{row.expense_type}</td>
+                                  <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '8px' }}>{row.cost_to || '—'}</td>
+                                  <td style={{ padding: '8px' }}>
+                                    {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
+                                  </td>
+                                  <td style={{ padding: '8px' }}>{row.description || '—'}</td>
+                                  <td style={{ padding: '8px' }}>{row.paid_to || '—'}</td>
+                                  <td style={{ padding: '8px', textAlign: 'right' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '8px' }}>
+                                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                                      {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
+                                        <a
+                                          key={fIdx}
+                                          href={`/api/uploads/expenses/${file}`}
+                                          target="_blank"
+                                          rel="noreferrer"
+                                          style={{
+                                            display: 'inline-flex',
+                                            alignItems: 'center',
+                                            gap: 3,
+                                            background: 'var(--bg3)',
+                                            border: '1px solid var(--border)',
+                                            borderRadius: 4,
+                                            padding: '2px 6px',
+                                            fontSize: 10,
+                                            color: 'var(--accent)',
+                                            textDecoration: 'none',
+                                          }}
+                                        >
+                                          <Paperclip size={10} /> Bill {fIdx + 1}
+                                        </a>
+                                      ))}
+                                    </div>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -1210,7 +1373,10 @@ export default function MyExpenses() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
                 <h3 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Wallet size={18} style={{ color: 'var(--accent)' }} />
-                  {editingAdvance ? 'Edit Advance Request' : 'New Advance Request'}
+                  {modalFormType === 'claim'
+                    ? (editingRecord ? 'Edit Reimbursement Claim' : 'New Reimbursement Claim')
+                    : (editingRecord ? 'Edit Advance Request' : 'New Advance Request')
+                  }
                 </h3>
                 <button
                   onClick={closeAdvanceModal}
@@ -1594,7 +1760,7 @@ export default function MyExpenses() {
                   Cancel
                 </button>
                 <button
-                  onClick={() => handleAdvanceSubmit(false)}
+                  onClick={() => handleFormSubmit(false)}
                   disabled={advanceSaving}
                   style={{
                     padding: '9px 18px',
@@ -1611,7 +1777,7 @@ export default function MyExpenses() {
                   Save as Draft
                 </button>
                 <button
-                  onClick={() => handleAdvanceSubmit(true)}
+                  onClick={() => handleFormSubmit(true)}
                   disabled={advanceSaving}
                   style={{
                     padding: '9px 20px',
@@ -1625,7 +1791,7 @@ export default function MyExpenses() {
                     opacity: advanceSaving ? 0.7 : 1,
                   }}
                 >
-                  {advanceSaving ? 'Submitting...' : 'Submit Request'}
+                  {advanceSaving ? 'Submitting...' : (modalFormType === 'claim' ? 'Submit Claim' : 'Submit Request')}
                 </button>
               </div>
             </div>

@@ -14,7 +14,7 @@ import os, uuid, shutil
 from app.database import get_db
 from app.models import User, SystemSetting
 from app.auth import get_current_user, is_hr_admin
-from app.expense_models import ExpenseCategory, ExpenseClaim, ExpenseAdvanceRequest, ExpenseAdvanceSettlementLine, ExpenseAdvanceLedger
+from app.expense_models import ExpenseCategory, ExpenseClaim, ExpenseClaimLine, ExpenseAdvanceRequest, ExpenseAdvanceSettlementLine, ExpenseAdvanceLedger
 from app.hr_models import HREmployee, HRNotification
 
 router = APIRouter()
@@ -57,11 +57,16 @@ class CategoryUpdate(BaseModel):
 
 class ClaimSubmit(BaseModel):
     category_id: Optional[int] = None
-    expense_date: date
+    expense_date: Optional[date] = None
     amount: float
     description: Optional[str] = None
     purpose: Optional[str] = None
+    project_code: Optional[str] = None
+    required_date: Optional[date] = None
     receipt_filename: Optional[str] = None
+    attachment_filename: Optional[str] = None
+    is_submit: bool = True
+    lines: Optional[List['SettlementLineInput']] = []
 
 class ExpenseAction(BaseModel):
     remarks: Optional[str] = None
@@ -81,6 +86,25 @@ def _ser_cat(c: ExpenseCategory) -> dict:
         "requires_receipt": c.requires_receipt,
         "is_active": c.is_active,
         "created_at": str(c.created_at) if c.created_at else None,
+    }
+
+def _ser_claim_line(l: ExpenseClaimLine) -> dict:
+    return {
+        "id": l.id,
+        "claim_id": l.claim_id,
+        "date": str(l.date) if l.date else None,
+        "expense_type": l.expense_type,
+        "cost_code": l.cost_code,
+        "cost_to": l.cost_to,
+        "from_location": l.from_location,
+        "to_location": l.to_location,
+        "description": l.description,
+        "paid_to": l.paid_to,
+        "gst_number": l.gst_number,
+        "gst_rate": float(l.gst_rate or 0),
+        "amount": float(l.amount or 0),
+        "bill_attachments": l.bill_attachments or [],
+        "account_verification": l.account_verification
     }
 
 def _ser_claim(c: ExpenseClaim) -> dict:
@@ -115,6 +139,7 @@ def _ser_claim(c: ExpenseClaim) -> dict:
         "reimbursed_at": str(c.reimbursed_at) if c.reimbursed_at else None,
         "reimbursement_ref": c.reimbursement_ref,
         "created_at": str(c.created_at) if c.created_at else None,
+        "lines": [_ser_claim_line(line) for line in c.lines] if c.lines else []
     }
 
 
@@ -219,47 +244,140 @@ def submit_claim(
     from app.auth import get_current_employee
     emp = get_current_employee(current_user, db)
 
-    # Validate category
-    if data.category_id:
-        cat = db.query(ExpenseCategory).filter(
-            ExpenseCategory.id == data.category_id,
-            ExpenseCategory.is_active == True
-        ).first()
-        if not cat:
-            raise HTTPException(400, "Invalid expense category")
-        if cat.max_limit and data.amount > cat.max_limit:
-            raise HTTPException(400, f"Amount exceeds maximum limit of \u20b9{cat.max_limit:,.2f} for {cat.name}")
-        if cat.requires_receipt and not data.receipt_filename:
-            raise HTTPException(400, f"Receipt is required for {cat.name}")
+    status_str = "pending" if data.is_submit else "draft"
+    final_expense_date = data.expense_date or data.required_date or date.today()
+    final_attachment = data.receipt_filename or data.attachment_filename
 
     claim = ExpenseClaim(
         reference=_next_ref(db),
         employee_id=emp.id,
         category_id=data.category_id,
         claim_date=date.today(),
-        expense_date=data.expense_date,
+        expense_date=final_expense_date,
         amount=data.amount,
         description=data.description,
         purpose=data.purpose,
-        receipt_filename=data.receipt_filename,
-        status="pending",
-        approver_id=emp.manager_id,
-        l1_approver_id=emp.manager_id,
+        receipt_filename=final_attachment,
+        status=status_str,
+        approver_id=emp.manager_id if status_str == "pending" else None,
+        l1_approver_id=emp.manager_id if status_str == "pending" else None,
         l2_approver_id=getattr(emp, "manager_l2_id", None),
-        l1_status="pending",
+        l1_status="pending" if status_str == "pending" else None,
     )
-    db.add(claim); db.commit(); db.refresh(claim)
+    db.add(claim)
+    db.commit()
+    db.refresh(claim)
 
-    # Notify L1 manager
-    if emp.manager_id:
+    if data.lines:
+        for l in data.lines:
+            c_line = ExpenseClaimLine(
+                claim_id=claim.id,
+                date=l.date,
+                expense_type=l.expense_type,
+                cost_code=l.cost_code,
+                cost_to=l.cost_to,
+                from_location=l.from_location,
+                to_location=l.to_location,
+                description=l.description,
+                paid_to=l.paid_to,
+                gst_number=l.gst_number,
+                gst_rate=l.gst_rate or 0.0,
+                amount=l.amount,
+                bill_attachments=l.bill_attachments or [],
+                account_verification=l.account_verification
+            )
+            db.add(c_line)
+        db.commit()
+
+    if status_str == "pending" and emp.manager_id:
         manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
         if manager and manager.user_id:
             _notify(db, manager.user_id,
                     "Expense Claim Submitted",
                     f"{emp.name} submitted an expense claim of \u20b9{data.amount:,.2f} for approval.",
                     claim.id)
-    db.commit()
+            db.commit()
     return _ser_claim(claim)
+
+
+@router.put("/{claim_id}")
+def update_claim(
+    claim_id: int,
+    data: ClaimSubmit,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.auth import get_current_employee
+    emp = get_current_employee(current_user, db)
+    claim = db.query(ExpenseClaim).filter(ExpenseClaim.id == claim_id).first()
+    if not claim:
+        raise HTTPException(404, "Claim not found")
+    if claim.employee_id != emp.id:
+        raise HTTPException(403, "Access denied")
+    if claim.status not in ("draft", "pending"):
+        raise HTTPException(400, f"Cannot update claim that is already {claim.status}")
+
+    status_str = "pending" if data.is_submit else "draft"
+    claim.amount = data.amount
+    claim.purpose = data.purpose
+    claim.description = data.description
+    claim.expense_date = data.expense_date or data.required_date or date.today()
+    if data.category_id:
+        claim.category_id = data.category_id
+    if data.receipt_filename or data.attachment_filename:
+        claim.receipt_filename = data.receipt_filename or data.attachment_filename
+    claim.status = status_str
+
+    if status_str == "pending":
+        claim.approver_id = emp.manager_id
+        claim.l1_approver_id = emp.manager_id
+        claim.l2_approver_id = getattr(emp, "manager_l2_id", None)
+        claim.l1_status = "pending"
+
+    # Replace lines
+    db.query(ExpenseClaimLine).filter(ExpenseClaimLine.claim_id == claim_id).delete()
+    if data.lines:
+        for l in data.lines:
+            c_line = ExpenseClaimLine(
+                claim_id=claim.id,
+                date=l.date,
+                expense_type=l.expense_type,
+                cost_code=l.cost_code,
+                cost_to=l.cost_to,
+                from_location=l.from_location,
+                to_location=l.to_location,
+                description=l.description,
+                paid_to=l.paid_to,
+                gst_number=l.gst_number,
+                gst_rate=l.gst_rate or 0.0,
+                amount=l.amount,
+                bill_attachments=l.bill_attachments or [],
+                account_verification=l.account_verification
+            )
+            db.add(c_line)
+
+    claim.updated_at = datetime.utcnow()
+    db.commit()
+    db.refresh(claim)
+    return _ser_claim(claim)
+
+
+@router.delete("/{claim_id}")
+def delete_claim(
+    claim_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.auth import get_current_employee
+    emp = get_current_employee(current_user, db)
+    claim = db.query(ExpenseClaim).filter(ExpenseClaim.id == claim_id).first()
+    if not claim:
+        raise HTTPException(404, "Claim not found")
+    if claim.employee_id != emp.id and not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Access denied")
+    db.delete(claim)
+    db.commit()
+    return {"message": "Claim deleted successfully"}
 
 
 @router.get("/my")
@@ -283,15 +401,30 @@ def list_pending_approvals(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """List claims pending THIS user's approval."""
+    """List claims pending Manager approval or Accountant disbursement payout."""
     from app.auth import get_current_employee_optional
     is_admin = is_hr_admin(current_user, db)
     emp = get_current_employee_optional(current_user, db)
-    q = db.query(ExpenseClaim).filter(ExpenseClaim.status == "pending")
-    if not is_admin:
+
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "expenses_settings").first()
+    accountant_id = None
+    if setting and isinstance(setting.value, dict):
+        accountant_id = setting.value.get("accountant_id")
+    is_auth_accountant = False
+    if accountant_id and emp and emp.id == accountant_id:
+        is_auth_accountant = True
+
+    is_acc_or_super = is_auth_accountant or current_user.is_superadmin
+
+    if is_acc_or_super:
+        q = db.query(ExpenseClaim).filter(ExpenseClaim.status.in_(["pending", "approved"]))
+    else:
         if not emp:
             return []
-        q = q.filter(ExpenseClaim.approver_id == emp.id)
+        q = db.query(ExpenseClaim).filter(
+            ExpenseClaim.status == "pending",
+            ExpenseClaim.approver_id == emp.id
+        )
     return [_ser_claim(c) for c in q.order_by(ExpenseClaim.created_at.desc()).all()]
 
 
@@ -829,12 +962,21 @@ def reimburse_claim(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    if not is_hr_admin(current_user, db):
-        raise HTTPException(403, "Admin access required")
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "expenses_settings").first()
+    accountant_id = None
+    if setting and isinstance(setting.value, dict):
+        accountant_id = setting.value.get("accountant_id")
+    from app.auth import get_current_employee_optional
+    emp = get_current_employee_optional(current_user, db)
+    is_auth_accountant = accountant_id and emp and emp.id == accountant_id
+
+    if not is_auth_accountant and not current_user.is_superadmin and not is_hr_admin(current_user, db):
+        raise HTTPException(403, "Only the configured Accountant, Super Admin, or HR Admin can disburse reimbursements")
+
     claim = db.query(ExpenseClaim).filter(ExpenseClaim.id == claim_id).first()
     if not claim: raise HTTPException(404, "Claim not found")
     if claim.status != "approved":
-        raise HTTPException(400, f"Only approved claims can be marked as reimbursed. Current: {claim.status}")
+        raise HTTPException(400, f"Only manager-approved claims can be disbursed. Current: {claim.status}")
     claim.status = "reimbursed"
     claim.reimbursement_mode = data.reimbursement_mode
     claim.reimbursed_at = datetime.utcnow()
@@ -842,11 +984,11 @@ def reimburse_claim(
     claim.updated_at = datetime.utcnow()
     if claim.employee and claim.employee.user_id:
         _notify(db, claim.employee.user_id,
-                "Expense Reimbursed \U0001f4b0",
-                f"Your expense claim {claim.reference} of \u20b9{claim.amount:,.2f} has been reimbursed via {data.reimbursement_mode}.",
+                "Expense Reimbursed 💵",
+                f"Your expense claim {claim.reference} of \u20b9{claim.amount:,.2f} has been disbursed by Accountant via {data.reimbursement_mode}.",
                 claim.id)
     db.commit()
-    return {"message": "Marked as reimbursed", "id": claim.id}
+    return {"message": "Reimbursement disbursed successfully", "id": claim.id}
 
 
 # ── Seed default categories ───────────────────────────────────────────────────
