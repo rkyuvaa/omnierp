@@ -55,6 +55,21 @@ class CategoryUpdate(BaseModel):
     requires_receipt: Optional[bool] = None
     is_active: Optional[bool] = None
 
+class SettlementLineInput(BaseModel):
+    date: date
+    expense_type: str
+    cost_code: Optional[str] = None
+    cost_to: Optional[str] = None
+    from_location: Optional[str] = None
+    to_location: Optional[str] = None
+    description: Optional[str] = None
+    paid_to: Optional[str] = None
+    gst_number: Optional[str] = None
+    gst_rate: Optional[float] = 0.0
+    amount: float
+    bill_attachments: Optional[List[str]] = []
+    account_verification: Optional[str] = None
+
 class ClaimSubmit(BaseModel):
     category_id: Optional[int] = None
     expense_date: Optional[date] = None
@@ -66,7 +81,7 @@ class ClaimSubmit(BaseModel):
     receipt_filename: Optional[str] = None
     attachment_filename: Optional[str] = None
     is_submit: bool = True
-    lines: Optional[List['SettlementLineInput']] = []
+    lines: Optional[List[SettlementLineInput]] = []
 
 class ExpenseAction(BaseModel):
     remarks: Optional[str] = None
@@ -1023,29 +1038,13 @@ class AdvanceRequestSubmit(BaseModel):
     required_date: Optional[date] = None
     attachment_filename: Optional[str] = None
     is_submit: bool = True # True = submitted, False = draft
-    lines: Optional[List['SettlementLineInput']] = []
+    lines: Optional[List[SettlementLineInput]] = []
 
 class AdvanceAction(BaseModel):
     remarks: Optional[str] = None
 
 class ClarifyAction(BaseModel):
     remarks: str
-
-# Settlement Line schema
-class SettlementLineInput(BaseModel):
-    date: date
-    expense_type: str
-    cost_code: Optional[str] = None
-    cost_to: Optional[str] = None
-    from_location: Optional[str] = None
-    to_location: Optional[str] = None
-    description: Optional[str] = None
-    paid_to: Optional[str] = None
-    gst_number: Optional[str] = None
-    gst_rate: Optional[float] = 0.0
-    amount: float
-    bill_attachments: Optional[List[str]] = []
-    account_verification: Optional[str] = None
 
 class SettlementSubmit(BaseModel):
     lines: List[SettlementLineInput]
