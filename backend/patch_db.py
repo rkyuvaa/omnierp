@@ -43,10 +43,22 @@ def patch_db():
             ("hr", "hr_salary_components", "deduct_from", "VARCHAR(50) DEFAULT 'gross'"),
             
             # Users module
+            ("users", "users", "username", "VARCHAR(50)"),
+            ("users", "users", "department_id", "INTEGER"),
+            ("users", "users", "allowed_branches", "JSON DEFAULT '[]'"),
+            ("users", "users", "allowed_modules", "JSON DEFAULT '{}'"),
+            ("users", "users", "totp_secret", "VARCHAR(100)"),
+            ("users", "users", "totp_enabled", "BOOLEAN DEFAULT FALSE"),
+            ("users", "users", "fcm_token", "TEXT"),
+            ("users", "users", "created_at", "TIMESTAMP WITHOUT TIME ZONE"),
+            ("users", "users", "last_login", "TIMESTAMP WITHOUT TIME ZONE"),
             ("users", "users", "last_active_at", "TIMESTAMP WITHOUT TIME ZONE"),
 
             # Expenses module
             ("expenses", "expense_claims", "reference", "VARCHAR(30)"),
+            ("expenses", "expense_claims", "purpose", "TEXT"),
+            ("expenses", "expense_claims", "project_code", "VARCHAR(50)"),
+            ("expenses", "expense_claims", "required_date", "DATE"),
             ("expenses", "expense_claims", "l1_approver_id", "INTEGER"),
             ("expenses", "expense_claims", "l1_status", "VARCHAR(20) DEFAULT 'pending'"),
             ("expenses", "expense_claims", "l1_remarks", "TEXT"),
@@ -58,6 +70,9 @@ def patch_db():
             ("expenses", "expense_claims", "reimbursement_mode", "VARCHAR(20)"),
             ("expenses", "expense_claims", "reimbursed_at", "TIMESTAMP WITHOUT TIME ZONE"),
             ("expenses", "expense_claims", "reimbursement_ref", "VARCHAR(100)"),
+            ("expenses", "expense_advance_requests", "purpose", "TEXT"),
+            ("expenses", "expense_advance_requests", "project_code", "VARCHAR(50)"),
+            ("expenses", "expense_advance_requests", "required_date", "DATE"),
             ("expenses", "hr_employees", "advance_opening_balance", "FLOAT DEFAULT 0.0"),
         ]
         
