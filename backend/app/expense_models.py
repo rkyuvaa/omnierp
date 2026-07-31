@@ -68,6 +68,7 @@ class ExpenseClaim(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+    category = relationship("ExpenseCategory", back_populates="claims")
     employee = relationship("HREmployee", foreign_keys=[employee_id])
     approver = relationship("HREmployee", foreign_keys=[approver_id])
     lines = relationship("ExpenseClaimLine", back_populates="claim", cascade="all, delete-orphan")
