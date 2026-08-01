@@ -767,20 +767,35 @@ def get_records(
         cur = max(lreq.from_date, month_start)
         end_d = min(lreq.to_date, month_end)
         while cur <= end_d:
-            leave_map[(lreq.employee_id, str(cur))] = lreq
+            k = (lreq.employee_id, str(cur))
+            if k not in leave_map:
+                leave_map[k] = []
+            leave_map[k].append(lreq)
             cur += timedelta(days=1)
 
     records = q.all()
     result = {}
     for r in records:
-        lreq = r.leave_request or leave_map.get((r.employee_id, str(r.date)))
+        day_reqs = leave_map.get((r.employee_id, str(r.date)), [])
+        if r.leave_request and r.leave_request not in day_reqs:
+            day_reqs.append(r.leave_request)
+            
         is_paid = True
         is_half_day = False
         leave_request_id = r.leave_request_id
-        if lreq:
-            is_paid = lreq.leave_type.is_paid if lreq.leave_type else False
-            is_half_day = lreq.is_half_day
-            leave_request_id = lreq.id
+        paid_leave_days = 0.0
+        lop_leave_days = 0.0
+
+        if day_reqs:
+            leave_request_id = day_reqs[0].id
+            for req in day_reqs:
+                val = 0.5 if req.is_half_day else req.total_days
+                if req.leave_type and req.leave_type.is_paid:
+                    paid_leave_days += val
+                else:
+                    lop_leave_days += val
+            is_paid = (paid_leave_days > 0)
+            is_half_day = (paid_leave_days == 0.5 or lop_leave_days == 0.5)
 
         key = str(r.employee_id)
         if key not in result:
@@ -790,6 +805,8 @@ def get_records(
             "leave_request_id": leave_request_id,
             "is_paid": is_paid,
             "is_half_day": is_half_day,
+            "paid_leave_days": paid_leave_days,
+            "lop_leave_days": lop_leave_days,
             "color": STATUS_COLORS.get(r.status, "#94a3b8"),
             "check_in": str(r.check_in) if r.check_in else None,
             "check_out": str(r.check_out) if r.check_out else None,
@@ -943,17 +960,61 @@ def recompute_month(data: RecomputeRequest, db: Session = Depends(get_db), curre
                 HRLeaveRequest.from_date <= month_end,
                 HRLeaveRequest.to_date >= month_start,
                 HRLeaveRequest.status.in_(["approved", "auto_approved", "pending"])
-            ).order_by(HRLeaveRequest.created_at).all()
+            ).order_by(HRLeaveRequest.from_date, HRLeaveRequest.created_at).all()
             
             used_paid = 0.0
             for r in emp_reqs:
                 req_val = 0.5 if r.is_half_day else r.total_days
-                if r.leave_type_id != lop_type.id and (r.leave_type and r.leave_type.is_paid):
-                    used_paid += req_val
-                elif r.leave_type_id == lop_type.id:
+                is_currently_paid = (r.leave_type_id != lop_type.id) and (r.leave_type and r.leave_type.is_paid if r.leave_type else True)
+                
+                if is_currently_paid:
+                    if used_paid + req_val <= limit + 1e-6:
+                        used_paid += req_val
+                    elif used_paid < limit:
+                        allowed_paid = limit - used_paid
+                        overflow_lop = req_val - allowed_paid
+                        r.total_days = allowed_paid
+                        r.is_half_day = (allowed_paid == 0.5)
+                        used_paid += allowed_paid
+                        
+                        r_lop = HRLeaveRequest(
+                            reference=_next_leave_ref(db),
+                            employee_id=emp.id,
+                            leave_type_id=lop_type.id,
+                            from_date=r.from_date,
+                            to_date=r.to_date,
+                            total_days=overflow_lop,
+                            is_half_day=(overflow_lop == 0.5),
+                            reason=f"{r.reason or ''} (Monthly Limit Overflow)".strip(),
+                            status=r.status
+                        )
+                        db.add(r_lop)
+                    else:
+                        r.leave_type_id = lop_type.id
+                else:
                     if used_paid + req_val <= limit + 1e-6:
                         r.leave_type_id = primary_paid.id
                         used_paid += req_val
+                    elif used_paid < limit:
+                        allowed_paid = limit - used_paid
+                        overflow_lop = req_val - allowed_paid
+                        r.leave_type_id = primary_paid.id
+                        r.total_days = allowed_paid
+                        r.is_half_day = (allowed_paid == 0.5)
+                        used_paid += allowed_paid
+                        
+                        r_lop = HRLeaveRequest(
+                            reference=_next_leave_ref(db),
+                            employee_id=emp.id,
+                            leave_type_id=lop_type.id,
+                            from_date=r.from_date,
+                            to_date=r.to_date,
+                            total_days=overflow_lop,
+                            is_half_day=(overflow_lop == 0.5),
+                            reason=f"{r.reason or ''} (Monthly Limit Overflow)".strip(),
+                            status=r.status
+                        )
+                        db.add(r_lop)
         db.commit()
     
     for emp in employees:

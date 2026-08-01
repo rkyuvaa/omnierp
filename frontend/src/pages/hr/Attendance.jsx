@@ -379,23 +379,21 @@ export default function Attendance() {
         const cfg = s ? STATUS_CONFIG[s] : null;
         
         const rec = empRecs[d.dayStr];
-        const hasApprovedLeave = !!rec?.leave_request_id || rec?.is_half_day;
-        const isPaidLeave = rec?.is_paid !== false;
+        const paidDays = rec?.paid_leave_days ?? (rec?.is_paid !== false ? (rec?.is_half_day ? 0.5 : 1.0) : 0);
+        const lopDays = rec?.lop_leave_days ?? (rec?.is_paid === false ? (rec?.is_half_day ? 0.5 : 1.0) : 0);
 
         if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
         else if (s === 'half_day') {
-          if (hasApprovedLeave && isPaidLeave) { pCount += 0.5; lvCount += 0.5; }
-          else { pCount += 0.5; aCount += 0.5; }
+          pCount += 0.5;
+          if (paidDays > 0) { lvCount += paidDays; }
+          if (lopDays > 0) { aCount += lopDays; }
+          if (paidDays === 0 && lopDays === 0) { aCount += 0.5; }
         }
         else if (s === 'absent') aCount += 1;
         else if (s === 'leave') {
-          if (rec?.is_half_day) {
-            if (isPaidLeave) { lvCount += 0.5; aCount += 0.5; }
-            else { aCount += 1; }
-          } else {
-            if (isPaidLeave) { lvCount += 1; }
-            else { aCount += 1; }
-          }
+          if (paidDays > 0) { lvCount += paidDays; }
+          if (lopDays > 0) { aCount += lopDays; }
+          if (paidDays === 0 && lopDays === 0) { lvCount += 1; }
         }
         else if (s === 'holiday') holCount += 1;
         else if (s === 'weekly_off') woCount += 1;
@@ -741,23 +739,21 @@ export default function Attendance() {
                     days.forEach(d => {
                       const s = getEffStatus(d, empRecs, emp);
                       const rec = empRecs[d.dayStr];
-                      const hasApprovedLeave = !!rec?.leave_request_id || rec?.is_half_day;
-                      const isPaidLeave = rec?.is_paid !== false;
+                      const paidDays = rec?.paid_leave_days ?? (rec?.is_paid !== false ? (rec?.is_half_day ? 0.5 : 1.0) : 0);
+                      const lopDays = rec?.lop_leave_days ?? (rec?.is_paid === false ? (rec?.is_half_day ? 0.5 : 1.0) : 0);
 
                       if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
                       else if (s === 'half_day') {
-                        if (hasApprovedLeave && isPaidLeave) { pCount += 0.5; lvCount += 0.5; }
-                        else { pCount += 0.5; aCount += 0.5; }
+                        pCount += 0.5;
+                        if (paidDays > 0) { lvCount += paidDays; }
+                        if (lopDays > 0) { aCount += lopDays; }
+                        if (paidDays === 0 && lopDays === 0) { aCount += 0.5; }
                       }
                       else if (s === 'absent') aCount += 1;
                       else if (s === 'leave') {
-                        if (rec?.is_half_day) {
-                          if (isPaidLeave) { lvCount += 0.5; aCount += 0.5; }
-                          else { aCount += 1; }
-                        } else {
-                          if (isPaidLeave) { lvCount += 1; }
-                          else { aCount += 1; }
-                        }
+                        if (paidDays > 0) { lvCount += paidDays; }
+                        if (lopDays > 0) { aCount += lopDays; }
+                        if (paidDays === 0 && lopDays === 0) { lvCount += 1; }
                       }
                       else if (s === 'holiday') holCount += 1;
                       else if (s === 'weekly_off') woCount += 1;
