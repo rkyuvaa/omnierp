@@ -288,9 +288,17 @@ def compute_record(db: Session, employee_id: int, target_date: date):
             if (punches[-1].punch_time - phys_check_in).total_seconds() >= 300:
                 phys_check_out = punches[-1].punch_time
 
+        # Fetch approved Leave request if any
+        approved_leave = db.query(HRLeaveRequest).filter(
+            HRLeaveRequest.employee_id == employee_id,
+            HRLeaveRequest.from_date <= target_date,
+            HRLeaveRequest.to_date >= target_date,
+            HRLeaveRequest.status.in_(["approved", "auto_approved"])
+        ).first()
+
         record.check_in_photo = punches[0].photo_url
         record.check_in_location = punches[0].location_name
-        record.leave_request_id = None
+        record.leave_request_id = approved_leave.id if approved_leave else None
 
         od_hours_total = 0.0
         morning_od_covers = False
@@ -748,7 +756,7 @@ def get_records(
     for r in records:
         is_paid = True
         is_half_day = False
-        if r.status == "leave" and r.leave_request:
+        if r.leave_request:
             is_paid = r.leave_request.leave_type.is_paid if r.leave_request.leave_type else False
             is_half_day = r.leave_request.is_half_day
 
@@ -757,6 +765,7 @@ def get_records(
             result[key] = {}
         result[key][str(r.date)] = {
             "status": r.status,
+            "leave_request_id": r.leave_request_id,
             "is_paid": is_paid,
             "is_half_day": is_half_day,
             "color": STATUS_COLORS.get(r.status, "#94a3b8"),
