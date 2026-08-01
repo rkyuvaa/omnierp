@@ -380,15 +380,22 @@ export default function Attendance() {
         
         const rec = empRecs[d.dayStr];
         const hasApprovedLeave = !!rec?.leave_request_id || rec?.is_half_day;
+        const isPaidLeave = rec?.is_paid !== false;
+
         if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
         else if (s === 'half_day') {
-          if (hasApprovedLeave) { pCount += 0.5; lvCount += 0.5; }
+          if (hasApprovedLeave && isPaidLeave) { pCount += 0.5; lvCount += 0.5; }
           else { pCount += 0.5; aCount += 0.5; }
         }
         else if (s === 'absent') aCount += 1;
         else if (s === 'leave') {
-          if (rec?.is_half_day) { lvCount += 0.5; aCount += 0.5; }
-          else { lvCount += 1; }
+          if (rec?.is_half_day) {
+            if (isPaidLeave) { lvCount += 0.5; aCount += 0.5; }
+            else { aCount += 1; }
+          } else {
+            if (isPaidLeave) { lvCount += 1; }
+            else { aCount += 1; }
+          }
         }
         else if (s === 'holiday') holCount += 1;
         else if (s === 'weekly_off') woCount += 1;
@@ -735,15 +742,22 @@ export default function Attendance() {
                       const s = getEffStatus(d, empRecs, emp);
                       const rec = empRecs[d.dayStr];
                       const hasApprovedLeave = !!rec?.leave_request_id || rec?.is_half_day;
+                      const isPaidLeave = rec?.is_paid !== false;
+
                       if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
                       else if (s === 'half_day') {
-                        if (hasApprovedLeave) { pCount += 0.5; lvCount += 0.5; }
+                        if (hasApprovedLeave && isPaidLeave) { pCount += 0.5; lvCount += 0.5; }
                         else { pCount += 0.5; aCount += 0.5; }
                       }
                       else if (s === 'absent') aCount += 1;
                       else if (s === 'leave') {
-                        if (rec?.is_half_day) { lvCount += 0.5; aCount += 0.5; }
-                        else { lvCount += 1; }
+                        if (rec?.is_half_day) {
+                          if (isPaidLeave) { lvCount += 0.5; aCount += 0.5; }
+                          else { aCount += 1; }
+                        } else {
+                          if (isPaidLeave) { lvCount += 1; }
+                          else { aCount += 1; }
+                        }
                       }
                       else if (s === 'holiday') holCount += 1;
                       else if (s === 'weekly_off') woCount += 1;

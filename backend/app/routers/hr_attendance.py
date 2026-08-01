@@ -751,21 +751,43 @@ def get_records(
     if employee_id:
         q = q.filter(HRAttendanceRecord.employee_id == employee_id)
 
+    import calendar
+    month_start = date(year, month, 1)
+    _, last_d = calendar.monthrange(year, month)
+    month_end = date(year, month, last_d)
+
+    approved_leaves = db.query(HRLeaveRequest).filter(
+        HRLeaveRequest.status.in_(["approved", "auto_approved"]),
+        HRLeaveRequest.from_date <= month_end,
+        HRLeaveRequest.to_date >= month_start
+    ).all()
+
+    leave_map = {}
+    for lreq in approved_leaves:
+        cur = max(lreq.from_date, month_start)
+        end_d = min(lreq.to_date, month_end)
+        while cur <= end_d:
+            leave_map[(lreq.employee_id, str(cur))] = lreq
+            cur += timedelta(days=1)
+
     records = q.all()
     result = {}
     for r in records:
+        lreq = r.leave_request or leave_map.get((r.employee_id, str(r.date)))
         is_paid = True
         is_half_day = False
-        if r.leave_request:
-            is_paid = r.leave_request.leave_type.is_paid if r.leave_request.leave_type else False
-            is_half_day = r.leave_request.is_half_day
+        leave_request_id = r.leave_request_id
+        if lreq:
+            is_paid = lreq.leave_type.is_paid if lreq.leave_type else False
+            is_half_day = lreq.is_half_day
+            leave_request_id = lreq.id
 
         key = str(r.employee_id)
         if key not in result:
             result[key] = {}
         result[key][str(r.date)] = {
             "status": r.status,
-            "leave_request_id": r.leave_request_id,
+            "leave_request_id": leave_request_id,
             "is_paid": is_paid,
             "is_half_day": is_half_day,
             "color": STATUS_COLORS.get(r.status, "#94a3b8"),
@@ -899,6 +921,40 @@ def recompute_month(data: RecomputeRequest, db: Session = Depends(get_db), curre
     
     import calendar
     _, last_day = calendar.monthrange(data.year, data.month)
+
+    # Normalize any LOP leave requests that fit within monthly_limit back to paid leave
+    lop_type = db.query(HRLeaveType).filter(HRLeaveType.code == "LOP").first()
+    paid_types = db.query(HRLeaveType).filter(HRLeaveType.is_paid == True, HRLeaveType.is_active == True).all()
+    primary_paid = paid_types[0] if paid_types else None
+    
+    if lop_type and primary_paid:
+        for emp in employees:
+            bal = db.query(HRLeaveBalance).filter(
+                HRLeaveBalance.employee_id == emp.id,
+                HRLeaveBalance.leave_type_id == primary_paid.id,
+                HRLeaveBalance.year == data.year
+            ).first()
+            limit = bal.monthly_limit if (bal and bal.monthly_limit and bal.monthly_limit > 0) else 2.0
+            
+            month_start = date(data.year, data.month, 1)
+            month_end = date(data.year, data.month, last_day)
+            emp_reqs = db.query(HRLeaveRequest).filter(
+                HRLeaveRequest.employee_id == emp.id,
+                HRLeaveRequest.from_date <= month_end,
+                HRLeaveRequest.to_date >= month_start,
+                HRLeaveRequest.status.in_(["approved", "auto_approved", "pending"])
+            ).order_by(HRLeaveRequest.created_at).all()
+            
+            used_paid = 0.0
+            for r in emp_reqs:
+                req_val = 0.5 if r.is_half_day else r.total_days
+                if r.leave_type_id != lop_type.id and (r.leave_type and r.leave_type.is_paid):
+                    used_paid += req_val
+                elif r.leave_type_id == lop_type.id:
+                    if used_paid + req_val <= limit + 1e-6:
+                        r.leave_type_id = primary_paid.id
+                        used_paid += req_val
+        db.commit()
     
     for emp in employees:
         for day in range(1, last_day + 1):
