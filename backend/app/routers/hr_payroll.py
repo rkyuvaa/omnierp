@@ -131,13 +131,14 @@ def _calculate_components(ctc: float, components: list):
             gross = sum(r["amount"] for r in result_list if r["component_type"] == "earning")
             amount = 0
             if comp.get("slabs"):
-                for slab in comp["slabs"]:
+                slabs = sorted(comp["slabs"], key=lambda x: float(x.get("min", 0)))
+                for i, slab in enumerate(slabs):
                     s_min = float(slab.get("min", 0))
                     s_max = slab.get("max")
-                    if s_max is None: s_max = float('inf')
-                    else: s_max = float(s_max)
+                    s_max_val = float(s_max) if s_max is not None else float('inf')
+                    prev_max = float(slabs[i-1].get("max", 0)) if i > 0 else -1.0
                     
-                    if s_min <= gross <= s_max:
+                    if (gross >= s_min or gross > prev_max) and gross <= s_max_val:
                         amount = float(slab.get("value", 0))
                         break
         else:  # fixed
@@ -527,6 +528,25 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             
         if lop_deduction > 0:
             deductions["Loss of Pay (LOP)"] = lop_deduction
+
+        # Re-calculate slab-based deductions (like Professional Tax / PT) on actual earned gross
+        actual_earned_gross = max(0.0, full_gross_earnings - lop_deduction)
+        for r in result_list:
+            if r.get("calc_type") == "slab" and r.get("component_type") == "deduction":
+                comp_name = r["name"]
+                new_pt = 0.0
+                if r.get("slabs"):
+                    slabs = sorted(r["slabs"], key=lambda x: float(x.get("min", 0)))
+                    for i, slab in enumerate(slabs):
+                        s_min = float(slab.get("min", 0))
+                        s_max = slab.get("max")
+                        s_max_val = float(s_max) if s_max is not None else float('inf')
+                        prev_max = float(slabs[i-1].get("max", 0)) if i > 0 else -1.0
+                        
+                        if (actual_earned_gross >= s_min or actual_earned_gross > prev_max) and actual_earned_gross <= s_max_val:
+                            new_pt = float(slab.get("value", 0))
+                            break
+                deductions[comp_name] = new_pt
 
     total_earnings_base = round(sum(earnings.values()), 2)
     

@@ -645,8 +645,16 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
       } else if (calcType === 'slab') {
         const gross = results.filter(r => r._compType === 'earning').reduce((acc, r) => acc + r.amount, 0);
         if (comp.slabs) {
-          for (const s of comp.slabs) {
-            if (gross >= (s.min || 0) && gross <= (s.max || Infinity)) { amount = s.value || 0; break; }
+          const sortedSlabs = [...comp.slabs].sort((a, b) => (Number(a.min) || 0) - (Number(b.min) || 0));
+          for (let i = 0; i < sortedSlabs.length; i++) {
+            const s = sortedSlabs[i];
+            const prevMax = i > 0 ? (Number(sortedSlabs[i-1].max) || 0) : -1;
+            const minVal = Number(s.min) || 0;
+            const maxVal = s.max !== null && s.max !== undefined && s.max !== '' ? Number(s.max) : Infinity;
+            if ((gross >= minVal || gross > prevMax) && gross <= maxVal) {
+              amount = Number(s.value) || 0;
+              break;
+            }
           }
         }
       } else amount = val;
