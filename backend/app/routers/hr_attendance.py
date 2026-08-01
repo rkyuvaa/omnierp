@@ -441,7 +441,43 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         db.commit()
         return record
 
-    # Check weekly off
+    # 3. CASE: NO PHYSICAL PUNCHES / NO OD, BUT APPROVED LEAVE EXISTS
+    approved_leave = db.query(HRLeaveRequest).filter(
+        HRLeaveRequest.employee_id == employee_id,
+        HRLeaveRequest.from_date <= target_date,
+        HRLeaveRequest.to_date >= target_date,
+        HRLeaveRequest.status.in_(["approved", "auto_approved"])
+    ).first()
+
+    if approved_leave:
+        record.status = "leave"
+        record.leave_request_id = approved_leave.id
+        record.onduty_request_id = None
+        record.check_in = None
+        record.check_out = None
+        record.hours_worked = 0
+        record.is_late = False
+        record.late_minutes = 0
+        record.left_early = False
+        record.early_by_minutes = 0
+        db.commit()
+        return record
+
+    # 4. CASE: HOLIDAY
+    holiday = db.query(HRHoliday).filter(
+        HRHoliday.date == target_date,
+        HRHoliday.is_active == True,
+        (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
+    ).first()
+    if holiday:
+        record.status = "holiday"
+        record.check_in = None
+        record.check_out = None
+        record.hours_worked = 0
+        db.commit()
+        return record
+
+    # 5. CASE: WEEKLY OFF
     shift = emp.shift
     from app.routers.hr_config import get_hr_config
     global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
