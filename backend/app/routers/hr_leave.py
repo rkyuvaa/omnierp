@@ -240,7 +240,33 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
             HRLeaveBalance.leave_type_id == data.leave_type_id,
             HRLeaveBalance.year == year
         ).first()
-        available = (balance.allocated_days - balance.used_days) if balance else 0.0
+        yearly_available = (balance.allocated_days - balance.used_days) if balance else 0.0
+        
+        monthly_available = float('inf')
+        if balance and balance.monthly_limit and balance.monthly_limit > 0:
+            import calendar
+            month_start = date(data.from_date.year, data.from_date.month, 1)
+            _, last_d = calendar.monthrange(data.from_date.year, data.from_date.month)
+            month_end = date(data.from_date.year, data.from_date.month, last_d)
+            
+            existing_month_reqs = db.query(HRLeaveRequest).filter(
+                HRLeaveRequest.employee_id == data.employee_id,
+                HRLeaveRequest.leave_type_id == data.leave_type_id,
+                HRLeaveRequest.status.in_(["approved", "auto_approved", "pending"]),
+                HRLeaveRequest.from_date <= month_end,
+                HRLeaveRequest.to_date >= month_start
+            ).all()
+            
+            used_in_month = 0.0
+            for r in existing_month_reqs:
+                if r.is_half_day:
+                    used_in_month += 0.5
+                else:
+                    used_in_month += r.total_days
+            
+            monthly_available = max(0.0, balance.monthly_limit - used_in_month)
+            
+        available = min(yearly_available, monthly_available)
         
         if available < total_days:
             lop_overflow = get_hr_config(db, "lop_overflow", True)

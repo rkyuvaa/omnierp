@@ -378,10 +378,12 @@ export default function Attendance() {
         const s = getEffStatus(d, empRecs, emp);
         const cfg = s ? STATUS_CONFIG[s] : null;
         
+        const rec = empRecs[d.dayStr];
+        const isHalf = s === 'leave' && rec?.is_half_day;
         if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
         else if (s === 'half_day') { pCount += 0.5; aCount += 0.5; }
         else if (s === 'absent') aCount += 1;
-        else if (s === 'leave') lvCount += 1;
+        else if (s === 'leave') lvCount += isHalf ? 0.5 : 1;
         else if (s === 'holiday') holCount += 1;
         else if (s === 'weekly_off') woCount += 1;
         
@@ -725,10 +727,12 @@ export default function Attendance() {
                     let pCount = 0, aCount = 0, lvCount = 0, holCount = 0, woCount = 0;
                     days.forEach(d => {
                       const s = getEffStatus(d, empRecs, emp);
+                      const rec = empRecs[d.dayStr];
+                      const isHalf = s === 'leave' && rec?.is_half_day;
                       if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
                       else if (s === 'half_day') { pCount += 0.5; aCount += 0.5; }
                       else if (s === 'absent') aCount += 1;
-                      else if (s === 'leave') lvCount += 1;
+                      else if (s === 'leave') lvCount += isHalf ? 0.5 : 1;
                       else if (s === 'holiday') holCount += 1;
                       else if (s === 'weekly_off') woCount += 1;
                     });

@@ -747,8 +747,10 @@ def get_records(
     result = {}
     for r in records:
         is_paid = True
+        is_half_day = False
         if r.status == "leave" and r.leave_request:
             is_paid = r.leave_request.leave_type.is_paid if r.leave_request.leave_type else False
+            is_half_day = r.leave_request.is_half_day
 
         key = str(r.employee_id)
         if key not in result:
@@ -756,6 +758,7 @@ def get_records(
         result[key][str(r.date)] = {
             "status": r.status,
             "is_paid": is_paid,
+            "is_half_day": is_half_day,
             "color": STATUS_COLORS.get(r.status, "#94a3b8"),
             "check_in": str(r.check_in) if r.check_in else None,
             "check_out": str(r.check_out) if r.check_out else None,
