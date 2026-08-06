@@ -93,77 +93,158 @@ def _resolve_components(db: Session, emp: HREmployee):
     return legacy
 
 
-def _calculate_components(ctc: float, components: list):
+def _lookup_slab(slabs: list, gross: float) -> float:
+    """Return the slab value for the given gross amount."""
+    slabs_sorted = sorted(slabs, key=lambda x: float(x.get("min", 0)))
+    for i, slab in enumerate(slabs_sorted):
+        s_min = float(slab.get("min", 0))
+        s_max = slab.get("max")
+        s_max_val = float(s_max) if s_max is not None else float('inf')
+        prev_max = float(slabs_sorted[i - 1].get("max", 0)) if i > 0 else -1.0
+        if (gross >= s_min or gross > prev_max) and gross <= s_max_val:
+            return float(slab.get("value", 0))
+    return 0.0
+
+
+def _calculate_components(ctc: float, components: list, pro_rata_ratio: float = 1.0):
     """
-    Calculate each component in dependency order.
-    - percentage_of_ctc   → % of Salary (CTC)
-    - percentage_of_basic → % of BASIC component (with optional cap)
-    - percentage_of_gross → % of total earnings so far (with optional cap)
-    - slab                → lookup gross in slab table
-    - fixed               → fixed amount
-    Returns (result_list, computed_dict)
+    Calculate salary components using a two-pass algorithm so that deduction
+    thresholds (ESI ≤ ₹21,000) and slab lookups (Professional Tax) always
+    operate on the FINAL gross earnings — not a partial running total.
+
+    Pass 1: Compute all *earning* components → derive final_gross.
+    Pass 2: Compute all *deduction* and *employer_contribution* components
+            using final_gross for threshold checks, slab lookups, and
+            percentage_of_gross calculations.
+
+    pro_rata_ratio: applied to fixed-amount earning components when using
+                    the pro-rata LOP method (paid_days / working_days_in_month).
+                    Pass 1.0 (default) to leave fixed amounts unchanged.
+
+    Returns (result_list, computed_dict).
     """
     computed = {"CTC": ctc}
-    result_list = []
 
+    # ── PASS 1: Earnings ──────────────────────────────────────────────────────
+    earning_results = []
     for comp in components:
+        if comp["component_type"] not in ("earning",):
+            continue
+
         calc_type = comp["calc_type"]
         val = float(comp["calc_value"] or 0)
 
         if calc_type == "percentage_of_ctc":
             amount = round(ctc * val / 100, 2)
         elif calc_type == "percentage_of_basic":
-            # Robust matching: try BASIC, BASIC_SALARY, or find by name
             base = computed.get("BASIC", computed.get("BASIC_SALARY", 0))
             if not base:
-                basic_item = next((r for r in result_list if "basic" in r.get("name", "").lower()), None)
+                basic_item = next(
+                    (r for r in earning_results if "basic" in r.get("name", "").lower()), None
+                )
                 if basic_item:
                     base = basic_item["amount"]
             if comp.get("cap_amount"):
                 base = min(base, float(comp["cap_amount"]))
             amount = round(base * val / 100, 2)
         elif calc_type == "percentage_of_gross":
-            base = sum(r["amount"] for r in result_list if r["component_type"] == "earning")
+            # At this stage we only have earnings processed so far;
+            # percentage_of_gross earnings (e.g. Special Allowance residual)
+            # are computed on the running earning total within Pass 1.
+            base = sum(r["amount"] for r in earning_results)
+            if comp.get("cap_amount"):
+                base = min(base, float(comp["cap_amount"]))
+            amount = round(base * val / 100, 2)
+        elif calc_type == "fixed":
+            # Pro-rate fixed earnings when using the pro-rata LOP method.
+            amount = round(val * pro_rata_ratio, 2)
+        else:  # slab-based earnings are unusual but handle gracefully
+            amount = round(val, 2)
+
+        code = comp.get("code", comp["name"].upper().replace(" ", "_"))
+        computed[code] = amount
+        earning_results.append({**comp, "amount": amount})
+
+    # Final gross derived from ALL earning components.
+    final_gross = sum(r["amount"] for r in earning_results)
+
+    # ── PASS 2: Deductions & Employer Contributions ───────────────────────────
+    deduction_results = []
+    for comp in components:
+        if comp["component_type"] == "earning":
+            continue  # already handled in Pass 1
+
+        calc_type = comp["calc_type"]
+        val = float(comp["calc_value"] or 0)
+
+        if calc_type == "percentage_of_ctc":
+            amount = round(ctc * val / 100, 2)
+        elif calc_type == "percentage_of_basic":
+            base = computed.get("BASIC", computed.get("BASIC_SALARY", 0))
+            if not base:
+                basic_item = next(
+                    (r for r in earning_results if "basic" in r.get("name", "").lower()), None
+                )
+                if basic_item:
+                    base = basic_item["amount"]
+            if comp.get("cap_amount"):
+                base = min(base, float(comp["cap_amount"]))
+            amount = round(base * val / 100, 2)
+        elif calc_type == "percentage_of_gross":
+            # Use final_gross (complete) — not a running partial total.
+            base = final_gross
             if comp.get("cap_amount"):
                 base = min(base, float(comp["cap_amount"]))
             amount = round(base * val / 100, 2)
         elif calc_type == "slab":
-            gross = sum(r["amount"] for r in result_list if r["component_type"] == "earning")
-            amount = 0
-            if comp.get("slabs"):
-                slabs = sorted(comp["slabs"], key=lambda x: float(x.get("min", 0)))
-                for i, slab in enumerate(slabs):
-                    s_min = float(slab.get("min", 0))
-                    s_max = slab.get("max")
-                    s_max_val = float(s_max) if s_max is not None else float('inf')
-                    prev_max = float(slabs[i-1].get("max", 0)) if i > 0 else -1.0
-                    
-                    if (gross >= s_min or gross > prev_max) and gross <= s_max_val:
-                        amount = float(slab.get("value", 0))
-                        break
-        else:  # fixed
+            # Use final_gross for the slab lookup (e.g. Professional Tax).
+            amount = _lookup_slab(comp["slabs"], final_gross) if comp.get("slabs") else 0.0
+        elif calc_type == "fixed":
+            amount = round(val, 2)  # deductions are never pro-rated
+        else:
             amount = round(val, 2)
 
-        # Gross threshold checks (ESI: apply only if gross ≤ 21000, TDS: apply only if gross ≥ 1L, etc.)
-        gross_earnings = sum(r["amount"] for r in result_list if r["component_type"] == "earning")
+        # ── Gross threshold checks (ESI / TDS) using FINAL gross ──────────────
+        # ESI: apply only when final gross ≤ threshold (e.g. ₹21,000)
+        # TDS: apply only when final gross ≥ threshold (e.g. ₹1,00,000)
         threshold_below = comp.get("apply_if_gross_below")
         threshold_above = comp.get("apply_if_gross_above")
-        if threshold_below is not None and gross_earnings > float(threshold_below):
-            amount = 0  # e.g. ESI not applicable when gross > 21000
-        if threshold_above is not None and gross_earnings < float(threshold_above):
-            amount = 0  # e.g. TDS not applicable when gross < 1,00,000
+        if threshold_below is not None and final_gross > float(threshold_below):
+            amount = 0
+        if threshold_above is not None and final_gross < float(threshold_above):
+            amount = 0
 
         code = comp.get("code", comp["name"].upper().replace(" ", "_"))
         computed[code] = amount
-        result_list.append({**comp, "amount": amount})
+        deduction_results.append({**comp, "amount": amount})
 
-    # Deduct from Basic Salary logic
+    result_list = earning_results + deduction_results
+
+    # ── Deduct-from-Basic post-pass (cosmetic payslip redistribution) ─────────
+    # When a deduction has deduct_from == "basic", its amount is visually shifted
+    # from the Basic earning line to a Fixed/Special earning line on the payslip.
+    # This does NOT change total_earnings or net_salary.
     for r in result_list:
         if r.get("component_type") == "deduction" and r.get("deduct_from") == "basic":
-            basic_item = next((x for x in result_list if x.get("code") == "BASIC" or "basic" in x.get("name", "").lower()), None)
-            fixed_item = next((x for x in result_list if x.get("code") == "FIX" or "fixed" in x.get("name", "").lower() or "special" in x.get("name", "").lower()), None)
+            basic_item = next(
+                (x for x in result_list
+                 if x.get("code") == "BASIC" or "basic" in x.get("name", "").lower()),
+                None,
+            )
+            fixed_item = next(
+                (x for x in result_list
+                 if x.get("code") == "FIX"
+                 or "fixed" in x.get("name", "").lower()
+                 or "special" in x.get("name", "").lower()),
+                None,
+            )
             if not fixed_item:
-                earning_items = [x for x in result_list if x.get("component_type") == "earning" and x.get("code") != "BASIC" and "basic" not in x.get("name", "").lower()]
+                earning_items = [
+                    x for x in result_list
+                    if x.get("component_type") == "earning"
+                    and x.get("code") != "BASIC"
+                    and "basic" not in x.get("name", "").lower()
+                ]
                 if earning_items:
                     fixed_item = earning_items[-1]
             if basic_item:
@@ -173,7 +254,9 @@ def _calculate_components(ctc: float, components: list):
                 computed[basic_code] = basic_item["amount"]
                 if fixed_item:
                     fixed_item["amount"] = round(fixed_item["amount"] + deduct_amt, 2)
-                    fixed_code = fixed_item.get("code", fixed_item["name"].upper().replace(" ", "_"))
+                    fixed_code = fixed_item.get(
+                        "code", fixed_item["name"].upper().replace(" ", "_")
+                    )
                     computed[fixed_code] = fixed_item["amount"]
 
     return result_list, computed
@@ -300,8 +383,9 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
     
     # Global Configs
     global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
-    lop_calculation_base = get_hr_config(db, "lop_calculation_base", "gross") # gross, ctc, or net_pay
-    lop_denominator_basis = get_hr_config(db, "lop_denominator_basis", "working_days") # calendar_days or working_days
+    # lop_base parameter from the API call takes priority; fall back to DB config.
+    lop_calculation_base = lop_base if lop_base else get_hr_config(db, "lop_calculation_base", "gross")  # gross, ctc, or net_pay
+    lop_denominator_basis = get_hr_config(db, "lop_denominator_basis", "working_days")  # calendar_days or working_days
 
     working_days_count = len([r for r in records if r.status not in ["holiday", "weekly_off"]])
     # If no attendance records found (e.g. month just started or not processed), 
@@ -481,17 +565,19 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
 
     # 3. Calculate Salary based on chosen Method
     calc_method = get_hr_config(db, "salary_calculation_method", "pro_rata")
-    
+
     if calc_method == "pro_rata":
         paid_days = total_working_days_in_month - lop_days
         if total_working_days_in_month > 0:
             effective_ctc = round(ctc * (paid_days / total_working_days_in_month), 2)
+            pro_rata_ratio = paid_days / total_working_days_in_month
         else:
             effective_ctc = 0
-        # Calculate components on EFFECTIVE CTC
-        result_list, computed = _calculate_components(effective_ctc, components)
+            pro_rata_ratio = 0.0
+        # Calculate components on EFFECTIVE CTC; pass ratio so fixed earnings are also pro-rated.
+        result_list, computed = _calculate_components(effective_ctc, components, pro_rata_ratio=pro_rata_ratio)
     else:
-        # Calculate components on FULL CTC
+        # Calculate components on FULL CTC (LOP handled as an explicit deduction line below).
         result_list, computed = _calculate_components(ctc, components)
 
     earnings = {}
