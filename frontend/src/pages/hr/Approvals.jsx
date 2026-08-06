@@ -335,7 +335,7 @@ export default function Approvals() {
         ) : tab === 'history' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {[...allLeave.map(r => ({ ...r, _type: 'leave' })), ...allOD.map(r => ({ ...r, _type: 'od' }))]
-              .filter(r => !selectedApprover || String(r.approver_id) === String(selectedApprover))
+              .filter(r => !selectedApprover || String(r.employee_id) === String(selectedApprover))
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
               .map(r => <RequestCard key={`${r._type}-${r.id}`} req={r} type={r._type} showActions={false} />)}
           </div>
