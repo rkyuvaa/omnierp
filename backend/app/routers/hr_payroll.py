@@ -498,9 +498,11 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 absent_days_count += 1
 
     auto_consumed = []
-    # Auto-consume available paid leaves to cover LOP using admin-configured waterfall rules.
-    # Falls back to alphabetical order if no rules are configured.
-    if lop_days > 0:
+    # Auto-consume available paid leaves to cover LOP — only when admin enables the waterfall.
+    # Default is OFF: LOP is the employee's responsibility and stays as LOP unless the admin
+    # explicitly sets lop_waterfall_enabled = True in HR Config.
+    lop_waterfall_enabled = get_hr_config(db, "lop_waterfall_enabled", False)
+    if lop_waterfall_enabled and lop_days > 0:
         waterfall_rules = db.query(HRLopWaterfallRule).filter(
             HRLopWaterfallRule.is_active == True
         ).order_by(HRLopWaterfallRule.priority).all()
@@ -555,6 +557,7 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                     leave_days += consume
                     if lop_days <= 0:
                         break
+
 
     # Detect: does the employee have LOP days BUT also has available paid leave balance?
     lop_alert = _compute_lop_alert(db, emp, lop_days, year)

@@ -9,7 +9,7 @@ from app.auth import get_current_user, require_admin
 from app.routers.hr_config import get_hr_config
 from app.hr_models import (
     HRLeaveType, HRLeaveBalance, HRLeaveRequest,
-    HREmployee, HRAttendanceRecord, HRNotification
+    HREmployee, HRAttendanceRecord, HRNotification, HRHoliday
 )
 from app.utils.push_service import send_push_to_user
 
@@ -52,17 +52,40 @@ class AllocateBalance(BaseModel):
     year: int
     allocated_days: float
 
+# Day name map shared by helpers below
+_DAY_NAMES = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+
 # ── Helpers ─────────────────────────────────────────────────────────────────
 def _next_leave_ref(db: Session):
     count = db.query(HRLeaveRequest).count() + 1
     return f"LV{str(count).zfill(5)}"
 
-def _working_days_count(from_date: date, to_date: date) -> float:
-    """Count calendar days (excluding Sundays) — can be customized per shift"""
-    total = 0
+
+def _get_holiday_dates(db: Session, from_date: date, to_date: date) -> set:
+    """Return a set of public holiday dates (is_active) within the given range."""
+    holidays = db.query(HRHoliday).filter(
+        HRHoliday.date >= from_date,
+        HRHoliday.date <= to_date,
+        HRHoliday.is_active == True,
+    ).all()
+    return {h.date for h in holidays}
+
+
+def _working_days_count(from_date: date, to_date: date, db: Session) -> float:
+    """
+    Count working days between from_date and to_date (inclusive).
+    Excludes:
+      • Days not in the globally configured working_days (e.g. Sundays, alternate Saturdays)
+      • Public holidays marked in HRHoliday
+    """
+    working_days_cfg = get_hr_config(
+        db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    )
+    holiday_dates = _get_holiday_dates(db, from_date, to_date)
+    total = 0.0
     current = from_date
     while current <= to_date:
-        if current.weekday() != 6:  # skip Sundays
+        if _DAY_NAMES[current.weekday()] in working_days_cfg and current not in holiday_dates:
             total += 1
         current += timedelta(days=1)
     return total
@@ -78,7 +101,25 @@ def _notify(db: Session, user_id: int, title: str, message: str, ref_type: str =
 
 
 def _recompute_attendance(db: Session, employee_id: int, target_date: date, leave_request_id: int = None):
-    """Mark attendance record as 'leave' when leave is approved"""
+    """
+    Mark an attendance record as 'leave' when a leave request is approved.
+    Skips the day entirely if it falls on a public holiday or a configured
+    non-working day — those days must never be counted as leave consumption.
+    """
+    # Skip public holidays
+    is_holiday = db.query(HRHoliday).filter(
+        HRHoliday.date == target_date,
+        HRHoliday.is_active == True,
+    ).first()
+    if is_holiday:
+        return
+    # Skip configured non-working days (weekends, alternate Saturdays, etc.)
+    working_days_cfg = get_hr_config(
+        db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+    )
+    if _DAY_NAMES[target_date.weekday()] not in working_days_cfg:
+        return
+
     record = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == employee_id,
         HRAttendanceRecord.date == target_date
@@ -230,7 +271,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
     leave_type = db.query(HRLeaveType).filter(HRLeaveType.id == data.leave_type_id).first()
     if not leave_type: raise HTTPException(404, "Leave type not found")
 
-    total_days = 0.5 if data.is_half_day else _working_days_count(data.from_date, data.to_date)
+    total_days = 0.5 if data.is_half_day else _working_days_count(data.from_date, data.to_date, db)
 
     # Check balance (skip for LOP)
     if leave_type.code != "LOP" and leave_type.is_paid:
@@ -285,22 +326,30 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                 data.leave_type_id = lop_type.id
                 # Proceeds to save a full LOP request
             else:
-                # Split dates precisely skipping Sundays (weekday == 6)
+                # Split dates precisely using working-days config + public holidays
+                _split_working_cfg = get_hr_config(
+                    db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                )
+                _split_holidays = _get_holiday_dates(db, data.from_date, data.to_date)
                 current = data.from_date
                 days_counted = 0.0
                 while days_counted < paid_days:
-                    if current.weekday() != 6:
-                        if data.is_half_day:
-                            days_counted += 0.5
-                        else:
-                            days_counted += 1.0
-                    if days_counted == paid_days:
+                    if (
+                        _DAY_NAMES[current.weekday()] in _split_working_cfg
+                        and current not in _split_holidays
+                    ):
+                        days_counted += 0.5 if data.is_half_day else 1.0
+                    if days_counted >= paid_days:
                         break
                     current += timedelta(days=1)
-                
+
                 paid_to_date = current
                 unpaid_from_date = paid_to_date + timedelta(days=1)
-                while unpaid_from_date.weekday() == 6:
+                # Advance to the next working day that is not a holiday
+                while (
+                    _DAY_NAMES[unpaid_from_date.weekday()] not in _split_working_cfg
+                    or unpaid_from_date in _split_holidays
+                ):
                     unpaid_from_date += timedelta(days=1)
                 
                 lop_type = db.query(HRLeaveType).filter(HRLeaveType.code == "LOP").first()
