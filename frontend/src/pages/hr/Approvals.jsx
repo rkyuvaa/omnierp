@@ -27,6 +27,10 @@ export default function Approvals() {
   const [action, setAction] = useState('');
   const [revokeModal, setRevokeModal] = useState(null);
   const [revokeRemark, setRevokeRemark] = useState('');
+  const [changeTypeModal, setChangeTypeModal] = useState(null);
+  const [changeTypeLeaveTypeId, setChangeTypeLeaveTypeId] = useState('');
+  const [changeTypeRemark, setChangeTypeRemark] = useState('');
+  const [leaveTypes, setLeaveTypes] = useState([]);
 
   useEffect(() => {
     api.get('/hr/employees/', { params: { is_active: true } }).then(r => {
@@ -166,6 +170,29 @@ export default function Approvals() {
     } catch (e) { toast.error(e.response?.data?.detail || 'Failed to revoke'); }
   }
 
+  async function openChangeType(req) {
+    if (leaveTypes.length === 0) {
+      const res = await api.get('/hr/leave/types');
+      setLeaveTypes(res.data.filter(t => t.is_active));
+    }
+    setChangeTypeModal(req);
+    setChangeTypeLeaveTypeId('');
+    setChangeTypeRemark('');
+  }
+
+  async function doChangeType() {
+    if (!changeTypeLeaveTypeId) { toast.error('Please select a new leave type'); return; }
+    try {
+      const res = await api.post(`/hr/leave/${changeTypeModal.id}/change-type`, {
+        new_leave_type_id: parseInt(changeTypeLeaveTypeId),
+        remarks: changeTypeRemark || 'HR correction — wrong leave type applied',
+      });
+      toast.success(res.data.message);
+      setChangeTypeModal(null);
+      fetchData();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Failed to change leave type'); }
+  }
+
   const tabStyle = (active) => ({
     padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
     background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)',
@@ -247,12 +274,20 @@ export default function Approvals() {
               </div>
             )}
             {type === 'leave' && (req.status === 'approved' || req.status === 'auto_approved') && (
-              <button
-                onClick={() => { setRevokeModal(req); setRevokeRemark(''); }}
-                style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #f59e0b', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}
-              >
-                <RotateCcw size={14} /> Revoke
-              </button>
+              <div style={{ display: 'flex', gap: 6 }}>
+                <button
+                  onClick={() => { setRevokeModal(req); setRevokeRemark(''); }}
+                  style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #f59e0b', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  <RotateCcw size={13} /> Revoke
+                </button>
+                <button
+                  onClick={() => openChangeType(req)}
+                  style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #93c5fd', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                >
+                  ⇄ Change Type
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -545,6 +580,70 @@ export default function Approvals() {
                 style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#d97706', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
               >
                 <RotateCcw size={14} /> Confirm Revoke
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Change Type Modal */}
+      {changeTypeModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 460, maxWidth: '95vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#eff6ff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>⇄</div>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>Change Leave Type</h3>
+            </div>
+
+            <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{changeTypeModal.employee_name}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>
+                Current: <strong style={{ color: '#d97706' }}>{changeTypeModal.leave_type_name}</strong>
+                {' · '}{changeTypeModal.from_date} → {changeTypeModal.to_date}
+                {' · '}<strong>{changeTypeModal.total_days} day{changeTypeModal.total_days > 1 ? 's' : ''}</strong>
+              </div>
+            </div>
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 6 }}>CHANGE TO</label>
+              <select
+                value={changeTypeLeaveTypeId}
+                onChange={e => setChangeTypeLeaveTypeId(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: `2px solid ${changeTypeLeaveTypeId ? '#2563eb' : 'var(--border)'}`, background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box', outline: 'none' }}
+              >
+                <option value=''>— Select new leave type —</option>
+                {leaveTypes
+                  .filter(t => t.id !== changeTypeModal.leave_type_id)
+                  .map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.code})</option>
+                  ))
+                }
+              </select>
+            </div>
+
+            <div style={{ background: '#eff6ff', border: '1px solid #93c5fd', borderRadius: 10, padding: '10px 14px', marginBottom: 14, fontSize: 12, color: '#1e40af', lineHeight: 1.6 }}>
+              ℹ This will: refund the old <strong>{changeTypeModal.leave_type_name}</strong> balance, deduct from the new leave type's balance, and keep attendance as Leave. Payroll will recalculate correctly on next run.
+            </div>
+
+            <textarea
+              value={changeTypeRemark}
+              onChange={e => setChangeTypeRemark(e.target.value)}
+              placeholder="Reason (e.g. Employee applied wrong leave type)..."
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box', minHeight: 70, resize: 'vertical' }}
+            />
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button
+                onClick={() => setChangeTypeModal(null)}
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={doChangeType}
+                disabled={!changeTypeLeaveTypeId}
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: changeTypeLeaveTypeId ? '#2563eb' : '#93c5fd', color: '#fff', cursor: changeTypeLeaveTypeId ? 'pointer' : 'not-allowed', fontWeight: 700, fontSize: 13 }}
+              >
+                ⇄ Confirm Change
               </button>
             </div>
           </div>

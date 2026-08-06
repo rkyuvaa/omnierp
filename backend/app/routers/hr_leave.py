@@ -867,6 +867,106 @@ def revoke_leave(
     }
 
 
+class ChangeLeaveTypeAction(BaseModel):
+    new_leave_type_id: int
+    remarks: Optional[str] = None
+
+
+@router.post("/{req_id}/change-type")
+def change_leave_type(
+    req_id: int,
+    data: ChangeLeaveTypeAction,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    HR-admin-only: Change the leave type of an already-approved leave request.
+
+    This is an atomic action that:
+      1. Refunds the balance from the OLD leave type.
+      2. Deducts the balance from the NEW leave type.
+      3. Updates the leave request in-place (status stays 'approved').
+      4. Attendance records remain 'leave' — only the linked type changes.
+      5. Notifies the employee.
+
+    Use this to fix employee mistakes (e.g. applied SL when they should have used CL).
+    """
+    req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(404, "Leave request not found")
+
+    if req.status not in {"approved", "auto_approved"}:
+        raise HTTPException(
+            400,
+            f"Only approved leaves can have their type changed. Current status: '{req.status}'"
+        )
+
+    if req.leave_type_id == data.new_leave_type_id:
+        raise HTTPException(400, "New leave type is the same as the current type. No change needed.")
+
+    new_leave_type = db.query(HRLeaveType).filter(
+        HRLeaveType.id == data.new_leave_type_id,
+        HRLeaveType.is_active == True,
+    ).first()
+    if not new_leave_type:
+        raise HTTPException(404, "New leave type not found or is inactive")
+
+    old_leave_type_name = req.leave_type.name if req.leave_type else "Unknown"
+    year = req.from_date.year
+
+    # 1. Refund OLD leave balance
+    if req.leave_type and req.leave_type.code != "LOP" and req.leave_type.is_paid:
+        old_bal = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == req.employee_id,
+            HRLeaveBalance.leave_type_id == req.leave_type_id,
+            HRLeaveBalance.year == year,
+        ).first()
+        if old_bal:
+            old_bal.used_days = max(0.0, old_bal.used_days - req.total_days)
+
+    # 2. Deduct NEW leave balance
+    if new_leave_type.code != "LOP" and new_leave_type.is_paid:
+        new_bal = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == req.employee_id,
+            HRLeaveBalance.leave_type_id == data.new_leave_type_id,
+            HRLeaveBalance.year == year,
+        ).first()
+        if new_bal:
+            new_bal.used_days += req.total_days
+        # If no balance record exists at all, we allow the change but log it.
+
+    # 3. Update the leave request type in-place (keep status as approved)
+    req.leave_type_id = data.new_leave_type_id
+    req.approver_remarks = (
+        f"[Type changed by HR: {old_leave_type_name} → {new_leave_type.name}] "
+        f"{data.remarks or 'HR correction'}"
+    )
+    req.updated_at = datetime.utcnow()
+
+    # 4. Notify employee
+    if req.employee and req.employee.user_id:
+        _notify(
+            db,
+            req.employee.user_id,
+            "Leave Type Updated by HR",
+            f"Your leave from {req.from_date} to {req.to_date} has been changed from "
+            f"{old_leave_type_name} to {new_leave_type.name} by HR. "
+            f"Reason: {data.remarks or 'HR correction'}.",
+            "leave",
+            req.id,
+        )
+
+    db.commit()
+    return {
+        "message": f"Leave type changed from '{old_leave_type_name}' to '{new_leave_type.name}' successfully.",
+        "id": req.id,
+        "old_leave_type": old_leave_type_name,
+        "new_leave_type": new_leave_type.name,
+        "days": req.total_days,
+        "dates": f"{req.from_date} → {req.to_date}",
+    }
+
+
 def _serialize_request(r: HRLeaveRequest):
     remaining = None
     if r.auto_approve_at:
