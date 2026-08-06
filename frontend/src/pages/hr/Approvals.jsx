@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { CheckCircle, XCircle, Clock, User, Calendar } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, User, Calendar, RotateCcw } from 'lucide-react';
 
 export default function Approvals() {
   const [searchParams] = useSearchParams();
@@ -25,6 +25,8 @@ export default function Approvals() {
   const [remarkModal, setRemarkModal] = useState(null);
   const [remark, setRemark] = useState('');
   const [action, setAction] = useState('');
+  const [revokeModal, setRevokeModal] = useState(null);
+  const [revokeRemark, setRevokeRemark] = useState('');
 
   useEffect(() => {
     api.get('/hr/employees/', { params: { is_active: true } }).then(r => {
@@ -154,6 +156,16 @@ export default function Approvals() {
     } catch (e) { toast.error(e.response?.data?.detail || 'Failed'); }
   }
 
+  async function doRevoke() {
+    try {
+      await api.post(`/hr/leave/${revokeModal.id}/revoke`, { remarks: revokeRemark || 'HR correction' });
+      toast.success('Leave revoked. Balance refunded and attendance reset to Absent.');
+      setRevokeModal(null);
+      setRevokeRemark('');
+      fetchData();
+    } catch (e) { toast.error(e.response?.data?.detail || 'Failed to revoke'); }
+  }
+
   const tabStyle = (active) => ({
     padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
     background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)',
@@ -169,7 +181,7 @@ export default function Approvals() {
   }
 
   function RequestCard({ req, type, showActions }) {
-    const statusColors = { pending: '#f59e0b', approved: '#22c55e', auto_approved: '#3b82f6', rejected: '#ef4444', cancelled: '#94a3b8' };
+    const statusColors = { pending: '#f59e0b', approved: '#22c55e', auto_approved: '#3b82f6', rejected: '#ef4444', cancelled: '#94a3b8', revoked: '#8b5cf6' };
     return (
       <div id={`${type}-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
@@ -233,6 +245,14 @@ export default function Approvals() {
                   <XCircle size={14} /> Reject
                 </button>
               </div>
+            )}
+            {type === 'leave' && (req.status === 'approved' || req.status === 'auto_approved') && (
+              <button
+                onClick={() => { setRevokeModal(req); setRevokeRemark(''); }}
+                style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #f59e0b', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}
+              >
+                <RotateCcw size={14} /> Revoke
+              </button>
             )}
           </div>
         </div>
@@ -475,6 +495,56 @@ export default function Approvals() {
               <button onClick={() => setRemarkModal(null)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={doAction} className="btn btn-primary" style={{ flex: 1, background: action === 'approve' ? '#22c55e' : '#ef4444' }}>
                 {action === 'approve' ? 'Confirm Approve' : 'Confirm Reject'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Revoke Modal */}
+      {revokeModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 460, maxWidth: '95vw', boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <RotateCcw size={18} style={{ color: '#d97706' }} />
+              </div>
+              <h3 style={{ margin: 0, fontWeight: 700, fontSize: 16 }}>Revoke Approved Leave</h3>
+            </div>
+
+            <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{revokeModal.employee_name}</div>
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>
+                {revokeModal.leave_type_name} · {revokeModal.from_date} → {revokeModal.to_date} · <strong>{revokeModal.total_days} day{revokeModal.total_days > 1 ? 's' : ''}</strong>
+              </div>
+            </div>
+
+            <div style={{ background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 10, padding: '12px 14px', marginBottom: 16, fontSize: 12, color: '#92400e', lineHeight: 1.6 }}>
+              <div style={{ fontWeight: 700, marginBottom: 4 }}>⚠ This action will:</div>
+              <div>✦ Refund <strong>{revokeModal.total_days} day{revokeModal.total_days > 1 ? 's' : ''}</strong> back to {revokeModal.employee_name}'s {revokeModal.leave_type_name} balance</div>
+              <div>✦ Reset attendance for those dates from <strong>Leave → Absent</strong></div>
+              <div>✦ Notify the employee via in-app notification</div>
+              <div style={{ marginTop: 6, color: '#78350f' }}>After revoking, apply the correct leave type for the same dates.</div>
+            </div>
+
+            <textarea
+              value={revokeRemark}
+              onChange={e => setRevokeRemark(e.target.value)}
+              placeholder="Reason for revoking (e.g. Wrong leave type applied by employee)..."
+              style={{ width: '100%', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box', minHeight: 80, resize: 'vertical' }}
+            />
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button
+                onClick={() => setRevokeModal(null)}
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: 'var(--bg3)', color: 'var(--text)', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={doRevoke}
+                style={{ flex: 1, padding: '10px', borderRadius: 8, border: 'none', background: '#d97706', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}
+              >
+                <RotateCcw size={14} /> Confirm Revoke
               </button>
             </div>
           </div>
