@@ -779,6 +779,94 @@ def cancel_leave(req_id: int, db: Session = Depends(get_db), current_user: User 
     db.commit()
     return {"message": "Cancelled"}
 
+
+class RevokeLeaveAction(BaseModel):
+    remarks: Optional[str] = None
+
+
+@router.post("/{req_id}/revoke")
+def revoke_leave(
+    req_id: int,
+    data: RevokeLeaveAction,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_admin),
+):
+    """
+    HR-admin-only: Revoke an approved (or auto_approved) leave request.
+
+    This action:
+      1. Sets the request status to 'revoked'.
+      2. Refunds the leave balance (used_days -= total_days) for paid leave types.
+      3. Resets attendance records that were marked 'leave' by this request back
+         to 'absent', so they are re-evaluated correctly by payroll.
+      4. Notifies the employee.
+
+    Use this to correct employee mistakes (e.g. wrong leave type applied).
+    After revoking, HR can apply a new leave request for the correct type.
+    """
+    req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
+    if not req:
+        raise HTTPException(404, "Leave request not found")
+
+    revocable_statuses = {"approved", "auto_approved"}
+    if req.status not in revocable_statuses:
+        raise HTTPException(
+            400,
+            f"Only approved leaves can be revoked. Current status: '{req.status}'"
+        )
+
+    # 1. Mark as revoked
+    req.status = "revoked"
+    req.approver_remarks = (
+        f"[REVOKED by HR] {data.remarks or 'HR correction'}"
+    )
+    req.updated_at = datetime.utcnow()
+
+    # 2. Refund balance (only for paid leave types, skip LOP)
+    if req.leave_type and req.leave_type.code != "LOP" and req.leave_type.is_paid:
+        balance = db.query(HRLeaveBalance).filter(
+            HRLeaveBalance.employee_id == req.employee_id,
+            HRLeaveBalance.leave_type_id == req.leave_type_id,
+            HRLeaveBalance.year == req.from_date.year,
+        ).first()
+        if balance:
+            balance.used_days = max(0.0, balance.used_days - req.total_days)
+
+    # 3. Reset attendance records that belonged to this request back to 'absent'
+    #    so they are correctly recalculated by the next payroll run or recompute.
+    affected_records = db.query(HRAttendanceRecord).filter(
+        HRAttendanceRecord.employee_id == req.employee_id,
+        HRAttendanceRecord.leave_request_id == req_id,
+    ).all()
+    for rec in affected_records:
+        rec.status = "absent"
+        rec.leave_request_id = None
+        rec.updated_at = datetime.utcnow()
+
+    # 4. Notify employee
+    if req.employee and req.employee.user_id:
+        _notify(
+            db,
+            req.employee.user_id,
+            "Leave Revoked by HR",
+            f"Your {req.leave_type.name if req.leave_type else 'leave'} from "
+            f"{req.from_date} to {req.to_date} has been revoked by HR. "
+            f"Reason: {data.remarks or 'HR correction'}. "
+            f"Please re-apply with the correct leave type if needed.",
+            "leave",
+            req.id,
+        )
+
+    db.commit()
+    return {
+        "message": "Leave revoked successfully. Balance refunded and attendance reset.",
+        "id": req.id,
+        "revoked_days": req.total_days,
+        "leave_type": req.leave_type.name if req.leave_type else None,
+        "dates": f"{req.from_date} → {req.to_date}",
+    }
+
+
 def _serialize_request(r: HRLeaveRequest):
     remaining = None
     if r.auto_approve_at:
