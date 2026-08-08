@@ -438,6 +438,157 @@ export default function Attendance() {
     toast.success('Attendance exported successfully!');
   };
 
+  const handleExportDetailed = () => {
+    // 1. Headers
+    const headers = [
+      'Employee ID',
+      'Employee Name',
+      'Branch',
+      'Department',
+      'Date',
+      'Day',
+      'Shift',
+      'Status',
+      'Check In',
+      'Check Out',
+      'Hours Worked',
+      'Irregularity / Issue',
+      'Policy Alerts'
+    ];
+
+    // 2. Rows
+    const csvRows = [headers.map(h => `"${h}"`).join(',')];
+
+    filteredEmployees.forEach(emp => {
+      const empRecs = records[String(emp.id)] || {};
+      const empViolations = violations[emp.id] || [];
+
+      days.forEach(d => {
+        const rec = empRecs[d.dayStr];
+        const status = getEffStatus(d, empRecs, emp);
+        const cfg = status ? STATUS_CONFIG[status] : null;
+        const statusLabel = cfg ? cfg.full : 'No Record';
+
+        let checkInVal = '—';
+        let checkOutVal = '—';
+        let hoursWorkedVal = '—';
+        let issue = 'OK';
+
+        // Find violation
+        const v = empViolations.find(x => x.dayStr === d.dayStr);
+        const policyAlert = v ? v.label : '—';
+
+        if (rec) {
+          if (rec.check_in) {
+            try {
+              const dateObj = new Date(rec.check_in);
+              if (!isNaN(dateObj.getTime())) {
+                checkInVal = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+              } else {
+                checkInVal = rec.check_in;
+              }
+            } catch (e) {
+              checkInVal = rec.check_in;
+            }
+          }
+          if (rec.check_out) {
+            try {
+              const dateObj = new Date(rec.check_out);
+              if (!isNaN(dateObj.getTime())) {
+                checkOutVal = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+              } else {
+                checkOutVal = rec.check_out;
+              }
+            } catch (e) {
+              checkOutVal = rec.check_out;
+            }
+          }
+          if (rec.hours_worked !== null && rec.hours_worked !== undefined) {
+            hoursWorkedVal = rec.hours_worked;
+          }
+
+          // Ghost Punch / Missing Checkout Detection:
+          // If marked Present or Late, but has no checkout OR checkout is less than 60 mins from checkin.
+          if (status === 'present' || status === 'late' || status === 'half_day') {
+            if (rec.check_in && !rec.check_out) {
+              issue = 'Missing Check-Out';
+            } else if (!rec.check_in && rec.check_out) {
+              issue = 'Missing Check-In';
+            } else if (rec.check_in && rec.check_out) {
+              const inMs = new Date(rec.check_in).getTime();
+              const outMs = new Date(rec.check_out).getTime();
+              const diffMins = Math.round((outMs - inMs) / 60000);
+              if (diffMins >= 0 && diffMins < 60) {
+                issue = `Suspicious: Only ${diffMins} min in office`;
+              }
+            } else {
+              issue = 'Status marked but no punches';
+            }
+          } else {
+            // Other status with punches (e.g. absent but check_in present)
+            if (rec.check_in && !rec.check_out) {
+              issue = `Punch In during ${statusLabel}`;
+            } else if (!rec.check_in && rec.check_out) {
+              issue = `Punch Out during ${statusLabel}`;
+            } else if (rec.check_in && rec.check_out) {
+              issue = `Punched during ${statusLabel}`;
+            } else {
+              issue = statusLabel;
+            }
+          }
+        } else {
+          if (status === 'present' || status === 'late' || status === 'half_day') {
+            issue = `No punch records but marked ${statusLabel}`;
+          } else {
+            issue = statusLabel;
+          }
+        }
+
+        const escapedName = (emp.name || '').replace(/"/g, '""');
+        const escapedId = (emp.employee_id || '').replace(/"/g, '""');
+        const escapedBranch = (emp.branch_name || '').replace(/"/g, '""');
+        const escapedDept = (emp.department_name || '').replace(/"/g, '""');
+        const escapedShift = (emp.shift_name || '').replace(/"/g, '""');
+        const escapedStatus = (statusLabel || '').replace(/"/g, '""');
+        const escapedCheckIn = checkInVal.replace(/"/g, '""');
+        const escapedCheckOut = checkOutVal.replace(/"/g, '""');
+        const escapedIssue = issue.replace(/"/g, '""');
+        const escapedAlert = policyAlert.replace(/"/g, '""');
+
+        const row = [
+          `"${escapedId}"`,
+          `"${escapedName}"`,
+          `"${escapedBranch}"`,
+          `"${escapedDept}"`,
+          `"${d.dayStr}"`,
+          `"${d.dayOfWeek}"`,
+          `"${escapedShift}"`,
+          `"${escapedStatus}"`,
+          `"${escapedCheckIn}"`,
+          `"${escapedCheckOut}"`,
+          `"${hoursWorkedVal}"`,
+          `"${escapedIssue}"`,
+          `"${escapedAlert}"`
+        ];
+        csvRows.push(row.join(','));
+      });
+    });
+
+    const BOM = new Uint8Array([0xEF, 0xBB, 0xBF]);
+    const blob = new Blob([BOM, csvRows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    
+    const monthName = MONTH_NAMES[month - 1] || 'month';
+    link.setAttribute('download', `detailed_attendance_export_${monthName}_${year}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success('Detailed attendance exported successfully!');
+  };
+
 
   // Filter employees based on search
   const filteredEmployees = employees.filter(emp => 
@@ -557,7 +708,29 @@ export default function Attendance() {
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
               >
-                <Download size={14} style={{ color: '#16a34a' }} /> Export
+                <Download size={14} style={{ color: '#16a34a' }} /> Export Summary
+              </button>
+
+              <button 
+                onClick={handleExportDetailed} 
+                className="btn" 
+                style={{ 
+                  background: 'var(--bg2)', 
+                  border: '1px solid rgba(226, 232, 240, 0.8)', 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 6, 
+                  fontWeight: 700, 
+                  fontSize: 13,
+                  borderRadius: 10,
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
+                  transition: 'all 0.2s',
+                  flexShrink: 0
+                }}
+                onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
+                onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
+              >
+                <Download size={14} style={{ color: '#3b82f6' }} /> Export In/Out Details
               </button>
 
               <button 
