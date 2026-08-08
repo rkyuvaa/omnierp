@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText, Download, GitBranch, Zap } from 'lucide-react';
+import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText, Download, GitBranch, Zap, Send } from 'lucide-react';
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
@@ -29,6 +29,20 @@ export default function HRConfigurations() {
   const [compOffSettings, setCompOffSettings] = useState({ enabled: false, threshold_hours: 9.0, hours_per_day: 8.0, leave_type_id: null, expiry_months: null, activation_date: new Date().toISOString().split('T')[0] });
   const [savingCompOff, setSavingCompOff] = useState(false);
   const [dragOverIdx, setDragOverIdx] = useState(null);
+
+  const [departments, setDepartments] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [empSearch, setEmpSearch] = useState('');
+  const [sendingNotif, setSendingNotif] = useState(false);
+  const [notifForm, setNotifForm] = useState({
+    title: '',
+    message: '',
+    targetType: 'all',
+    selectedBranches: [],
+    selectedDepartments: [],
+    selectedCategories: [],
+    selectedEmployees: []
+  });
 
   useEffect(() => {
     api.get('/branches/').then(r => setBranches(r.data));
@@ -65,8 +79,57 @@ export default function HRConfigurations() {
         });
         setLeaveTypes(lt.data.filter(t => t.is_active));
       }
+      else if (tab === 'custom_notifications') {
+        const [deptsRes, empsRes] = await Promise.all([
+          api.get('/departments/'),
+          api.get('/hr/employees/', { params: { is_active: true } })
+        ]);
+        setDepartments(deptsRes.data || []);
+        setEmployees(empsRes.data || []);
+      }
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
+  }
+
+  async function sendCustomNotification() {
+    if (!notifForm.title.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+    if (!notifForm.message.trim()) {
+      toast.error('Message is required');
+      return;
+    }
+    
+    setSendingNotif(true);
+    try {
+      const payload = {
+        title: notifForm.title.trim(),
+        message: notifForm.message.trim(),
+        target_type: notifForm.targetType,
+        branch_ids: notifForm.targetType === 'selective' ? notifForm.selectedBranches : [],
+        department_ids: notifForm.targetType === 'selective' ? notifForm.selectedDepartments : [],
+        categories: notifForm.targetType === 'selective' ? notifForm.selectedCategories : [],
+        employee_ids: notifForm.targetType === 'specific' ? notifForm.selectedEmployees : []
+      };
+      
+      const res = await api.post('/hr/notifications/send-custom', payload);
+      toast.success(res.data.message || `Successfully sent to ${res.data.sent_count} users!`);
+      
+      setNotifForm(prev => ({
+        ...prev,
+        message: '',
+        selectedBranches: [],
+        selectedDepartments: [],
+        selectedCategories: [],
+        selectedEmployees: []
+      }));
+      setEmpSearch('');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to send notification');
+    } finally {
+      setSendingNotif(false);
+    }
   }
 
   function openModal(type, item = null) {
@@ -234,6 +297,7 @@ export default function HRConfigurations() {
           <button style={tabStyle(tab === 'salary_rules')} onClick={() => setTab('salary_rules')}><Settings size={14} /> Salary Rules</button>
           <button style={tabStyle(tab === 'lop_rules')} onClick={() => setTab('lop_rules')}><GitBranch size={14} /> LOP Waterfall</button>
           <button style={tabStyle(tab === 'comp_off')} onClick={() => setTab('comp_off')}><Zap size={14} /> Comp-Off</button>
+          <button style={tabStyle(tab === 'custom_notifications')} onClick={() => setTab('custom_notifications')}><Send size={14} /> Custom Messages</button>
         </div>
 
         {/* SHIFTS */}
@@ -1028,6 +1092,211 @@ export default function HRConfigurations() {
               >
                 {savingCompOff ? 'Saving...' : 'Save Comp-Off Settings'}
               </button>
+            </div>
+          </div>
+        )}
+
+        {tab === 'custom_notifications' && (
+          <div style={{ background: 'var(--bg2)', borderRadius: 16, border: '1px solid rgba(226, 232, 240, 0.8)', padding: 24, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', maxWidth: 700 }}>
+            <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Send Custom Broadcast Message</h3>
+            <p style={{ margin: '0 0 20px', fontSize: 12, color: 'var(--text2)' }}>
+              Send custom push and in-app notifications targeting specific branches, departments, employee types, or individuals.
+            </p>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div>
+                <label style={labelStyle}>Notification Title</label>
+                <input 
+                  type="text" 
+                  value={notifForm.title} 
+                  onChange={e => setNotifForm({ ...notifForm, title: e.target.value })} 
+                  placeholder="Enter notification title..."
+                  style={inputStyle} 
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Message Content</label>
+                <textarea 
+                  value={notifForm.message} 
+                  onChange={e => setNotifForm({ ...notifForm, message: e.target.value })} 
+                  placeholder="Type your custom message here..."
+                  rows={4}
+                  style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }} 
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Recipient Targeting</label>
+                <div style={{ display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                  {['all', 'selective', 'specific'].map(t => (
+                    <button
+                      key={t}
+                      type="button"
+                      onClick={() => setNotifForm({ ...notifForm, targetType: t })}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: 8,
+                        border: '1px solid',
+                        borderColor: notifForm.targetType === t ? 'var(--accent)' : 'var(--border)',
+                        background: notifForm.targetType === t ? 'var(--accent)15' : 'var(--bg)',
+                        color: notifForm.targetType === t ? 'var(--accent)' : 'var(--text)',
+                        fontWeight: 600,
+                        fontSize: 12,
+                        cursor: 'pointer',
+                        textTransform: 'capitalize',
+                        transition: 'all 0.2s'
+                      }}
+                    >
+                      {t === 'all' ? 'All Employees' : t === 'selective' ? 'Filter by Branch/Dept/Type' : 'Specific Employees'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {notifForm.targetType === 'selective' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--bg3)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+                  {/* Branch Select */}
+                  <div>
+                    <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Branch</label>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 6 }}>
+                      {branches.map(b => {
+                        const checked = notifForm.selectedBranches.includes(b.id);
+                        return (
+                          <label key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={checked} 
+                              onChange={() => {
+                                const list = checked 
+                                  ? notifForm.selectedBranches.filter(id => id !== b.id)
+                                  : [...notifForm.selectedBranches, b.id];
+                                setNotifForm({ ...notifForm, selectedBranches: list });
+                              }}
+                            />
+                            {b.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Dept Select */}
+                  <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 12 }}>
+                    <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Department</label>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 6 }}>
+                      {departments.map(d => {
+                        const checked = notifForm.selectedDepartments.includes(d.id);
+                        return (
+                          <label key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={checked} 
+                              onChange={() => {
+                                const list = checked 
+                                  ? notifForm.selectedDepartments.filter(id => id !== d.id)
+                                  : [...notifForm.selectedDepartments, d.id];
+                                setNotifForm({ ...notifForm, selectedDepartments: list });
+                              }}
+                            />
+                            {d.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Category / Type Select */}
+                  <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 12 }}>
+                    <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Employee Type / Category</label>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 6 }}>
+                      {['regular', 'fixed'].map(cat => {
+                        const checked = notifForm.selectedCategories.includes(cat);
+                        return (
+                          <label key={cat} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer', textTransform: 'capitalize' }}>
+                            <input 
+                              type="checkbox" 
+                              checked={checked} 
+                              onChange={() => {
+                                const list = checked 
+                                  ? notifForm.selectedCategories.filter(c => c !== cat)
+                                  : [...notifForm.selectedCategories, cat];
+                                setNotifForm({ ...notifForm, selectedCategories: list });
+                              }}
+                            />
+                            {cat}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {notifForm.targetType === 'specific' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg3)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+                  <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Select Specific Employees</label>
+                  
+                  <input 
+                    type="text" 
+                    placeholder="Search employees..." 
+                    value={empSearch}
+                    onChange={e => setEmpSearch(e.target.value)}
+                    style={{ ...inputStyle, background: 'var(--bg2)', padding: '6px 10px', fontSize: 12 }}
+                  />
+
+                  <div style={{ maxHeight: 150, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, marginTop: 4, paddingRight: 6 }}>
+                    {employees
+                      .filter(emp => emp.name.toLowerCase().includes(empSearch.toLowerCase()) || emp.employee_id.toLowerCase().includes(empSearch.toLowerCase()))
+                      .map(emp => {
+                        const checked = notifForm.selectedEmployees.includes(emp.id);
+                        return (
+                          <label key={emp.id} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, cursor: 'pointer', padding: '2px 4px', borderRadius: 4 }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg2)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}>
+                            <input 
+                              type="checkbox" 
+                              checked={checked} 
+                              onChange={() => {
+                                const list = checked 
+                                  ? notifForm.selectedEmployees.filter(id => id !== emp.id)
+                                  : [...notifForm.selectedEmployees, emp.id];
+                                setNotifForm({ ...notifForm, selectedEmployees: list });
+                              }}
+                            />
+                            <strong>{emp.employee_id}</strong> - {emp.name} {emp.department_name ? `(${emp.department_name})` : ''}
+                          </label>
+                        );
+                      })}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: 8 }}>
+                <button
+                  type="button"
+                  onClick={sendCustomNotification}
+                  disabled={sendingNotif || !notifForm.title.trim() || !notifForm.message.trim()}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: 'var(--accent)',
+                    color: 'white',
+                    fontWeight: 700,
+                    fontSize: 13.5,
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
+                    transition: 'all 0.2s'
+                  }}
+                  onMouseEnter={e => { if (!sendingNotif) e.currentTarget.style.backgroundColor = 'var(--accent2)'; }}
+                  onMouseLeave={e => { if (!sendingNotif) e.currentTarget.style.backgroundColor = 'var(--accent)'; }}
+                >
+                  <Send size={14} />
+                  {sendingNotif ? 'Sending Notification...' : 'Send Custom Notification'}
+                </button>
+              </div>
             </div>
           </div>
         )}

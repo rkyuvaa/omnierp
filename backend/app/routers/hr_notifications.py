@@ -104,3 +104,67 @@ def mark_all_read(user_id: int, db: Session = Depends(get_db), current_user: Use
     ).update({"is_read": True})
     db.commit()
     return {"message": "All marked as read"}
+
+from pydantic import BaseModel
+from typing import List
+
+class CustomNotificationRequest(BaseModel):
+    title: str
+    message: str
+    target_type: str  # "all", "selective", "specific"
+    branch_ids: Optional[List[int]] = None
+    department_ids: Optional[List[int]] = None
+    categories: Optional[List[str]] = None
+    employee_ids: Optional[List[int]] = None
+
+@router.post("/send-custom")
+def send_custom_notification(
+    data: CustomNotificationRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    from app.auth import is_hr_admin
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(status_code=403, detail="Access denied. Only HR Admin can send custom notifications.")
+
+    from app.hr_models import HREmployee
+    q = db.query(HREmployee).filter(HREmployee.is_active == True)
+
+    if data.target_type == "specific":
+        if not data.employee_ids:
+            raise HTTPException(status_code=400, detail="No employees selected.")
+        q = q.filter(HREmployee.id.in_(data.employee_ids))
+    elif data.target_type == "selective":
+        has_filter = False
+        if data.branch_ids:
+            q = q.filter(HREmployee.branch_id.in_(data.branch_ids))
+            has_filter = True
+        if data.department_ids:
+            q = q.filter(HREmployee.department_id.in_(data.department_ids))
+            has_filter = True
+        if data.categories:
+            q = q.filter(HREmployee.salary_category.in_(data.categories))
+            has_filter = True
+        
+        if not has_filter:
+            raise HTTPException(status_code=400, detail="Please select at least one branch, department, or category.")
+
+    employees = q.all()
+    user_ids = {emp.user_id for emp in employees if emp.user_id is not None}
+
+    if not user_ids:
+        return {"sent_count": 0, "message": "No active users found matching the selected criteria."}
+
+    sent_count = 0
+    for uid in user_ids:
+        dispatch_notification(
+            db=db,
+            user_id=uid,
+            title=data.title,
+            message=data.message,
+            notif_type="broadcast",
+        )
+        sent_count += 1
+
+    db.commit()
+    return {"sent_count": sent_count, "message": f"Successfully sent notifications to {sent_count} user(s)."}
