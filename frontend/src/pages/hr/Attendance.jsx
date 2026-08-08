@@ -618,43 +618,45 @@ export default function Attendance() {
   return (
     <Layout title="Attendance">
       <div style={{ padding: '0 16px 24px' }}>
-        {/* Tab Switcher */}
-        {isHRAdmin && (
-          <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
-            {['grid', 'punches'].map(t => (
-              <button 
-                key={t}
-                onClick={() => setTab(t)}
-                style={{ 
-                  padding: '12px 4px', 
-                  background: 'none', 
-                  border: 'none', 
-                  borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
-                  color: tab === t ? 'var(--accent)' : 'var(--text3)',
-                  fontWeight: 700,
-                  fontSize: 14,
-                  cursor: 'pointer',
-                  textTransform: 'capitalize'
-                }}
-              >
-                {t === 'grid' ? 'Monthly Sheet' : 'Raw Punch Log'}
-              </button>
-            ))}
+        {/* Tab Switcher & Month Navigator */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', marginBottom: 20, paddingBottom: 4 }}>
+          {isHRAdmin ? (
+            <div style={{ display: 'flex', gap: 20 }}>
+              {['grid', 'punches'].map(t => (
+                <button 
+                  key={t}
+                  onClick={() => setTab(t)}
+                  style={{ 
+                    padding: '10px 4px', 
+                    background: 'none', 
+                    border: 'none', 
+                    borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
+                    color: tab === t ? 'var(--accent)' : 'var(--text3)',
+                    fontWeight: 700,
+                    fontSize: 12,
+                    cursor: 'pointer',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {t === 'grid' ? 'Monthly Sheet' : 'Raw Punch Log'}
+                </button>
+              ))}
+            </div>
+          ) : <div />}
+
+          {/* Month Selector (Shrunk by 20%) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 8, padding: '3px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', flexShrink: 0 }}>
+            <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '5px', borderRadius: '5px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronLeft size={13} /></button>
+            <span style={{ fontWeight: 700, fontSize: 12.5, minWidth: 110, textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+              <Calendar size={12} style={{ color: 'var(--accent)' }} />
+              {MONTH_NAMES[month - 1]} {year}
+            </span>
+            <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '5px', borderRadius: '5px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronRight size={13} /></button>
           </div>
-        )}
+        </div>
 
         {/* Controls / Filter Bar */}
         <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'nowrap', overflowX: 'auto', alignItems: 'center', paddingBottom: '6px', width: '100%' }}>
-          
-          {/* Month Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '4px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', flexShrink: 0 }}>
-            <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronLeft size={16} /></button>
-            <span style={{ fontWeight: 700, fontSize: 14, minWidth: 130, textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-              <Calendar size={14} style={{ color: 'var(--accent)' }} />
-              {MONTH_NAMES[month - 1]} {year}
-            </span>
-            <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '6px', borderRadius: '6px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronRight size={16} /></button>
-          </div>
 
           {/* Search Box */}
           {isHRAdmin && (
@@ -697,18 +699,19 @@ export default function Attendance() {
                   border: '1px solid rgba(226, 232, 240, 0.8)', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 6, 
+                  gap: 5, 
                   fontWeight: 700, 
-                  fontSize: 13,
-                  borderRadius: 10,
+                  fontSize: 11.5,
+                  borderRadius: 8,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  padding: '6px 12px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
               >
-                <Download size={14} style={{ color: '#16a34a' }} /> Export Summary
+                <Download size={12} style={{ color: '#16a34a' }} /> Export Summary
               </button>
 
               <button 
@@ -719,18 +722,19 @@ export default function Attendance() {
                   border: '1px solid rgba(226, 232, 240, 0.8)', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 6, 
+                  gap: 5, 
                   fontWeight: 700, 
-                  fontSize: 13,
-                  borderRadius: 10,
+                  fontSize: 11.5,
+                  borderRadius: 8,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  padding: '6px 12px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
               >
-                <Download size={14} style={{ color: '#3b82f6' }} /> Export In/Out Details
+                <Download size={12} style={{ color: '#3b82f6' }} /> Export In/Out Details
               </button>
 
               <button 
@@ -745,18 +749,19 @@ export default function Attendance() {
                   border: '1px solid rgba(226, 232, 240, 0.8)', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 6, 
+                  gap: 5, 
                   fontWeight: 700, 
-                  fontSize: 13,
-                  borderRadius: 10,
+                  fontSize: 11.5,
+                  borderRadius: 8,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  padding: '6px 12px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
               >
-                <Upload size={14} style={{ color: 'var(--accent)' }} /> Import Attendance
+                <Upload size={12} style={{ color: 'var(--accent)' }} /> Import Attendance
               </button>
 
               <button 
@@ -768,18 +773,19 @@ export default function Attendance() {
                   border: '1px solid rgba(226, 232, 240, 0.8)', 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 6, 
+                  gap: 5, 
                   fontWeight: 700, 
-                  fontSize: 13,
-                  borderRadius: 10,
+                  fontSize: 11.5,
+                  borderRadius: 8,
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  padding: '6px 12px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
               >
-                <AlertCircle size={14} color="#f59e0b" /> {scanning ? 'Scanning...' : 'Scan Violations'}
+                <AlertCircle size={12} color="#f59e0b" /> {scanning ? 'Scanning...' : 'Scan Violations'}
               </button>
 
               <button 
@@ -788,16 +794,17 @@ export default function Attendance() {
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: 6, 
+                  gap: 5, 
                   fontWeight: 700, 
-                  fontSize: 13,
-                  borderRadius: 10,
+                  fontSize: 11.5,
+                  borderRadius: 8,
                   boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
                   transition: 'all 0.2s',
-                  flexShrink: 0
+                  flexShrink: 0,
+                  padding: '6px 12px'
                 }}
               >
-                <RefreshCw size={14} /> Recompute Month
+                <RefreshCw size={12} /> Recompute Month
               </button>
             </>
           )}
