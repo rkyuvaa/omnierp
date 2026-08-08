@@ -52,6 +52,21 @@ def dispatch_notification(
             data=data_payload,
         )
 
+    # 3. Fire Web Push (PWA) and standard push notifications via push_service
+    try:
+        from app.utils.push_service import send_push_to_user
+        send_push_to_user(
+            user_id=user_id,
+            title=title,
+            message=message,
+            reference_type=reference_type,
+            reference_id=reference_id,
+            db=db
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).error(f"Failed to send web/standard push to user {user_id}: {e}")
+
 
 @router.get("/")
 def get_notifications(
