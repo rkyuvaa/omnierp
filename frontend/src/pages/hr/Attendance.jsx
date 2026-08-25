@@ -693,8 +693,8 @@ export default function Attendance() {
             </select>
           )}
 
-          {/* Action Buttons */}
-          {isHRAdmin && (
+          {/* Export Action Buttons (Available for Read-Only & Admins) */}
+          {(isHRAdmin || user?.module_permissions?.hr?.can_read) && (
             <>
               <button 
                 onClick={handleExport} 
@@ -741,6 +741,12 @@ export default function Attendance() {
               >
                 <Download size={12} style={{ color: '#3b82f6' }} /> Export In/Out Details
               </button>
+            </>
+          )}
+
+          {/* HR Admin Only Actions */}
+          {isHRAdmin && (
+            <>
 
               <button 
                 onClick={() => {
