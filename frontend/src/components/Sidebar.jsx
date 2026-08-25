@@ -49,8 +49,11 @@ function HRModule({ isActive, handleNav, isExpanded, onToggle }) {
     const p = user?.module_permissions?.hr || {};
     const isHRAdmin = p.can_edit || p.can_delete;
     
-    if (i.to === '/hr/employees' || i.to === '/hr/attendance' || i.to === '/hr/payroll') {
+    if (i.to === '/hr/attendance') {
       return !!isHRAdmin || !!p.can_read;
+    }
+    if (i.to === '/hr/employees' || i.to === '/hr/payroll') {
+      return !!isHRAdmin;
     }
     if (i.to === '/hr/configurations') {
       return false; // Only for superadmin
