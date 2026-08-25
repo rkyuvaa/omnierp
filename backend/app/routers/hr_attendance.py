@@ -732,23 +732,54 @@ def get_records(
     current_user: User = Depends(get_current_user)
 ):
     from app.auth import is_hr_admin
+    allowed_emp_ids = None
+
     if not is_hr_admin(current_user, db):
         from app.auth import get_current_employee_optional
         emp_resolved = get_current_employee_optional(current_user, db)
         if not emp_resolved:
             return {}
-        if employee_id and employee_id != emp_resolved.id:
-            raise HTTPException(status_code=403, detail="Access denied. You can only view your own records.")
-        employee_id = emp_resolved.id
-        branch_id = None
-        department_id = None
+
+        allowed_mods = current_user.allowed_modules or {}
+        hr_role_id = allowed_mods.get("hr") or current_user.role_id
+        is_team_viewer = False
+
+        if hr_role_id:
+            from app.models import Role as RoleModel
+            hr_role = db.query(RoleModel).filter(RoleModel.id == hr_role_id).first()
+            if hr_role and hr_role.permissions:
+                if hr_role.permissions.get("view_team_records_only"):
+                    is_team_viewer = True
+
+        if is_team_viewer:
+            from sqlalchemy import or_
+            subs = db.query(HREmployee).filter(
+                or_(
+                    HREmployee.manager_id == emp_resolved.id,
+                    HREmployee.manager_l2_id == emp_resolved.id
+                )
+            ).all()
+            allowed_emp_ids = [emp_resolved.id] + [s.id for s in subs]
+
+            if employee_id:
+                if employee_id not in allowed_emp_ids:
+                    raise HTTPException(status_code=403, detail="Access denied. You can only view team records.")
+                allowed_emp_ids = [employee_id]
+        else:
+            if employee_id and employee_id != emp_resolved.id:
+                raise HTTPException(status_code=403, detail="Access denied. You can only view your own records.")
+            allowed_emp_ids = [emp_resolved.id]
+            branch_id = None
+            department_id = None
 
     from sqlalchemy import extract
     q = db.query(HRAttendanceRecord).filter(
         extract('month', HRAttendanceRecord.date) == month,
         extract('year', HRAttendanceRecord.date) == year,
     )
-    if employee_id:
+    if allowed_emp_ids is not None:
+        q = q.filter(HRAttendanceRecord.employee_id.in_(allowed_emp_ids))
+    elif employee_id:
         q = q.filter(HRAttendanceRecord.employee_id == employee_id)
 
     import calendar

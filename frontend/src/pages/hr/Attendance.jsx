@@ -109,8 +109,13 @@ export default function Attendance() {
         api.get('/hr/attendance/punches', { params }),
       ]);
       let empsData = emps.data;
-      if (!isHRAdmin && user?.employee_id) {
-        empsData = empsData.filter(e => e.id === user.employee_id);
+      const returnedEmpIds = new Set(Object.keys(recs.data || {}).map(Number));
+      if (!isHRAdmin) {
+        if (returnedEmpIds.size > 0) {
+          empsData = empsData.filter(e => returnedEmpIds.has(e.id));
+        } else if (user?.employee_id) {
+          empsData = empsData.filter(e => e.id === user.employee_id);
+        }
       }
       setEmployees(empsData);
       setRecords(recs.data);
