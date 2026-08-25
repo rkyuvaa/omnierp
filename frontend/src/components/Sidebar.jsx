@@ -50,7 +50,7 @@ function HRModule({ isActive, handleNav, isExpanded, onToggle }) {
     const isHRAdmin = p.can_edit || p.can_delete;
     
     if (i.to === '/hr/employees' || i.to === '/hr/attendance' || i.to === '/hr/payroll') {
-      return !!isHRAdmin;
+      return !!isHRAdmin || !!p.can_read;
     }
     if (i.to === '/hr/configurations') {
       return false; // Only for superadmin
