@@ -420,7 +420,6 @@ export default function LeaveLedger() {
                             </tr>
                           ))}
                         </tbody>
-                      </tbody>
                       </table>
                     </div>
                   ))
