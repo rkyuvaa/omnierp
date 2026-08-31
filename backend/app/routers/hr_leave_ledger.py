@@ -69,7 +69,7 @@ def get_leave_taken_summary(
         emp = req.employee
         lt = req.leave_type
         result.append({
-            "id": req.id,
+            "id": f"req_{req.id}",
             "reference": req.reference,
             "employee_id": req.employee_id,
             "employee_name": emp.name if emp else "Unknown",
@@ -89,6 +89,58 @@ def get_leave_taken_summary(
             "approved_at": str(req.approved_at) if req.approved_at else None,
             "created_at": str(req.created_at) if req.created_at else None,
         })
+
+    # If status filter permits, include unapproved absent attendance records
+    if not status or status.lower() == 'absent':
+        att_query = db.query(HRAttendanceRecord).join(HREmployee, HRAttendanceRecord.employee_id == HREmployee.id).filter(
+            HRAttendanceRecord.status == 'absent',
+            HRAttendanceRecord.leave_request_id == None
+        )
+
+        if not current_user.is_superadmin and not is_hr_admin and not is_hr_reader:
+            if current_emp:
+                att_query = att_query.filter(HRAttendanceRecord.employee_id == current_emp.id)
+            else:
+                att_query = att_query.filter(HRAttendanceRecord.employee_id == -1)
+        elif employee_id:
+            att_query = att_query.filter(HRAttendanceRecord.employee_id == employee_id)
+
+        if branch_id:
+            att_query = att_query.filter(HREmployee.branch_id == branch_id)
+        if department_id:
+            att_query = att_query.filter(HREmployee.department_id == department_id)
+        if from_date:
+            att_query = att_query.filter(HRAttendanceRecord.date >= from_date)
+        if to_date:
+            att_query = att_query.filter(HRAttendanceRecord.date <= to_date)
+
+        absent_records = att_query.order_by(HRAttendanceRecord.date.desc()).all()
+        for att in absent_records:
+            emp = att.employee
+            result.append({
+                "id": f"abs_{att.id}",
+                "reference": f"ABS-{att.id}",
+                "employee_id": att.employee_id,
+                "employee_name": emp.name if emp else "Unknown",
+                "employee_code": emp.employee_id if emp else "",
+                "department_name": emp.department.name if emp and emp.department else "-",
+                "branch_name": emp.branch.name if emp and emp.branch else "-",
+                "leave_type_id": None,
+                "leave_type_name": "Unapproved Absent",
+                "leave_type_code": "ABS",
+                "from_date": str(att.date),
+                "to_date": str(att.date),
+                "total_days": 1.0,
+                "is_half_day": False,
+                "half_day_session": None,
+                "reason": att.correction_reason or "Absent (No leave applied)",
+                "status": "absent",
+                "approved_at": None,
+                "created_at": str(att.created_at) if att.created_at else None,
+            })
+
+    # Sort combined results by from_date descending
+    result.sort(key=lambda x: x["from_date"], reverse=True)
 
     return result
 

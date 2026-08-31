@@ -85,9 +85,11 @@ export default function LeaveLedger() {
   const getStatusBadge = (status) => {
     const statusStyles = {
       approved: { bg: '#dcfce7', color: '#15803d', label: 'Approved' },
+      auto_approved: { bg: '#e0e7ff', color: '#3730a3', label: 'Auto Approved' },
       pending: { bg: '#fef9c3', color: '#a16207', label: 'Pending' },
       rejected: { bg: '#fee2e2', color: '#b91c1c', label: 'Rejected' },
       cancelled: { bg: '#f3f4f6', color: '#4b5563', label: 'Cancelled' },
+      absent: { bg: '#fee2e2', color: '#991b1b', label: 'Unapproved Absent' },
     };
     const style = statusStyles[status] || { bg: '#e0e7ff', color: '#3730a3', label: status };
     return (
