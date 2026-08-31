@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import Layout from '../../components/Layout';
 import { Modal, Confirm, Badge, Loader, Empty } from '../../components/Shared';
 import api from '../../utils/api';
-import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, Shield, Building, Boxes, Users as UsersIcon, X, CheckSquare, Square, Clock, History } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, Building, Boxes, Users as UsersIcon, X, CheckSquare, Square, Clock, History, ShieldCheck } from 'lucide-react';
+import { RBAC_CATALOG, DATA_SCOPES } from '../../utils/rbacRegistry';
 
 const emptyForm = { 
   name: '', email: '', password: '', role_id: '', 
@@ -857,35 +857,146 @@ export default function AdminUsers() {
 
             {modalMode === 'role' && (
               <>
-                <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800, marginBottom: 10 }}>Global Permission Assets</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {CRUD_PERMS.map(p => {
-                      const active = modalForm.permissions?.[p.key];
-                      return (
-                        <div key={p.key} onClick={() => toggleRolePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: active ? 'var(--accent-dim)' : 'var(--bg2)', borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? 'var(--accent)' : 'transparent'}` }}>
-                          {active ? <CheckSquare size={16} color="var(--accent)" /> : <Square size={16} color="var(--text3)" />}
-                          <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text2)' }}>{p.label}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+                {/* Module Tabs Header */}
+                <div style={{ display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid var(--border)', marginBottom: 12, paddingBottom: 4 }}>
+                  {RBAC_CATALOG.map(mod => {
+                    const isEnabled = modalForm.permissions?.modules?.[mod.key]?.enabled !== false;
+                    const isActive = (modalForm.activeModuleTab || RBAC_CATALOG[0].key) === mod.key;
+                    return (
+                      <button
+                        type="button"
+                        key={mod.key}
+                        onClick={() => setModalForm({ ...modalForm, activeModuleTab: mod.key })}
+                        style={{
+                          padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
+                          whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4,
+                          background: isActive ? 'var(--accent)' : 'var(--bg2)',
+                          color: isActive ? '#fff' : isEnabled ? 'var(--text1)' : 'var(--text3)',
+                          opacity: isEnabled ? 1 : 0.6
+                        }}
+                      >
+                        {mod.name}
+                      </button>
+                    );
+                  })}
                 </div>
 
-                <div className="form-group" style={{ marginTop: 8 }}>
-                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800, marginBottom: 10, color: '#f59e0b' }}>Data Scope Settings</label>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {SCOPE_PERMS.map(p => {
-                      const active = modalForm.permissions?.[p.key];
-                      return (
-                        <div key={p.key} onClick={() => toggleRolePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 10, background: active ? 'rgba(251, 191, 36, 0.12)' : 'var(--bg2)', borderRadius: 8, cursor: 'pointer', border: `1px solid ${active ? '#f59e0b' : 'transparent'}` }}>
-                          {active ? <CheckSquare size={16} color="#f59e0b" /> : <Square size={16} color="var(--text3)" />}
-                          <span style={{ fontSize: 12, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'var(--text2)' }}>{p.label}</span>
+                {/* Current Module Permissions Panel */}
+                {(() => {
+                  const currentModKey = modalForm.activeModuleTab || RBAC_CATALOG[0].key;
+                  const currentModCatalog = RBAC_CATALOG.find(m => m.key === currentModKey) || RBAC_CATALOG[0];
+                  const currentModState = modalForm.permissions?.modules?.[currentModKey] || { enabled: true, scope: 'all', menus: {} };
+
+                  const toggleModuleEnabled = () => {
+                    const updatedModules = { ...(modalForm.permissions?.modules || {}) };
+                    updatedModules[currentModKey] = { ...currentModState, enabled: !currentModState.enabled };
+                    setModalForm({ ...modalForm, permissions: { ...modalForm.permissions, modules: updatedModules } });
+                  };
+
+                  const setModuleScope = (scope) => {
+                    const updatedModules = { ...(modalForm.permissions?.modules || {}) };
+                    updatedModules[currentModKey] = { ...currentModState, scope };
+                    setModalForm({ ...modalForm, permissions: { ...modalForm.permissions, modules: updatedModules } });
+                  };
+
+                  const toggleMenuAction = (menuPath, act) => {
+                    const updatedModules = { ...(modalForm.permissions?.modules || {}) };
+                    const curMenus = { ...(currentModState.menus || {}) };
+                    const curMenu = { ...(curMenus[menuPath] || {}) };
+                    curMenu[act] = !curMenu[act];
+                    curMenus[menuPath] = curMenu;
+                    updatedModules[currentModKey] = { ...currentModState, menus: curMenus };
+                    setModalForm({ ...modalForm, permissions: { ...modalForm.permissions, modules: updatedModules } });
+                  };
+
+                  return (
+                    <div style={{ background: 'var(--bg2)', padding: 14, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 8 }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: 'var(--text1)' }}>{currentModCatalog.name} Permissions</h4>
+                          <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text3)' }}>Set record scope and sub-menu action access.</p>
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+                          <input
+                            type="checkbox"
+                            checked={currentModState.enabled !== false}
+                            onChange={toggleModuleEnabled}
+                          />
+                          Enable Module
+                        </label>
+                      </div>
+
+                      {/* Scope Selection */}
+                      <div style={{ marginBottom: 14 }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 800, marginBottom: 6, color: '#f59e0b', textTransform: 'uppercase' }}>
+                          Data Scope Settings
+                        </label>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 6 }}>
+                          {DATA_SCOPES.map(sc => {
+                            const isSelected = (currentModState.scope || 'all') === sc.key;
+                            return (
+                              <div
+                                key={sc.key}
+                                onClick={() => setModuleScope(sc.key)}
+                                style={{
+                                  padding: 8, borderRadius: 6, border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                                  background: isSelected ? 'var(--accent-dim)' : 'var(--bg)', cursor: 'pointer'
+                                }}
+                              >
+                                <div style={{ fontWeight: 800, fontSize: 11, color: isSelected ? 'var(--accent)' : 'var(--text1)' }}>
+                                  {sc.label}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Menu & Action Table */}
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 800, marginBottom: 6, textTransform: 'uppercase', color: 'var(--text3)' }}>
+                          Menu & Action Access Matrix
+                        </label>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, background: 'var(--bg)', borderRadius: 6, overflow: 'hidden' }}>
+                          <thead>
+                            <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
+                              <th style={{ padding: '6px 8px', textAlign: 'left' }}>Sub-Menu</th>
+                              {['read', 'create', 'edit', 'delete', 'approve', 'export'].map(act => (
+                                <th key={act} style={{ padding: '6px 8px', textAlign: 'center', textTransform: 'capitalize' }}>{act}</th>
+                              ))}
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {currentModCatalog.menus.map(menu => {
+                              const menuPerms = currentModState.menus?.[menu.path] || {};
+                              return (
+                                <tr key={menu.path} style={{ borderBottom: '1px solid var(--border)' }}>
+                                  <td style={{ padding: '8px', fontWeight: 600 }}>{menu.label}</td>
+                                  {['read', 'create', 'edit', 'delete', 'approve', 'export'].map(act => {
+                                    const isAvailable = menu.actions.includes(act);
+                                    if (!isAvailable) {
+                                      return <td key={act} style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 10 }}>-</td>;
+                                    }
+                                    const isChecked = !!menuPerms[act];
+                                    return (
+                                      <td key={act} style={{ textAlign: 'center' }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={isChecked}
+                                          onChange={() => toggleMenuAction(menu.path, act)}
+                                        />
+                                      </td>
+                                    );
+                                  })}
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  );
+                })()}
               </>
             )}
 
