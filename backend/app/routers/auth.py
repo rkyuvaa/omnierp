@@ -175,6 +175,11 @@ def me(current_user: User = Depends(get_current_user), db: Session = Depends(get
         "is_superadmin": current_user.is_superadmin,
         "allowed_modules": current_user.allowed_modules or [],
         "role_id": current_user.role_id,
+        "role": {
+            "id": current_user.role.id,
+            "name": current_user.role.name,
+            "permissions": current_user.role.permissions or {}
+        } if current_user.role else None,
         "branch_id": current_user.branch_id,
         "department_id": current_user.department_id,
         "allowed_branches": current_user.allowed_branches or [],
