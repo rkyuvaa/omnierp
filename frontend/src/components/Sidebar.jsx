@@ -49,6 +49,9 @@ function HRModule({ isActive, handleNav, isExpanded, onToggle }) {
       if (modPerm.enabled === false) return false;
       const menuPerm = modPerm.menus?.[i.to];
       if (menuPerm !== undefined) {
+        if (i.to === '/hr/approvals') {
+          return !!menuPerm.read || !!menuPerm.approve;
+        }
         return !!menuPerm.read;
       }
       return false;

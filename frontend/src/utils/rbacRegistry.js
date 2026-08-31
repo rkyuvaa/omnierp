@@ -6,7 +6,7 @@ export const RBAC_CATALOG = [
       { path: '/hr/employees', label: 'Employee Master', actions: ['read', 'create', 'edit', 'delete', 'export'] },
       { path: '/hr/attendance', label: 'Attendance', actions: ['read', 'create', 'edit', 'delete', 'export'] },
       { path: '/hr/requests', label: 'Requests', actions: ['read', 'create', 'edit', 'delete'] },
-      { path: '/hr/approvals', label: 'Approvals', actions: ['read', 'edit', 'approve'] },
+      { path: '/hr/approvals', label: 'Approvals', actions: ['read', 'approve'] },
       { path: '/hr/leave-ledger', label: 'Leave Ledger', actions: ['read', 'export'] },
       { path: '/hr/payroll', label: 'Payroll', actions: ['read', 'create', 'edit', 'delete', 'approve', 'export'] },
       { path: '/hr/configurations', label: 'Configurations', actions: ['read', 'edit'] },

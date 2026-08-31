@@ -904,7 +904,11 @@ export default function AdminUsers() {
                     const updatedModules = { ...(modalForm.permissions?.modules || {}) };
                     const curMenus = { ...(currentModState.menus || {}) };
                     const curMenu = curMenus[menuPath] ? { ...curMenus[menuPath] } : {};
-                    curMenu[act] = !curMenu[act];
+                    const newVal = !curMenu[act];
+                    curMenu[act] = newVal;
+                    if (newVal && (act === 'approve' || act === 'create' || act === 'edit' || act === 'delete')) {
+                      curMenu.read = true;
+                    }
                     curMenus[menuPath] = curMenu;
                     updatedModules[currentModKey] = { ...currentModState, menus: curMenus };
                     setModalForm({ ...modalForm, permissions: { ...modalForm.permissions, modules: updatedModules } });
