@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import Layout from '../../components/Layout';
 import { Modal, Confirm, Badge, Loader, Empty } from '../../components/Shared';
 import api from '../../utils/api';
+import toast from 'react-hot-toast';
 import { Plus, Pencil, Trash2, Shield, Building, Boxes, Users as UsersIcon, X, CheckSquare, Square, Clock, History, ShieldCheck } from 'lucide-react';
 import { RBAC_CATALOG, DATA_SCOPES } from '../../utils/rbacRegistry';
 
