@@ -1,6 +1,6 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
-import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog, Receipt, Menu, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Users, Wrench, Settings, LogOut, ClipboardList, Package, ShieldCheck, HeartPulse, Database, UserSquare, Clock, FileText, CheckSquare, DollarSign, SlidersHorizontal, ChevronDown, ChevronRight, Mail, CheckSquare2, X, Landmark, TrendingUp, Upload, Calendar, BarChart3, FileBarChart2, Cog, Receipt, Menu, BookOpen, Calculator } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import TwoFactorSetup from './TwoFactorSetup';
 
@@ -107,6 +107,7 @@ const financeItems = [
   {to:'/finance/dashboard',    label:'Dashboard',      icon:Landmark},
   {to:'/finance/transactions', label:'Transactions',   icon:ClipboardList},
   {to:'/finance/import',       label:'Import Statement',icon:Upload},
+  {to:'/finance/budget',       label:'Budget Planning',icon:Calculator},
   {to:'/finance/weekly',       label:'Weekly Buckets', icon:Calendar},
   {to:'/finance/pivot',        label:'Pivot Report',   icon:BarChart3},
   {to:'/finance/report',       label:'Mgmt Report',    icon:FileBarChart2},

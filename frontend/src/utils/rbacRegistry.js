@@ -63,6 +63,7 @@ export const RBAC_CATALOG = [
       { path: '/finance/dashboard', label: 'Dashboard', actions: ['read'] },
       { path: '/finance/transactions', label: 'Transactions', actions: ['read', 'create', 'edit', 'delete', 'export'] },
       { path: '/finance/import', label: 'Import Statement', actions: ['read', 'create'] },
+      { path: '/finance/budget', label: 'Budget Planning', actions: ['read', 'create', 'edit', 'export'] },
       { path: '/finance/weekly', label: 'Weekly Buckets', actions: ['read', 'edit'] },
       { path: '/finance/pivot', label: 'Pivot Report', actions: ['read', 'export'] },
       { path: '/finance/report', label: 'Mgmt Report', actions: ['read', 'export'] },

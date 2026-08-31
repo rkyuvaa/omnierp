@@ -394,6 +394,72 @@ def upsert_budget(data: BudgetUpsert, db: Session = Depends(get_db), current_use
     return _ser_budget(b)
 
 
+@router.get("/budgets/summary")
+def get_budget_summary(
+    fy: str,
+    month: Optional[int] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_login)
+):
+    """
+    Returns planned vs actual spend comparison per account head for a given FY and optional month.
+    """
+    heads = db.query(AccountHead).filter(AccountHead.is_active == True).order_by(AccountHead.head_code).all()
+    budgets_q = db.query(BudgetMaster).filter(BudgetMaster.financial_year == fy)
+    if month:
+        budgets_q = budgets_q.filter(BudgetMaster.month == month)
+    budgets = budgets_q.all()
+    budget_map = {(b.account_head_id, b.month): float(b.planned_amount or 0) for b in budgets}
+
+    # Derive date bounds for actual transactions
+    # FY format e.g. "2025-26" -> start 2025-04-01 to end 2026-03-31
+    try:
+        start_yr = int(fy.split('-')[0])
+    except:
+        start_yr = date.today().year
+
+    if month:
+        yr = start_yr if month >= 4 else start_yr + 1
+        m_start = date(yr, month, 1)
+        m_end = date(yr, month, calendar.monthrange(yr, month)[1])
+    else:
+        m_start = date(start_yr, 4, 1)
+        m_end = date(start_yr + 1, 3, 31)
+
+    # Actual expenses query grouped by account_head_id
+    actuals = db.query(
+        BankTransaction.account_head_id,
+        func.sum(BankTransaction.debit_amount).label("total_actual")
+    ).filter(
+        BankTransaction.transaction_date >= m_start,
+        BankTransaction.transaction_date <= m_end,
+        BankTransaction.status == 'APPROVED',
+        BankTransaction.account_head_id != None
+    ).group_by(BankTransaction.account_head_id).all()
+
+    actual_map = {r[0]: float(r[1] or 0) for r in actuals}
+
+    summary = []
+    for h in heads:
+        planned = sum(val for (hid, m), val in budget_map.items() if hid == h.id)
+        actual = actual_map.get(h.id, 0.0)
+        variance = planned - actual
+        utilization = round((actual / planned * 100), 1) if planned > 0 else (100.0 if actual > 0 else 0.0)
+
+        summary.append({
+            "account_head_id": h.id,
+            "head_code": h.head_code,
+            "head_name": h.head_name,
+            "category": h.category or "General",
+            "planned_amount": planned,
+            "actual_amount": actual,
+            "variance": variance,
+            "utilization_pct": utilization
+        })
+
+    return summary
+
+
 @router.delete("/budgets/{budget_id}")
 def delete_budget(budget_id: int, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
     b = db.query(BudgetMaster).filter(BudgetMaster.id == budget_id).first()

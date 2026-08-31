@@ -114,6 +114,7 @@ const FinanceWeeklyBuckets = safeLazy(() => import('./pages/finance/FinanceWeekl
 const FinancePivotReport = safeLazy(() => import('./pages/finance/FinancePivotReport'));
 const ManagementReport = safeLazy(() => import('./pages/finance/ManagementReport'));
 const FinanceConfig = safeLazy(() => import('./pages/finance/FinanceConfig'));
+const FinanceBudget = safeLazy(() => import('./pages/finance/FinanceBudget'));
 const ExpenseDashboard = safeLazy(() => import('./pages/expenses/ExpenseDashboard'));
 const MyExpenses = safeLazy(() => import('./pages/expenses/MyExpenses'));
 const ExpenseApprovals = safeLazy(() => import('./pages/expenses/ExpenseApprovals'));
@@ -196,6 +197,7 @@ export default function App() {
                 <Route path="/finance/pivot" element={<FinancePivotReport />} />
                 <Route path="/finance/report" element={<ManagementReport />} />
                 <Route path="/finance/config" element={<FinanceConfig />} />
+                <Route path="/finance/budget" element={<FinanceBudget />} />
                 {/* Expenses Module */}
                 <Route path="/expenses/dashboard" element={<ExpenseDashboard />} />
                 <Route path="/expenses/my" element={<MyExpenses />} />
