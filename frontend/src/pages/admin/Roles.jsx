@@ -3,23 +3,65 @@ import Layout from '../../components/Layout';
 import { Modal, Confirm, Loader, Empty } from '../../components/Shared';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
-import { Plus, Pencil, Trash2, CheckSquare, Square, Shield } from 'lucide-react';
+import { Plus, Pencil, Trash2, Shield, Check, X, ShieldCheck } from 'lucide-react';
+import { RBAC_CATALOG, DATA_SCOPES } from '../../utils/rbacRegistry';
 
-const emptyForm = { name: '', permissions: { can_read: true, can_create: false, can_edit: false, can_delete: false, view_own_records_only: false, view_team_records_only: false } };
+const createDefaultPermissions = () => {
+  const modules = {};
+  RBAC_CATALOG.forEach(mod => {
+    const menus = {};
+    mod.menus.forEach(m => {
+      menus[m.path] = { read: true, create: true, edit: true, delete: false, export: false, approve: false };
+    });
+    modules[mod.key] = { enabled: true, scope: 'all', menus };
+  });
+  return { modules };
+};
 
 export default function AdminRoles() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState(false);
   const [editing, setEditing] = useState(null);
-  const [form, setForm] = useState(emptyForm);
+  const [activeModuleTab, setActiveModuleTab] = useState(RBAC_CATALOG[0].key);
+  const [form, setForm] = useState({ name: '', permissions: createDefaultPermissions() });
   const [deleting, setDeleting] = useState(null);
 
   const load = () => api.get('/roles/').then(r => setItems(r.data)).finally(() => setLoading(false));
   useEffect(() => { load(); }, []);
 
-  const openNew = () => { setForm(emptyForm); setEditing(null); setModal(true); };
-  const openEdit = (i) => { setForm({ name: i.name, permissions: i.permissions || emptyForm.permissions }); setEditing(i.id); setModal(true); };
+  const openNew = () => {
+    setForm({ name: '', permissions: createDefaultPermissions() });
+    setEditing(null);
+    setActiveModuleTab(RBAC_CATALOG[0].key);
+    setModal(true);
+  };
+
+  const openEdit = (roleItem) => {
+    let perms = roleItem.permissions || {};
+    if (!perms.modules) {
+      // Legacy format migration helper in UI
+      const def = createDefaultPermissions();
+      if (perms.can_read !== undefined) {
+        Object.keys(def.modules).forEach(modKey => {
+          def.modules[modKey].enabled = !!perms.can_read;
+          Object.keys(def.modules[modKey].menus).forEach(mPath => {
+            def.modules[modKey].menus[mPath].read = !!perms.can_read;
+            def.modules[modKey].menus[mPath].create = !!perms.can_create;
+            def.modules[modKey].menus[mPath].edit = !!perms.can_edit;
+            def.modules[modKey].menus[mPath].delete = !!perms.can_delete;
+          });
+          if (perms.view_own_records_only) def.modules[modKey].scope = 'own';
+          else if (perms.view_team_records_only) def.modules[modKey].scope = 'team';
+        });
+      }
+      perms = def;
+    }
+    setForm({ name: roleItem.name, permissions: perms });
+    setEditing(roleItem.id);
+    setActiveModuleTab(RBAC_CATALOG[0].key);
+    setModal(true);
+  };
 
   const save = async (e) => {
     e.preventDefault();
@@ -45,28 +87,74 @@ export default function AdminRoles() {
     } catch { toast.error('Failed to delete role'); }
   };
 
-  const togglePerm = (key) => setForm(f => ({
-    ...f,
-    permissions: { ...(f.permissions || {}), [key]: !f.permissions?.[key] }
-  }));
+  const toggleModuleEnabled = (modKey) => {
+    setForm(f => {
+      const curMod = f.permissions?.modules?.[modKey] || { enabled: true, scope: 'all', menus: {} };
+      return {
+        ...f,
+        permissions: {
+          ...f.permissions,
+          modules: {
+            ...f.permissions?.modules,
+            [modKey]: { ...curMod, enabled: !curMod.enabled }
+          }
+        }
+      };
+    });
+  };
 
-  const CRUD_PERMS = [
-    { key: 'can_read', label: 'Read Data (View records / Operator Level)' },
-    { key: 'can_create', label: 'Create Data (Add new records / User Level)' },
-    { key: 'can_edit', label: 'Edit Data (Modify existing records / Manager Level)' },
-    { key: 'can_delete', label: 'Delete Data (Remove records completely / Admin Level)' },
-  ];
-  const SCOPE_PERMS = [
-    { key: 'view_own_records_only', label: 'View Own Records Only — user sees only tasks assigned to themselves (Task Management)' },
-    { key: 'view_team_records_only', label: 'View Team Records Only — user sees their own tasks + their direct reports\' tasks (Task Management)' },
-  ];
-  const PERMS = [...CRUD_PERMS, ...SCOPE_PERMS];
+  const setModuleScope = (modKey, scope) => {
+    setForm(f => {
+      const curMod = f.permissions?.modules?.[modKey] || { enabled: true, scope: 'all', menus: {} };
+      return {
+        ...f,
+        permissions: {
+          ...f.permissions,
+          modules: {
+            ...f.permissions?.modules,
+            [modKey]: { ...curMod, scope }
+          }
+        }
+      };
+    });
+  };
+
+  const toggleMenuAction = (modKey, menuPath, action) => {
+    setForm(f => {
+      const curMod = f.permissions?.modules?.[modKey] || { enabled: true, scope: 'all', menus: {} };
+      const curMenu = curMod.menus?.[menuPath] || {};
+      return {
+        ...f,
+        permissions: {
+          ...f.permissions,
+          modules: {
+            ...f.permissions?.modules,
+            [modKey]: {
+              ...curMod,
+              menus: {
+                ...curMod.menus,
+                [menuPath]: {
+                  ...curMenu,
+                  [action]: !curMenu[action]
+                }
+              }
+            }
+          }
+        }
+      };
+    });
+  };
+
+  const currentModCatalog = RBAC_CATALOG.find(m => m.key === activeModuleTab) || RBAC_CATALOG[0];
+  const currentModFormState = form.permissions?.modules?.[activeModuleTab] || { enabled: true, scope: 'all', menus: {} };
 
   return (
     <Layout title="Role Management">
       <div className="toolbar">
-        <h1 className="h3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}><Shield size={20} className="text-accent"/> Roles & Permissions</h1>
-        <button className="btn btn-primary" onClick={openNew}><Plus size={16}/> New Role</button>
+        <h1 className="h3" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <Shield size={20} className="text-accent" /> Role & Permission Matrix
+        </h1>
+        <button className="btn btn-primary" onClick={openNew}><Plus size={16} /> New Role</button>
       </div>
 
       <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
@@ -74,100 +162,204 @@ export default function AdminRoles() {
           <table className="table" style={{ margin: 0 }}>
             <thead>
               <tr>
-                <th style={{ paddingLeft: 20 }}>Role Rank / Name</th>
-                <th>Global Permissions</th>
-                <th width="100" style={{ textAlign: 'center' }}>Actions</th>
+                <th style={{ paddingLeft: 20 }}>Role Name</th>
+                <th>Enabled Modules & Scope</th>
+                <th width="120" style={{ textAlign: 'center' }}>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {items.map(i => (
-                <tr key={i.id}>
-                  <td style={{ fontWeight: 700, paddingLeft: 20, color: 'var(--text)' }}>{i.name}</td>
-                  <td>
-                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
-                      {CRUD_PERMS.filter(p => i.permissions?.[p.key]).map(p => (
-                        <span key={p.key} style={{ fontSize: 10, background: 'var(--accent-dim)', color: 'var(--accent)', padding: '4px 10px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.5px' }}>
-                          {p.key.replace('can_', '').toUpperCase()}
-                        </span>
-                      ))}
-                      {i.permissions?.view_own_records_only && (
-                        <span style={{ fontSize: 10, background: 'rgba(251,191,36,0.15)', color: '#f59e0b', padding: '4px 10px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.5px', border: '1px solid rgba(251,191,36,0.3)' }}>OWN RECORDS</span>
-                      )}
-                      {i.permissions?.view_team_records_only && (
-                        <span style={{ fontSize: 10, background: 'rgba(139,92,246,0.15)', color: '#8b5cf6', padding: '4px 10px', borderRadius: 20, fontWeight: 700, letterSpacing: '0.5px', border: '1px solid rgba(139,92,246,0.3)' }}>TEAM RECORDS</span>
-                      )}
-                      {!Object.keys(i.permissions || {}).some(k => i.permissions[k]) && <span className="text-muted text-sm" style={{ padding: '4px 10px' }}>No Access</span>}
-                    </div>
-                  </td>
-                  <td style={{ textAlign: 'center' }}>
-                    <div className="flex gap-2" style={{ justifyContent: 'center' }}>
-                      <button className="btn btn-ghost btn-sm" onClick={() => openEdit(i)} style={{ padding: '4px 8px' }}><Pencil size={14}/></button>
-                      <button className="btn btn-danger btn-sm" onClick={() => setDeleting(i)} style={{ padding: '4px 8px' }}><Trash2 size={14}/></button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+              {items.map(i => {
+                const mods = i.permissions?.modules || {};
+                return (
+                  <tr key={i.id}>
+                    <td style={{ fontWeight: 700, paddingLeft: 20, color: 'var(--text)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <ShieldCheck size={16} style={{ color: 'var(--accent)' }} />
+                        {i.name}
+                      </div>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                        {RBAC_CATALOG.map(mc => {
+                          const mData = mods[mc.key];
+                          if (!mData || mData.enabled === false) return null;
+                          return (
+                            <span key={mc.key} style={{
+                              fontSize: 11, background: 'var(--bg3)', border: '1px solid var(--border)',
+                              padding: '4px 10px', borderRadius: 16, display: 'inline-flex', alignItems: 'center', gap: 6
+                            }}>
+                              <span style={{ fontWeight: 600 }}>{mc.name}</span>
+                              <span style={{
+                                fontSize: 10, fontWeight: 700, textTransform: 'uppercase', padding: '1px 6px',
+                                borderRadius: 8, background: 'var(--accent-dim)', color: 'var(--accent)'
+                              }}>
+                                {mData.scope || 'all'}
+                              </span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>
+                      <button className="btn btn-icon btn-ghost" onClick={() => openEdit(i)} title="Edit Role Matrix"><Pencil size={15} /></button>
+                      <button className="btn btn-icon btn-ghost text-danger" onClick={() => setDeleting(i)} title="Delete Role"><Trash2 size={15} /></button>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}
       </div>
 
+      {/* EDIT / CREATE ROLE MATRIX MODAL */}
       {modal && (
-        <Modal title={editing ? 'Edit Role' : 'New Role'} onClose={() => setModal(false)}>
+        <Modal
+          title={editing ? `Edit Role Matrix: ${form.name}` : "Create New Role Matrix"}
+          onClose={() => setModal(false)}
+          maxWidth="900px"
+        >
           <form onSubmit={save}>
-            <div className="form-group" style={{ marginBottom: 24 }}>
-              <label className="form-label" style={{ fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase' }}>Role Identifier</label>
-              <input autoFocus className="form-input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Manager, Operator..." style={{ fontSize: 15, fontWeight: 600, padding: '12px 16px' }} />
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Role Name *</label>
+              <input
+                type="text"
+                required
+                value={form.name}
+                onChange={e => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Sales Manager, HR Executive, Finance Analyst"
+                style={{ width: '100%', padding: '8px 12px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)' }}
+              />
             </div>
 
-            <div className="form-group" style={{ marginTop: 20 }}>
-              <label className="form-label" style={{ marginBottom: 12, fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: 'var(--accent)' }}>Global Permission Settings</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {CRUD_PERMS.map(p => {
-                  const active = form.permissions?.[p.key];
-                  return (
-                    <div key={p.key} onClick={() => togglePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: active ? 'var(--accent-dim)' : 'var(--bg3)', border: `2px solid ${active ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
-                      <div style={{ color: active ? 'var(--accent)' : 'var(--text3)' }}>
-                        {active ? <CheckSquare size={20} /> : <Square size={20} />}
+            {/* Module Tabs Header */}
+            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', borderBottom: '1px solid var(--border)', marginBottom: 16, paddingBottom: 4 }}>
+              {RBAC_CATALOG.map(mod => {
+                const isEnabled = form.permissions?.modules?.[mod.key]?.enabled !== false;
+                const isActive = activeModuleTab === mod.key;
+                return (
+                  <button
+                    type="button"
+                    key={mod.key}
+                    onClick={() => setActiveModuleTab(mod.key)}
+                    style={{
+                      padding: '8px 14px', borderRadius: 6, fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
+                      whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 6,
+                      background: isActive ? 'var(--accent)' : 'var(--bg2)',
+                      color: isActive ? '#fff' : isEnabled ? 'var(--text)' : 'var(--text2)',
+                      opacity: isEnabled ? 1 : 0.6
+                    }}
+                  >
+                    {mod.name}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Current Module Permissions Panel */}
+            <div style={{ background: 'var(--bg2)', padding: 16, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 20 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+                <div>
+                  <h4 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{currentModCatalog.name} Module Settings</h4>
+                  <p style={{ margin: '2px 0 0 0', fontSize: 12, color: 'var(--text2)' }}>Configure data visibility scope and menu level action permissions.</p>
+                </div>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600 }}>
+                  <input
+                    type="checkbox"
+                    checked={currentModFormState.enabled !== false}
+                    onChange={() => toggleModuleEnabled(currentModCatalog.key)}
+                  />
+                  Enable Module
+                </label>
+              </div>
+
+              {/* Scope Selection */}
+              <div style={{ marginBottom: 20 }}>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+                  Data Visibility Scope (Records Filter)
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10 }}>
+                  {DATA_SCOPES.map(sc => {
+                    const isSelected = (currentModFormState.scope || 'all') === sc.key;
+                    return (
+                      <div
+                        key={sc.key}
+                        onClick={() => setModuleScope(currentModCatalog.key, sc.key)}
+                        style={{
+                          padding: 10, borderRadius: 6, border: isSelected ? '2px solid var(--accent)' : '1px solid var(--border)',
+                          background: isSelected ? 'var(--accent-dim)' : 'var(--bg)', cursor: 'pointer'
+                        }}
+                      >
+                        <div style={{ fontWeight: 700, fontSize: 13, color: isSelected ? 'var(--accent)' : 'var(--text)' }}>
+                          {sc.label}
+                        </div>
+                        <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>{sc.desc}</div>
                       </div>
-                      <div style={{ fontSize: 14, fontWeight: active ? 700 : 500, color: active ? 'var(--accent)' : 'var(--text2)' }}>
-                        {p.label}
-                      </div>
-                    </div>
-                  );
-                })}
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Menu & Action Table */}
+              <div>
+                <label style={{ display: 'block', fontSize: 13, fontWeight: 700, marginBottom: 8 }}>
+                  Menu & Action Permissions
+                </label>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, background: 'var(--bg)', borderRadius: 6, overflow: 'hidden' }}>
+                  <thead>
+                    <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+                      <th style={{ padding: '8px 12px', textAlign: 'left' }}>Sub-Menu</th>
+                      {['read', 'create', 'edit', 'delete', 'approve', 'export'].map(act => (
+                        <th key={act} style={{ padding: '8px 12px', textAlign: 'center', textTransform: 'capitalize' }}>{act}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {currentModCatalog.menus.map(menu => {
+                      const menuPerms = currentModFormState.menus?.[menu.path] || {};
+                      return (
+                        <tr key={menu.path} style={{ borderBottom: '1px solid var(--border)' }}>
+                          <td style={{ padding: '10px 12px', fontWeight: 600 }}>{menu.label}</td>
+                          {['read', 'create', 'edit', 'delete', 'approve', 'export'].map(act => {
+                            const isAvailable = menu.actions.includes(act);
+                            if (!isAvailable) {
+                              return <td key={act} style={{ textAlign: 'center', color: 'var(--text2)', fontSize: 12 }}>-</td>;
+                            }
+                            const isChecked = !!menuPerms[act];
+                            return (
+                              <td key={act} style={{ textAlign: 'center' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={isChecked}
+                                  onChange={() => toggleMenuAction(currentModCatalog.key, menu.path, act)}
+                                />
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             </div>
 
-            {/* ── Data Scope Settings ─────────────────── */}
-            <div className="form-group" style={{ marginTop: 20 }}>
-              <label className="form-label" style={{ marginBottom: 12, fontSize: 11, fontWeight: 700, letterSpacing: '0.5px', textTransform: 'uppercase', color: '#f59e0b' }}>Data Scope Settings</label>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {SCOPE_PERMS.map(p => {
-                  const active = form.permissions?.[p.key];
-                  return (
-                    <div key={p.key} onClick={() => togglePerm(p.key)} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 16px', background: active ? 'rgba(251,191,36,0.12)' : 'var(--bg3)', border: `2px solid ${active ? '#f59e0b' : 'var(--border)'}`, borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}>
-                      <div style={{ color: active ? '#f59e0b' : 'var(--text3)' }}>
-                        {active ? <CheckSquare size={20} /> : <Square size={20} />}
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: active ? 700 : 500, color: active ? '#f59e0b' : 'var(--text2)' }}>
-                        {p.label}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex justify-end gap-2" style={{ marginTop: 30 }}>
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
               <button type="button" className="btn btn-ghost" onClick={() => setModal(false)}>Cancel</button>
-              <button type="submit" className="btn btn-primary" style={{ padding: '0 24px' }}>Save Definitions</button>
+              <button type="submit" className="btn btn-primary">Save Role Matrix</button>
             </div>
           </form>
         </Modal>
       )}
 
-      {deleting && <Confirm title="Delete Role" message={`Delete role ${deleting.name}?`} onConfirm={confirmDelete} onCancel={() => setDeleting(null)} />}
+      {deleting && (
+        <Confirm
+          title="Delete Role"
+          message={`Are you sure you want to delete role "${deleting.name}"?`}
+          onConfirm={confirmDelete}
+          onCancel={() => setDeleting(null)}
+        />
+      )}
     </Layout>
   );
 }

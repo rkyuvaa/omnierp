@@ -38,32 +38,40 @@ const NavItem=({to,label,icon:Icon,active,onClick})=>(<Link to={to} onClick={onC
 
 function HRModule({ isActive, handleNav, isExpanded, onToggle }) {
   const { user } = useAuth();
-  
-  if (!user?.is_superadmin) {
-    const p = user?.module_permissions?.hr;
-    const hasPerm = p && (p.can_read || p.can_create || p.can_edit || p.can_delete);
-    if (!hasPerm) return null;
-  }
-  
+
   const filteredHRItems = hrSubItems.filter(i => {
     if (user?.is_superadmin) return true;
+    const rolePerms = user?.role?.permissions || {};
+    
+    // Check structured matrix permissions
+    const modPerm = rolePerms.modules?.hr;
+    if (modPerm) {
+      if (modPerm.enabled === false) return false;
+      const menuPerm = modPerm.menus?.[i.to];
+      if (menuPerm) return !!menuPerm.read;
+      return true;
+    }
+
+    // Legacy fallback check
     const p = user?.module_permissions?.hr || {};
     const isHRAdmin = p.can_edit || p.can_delete;
-    
-    if (i.to === '/hr/attendance') {
+
+    if (i.to === '/hr/attendance' || i.to === '/hr/requests' || i.to === '/hr/leave-ledger') {
       return !!isHRAdmin || !!p.can_read;
     }
     if (i.to === '/hr/employees' || i.to === '/hr/payroll') {
       return !!isHRAdmin;
     }
     if (i.to === '/hr/configurations') {
-      return false; // Only for superadmin
+      return false;
     }
     if (i.to === '/hr/approvals') {
       return !!isHRAdmin || !!user?.is_manager;
     }
     return true;
   });
+
+  if (filteredHRItems.length === 0) return null;
 
   const isHRActive = filteredHRItems.some(i => isActive(i.to));
   return (

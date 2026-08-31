@@ -10,18 +10,9 @@ from app.hr_models import (
     HRLeaveRequest, HRLeaveType, HRLeaveBalance,
     HREmployee, HRAttendanceRecord
 )
+from app.utils.rbac import check_permission, apply_data_scope
 
 router = APIRouter()
-
-def _check_hr_permission(current_user: User):
-    """Returns true if user is superadmin or has HR edit/delete/read permissions."""
-    if current_user.is_superadmin:
-        return True, None
-    perms = current_user.module_permissions or {}
-    hr_perm = perms.get("hr", {})
-    is_hr_admin = hr_perm.get("can_edit") or hr_perm.get("can_delete")
-    is_hr_reader = hr_perm.get("can_read")
-    return is_hr_admin, is_hr_reader
 
 @router.get("/taken-summary")
 def get_leave_taken_summary(
@@ -35,20 +26,14 @@ def get_leave_taken_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    is_hr_admin, is_hr_reader = _check_hr_permission(current_user)
-    current_emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    if not check_permission(current_user, db, "hr", "/hr/leave-ledger", "read"):
+        raise HTTPException(status_code=403, detail="Permission denied to access Leave Ledger")
 
     query = db.query(HRLeaveRequest).join(HREmployee, HRLeaveRequest.employee_id == HREmployee.id)
+    query = apply_data_scope(query, HRLeaveRequest, current_user, db, "hr")
 
-    # Scoping permission check
-    if not current_user.is_superadmin and not is_hr_admin and not is_hr_reader:
-        if current_emp:
-            query = query.filter(HRLeaveRequest.employee_id == current_emp.id)
-        else:
-            return []
-    elif employee_id:
+    if employee_id:
         query = query.filter(HRLeaveRequest.employee_id == employee_id)
-
     if branch_id:
         query = query.filter(HREmployee.branch_id == branch_id)
     if department_id:
@@ -96,15 +81,10 @@ def get_leave_taken_summary(
             HRAttendanceRecord.status == 'absent',
             HRAttendanceRecord.leave_request_id == None
         )
+        att_query = apply_data_scope(att_query, HRAttendanceRecord, current_user, db, "hr")
 
-        if not current_user.is_superadmin and not is_hr_admin and not is_hr_reader:
-            if current_emp:
-                att_query = att_query.filter(HRAttendanceRecord.employee_id == current_emp.id)
-            else:
-                att_query = att_query.filter(HRAttendanceRecord.employee_id == -1)
-        elif employee_id:
+        if employee_id:
             att_query = att_query.filter(HRAttendanceRecord.employee_id == employee_id)
-
         if branch_id:
             att_query = att_query.filter(HREmployee.branch_id == branch_id)
         if department_id:
@@ -139,9 +119,7 @@ def get_leave_taken_summary(
                 "created_at": str(att.created_at) if att.created_at else None,
             })
 
-    # Sort combined results by from_date descending
     result.sort(key=lambda x: x["from_date"], reverse=True)
-
     return result
 
 @router.get("/compoff-summary")
@@ -154,21 +132,16 @@ def get_compoff_summary(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    is_hr_admin, is_hr_reader = _check_hr_permission(current_user)
-    current_emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
+    if not check_permission(current_user, db, "hr", "/hr/leave-ledger", "read"):
+        raise HTTPException(status_code=403, detail="Permission denied")
 
     query = db.query(HRAttendanceRecord).join(HREmployee, HRAttendanceRecord.employee_id == HREmployee.id).filter(
         HRAttendanceRecord.comp_off_hours > 0
     )
+    query = apply_data_scope(query, HRAttendanceRecord, current_user, db, "hr")
 
-    if not current_user.is_superadmin and not is_hr_admin and not is_hr_reader:
-        if current_emp:
-            query = query.filter(HRAttendanceRecord.employee_id == current_emp.id)
-        else:
-            return []
-    elif employee_id:
+    if employee_id:
         query = query.filter(HRAttendanceRecord.employee_id == employee_id)
-
     if branch_id:
         query = query.filter(HREmployee.branch_id == branch_id)
     if department_id:
@@ -183,7 +156,7 @@ def get_compoff_summary(
     result = []
     for r in records:
         emp = r.employee
-        days_earned = round(r.comp_off_hours / 8.0, 2)  # assuming 8 hours per standard day
+        days_earned = round(r.comp_off_hours / 8.0, 2)
         result.append({
             "id": r.id,
             "employee_id": r.employee_id,
@@ -211,20 +184,15 @@ def get_balance_ledger(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if not check_permission(current_user, db, "hr", "/hr/leave-ledger", "read"):
+        raise HTTPException(status_code=403, detail="Permission denied")
+
     target_year = year or datetime.utcnow().year
-    is_hr_admin, is_hr_reader = _check_hr_permission(current_user)
-    current_emp = db.query(HREmployee).filter(HREmployee.user_id == current_user.id).first()
-
     emp_query = db.query(HREmployee).filter(HREmployee.is_active == True)
+    emp_query = apply_data_scope(emp_query, HREmployee, current_user, db, "hr", emp_id_attr="id")
 
-    if not current_user.is_superadmin and not is_hr_admin and not is_hr_reader:
-        if current_emp:
-            emp_query = emp_query.filter(HREmployee.id == current_emp.id)
-        else:
-            return []
-    elif employee_id:
+    if employee_id:
         emp_query = emp_query.filter(HREmployee.id == employee_id)
-
     if branch_id:
         emp_query = emp_query.filter(HREmployee.branch_id == branch_id)
     if department_id:
