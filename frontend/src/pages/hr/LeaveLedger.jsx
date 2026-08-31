@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api from '../../api';
+import api from '../../utils/api';
 import { 
   BookOpen, Calendar, Clock, FileText, Filter, RefreshCw, 
   Search, Award, CheckCircle, AlertCircle, User, Building, MapPin, Download
