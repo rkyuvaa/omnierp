@@ -903,7 +903,7 @@ export default function AdminUsers() {
                   const toggleMenuAction = (menuPath, act) => {
                     const updatedModules = { ...(modalForm.permissions?.modules || {}) };
                     const curMenus = { ...(currentModState.menus || {}) };
-                    const curMenu = { ...(curMenus[menuPath] || {}) };
+                    const curMenu = curMenus[menuPath] ? { ...curMenus[menuPath] } : {};
                     curMenu[act] = !curMenu[act];
                     curMenus[menuPath] = curMenu;
                     updatedModules[currentModKey] = { ...currentModState, menus: curMenus };

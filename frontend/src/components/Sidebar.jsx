@@ -48,8 +48,10 @@ function HRModule({ isActive, handleNav, isExpanded, onToggle }) {
     if (modPerm) {
       if (modPerm.enabled === false) return false;
       const menuPerm = modPerm.menus?.[i.to];
-      if (menuPerm) return !!menuPerm.read;
-      return true;
+      if (menuPerm !== undefined) {
+        return !!menuPerm.read;
+      }
+      return false;
     }
 
     // Legacy fallback check
