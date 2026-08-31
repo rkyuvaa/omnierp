@@ -4,8 +4,10 @@ import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { CheckCircle, XCircle, Clock, User, Calendar, RotateCcw } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
 
 export default function Approvals() {
+  const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [approvers, setApprovers] = useState([]);
   const [selectedApprover, setSelectedApprover] = useState('');
@@ -273,7 +275,7 @@ export default function Approvals() {
                 </button>
               </div>
             )}
-            {type === 'leave' && (req.status === 'approved' || req.status === 'auto_approved') && (
+            {user?.is_superadmin && type === 'leave' && (req.status === 'approved' || req.status === 'auto_approved') && (
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
                   onClick={() => { setRevokeModal(req); setRevokeRemark(''); }}
