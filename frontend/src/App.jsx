@@ -103,6 +103,7 @@ const EmployeeMaster = safeLazy(() => import('./pages/hr/EmployeeMaster'));
 const Attendance = safeLazy(() => import('./pages/hr/Attendance'));
 const Requests = safeLazy(() => import('./pages/hr/Requests'));
 const Approvals = safeLazy(() => import('./pages/hr/Approvals'));
+const LeaveLedger = safeLazy(() => import('./pages/hr/LeaveLedger'));
 const Payroll = safeLazy(() => import('./pages/hr/Payroll'));
 const HRConfigurations = safeLazy(() => import('./pages/hr/HRConfigurations'));
 const TaskList = safeLazy(() => import('./pages/tasks/TaskList'));
@@ -182,6 +183,7 @@ export default function App() {
                 <Route path="/hr/attendance" element={<Attendance />} />
                 <Route path="/hr/requests" element={<Requests />} />
                 <Route path="/hr/approvals" element={<Approvals />} />
+                <Route path="/hr/leave-ledger" element={<LeaveLedger />} />
                 <Route path="/hr/payroll" element={<Payroll />} />
                 <Route path="/hr/configurations" element={<HRConfigurations />} />
                 <Route path="/bank/dashboard" element={<FinanceDashboard />} />

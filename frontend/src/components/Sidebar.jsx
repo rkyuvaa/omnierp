@@ -19,6 +19,7 @@ const hrSubItems = [
   {to:'/hr/attendance',label:'Attendance',icon:Clock},
   {to:'/hr/requests',label:'Requests',icon:FileText},
   {to:'/hr/approvals',label:'Approvals',icon:CheckSquare},
+  {to:'/hr/leave-ledger',label:'Leave Ledger',icon:BookOpen},
   {to:'/hr/payroll',label:'Payroll',icon:DollarSign},
   {to:'/hr/configurations',label:'Configurations',icon:SlidersHorizontal},
 ];
