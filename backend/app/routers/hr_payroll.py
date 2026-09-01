@@ -486,15 +486,13 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                     exceeds_yearly = False
                     if bal:
                         total_this_month = sum([
-                            (0.5 if (r.leave_request and r.leave_request.is_half_day) else 1.0)
+                            (0.5 if ( (r.leave_request or db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == emp.id, HRLeaveRequest.from_date <= r.date, HRLeaveRequest.to_date >= r.date, HRLeaveRequest.status.in_(["approved", "auto_approved"])).first()) and (r.leave_request.is_half_day if r.leave_request else (db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == emp.id, HRLeaveRequest.from_date <= r.date, HRLeaveRequest.to_date >= r.date, HRLeaveRequest.status.in_(["approved", "auto_approved"])).first().is_half_day)) ) else 1.0)
                             for r in records 
-                            if r.status == "leave" 
-                            and r.leave_request 
-                            and r.leave_request.leave_type_id == lt_id 
-                            and (r.leave_request.leave_type.is_paid if r.leave_request.leave_type else False)
+                            if (r.status == "leave" or db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == emp.id, HRLeaveRequest.from_date <= r.date, HRLeaveRequest.to_date >= r.date, HRLeaveRequest.status.in_(["approved", "auto_approved"])).first())
+                            and ( (r.leave_request and r.leave_request.leave_type_id == lt_id) or (not r.leave_request and db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == emp.id, HRLeaveRequest.from_date <= r.date, HRLeaveRequest.to_date >= r.date, HRLeaveRequest.status.in_(["approved", "auto_approved"])).first() and db.query(HRLeaveRequest).filter(HRLeaveRequest.employee_id == emp.id, HRLeaveRequest.from_date <= r.date, HRLeaveRequest.to_date >= r.date, HRLeaveRequest.status.in_(["approved", "auto_approved"])).first().leave_type_id == lt_id) )
                         ])
-                        prior_used = max(0.0, bal.used_days - total_this_month)
-                        allocated = bal.allocated_days
+                        prior_used = max(0.0, float(bal.used_days or 0) - total_this_month)
+                        allocated = float(bal.allocated_days or 0)
                         exceeds_yearly = (prior_used + paid_leaves_by_type[lt_id] > allocated + 1e-6)
                     
                     if exceeds_monthly or exceeds_yearly:
