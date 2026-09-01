@@ -945,6 +945,10 @@ def list_payroll(
             "employee_code": r.employee.employee_id,
             "employee_name": r.employee.name,
             "designation": r.employee.designation,
+            "department_id": r.employee.department_id,
+            "department_name": r.employee.department.name if r.employee.department else None,
+            "branch_id": r.employee.branch_id,
+            "branch_name": r.employee.branch.name if r.employee.branch else None,
             "month": r.month, "year": r.year,
             "working_days": r.working_days,
             "present_days": float(r.present_days or 0),
@@ -1653,6 +1657,10 @@ def list_pending_arrears(db: Session = Depends(get_db), current_user: User = Dep
                 "employee_id": emp.id,
                 "name": emp.name,
                 "code": emp.employee_id,
+                "department_id": emp.department_id,
+                "department_name": emp.department.name if emp.department else None,
+                "branch_id": emp.branch_id,
+                "branch_name": emp.branch.name if emp.branch else None,
                 "total_pending": round(total_pending, 2)
             })
             

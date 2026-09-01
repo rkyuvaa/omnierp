@@ -20,6 +20,10 @@ export default function Payroll() {
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [selected, setSelected] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [branches, setBranches] = useState([]);
+  const [filterDepartment, setFilterDepartment] = useState('');
+  const [filterBranch, setFilterBranch] = useState('');
   const [filterEmployee, setFilterEmployee] = useState('');
   const [detail, setDetail] = useState(null);
   const [arrearModal, setArrearModal] = useState(null); // { employee_id, employee_name, pending_arrears }
@@ -29,6 +33,8 @@ export default function Payroll() {
   useEffect(() => {
     if (isHRAdmin) {
       api.get('/hr/employees/').then(r => setEmployees(r.data));
+      api.get('/departments/').then(r => setDepartments(r.data)).catch(() => {});
+      api.get('/branches/').then(r => setBranches(r.data)).catch(() => {});
     }
   }, [user, isHRAdmin]);
 
@@ -194,9 +200,29 @@ export default function Payroll() {
   function prevMonth() { if (month === 1) { setMonth(12); setYear(y => y - 1); } else setMonth(m => m - 1); }
   function nextMonth() { if (month === 12) { setMonth(1); setYear(y => y + 1); } else setMonth(m => m + 1); }
 
-  const totalNet = records.reduce((sum, r) => sum + (r.net_salary || 0), 0);
-  const totalEarnings = records.reduce((sum, r) => sum + (r.total_earnings || 0), 0);
-  const totalDeductions = records.reduce((sum, r) => sum + (r.total_deductions || 0), 0);
+  const filteredEmployeesOptions = employees.filter(e => {
+    if (filterDepartment && String(e.department_id) !== String(filterDepartment)) return false;
+    if (filterBranch && String(e.branch_id) !== String(filterBranch)) return false;
+    return true;
+  });
+
+  const filteredRecords = records.filter(r => {
+    if (filterEmployee && String(r.employee_id) !== String(filterEmployee)) return false;
+    if (filterDepartment && String(r.department_id) !== String(filterDepartment)) return false;
+    if (filterBranch && String(r.branch_id) !== String(filterBranch)) return false;
+    return true;
+  });
+
+  const filteredPendingList = pendingList.filter(p => {
+    if (filterEmployee && String(p.employee_id) !== String(filterEmployee)) return false;
+    if (filterDepartment && String(p.department_id) !== String(filterDepartment)) return false;
+    if (filterBranch && String(p.branch_id) !== String(filterBranch)) return false;
+    return true;
+  });
+
+  const totalNet = filteredRecords.reduce((sum, r) => sum + (r.net_salary || 0), 0);
+  const totalEarnings = filteredRecords.reduce((sum, r) => sum + (r.total_earnings || 0), 0);
+  const totalDeductions = filteredRecords.reduce((sum, r) => sum + (r.total_deductions || 0), 0);
 
   const inputStyle = { padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13 };
 
@@ -237,6 +263,30 @@ export default function Payroll() {
                 <span style={{ fontWeight: 700, fontSize: 15, minWidth: 140, textAlign: 'center' }}>{MONTH_NAMES[month - 1]} {year}</span>
                 <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex' }}><ChevronRight size={16} /></button>
               </div>
+              {isHRAdmin && (
+                <>
+                  <select
+                    value={filterDepartment}
+                    onChange={e => setFilterDepartment(e.target.value)}
+                    style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, minWidth: 150, cursor: 'pointer' }}
+                  >
+                    <option value=''>All Departments</option>
+                    {departments.map(d => (
+                      <option key={d.id} value={d.id}>{d.name}</option>
+                    ))}
+                  </select>
+                  <select
+                    value={filterBranch}
+                    onChange={e => setFilterBranch(e.target.value)}
+                    style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, minWidth: 150, cursor: 'pointer' }}
+                  >
+                    <option value=''>All Branches</option>
+                    {branches.map(b => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
+                </>
+              )}
               {isHRAdmin && employees.length > 0 && (
                 <select
                   value={filterEmployee}
@@ -244,7 +294,7 @@ export default function Payroll() {
                   style={{ padding: '7px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, minWidth: 180, cursor: 'pointer' }}
                 >
                   <option value=''>All Employees</option>
-                  {employees.map(e => (
+                  {filteredEmployeesOptions.map(e => (
                     <option key={e.id} value={e.id}>
                       {e.is_active ? '' : '[Inactive] '}{e.name} ({e.employee_id})
                     </option>
@@ -325,7 +375,7 @@ export default function Payroll() {
                     <tr style={{ background: 'var(--bg2)' }}>
                       {isHRAdmin && (
                         <th style={{ padding: '10px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>
-                          <input type="checkbox" onChange={e => setSelected(e.target.checked ? records.map(r => r.employee_id) : [])} checked={selected.length === records.length && records.length > 0} />
+                          <input type="checkbox" onChange={e => setSelected(e.target.checked ? filteredRecords.map(r => r.employee_id) : [])} checked={selected.length === filteredRecords.length && filteredRecords.length > 0} />
                         </th>
                       )}
                       {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
@@ -338,7 +388,7 @@ export default function Payroll() {
                     </tr>
                   </thead>
                   <tbody>
-                    {records.filter(r => !filterEmployee || String(r.employee_id) === String(filterEmployee)).map(r => (
+                    {filteredRecords.map(r => (
                       <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
                         {isHRAdmin && (
                           <td style={{ padding: '10px 6px' }}>
@@ -473,7 +523,7 @@ export default function Payroll() {
                 </tr>
               </thead>
               <tbody>
-                {pendingList.map(p => (
+                {filteredPendingList.map(p => (
                   <tr key={p.employee_id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '10px 12px' }}>
                       <div style={{ fontWeight: 700 }}>{p.name}</div>
@@ -493,7 +543,7 @@ export default function Payroll() {
                     </td>
                   </tr>
                 ))}
-                {pendingList.length === 0 && (
+                {filteredPendingList.length === 0 && (
                   <tr><td colSpan={4} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>No employees have pending arrears.</td></tr>
                 )}
               </tbody>
