@@ -425,10 +425,19 @@ def compute_record(db: Session, employee_id: int, target_date: date):
                 record.is_late = False
                 record.late_minutes = 0
             elif has_checkout and total_working_hours > 0 and total_working_hours < half_day_hours:
-                # Worked some hours but left early — only valid when checkout actually exists
+                # Worked less than half_day_hours threshold → half day
                 record.status = "half_day"
                 record.is_late = False
                 record.late_minutes = 0
+            elif has_checkout and record.left_early and record.early_by_minutes >= (shift.half_day_early_minutes or 120):
+                # Left early by more than half_day_early_minutes threshold → half day
+                record.status = "half_day"
+                record.is_late = False
+                record.late_minutes = 0
+            elif record.is_late and record.late_minutes >= (shift.half_day_late_minutes or 120):
+                # Arrived so late it counts as half day (half_day_late_minutes threshold)
+                record.status = "half_day"
+                record.is_late = True
             elif record.is_late:
                 record.status = "late"
             else:
