@@ -23,10 +23,9 @@ import {
 
 const STATUS_CONFIG = {
   present:    { label: 'P',   bg: 'rgba(34, 197, 94, 0.08)',  border: 'rgba(34, 197, 94, 0.25)',  color: '#16a34a', full: 'Present' },
-  late:       { label: 'L',   bg: 'rgba(245, 158, 11, 0.08)', border: 'rgba(245, 158, 11, 0.25)', color: '#d97706', full: 'Late' },
+  leave:      { label: 'L',   bg: 'rgba(99, 102, 241, 0.08)', border: 'rgba(99, 102, 241, 0.25)', color: '#4f46e5', full: 'On Leave' },
   absent:     { label: 'A',   bg: 'rgba(239, 68, 68, 0.08)',  border: 'rgba(239, 68, 68, 0.25)',  color: '#dc2626', full: 'Absent' },
   half_day:   { label: 'H',   bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.25)', color: '#ea580c', full: 'Half Day' },
-  leave:      { label: 'LV',  bg: 'rgba(99, 102, 241, 0.08)', border: 'rgba(99, 102, 241, 0.25)', color: '#4f46e5', full: 'On Leave' },
   on_duty:    { label: 'OD',  bg: 'rgba(6, 182, 212, 0.08)',  border: 'rgba(6, 182, 212, 0.25)',  color: '#0891b2', full: 'On Duty' },
   holiday:    { label: 'HOL', bg: 'rgba(139, 92, 246, 0.08)', border: 'rgba(139, 92, 246, 0.25)', color: '#7c3aed', full: 'Holiday' },
   weekly_off: { label: 'WO',  bg: 'rgba(148, 163, 184, 0.08)', border: 'rgba(148, 163, 184, 0.2)',  color: '#64748b', full: 'Weekly Off' },
@@ -142,7 +141,10 @@ export default function Attendance() {
 
   const getEffStatus = (d, recs, emp = null) => {
     const r = recs[d.dayStr];
-    if (r?.status) return r.status;
+    if (r?.status) {
+      if (r.status === 'late') return 'present';
+      return r.status;
+    }
     
     // Check if it's a holiday
     const isHol = holidays.find(h => h.date === d.dayStr && (!h.branch_id || h.branch_id === emp?.branch_id));
@@ -914,7 +916,7 @@ export default function Attendance() {
                     {/* Summary columns sticky headers */}
                     <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#16a34a', borderLeft: '1px solid rgba(226, 232, 240, 0.8)' }}>P</th>
                     <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#dc2626' }}>A</th>
-                    <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#4f46e5' }}>LV</th>
+                    <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#4f46e5' }}>L</th>
                     <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#7c3aed' }}>HOL</th>
                     <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#64748b' }}>WO</th>
                   </tr>
