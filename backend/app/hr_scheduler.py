@@ -48,6 +48,7 @@ def auto_approve_leaves():
                     record = HRAttendanceRecord(employee_id=req.employee_id, date=current_date)
                     db.add(record)
                 record.status = "leave"
+                record.leave_request_id = req.id
                 current_date += timedelta(days=1)
 
             # Notify employee
