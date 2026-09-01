@@ -374,7 +374,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                     reason=data.reason,
                     approver_id=emp.manager_id,
                     l1_approver_id=emp.manager_id,
-                    l2_approver_id=getattr(emp, 'manager_l2_id', None),
+                    l2_approver_id=None,
                     cc_employee_ids=cc_ids,
                     auto_approve_at=auto_approve_at,
                 )
@@ -394,7 +394,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
                     reason=f"{data.reason or ''} (Overflow from {leave_type.code})".strip(),
                     approver_id=emp.manager_id,
                     l1_approver_id=emp.manager_id,
-                    l2_approver_id=getattr(emp, 'manager_l2_id', None),
+                    l2_approver_id=None,
                     cc_employee_ids=cc_ids,
                     auto_approve_at=auto_approve_at,
                 )
@@ -441,7 +441,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
         reason=data.reason,
         approver_id=emp.manager_id,
         l1_approver_id=emp.manager_id,
-        l2_approver_id=getattr(emp, 'manager_l2_id', None),
+        l2_approver_id=None,
         cc_employee_ids=cc_ids,
         auto_approve_at=auto_approve_at,
     )

@@ -96,7 +96,7 @@ def apply_onduty(data: OnDutyApply, background_tasks: BackgroundTasks, request: 
         purpose=data.purpose,
         approver_id=emp.manager_id,
         l1_approver_id=emp.manager_id,
-        l2_approver_id=getattr(emp, 'manager_l2_id', None),
+        l2_approver_id=None,
         auto_approve_at=auto_approve_at,
     )
     db.add(req); db.commit(); db.refresh(req)
