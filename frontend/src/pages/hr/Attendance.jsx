@@ -941,7 +941,7 @@ export default function Attendance() {
                       if (s === 'present' || s === 'late' || s === 'on_duty') pCount += 1;
                       else if (s === 'half_day') {
                         pCount += 0.5;
-                        if (hasPaidLeave && isHalfLeave) {
+                        if (rec?.leave_request_id || hasPaidLeave || rec?.is_paid !== false) {
                           lvCount += 0.5;
                         } else {
                           aCount += 0.5;

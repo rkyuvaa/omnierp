@@ -391,16 +391,38 @@ def compute_record(db: Session, employee_id: int, target_date: date):
                 record.early_by_minutes = 0
 
             # Final Status Determination
-            if total_working_hours < half_day_hours:
+            if approved_leave:
+                if approved_leave.is_half_day:
+                    record.status = "half_day"
+                    record.is_late = False
+                    record.late_minutes = 0
+                else:
+                    record.status = "leave"
+                    record.is_late = False
+                    record.late_minutes = 0
+            elif total_working_hours < half_day_hours:
                 record.status = "half_day"
+                record.is_late = False
+                record.late_minutes = 0
             elif record.is_late:
                 record.status = "late"
             else:
                 record.status = "present"
         else:
             # Default logic if no shift is assigned
-            if total_working_hours > 0 and total_working_hours < 4.0:
+            if approved_leave:
+                if approved_leave.is_half_day:
+                    record.status = "half_day"
+                    record.is_late = False
+                    record.late_minutes = 0
+                else:
+                    record.status = "leave"
+                    record.is_late = False
+                    record.late_minutes = 0
+            elif total_working_hours > 0 and total_working_hours < 4.0:
                 record.status = "half_day"
+                record.is_late = False
+                record.late_minutes = 0
             else:
                 record.status = "present"
 
@@ -828,22 +850,34 @@ def get_records(
             is_paid = (paid_leave_days > 0)
             is_half_day = (paid_leave_days == 0.5 or lop_leave_days == 0.5)
 
+        eff_status = r.status
+        if day_reqs:
+            if is_half_day or any(req.is_half_day for req in day_reqs):
+                eff_status = "half_day"
+                is_half_day = True
+            else:
+                eff_status = "leave"
+        elif r.status == "half_day":
+            is_half_day = True
+
+        eff_is_late = r.is_late if eff_status not in ["half_day", "leave", "holiday", "weekly_off"] else False
+
         key = str(r.employee_id)
         if key not in result:
             result[key] = {}
         result[key][str(r.date)] = {
-            "status": r.status,
+            "status": eff_status,
             "leave_request_id": leave_request_id,
             "is_paid": is_paid,
             "is_half_day": is_half_day,
             "paid_leave_days": paid_leave_days,
             "lop_leave_days": lop_leave_days,
-            "color": STATUS_COLORS.get(r.status, "#94a3b8"),
+            "color": STATUS_COLORS.get(eff_status, "#94a3b8"),
             "check_in": str(r.check_in) if r.check_in else None,
             "check_out": str(r.check_out) if r.check_out else None,
             "hours_worked": r.hours_worked,
-            "is_late": r.is_late,
-            "late_minutes": r.late_minutes,
+            "is_late": eff_is_late,
+            "late_minutes": r.late_minutes if eff_is_late else 0,
             "corrected_by": r.corrected_by,
         }
     return result
@@ -862,6 +896,9 @@ def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), c
     record.check_out = data.check_out
     record.correction_reason = data.correction_reason
     record.corrected_by = current_user.id
+    if data.status in ["half_day", "leave", "holiday", "weekly_off"]:
+        record.is_late = False
+        record.late_minutes = 0
     if data.check_in and data.check_out:
         record.hours_worked = round((data.check_out - data.check_in).total_seconds() / 3600, 2)
     db.commit()
