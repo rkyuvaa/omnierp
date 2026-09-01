@@ -395,6 +395,9 @@ def compute_record(db: Session, employee_id: int, target_date: date):
             if shift_start_dt and phys_check_in and phys_check_in >= (shift_start_dt + timedelta(hours=3.5)):
                 is_afternoon_checkin = True
 
+            # has_checkout: True only if a real physical or OD-covered checkout exists
+            has_checkout = bool(phys_check_out) or evening_od_covers
+
             if approved_leave:
                 if approved_leave.is_half_day:
                     record.status = "half_day"
@@ -404,11 +407,18 @@ def compute_record(db: Session, employee_id: int, target_date: date):
                     record.status = "leave"
                     record.is_late = False
                     record.late_minutes = 0
-            elif is_afternoon_checkin or (total_working_hours > 0 and total_working_hours < half_day_hours):
+            elif is_afternoon_checkin:
+                # Afternoon check-in → half day regardless of checkout
+                record.status = "half_day"
+                record.is_late = False
+                record.late_minutes = 0
+            elif has_checkout and total_working_hours > 0 and total_working_hours < half_day_hours:
+                # Worked some hours but left early (hours-based half day) — only when checkout exists
                 record.status = "half_day"
                 record.is_late = False
                 record.late_minutes = 0
             elif record.is_late:
+                # On time or late — show present (late flag preserved for UI badge)
                 record.status = "late"
             else:
                 record.status = "present"
