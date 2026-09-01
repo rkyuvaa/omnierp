@@ -271,6 +271,7 @@ def compute_record(db: Session, employee_id: int, target_date: date):
     grace_dt = None
     half_day_hours = 4.0
     
+    early_cutoff_dt = None  # Earliest valid punch time (shift_start - grace_minutes)
     if shift:
         shift_start_h, shift_start_m = map(int, shift.start_time.split(":"))
         shift_end_h, shift_end_m = map(int, shift.end_time.split(":"))
@@ -278,6 +279,8 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         shift_end_dt = datetime.combine(target_date, datetime.min.time().replace(hour=shift_end_h, minute=shift_end_m))
         shift_duration = (shift_end_dt - shift_start_dt).total_seconds() / 3600.0
         grace_dt = shift_start_dt + timedelta(minutes=shift.grace_minutes)
+        # Early punch window: mirror of grace on the early side
+        early_cutoff_dt = shift_start_dt - timedelta(minutes=shift.grace_minutes)
         half_day_hours = shift.half_day_hours or 4.0
 
     # 1. CASE: PHYSICAL PUNCHES EXIST (Merged Timeline with OD if any)
@@ -287,6 +290,13 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         if len(punches) > 1:
             if (punches[-1].punch_time - phys_check_in).total_seconds() >= 300:
                 phys_check_out = punches[-1].punch_time
+
+        # Early punch cap: if punch is before (shift_start - grace_minutes), cap the
+        # effective start for HOURS calculation to shift_start. The raw check_in is
+        # preserved for display/audit. This prevents hours inflation from very early punches.
+        phys_check_in_for_hours = phys_check_in
+        if shift_start_dt and early_cutoff_dt and phys_check_in < early_cutoff_dt:
+            phys_check_in_for_hours = shift_start_dt
 
         # Fetch approved Leave request if any
         approved_leave = db.query(HRLeaveRequest).filter(
@@ -329,13 +339,13 @@ def compute_record(db: Session, employee_id: int, target_date: date):
                 except Exception as ex:
                     print(f"⚠️ Error parsing OD time interval: {ex}")
 
-        # Compute physical office hours
+        # Compute physical office hours (use capped check-in if punch was before early window)
         phys_hours = 0.0
-        if phys_check_out and phys_check_out > phys_check_in:
-            phys_hours = (phys_check_out - phys_check_in).total_seconds() / 3600.0
+        if phys_check_out and phys_check_out > phys_check_in_for_hours:
+            phys_hours = (phys_check_out - phys_check_in_for_hours).total_seconds() / 3600.0
             # Deduct overlap between physical presence and OD intervals
             for od_s, od_e in od_intervals:
-                overlap_start = max(phys_check_in, od_s)
+                overlap_start = max(phys_check_in_for_hours, od_s)
                 overlap_end = min(phys_check_out, od_e)
                 if overlap_end > overlap_start:
                     overlap_hours = (overlap_end - overlap_start).total_seconds() / 3600.0
@@ -343,9 +353,9 @@ def compute_record(db: Session, employee_id: int, target_date: date):
         elif not phys_check_out and evening_od_covers and od_intervals:
             # Employee punched IN, then left for Evening OD directly without biometric OUT punch
             evening_starts = [s for s, e in od_intervals if e >= (shift_end_dt - timedelta(minutes=30))] if shift_end_dt else []
-            earliest_evening_od_start = min(evening_starts) if evening_starts else phys_check_in
-            if earliest_evening_od_start > phys_check_in:
-                phys_hours = (earliest_evening_od_start - phys_check_in).total_seconds() / 3600.0
+            earliest_evening_od_start = min(evening_starts) if evening_starts else phys_check_in_for_hours
+            if earliest_evening_od_start > phys_check_in_for_hours:
+                phys_hours = (earliest_evening_od_start - phys_check_in_for_hours).total_seconds() / 3600.0
 
         total_working_hours = phys_hours + od_hours_total
         record.hours_worked = round(total_working_hours, 2)
@@ -395,6 +405,11 @@ def compute_record(db: Session, employee_id: int, target_date: date):
             if shift_start_dt and phys_check_in and phys_check_in >= (shift_start_dt + timedelta(hours=3.5)):
                 is_afternoon_checkin = True
 
+            # has_checkout: True only when a real physical or OD-covered checkout is present.
+            # Required for hours-based half_day to prevent single-punch (ghost punch)
+            # employees from being misclassified as half_day due to 0 hrs < threshold.
+            has_checkout = bool(phys_check_out) or evening_od_covers
+
             if approved_leave:
                 if approved_leave.is_half_day:
                     record.status = "half_day"
@@ -404,7 +419,13 @@ def compute_record(db: Session, employee_id: int, target_date: date):
                     record.status = "leave"
                     record.is_late = False
                     record.late_minutes = 0
-            elif is_afternoon_checkin or (total_working_hours > 0 and total_working_hours < half_day_hours):
+            elif is_afternoon_checkin:
+                # Afternoon check-in (e.g. came back from half-day leave) → half day
+                record.status = "half_day"
+                record.is_late = False
+                record.late_minutes = 0
+            elif has_checkout and total_working_hours > 0 and total_working_hours < half_day_hours:
+                # Worked some hours but left early — only valid when checkout actually exists
                 record.status = "half_day"
                 record.is_late = False
                 record.late_minutes = 0
