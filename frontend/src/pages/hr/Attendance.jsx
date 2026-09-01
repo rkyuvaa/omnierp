@@ -857,6 +857,24 @@ export default function Attendance() {
               <span style={{ color: 'var(--text2)', fontWeight: 500 }}>{v.full}</span>
             </div>
           ))}
+          {/* Late indicator legend */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+            <div style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}>
+              <div style={{
+                width: 22, height: 22, background: 'rgba(34,197,94,0.08)',
+                border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                color: '#16a34a', fontWeight: 700, fontSize: '9px'
+              }}>P</div>
+              <div style={{
+                position: 'absolute', top: -4, right: -5,
+                background: '#f59e0b', color: '#fff',
+                borderRadius: 4, fontSize: '6px', fontWeight: 800,
+                padding: '1px 3px', lineHeight: 1.3, pointerEvents: 'none'
+              }}>L</div>
+            </div>
+            <span style={{ color: 'var(--text2)', fontWeight: 500 }}>Late</span>
+          </div>
         </div>
 
         {loading ? (
@@ -1018,12 +1036,15 @@ export default function Attendance() {
                             }
                           }
 
+                          // isLate: original DB is_late flag
+                          const isLate = rec?.is_late === true;
+
                           const badgeTitle = ghostPunch
                             ? (isMissingCheckout 
                                 ? `⚠ Suspicious Attendance — Missing check-out / Single punch!\nIn: ${new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}  Out: —\nMarked as ${cfg?.full} — Review required`
                                 : `⚠ Suspicious Attendance — Only ${ghostMins} min in office!\nIn: ${new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}  Out: ${new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}\nMarked as ${cfg?.full} — Review required`)
                             : v ? v.label
-                            : cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}`
+                            : cfg ? `${cfg.full} (${d.num} ${MONTH_NAMES[month-1]})\nIn: ${rec?.check_in ? new Date(rec.check_in).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}\nOut: ${rec?.check_out ? new Date(rec.check_out).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '—'}${isLate ? `\n⏱ Late by ${rec.late_minutes} min` : ''}`
                             : (isHRAdmin ? `Empty (${d.num} ${MONTH_NAMES[month-1]}) - Click to correct` : `Empty (${d.num} ${MONTH_NAMES[month-1]})`);
 
                           return (
@@ -1039,34 +1060,48 @@ export default function Attendance() {
                                 transition: 'background-color 0.2s'
                               }}
                             >
-                              <div
-                                title={badgeTitle}
-                                onClick={() => isHRAdmin && openCorrect(emp, d)}
-                                style={{
-                                  width: 28, height: 28, margin: '0 auto', borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
-                                  background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
-                                  color: cfg ? cfg.color : 'var(--text3)',
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '8px' : '10px', 
-                                  transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-                                  border: ghostPunch ? '2px solid #eab308' : v ? '2px solid #f97316' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
-                                  boxShadow: ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
-                                  boxSizing: 'border-box'
-                                }}
-                                onMouseEnter={e => {
-                                  if (isHRAdmin) {
-                                    e.currentTarget.style.transform = 'scale(1.08)';
-                                    if (cfg) e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 3px rgba(234,179,8,0.25)' : '0 4px 6px rgba(0,0,0,0.05)';
-                                  }
-                                }}
-                                onMouseLeave={e => {
-                                  if (isHRAdmin) {
-                                    e.currentTarget.style.transform = 'scale(1)';
-                                    e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
-                                  }
-                                }}
-                              >
-                                {cfg ? cfg.label : '·'}
+                              <div style={{ position: 'relative', width: 28, margin: '0 auto' }}>
+                                <div
+                                  title={badgeTitle}
+                                  onClick={() => isHRAdmin && openCorrect(emp, d)}
+                                  style={{
+                                    width: 28, height: 28, borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
+                                    background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
+                                    color: cfg ? cfg.color : 'var(--text3)',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '8px' : '10px', 
+                                    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    border: ghostPunch ? '2px solid #eab308' : v ? '2px solid #f97316' : isLate && status === 'present' ? '1px solid rgba(245,158,11,0.4)' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
+                                    boxShadow: ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : isLate && status === 'present' ? '0 0 0 2px rgba(245,158,11,0.12)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
+                                    boxSizing: 'border-box'
+                                  }}
+                                  onMouseEnter={e => {
+                                    if (isHRAdmin) {
+                                      e.currentTarget.style.transform = 'scale(1.08)';
+                                      if (cfg) e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 3px rgba(234,179,8,0.25)' : '0 4px 6px rgba(0,0,0,0.05)';
+                                    }
+                                  }}
+                                  onMouseLeave={e => {
+                                    if (isHRAdmin) {
+                                      e.currentTarget.style.transform = 'scale(1)';
+                                      e.currentTarget.style.boxShadow = ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : isLate && status === 'present' ? '0 0 0 2px rgba(245,158,11,0.12)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none';
+                                    }
+                                  }}
+                                >
+                                  {cfg ? cfg.label : '·'}
+                                </div>
+                                {/* Late indicator — small amber 'L' tag in top-right corner of the P badge */}
+                                {isLate && status === 'present' && (
+                                  <div title={`Late by ${rec.late_minutes} min`} style={{
+                                    position: 'absolute', top: -4, right: -6,
+                                    background: '#f59e0b', color: '#fff',
+                                    borderRadius: 4, fontSize: '7px', fontWeight: 800,
+                                    padding: '1px 3px', lineHeight: 1.3,
+                                    pointerEvents: 'none', zIndex: 1,
+                                    boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
+                                    letterSpacing: '0.3px'
+                                  }}>L</div>
+                                )}
                               </div>
                             </td>
                           );
