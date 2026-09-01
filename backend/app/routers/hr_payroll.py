@@ -439,27 +439,39 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
         is_working_day = DAY_MAP[dt.weekday()] in global_working_days
         
         if rec:
-            if rec.status in ["present", "late"]: present_days += 1
-            elif rec.status == "half_day": half_days += 1
-            elif rec.status == "on_duty": on_duty_days += 1
-            elif rec.status in ["absent", "sandwich_lop"]: absent_days_count += 1
+            # Check if an approved leave request exists for this date (overriding un-synced absent records)
+            approved_leave_for_day = db.query(HRLeaveRequest).filter(
+                HRLeaveRequest.employee_id == emp.id,
+                HRLeaveRequest.from_date <= dt,
+                HRLeaveRequest.to_date >= dt,
+                HRLeaveRequest.status.in_(["approved", "auto_approved"])
+            ).first()
+
+            rec_status = "leave" if approved_leave_for_day else rec.status
+
+            if rec_status in ["present", "late"]: present_days += 1
+            elif rec_status == "half_day": half_days += 1
+            elif rec_status == "on_duty": on_duty_days += 1
+            elif rec_status in ["absent", "sandwich_lop"]: absent_days_count += 1
             
             # LOP Logic
-            if rec.status in ["absent", "sandwich_lop"]:
+            if rec_status in ["absent", "sandwich_lop"]:
                 lop_days += 1
-            elif rec.status == "half_day":
+            elif rec_status == "half_day":
                 lop_days += 0.5
-            elif rec.status == "leave":
+            elif rec_status == "leave":
                 # Check if it's paid leave
                 is_paid_leave = True
-                is_half = (rec.leave_request and rec.leave_request.is_half_day) if rec.leave_request else False
+                lreq = rec.leave_request or approved_leave_for_day
+
+                is_half = lreq.is_half_day if lreq else False
                 leave_val = 0.5 if is_half else 1.0
 
-                if rec.leave_request and rec.leave_request.leave_type:
-                    is_paid_leave = rec.leave_request.leave_type.is_paid
+                if lreq and lreq.leave_type:
+                    is_paid_leave = lreq.leave_type.is_paid
                 
                 if is_paid_leave:
-                    lt_id = rec.leave_request.leave_type_id if rec.leave_request else None
+                    lt_id = lreq.leave_type_id if lreq else None
                     bal = balance_map.get(lt_id) if lt_id else None
                     
                     if lt_id:
@@ -492,8 +504,22 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 else:
                     lop_days += leave_val
         else:
-            # No record. If it's a working day in the past, it's LOP
-            if is_working_day and dt < today:
+            # Check if there is an approved leave even when no attendance record exists
+            approved_leave_for_day = db.query(HRLeaveRequest).filter(
+                HRLeaveRequest.employee_id == emp.id,
+                HRLeaveRequest.from_date <= dt,
+                HRLeaveRequest.to_date >= dt,
+                HRLeaveRequest.status.in_(["approved", "auto_approved"])
+            ).first()
+
+            if approved_leave_for_day:
+                is_paid_leave = approved_leave_for_day.leave_type.is_paid if approved_leave_for_day.leave_type else True
+                leave_val = 0.5 if approved_leave_for_day.is_half_day else 1.0
+                if is_paid_leave:
+                    leave_days += leave_val
+                else:
+                    lop_days += leave_val
+            elif is_working_day and dt < today:
                 lop_days += 1
                 absent_days_count += 1
 
