@@ -391,6 +391,10 @@ def compute_record(db: Session, employee_id: int, target_date: date):
                 record.early_by_minutes = 0
 
             # Final Status Determination
+            is_afternoon_checkin = False
+            if shift_start_dt and phys_check_in and phys_check_in >= (shift_start_dt + timedelta(hours=3.5)):
+                is_afternoon_checkin = True
+
             if approved_leave:
                 if approved_leave.is_half_day:
                     record.status = "half_day"
@@ -400,7 +404,7 @@ def compute_record(db: Session, employee_id: int, target_date: date):
                     record.status = "leave"
                     record.is_late = False
                     record.late_minutes = 0
-            elif total_working_hours < half_day_hours:
+            elif is_afternoon_checkin or (total_working_hours > 0 and total_working_hours < half_day_hours):
                 record.status = "half_day"
                 record.is_late = False
                 record.late_minutes = 0
@@ -859,6 +863,14 @@ def get_records(
                 eff_status = "leave"
         elif r.status == "half_day":
             is_half_day = True
+        elif r.check_in:
+            try:
+                check_in_dt = r.check_in if isinstance(r.check_in, datetime) else datetime.fromisoformat(str(r.check_in).replace("Z", ""))
+                if check_in_dt.hour >= 13:
+                    eff_status = "half_day"
+                    is_half_day = True
+            except Exception:
+                pass
 
         eff_is_late = r.is_late if eff_status not in ["half_day", "leave", "holiday", "weekly_off"] else False
 
