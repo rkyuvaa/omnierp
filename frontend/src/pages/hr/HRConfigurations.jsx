@@ -575,6 +575,36 @@ export default function HRConfigurations() {
                   <div><label style={labelStyle}>Half Day Late In (mins)</label><input type="number" value={form.half_day_late_minutes || 120} onChange={e => setForm({ ...form, half_day_late_minutes: parseInt(e.target.value) })} style={inputStyle} placeholder="Minutes late = 0.5 day" /></div>
                   <div><label style={labelStyle}>Half Day Early Out (mins)</label><input type="number" value={form.half_day_early_minutes || 120} onChange={e => setForm({ ...form, half_day_early_minutes: parseInt(e.target.value) })} style={inputStyle} placeholder="Minutes early = 0.5 day" /></div>
                 </div>
+                {/* Punch Window info — shows early cutoff and late cutoff derived from start_time + grace */}
+                {(() => {
+                  const st = form.start_time;
+                  const grace = parseInt(form.grace_minutes) || 15;
+                  if (!st) return null;
+                  const [h, m] = st.split(':').map(Number);
+                  const startMins = h * 60 + m;
+                  const earlyCutoffMins = startMins - grace;
+                  const lateCutoffMins  = startMins + grace;
+                  const fmt = (totalMins) => {
+                    const hh = Math.floor(((totalMins % 1440) + 1440) % 1440 / 60);
+                    const mm = ((totalMins % 1440) + 1440) % 1440 % 60;
+                    const ampm = hh >= 12 ? 'PM' : 'AM';
+                    return `${((hh % 12) || 12).toString().padStart(2,'0')}:${mm.toString().padStart(2,'0')} ${ampm}`;
+                  };
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.06)', border: '1px solid rgba(99,102,241,0.18)', fontSize: 12 }}>
+                      <span style={{ fontSize: 14 }}>🕐</span>
+                      <span style={{ color: 'var(--text2)', fontWeight: 500 }}>Punch Window:</span>
+                      <span style={{ background: 'rgba(245,158,11,0.12)', color: '#b45309', fontWeight: 700, borderRadius: 5, padding: '2px 8px' }}>
+                        Early from {fmt(earlyCutoffMins)}
+                      </span>
+                      <span style={{ color: 'var(--text3)' }}>→</span>
+                      <span style={{ background: 'rgba(34,197,94,0.1)', color: '#15803d', fontWeight: 700, borderRadius: 5, padding: '2px 8px' }}>
+                        On-time till {fmt(lateCutoffMins)}
+                      </span>
+                      <span style={{ color: 'var(--text3)', marginLeft: 4, fontSize: 11 }}>· punches before {fmt(earlyCutoffMins)} are capped to shift start for hours</span>
+                    </div>
+                  );
+                })()}
                 <div>
                   <label style={labelStyle}>Working Days</label>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
