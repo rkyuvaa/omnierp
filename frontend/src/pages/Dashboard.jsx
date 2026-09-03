@@ -52,16 +52,18 @@ function getInitials(name) {
   return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 }
 
-// Pastel colour palette for employees on calendar
+// Vibrant solid colour palette for employees on calendar
 const EMP_COLORS = [
-  { bg: '#dbeafe', text: '#1d4ed8', dot: '#3b82f6' },
-  { bg: '#dcfce7', text: '#166534', dot: '#22c55e' },
-  { bg: '#fef3c7', text: '#92400e', dot: '#f59e0b' },
-  { bg: '#fce7f3', text: '#9d174d', dot: '#ec4899' },
-  { bg: '#ede9fe', text: '#5b21b6', dot: '#7c3aed' },
-  { bg: '#fee2e2', text: '#991b1b', dot: '#ef4444' },
-  { bg: '#e0f2fe', text: '#075985', dot: '#0ea5e9' },
-  { bg: '#d1fae5', text: '#065f46', dot: '#10b981' },
+  { bg: '#2563eb', text: '#ffffff', dot: '#93c5fd', light: '#dbeafe' },
+  { bg: '#16a34a', text: '#ffffff', dot: '#86efac', light: '#dcfce7' },
+  { bg: '#d97706', text: '#ffffff', dot: '#fcd34d', light: '#fef3c7' },
+  { bg: '#db2777', text: '#ffffff', dot: '#f9a8d4', light: '#fce7f3' },
+  { bg: '#7c3aed', text: '#ffffff', dot: '#c4b5fd', light: '#ede9fe' },
+  { bg: '#dc2626', text: '#ffffff', dot: '#fca5a5', light: '#fee2e2' },
+  { bg: '#0284c7', text: '#ffffff', dot: '#7dd3fc', light: '#e0f2fe' },
+  { bg: '#059669', text: '#ffffff', dot: '#6ee7b7', light: '#d1fae5' },
+  { bg: '#c2410c', text: '#ffffff', dot: '#fdba74', light: '#ffedd5' },
+  { bg: '#6d28d9', text: '#ffffff', dot: '#ddd6fe', light: '#ede9fe' },
 ];
 
 function empColor(idx) {
@@ -88,9 +90,9 @@ function StatusBadge({ status }) {
 function Avatar({ name, color, size = 28 }) {
   const c = color || EMP_COLORS[0];
   return (
-    <div style={{ width:size, height:size, borderRadius:'50%', background:c.bg,
-      color:c.text, display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize: size < 30 ? 9 : 11, fontWeight:800, flexShrink:0, border:`1.5px solid ${c.dot}20` }}>
+    <div style={{ width:size, height:size, borderRadius:'50%', background: c.light || c.bg,
+      color: c.bg, display:'flex', alignItems:'center', justifyContent:'center',
+      fontSize: size < 30 ? 9 : 11, fontWeight:800, flexShrink:0, border:`1.5px solid ${c.bg}` }}>
       {getInitials(name)}
     </div>
   );
@@ -269,60 +271,70 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
 
               {/* Event list inside cell (Desktop) */}
               <div className="cell-event-list scroll-list">
-                {/* Holidays */}
+                {/* Holidays - vibrant amber/gold */}
                 {hols.map((h, hi) => (
                   <div
                     key={`h-${hi}`}
-                    title={`Holiday: ${h.name} (${h.holiday_type === 'national' ? 'National Holiday' : (h.branch_name || 'Company Holiday')})`}
+                    title={`Holiday: ${h.name} (${h.holiday_type === 'national' ? 'National' : (h.branch_name || 'Company')})`}
                     style={{
-                      background: 'rgba(147, 51, 234, 0.15)',
-                      color: '#a855f7',
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      color: '#ffffff',
                       fontSize: '9px',
-                      fontWeight: '700',
-                      padding: '1px 3px',
-                      borderRadius: '3px',
+                      fontWeight: '800',
+                      padding: '2px 4px',
+                      borderRadius: '4px',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      borderLeft: '2px solid #9333ea',
                       flexShrink: 0,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 2
+                      gap: 2,
+                      boxShadow: '0 1px 3px rgba(245,158,11,0.5)',
+                      letterSpacing: '0.2px'
                     }}
                   >
-                    <span>🎉</span>
+                    <span style={{ fontSize: '8px' }}>🎉</span>
                     <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.name}</span>
                   </div>
                 ))}
 
-                {/* Leaves */}
+                {/* Leaves - vibrant solid color with name + type */}
                 {leaves.map((l, li) => {
                   const c = empColor(l._idx);
                   const isPending = l.status === 'pending';
                   return (
                     <div
                       key={`l-${li}`}
-                      title={`${l.employee_name} (${l.leave_type_name}${isPending ? ' - Pending' : ''})`}
+                      title={`${l.employee_name} · ${l.leave_type_name}${isPending ? ' (Pending)' : ''}`}
                       style={{
-                        background: c.bg,
+                        background: isPending
+                          ? `repeating-linear-gradient(45deg, ${c.bg}cc, ${c.bg}cc 3px, ${c.bg}88 3px, ${c.bg}88 6px)`
+                          : c.bg,
                         color: c.text,
                         fontSize: '9px',
                         fontWeight: '700',
-                        padding: '1px 3px',
-                        borderRadius: '3px',
+                        padding: '2px 4px',
+                        borderRadius: '4px',
                         overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        whiteSpace: 'nowrap',
-                        borderLeft: `2px solid ${c.dot}`,
-                        opacity: isPending ? 0.7 : 1,
-                        borderStyle: isPending ? 'dashed' : 'solid',
-                        borderWidth: isPending ? '1px 1px 1px 2px' : '0 0 0 2px',
-                        borderColor: isPending ? `${c.dot}70` : 'transparent',
-                        flexShrink: 0
+                        flexShrink: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 0,
+                        boxShadow: `0 1px 3px ${c.bg}80`,
+                        opacity: isPending ? 0.85 : 1,
+                        borderLeft: isPending ? `3px dashed ${c.dot}` : `3px solid ${c.dot}`
                       }}
                     >
-                      {l.employee_name}
+                      <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', lineHeight: '1.2' }}>
+                        {l.employee_name}
+                      </span>
+                      <span style={{
+                        overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                        fontSize: '8px', opacity: 0.85, lineHeight: '1.2', fontWeight: '600'
+                      }}>
+                        {l.leave_type_name}{isPending ? ' ⏳' : ''}
+                      </span>
                     </div>
                   );
                 })}
@@ -379,16 +391,16 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
       {/* Legend */}
       <div style={{ display: 'flex', gap: 14, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 2, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(147, 51, 234, 0.2)', borderLeft: '2.5px solid #9333ea', display: 'inline-block' }} />
-          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Holiday</span>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: 'linear-gradient(135deg,#f59e0b,#d97706)', display: 'inline-block', boxShadow: '0 1px 3px rgba(245,158,11,0.5)' }} />
+          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 600 }}>🎉 Holiday</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: '#dbeafe', borderLeft: '2.5px solid #3b82f6', display: 'inline-block' }} />
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', borderLeft: '3px solid #93c5fd', display: 'inline-block' }} />
           <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Approved Leave</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 2, background: '#fee2e2', borderLeft: '2.5px solid #ef4444', display: 'inline-block' }} />
-          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Pending Leave</span>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', borderLeft: '3px dashed #93c5fd', opacity: 0.7, display: 'inline-block' }} />
+          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Pending Leave ⏳</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
