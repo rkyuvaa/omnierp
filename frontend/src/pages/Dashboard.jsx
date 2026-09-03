@@ -96,8 +96,8 @@ function Avatar({ name, color, size = 28 }) {
   );
 }
 
-// ─── Leave Calendar with Names inside Tiles ────────────────────────────────
-function LeaveCalendar({ leaveEvents, odEvents }) {
+// ─── Leave & Holiday Calendar with Names inside Tiles ────────────────────────
+function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -121,6 +121,14 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
     const d = ev.date;
     if (!odMap[d]) odMap[d] = [];
     odMap[d].push({ ...ev, _odIdx: idx });
+  });
+
+  const holidayMap = {};
+  (holidayEvents || []).forEach((ev, idx) => {
+    const d = isoDate(ev.date);
+    if (!d) return;
+    if (!holidayMap[d]) holidayMap[d] = [];
+    holidayMap[d].push({ ...ev, _holIdx: idx });
   });
 
   const prev = () => {
@@ -151,6 +159,7 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
 
   const selectedLeaves = leaveMap[selectedDate] || [];
   const selectedOds = odMap[selectedDate] || [];
+  const selectedHolidays = holidayMap[selectedDate] || [];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
@@ -192,9 +201,10 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const leaves = leaveMap[dateStr] || [];
           const ods = odMap[dateStr] || [];
+          const hols = holidayMap[dateStr] || [];
           const isToday = dateStr === todayStr;
           const isSelected = dateStr === selectedDate;
-          const hasLeave = leaves.length > 0;
+          const hasHoliday = hols.length > 0;
           const hasOd = ods.length > 0;
 
           return (
@@ -204,8 +214,20 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
               style={{
                 borderRadius: 6,
                 padding: 4,
-                background: isToday ? 'var(--bg3)' : isSelected ? 'var(--bg3)' : 'var(--bg2)',
-                border: isToday ? '2px solid var(--accent)' : isSelected ? '2.5px solid var(--accent2)' : '1px solid var(--border)',
+                background: isToday
+                  ? 'var(--bg3)'
+                  : hasHoliday
+                    ? 'rgba(147, 51, 234, 0.08)'
+                    : isSelected
+                      ? 'var(--bg3)'
+                      : 'var(--bg2)',
+                border: isToday
+                  ? '2px solid var(--accent)'
+                  : hasHoliday
+                    ? '1.5px solid rgba(147, 51, 234, 0.45)'
+                    : isSelected
+                      ? '2.5px solid var(--accent2)'
+                      : '1px solid var(--border)',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
@@ -224,7 +246,7 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
                 <span style={{
                   fontSize: 11,
                   fontWeight: isToday ? 850 : 600,
-                  color: isToday ? 'var(--accent)' : 'var(--text)',
+                  color: isToday ? 'var(--accent)' : hasHoliday ? '#a855f7' : 'var(--text)',
                   background: isToday ? 'var(--accent-dim)' : 'transparent',
                   width: 18,
                   height: 18,
@@ -245,14 +267,42 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
                 )}
               </div>
 
-              {/* Leaves text list inside cell (Desktop) */}
+              {/* Event list inside cell (Desktop) */}
               <div className="cell-event-list scroll-list">
+                {/* Holidays */}
+                {hols.map((h, hi) => (
+                  <div
+                    key={`h-${hi}`}
+                    title={`Holiday: ${h.name} (${h.holiday_type === 'national' ? 'National Holiday' : (h.branch_name || 'Company Holiday')})`}
+                    style={{
+                      background: 'rgba(147, 51, 234, 0.15)',
+                      color: '#a855f7',
+                      fontSize: '9px',
+                      fontWeight: '700',
+                      padding: '1px 3px',
+                      borderRadius: '3px',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                      borderLeft: '2px solid #9333ea',
+                      flexShrink: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 2
+                    }}
+                  >
+                    <span>🎉</span>
+                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{h.name}</span>
+                  </div>
+                ))}
+
+                {/* Leaves */}
                 {leaves.map((l, li) => {
                   const c = empColor(l._idx);
                   const isPending = l.status === 'pending';
                   return (
                     <div
-                      key={li}
+                      key={`l-${li}`}
                       title={`${l.employee_name} (${l.leave_type_name}${isPending ? ' - Pending' : ''})`}
                       style={{
                         background: c.bg,
@@ -280,6 +330,19 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
 
               {/* Mobile dots indicators (Mobile) */}
               <div className="cell-dot-container">
+                {hols.map((h, idx) => (
+                  <span
+                    key={`h-${idx}`}
+                    title={`Holiday: ${h.name}`}
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: '50%',
+                      background: '#9333ea',
+                      display: 'inline-block'
+                    }}
+                  />
+                ))}
                 {leaves.map((l, idx) => {
                   const isPending = l.status === 'pending';
                   return (
@@ -314,7 +377,11 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 2, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 14, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 2, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <span style={{ width: 8, height: 8, borderRadius: 2, background: 'rgba(147, 51, 234, 0.2)', borderLeft: '2.5px solid #9333ea', display: 'inline-block' }} />
+          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Holiday</span>
+        </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 8, height: 8, borderRadius: 2, background: '#dbeafe', borderLeft: '2.5px solid #3b82f6', display: 'inline-block' }} />
           <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Approved Leave</span>
@@ -336,9 +403,35 @@ function LeaveCalendar({ leaveEvents, odEvents }) {
             Schedule: {formatDateFriendly(selectedDate)}
           </span>
           <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>
-            {selectedLeaves.length + selectedOds.length} Events
+            {selectedHolidays.length + selectedLeaves.length + selectedOds.length} Events
           </span>
         </div>
+
+        {/* Selected Holidays */}
+        {selectedHolidays.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+              Holidays ({selectedHolidays.length})
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {selectedHolidays.map((h, hi) => (
+                <div key={hi} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg2)', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(147, 51, 234, 0.3)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(147, 51, 234, 0.15)', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
+                      🎉
+                    </div>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                      {h.name}
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 10, color: '#a855f7', fontWeight: 600, background: 'rgba(147, 51, 234, 0.1)', padding: '2px 8px', borderRadius: 99, textTransform: 'capitalize' }}>
+                    {h.holiday_type || 'Holiday'} ({h.branch_name || 'All Branches'})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Selected Leaves */}
         <div style={{ marginBottom: 12 }}>
@@ -439,6 +532,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [leaves, setLeaves] = useState([]);
   const [onduty, setOnduty] = useState([]);
+  const [holidays, setHolidays] = useState([]);
   const today = isoDate(new Date());
 
   useEffect(() => {
@@ -459,12 +553,14 @@ export default function Dashboard() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [lv, od] = await Promise.all([
+      const [lv, od, hol] = await Promise.all([
         api.get('/hr/leave/all').catch(() => ({ data: [] })),
         api.get('/hr/onduty/all').catch(() => ({ data: [] })),
+        api.get('/hr/holidays/').catch(() => ({ data: [] })),
       ]);
       setLeaves(lv.data || []);
       setOnduty(od.data || []);
+      setHolidays(hol.data || []);
     } catch (e) {
       console.error('Dashboard load error', e);
     } finally {
@@ -476,12 +572,12 @@ export default function Dashboard() {
     load();
   }, [load]);
 
-  // Calendar events: approved + pending + auto_approved leaves & OD (current & future only)
+  // Calendar events: approved + pending + auto_approved leaves & OD
   const calendarLeaves = leaves.filter(l => 
-    ['approved', 'pending', 'auto_approved'].includes(l.status) && l.to_date >= today
+    ['approved', 'pending', 'auto_approved'].includes(l.status)
   );
   const calendarOd = onduty.filter(o => 
-    ['approved', 'pending', 'auto_approved'].includes(o.status) && o.date >= today
+    ['approved', 'pending', 'auto_approved'].includes(o.status)
   );
 
   // On Duty Today (approved, auto_approved, & pending OD records for today)
@@ -633,10 +729,10 @@ export default function Dashboard() {
         <div className="dash-card calendar-card">
           <div className="dash-sec-title" style={{ flexShrink: 0 }}>
             <Calendar size={13} style={{ color: 'var(--accent)' }} />
-            Workforce Leave Calendar
+            Workforce & Holiday Calendar
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
-            <LeaveCalendar leaveEvents={calendarLeaves} odEvents={calendarOd} />
+            <LeaveCalendar leaveEvents={calendarLeaves} odEvents={calendarOd} holidayEvents={holidays} />
           </div>
         </div>
 
