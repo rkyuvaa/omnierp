@@ -215,18 +215,18 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
               onClick={() => setSelectedDate(dateStr)}
               style={{
                 borderRadius: 6,
-                padding: 4,
+                padding: '4px 6px',
                 background: isToday
                   ? 'var(--bg3)'
                   : hasHoliday
-                    ? 'linear-gradient(135deg, #fef3c7 0%, #fde68a 100%)'
+                    ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
                     : isSelected
                       ? 'var(--bg3)'
                       : 'var(--bg2)',
                 border: isToday
                   ? '2px solid var(--accent)'
                   : hasHoliday
-                    ? '1.5px solid #f59e0b'
+                    ? '2px solid #d97706'
                     : isSelected
                       ? '2.5px solid var(--accent2)'
                       : '1px solid var(--border)',
@@ -237,68 +237,79 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
               }}
               className="calendar-day-cell"
             >
-              {/* Day number & OD dot */}
+              {/* Day number & Header line */}
               <div style={{
                 display: 'flex',
-                justifyContent: 'space-between',
                 alignItems: 'center',
+                justifyContent: 'space-between',
                 marginBottom: 2,
-                flexShrink: 0
+                flexShrink: 0,
+                position: 'relative'
               }}>
                 <span style={{
-                  fontSize: 11,
-                  fontWeight: isToday ? 850 : 700,
-                  color: isToday ? 'var(--accent)' : hasHoliday ? '#b45309' : 'var(--text)',
+                  fontSize: 12,
+                  fontWeight: 800,
+                  color: isToday ? 'var(--accent)' : hasHoliday ? '#000000' : 'var(--text)',
                   background: isToday ? 'var(--accent-dim)' : 'transparent',
-                  width: 18,
+                  minWidth: 18,
                   height: 18,
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center'
+                  justifyContent: 'center',
+                  zIndex: 2
                 }}>{day}</span>
+
+                {hasHoliday && (
+                  <span style={{
+                    position: 'absolute',
+                    left: 0,
+                    right: 0,
+                    textAlign: 'center',
+                    fontSize: 12,
+                    fontWeight: 800,
+                    color: '#000000',
+                    pointerEvents: 'none',
+                    zIndex: 1
+                  }}>
+                    Holiday
+                  </span>
+                )}
 
                 {hasOd && (
                   <span title={`${ods.length} On Duty`} style={{
-                    width: 6,
-                    height: 6,
+                    width: 7,
+                    height: 7,
                     borderRadius: '50%',
-                    background: '#f59e0b',
-                    border: '1px solid var(--bg2)'
+                    background: '#10b981',
+                    border: '1px solid #ffffff',
+                    marginLeft: 'auto',
+                    zIndex: 2
                   }} />
                 )}
               </div>
 
               {/* Event list inside cell (Desktop) */}
-              <div className="cell-event-list scroll-list">
-                {/* Holidays - vibrant amber/gold */}
+              <div className="cell-event-list scroll-list" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                {/* Holidays - Centered bold text matching reference image */}
                 {hols.map((h, hi) => (
                   <div
                     key={`h-${hi}`}
                     title={`Holiday: ${h.name} (${h.holiday_type === 'national' ? 'National' : (h.branch_name || 'Company')})`}
                     style={{
-                      background: 'linear-gradient(135deg, #d97706, #b45309)',
-                      color: '#ffffff',
-                      fontSize: '9px',
+                      color: '#000000',
+                      fontSize: '12px',
                       fontWeight: '800',
-                      padding: '2px 5px',
-                      borderRadius: '4px',
+                      textAlign: 'center',
+                      padding: '4px 2px',
+                      margin: 'auto 0',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      flexShrink: 0,
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      boxShadow: '0 1px 3px rgba(180,83,9,0.4)',
-                      letterSpacing: '0.2px'
+                      lineHeight: 1.2
                     }}
                   >
-                    <span style={{ fontSize: '8px' }}>🎉</span>
-                    <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <strong style={{ textTransform: 'uppercase', fontSize: '8px', opacity: 0.9 }}>Holiday: </strong>
-                      {h.name}
-                    </span>
+                    {h.name}
                   </div>
                 ))}
 
@@ -325,7 +336,8 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                         flexShrink: 0,
                         boxShadow: `0 1px 3px ${c.bg}80`,
                         opacity: isPending ? 0.85 : 1,
-                        borderLeft: isPending ? `3px dashed ${c.dot}` : `3px solid ${c.dot}`
+                        borderLeft: isPending ? `3px dashed ${c.dot}` : `3px solid ${c.dot}`,
+                        marginTop: 2
                       }}
                     >
                       {l.employee_name}{isPending ? ' ⏳' : ''}
