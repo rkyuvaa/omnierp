@@ -221,6 +221,102 @@ def delete_employee(emp_id: int, db: Session = Depends(get_db), current_user: Us
         db.rollback()
         raise HTTPException(400, "Cannot delete employee as they have active payroll, attendance, or other records. Please deactivate them instead.")
 
+@router.get("/export/excel")
+def export_employees_excel(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Employees Master"
+
+    headers = [
+        "System ID", "Employee ID", "Full Name", "Email", "Phone", "Designation",
+        "Department ID", "Department Name", "Branch ID", "Branch Name",
+        "Manager ID", "Manager Name", "L2 Manager ID", "CC Manager IDs",
+        "Shift ID", "Shift Name", "Date of Joining", "Date of Leaving",
+        "Basic Salary", "Salary Category", "Salary Template ID", "Biometric ID",
+        "UAN", "ESI Number", "Mobile Punch Enabled", "Advance Opening Balance",
+        "Status", "Linked User ID", "Linked User Name", "Created At"
+    ]
+
+    from openpyxl.styles import Font, PatternFill, Alignment
+    header_font = Font(bold=True, color="FFFFFF")
+    header_fill = PatternFill("solid", fgColor="4F46E5")
+    
+    for col_idx, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=header)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center")
+
+    employees = db.query(HREmployee).order_by(HREmployee.id.asc()).all()
+
+    # Pre-fetch manager map and user map for fast name lookup
+    emp_map = {e.id: e.name for e in employees}
+
+    from app.models import User
+    users = db.query(User).all()
+    user_map = {u.id: (u.username or u.name or u.email) for u in users}
+
+    for row_idx, e in enumerate(employees, 2):
+        mgr_name = emp_map.get(e.manager_id, "") if e.manager_id else ""
+        user_name = user_map.get(e.user_id, "") if e.user_id else ""
+        cc_ids = e.cc_manager_ids if isinstance(e.cc_manager_ids, list) else []
+
+        row_data = [
+            e.id,
+            e.employee_id or "",
+            e.name or "",
+            e.email or "",
+            e.phone or "",
+            e.designation or "",
+            e.department_id or "",
+            e.department.name if e.department else "",
+            e.branch_id or "",
+            e.branch.name if e.branch else "",
+            e.manager_id or "",
+            mgr_name,
+            getattr(e, "manager_l2_id", "") or "",
+            ", ".join(map(str, cc_ids)) if cc_ids else "",
+            e.shift_id or "",
+            e.shift.name if e.shift else "",
+            str(e.date_of_joining) if e.date_of_joining else "",
+            str(e.date_of_leaving) if e.date_of_leaving else "",
+            float(e.basic_salary or 0),
+            e.salary_category or "regular",
+            e.salary_template_id or "",
+            e.biometric_id or "",
+            e.uan or "",
+            e.esi_number or "",
+            "Yes" if e.enable_mobile_punch else "No",
+            float(e.advance_opening_balance or 0),
+            "Active" if e.is_active else "Inactive",
+            e.user_id or "",
+            user_name,
+            str(e.created_at) if e.created_at else ""
+        ]
+
+        for col_idx, val in enumerate(row_data, 1):
+            ws.cell(row=row_idx, column=col_idx, value=val)
+
+    # Auto-fit column widths
+    for col in ws.columns:
+        max_len = max(len(str(cell.value or '')) for cell in col)
+        col_letter = openpyxl.utils.get_column_letter(col[0].column)
+        ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"employees_export_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 @router.get("/import/template")
 def get_import_template(current_user: User = Depends(get_current_user)):
     wb = openpyxl.Workbook()

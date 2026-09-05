@@ -174,6 +174,21 @@ export default function EmployeeMaster() {
     finally { setImporting(false); }
   }
 
+  async function handleExport() {
+    try {
+      const toastId = toast.loading('Exporting employee data...');
+      const res = await api.get('/hr/employees/export/excel', { responseType: 'blob' });
+      const url = URL.createObjectURL(new Blob([res.data]));
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `employees_export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      a.click();
+      toast.success('Employees exported successfully', { id: toastId });
+    } catch {
+      toast.error('Failed to export employee data');
+    }
+  }
+
   async function downloadTemplate() {
     try {
       const res = await api.get('/hr/employees/import/template', { responseType: 'blob' });
@@ -258,6 +273,9 @@ export default function EmployeeMaster() {
                 <input placeholder="Search by name, ID or email..." value={search} onChange={e => setSearch(e.target.value)}
                   style={{ ...inputStyle, paddingLeft: 32 }} />
               </div>
+              <button className="btn" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+                <Download size={15} /> Export
+              </button>
               <button className="btn" onClick={() => setShowImportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
                 <Upload size={15} /> Import
               </button>
