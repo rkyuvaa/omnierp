@@ -214,10 +214,59 @@ def _is_sandwich_day(db: Session, employee_id: int, target_date: date) -> bool:
     
     def is_absent_or_leave(rec, dt):
         if rec:
-            return rec.status in ["absent", "leave", "sandwich_lop"]
+            return rec.status in ["absent", "sandwich_lop"]
+        
+        # If no record exists, evaluate what the status would likely be
+        # 1. Check for approved leave
+        approved_leave = db.query(HRLeaveRequest).filter(
+            HRLeaveRequest.employee_id == employee_id,
+            HRLeaveRequest.from_date <= dt,
+            HRLeaveRequest.to_date >= dt,
+            HRLeaveRequest.status.in_(["approved", "auto_approved"])
+        ).first()
+        if approved_leave:
+            return False
+            
+        # 2. Check for holiday
+        emp = db.query(HREmployee).filter(HREmployee.id == employee_id).first()
+        holiday = db.query(HRHoliday).filter(
+            HRHoliday.date == dt,
+            HRHoliday.is_active == True,
+            (HRHoliday.branch_id == emp.branch_id) | (HRHoliday.branch_id == None)
+        ).first()
+        if holiday:
+            return False
+            
+        # 3. Check for weekly off
+        shift = emp.shift if emp else None
+        from app.routers.hr_config import get_hr_config
+        global_working_days = get_hr_config(db, "working_days", ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat"])
+        day_abbr = DAY_MAP[dt.weekday()]
+        is_wo = False
+        if shift and shift.working_days:
+            if day_abbr not in shift.working_days:
+                is_wo = True
+        else:
+            if day_abbr not in global_working_days:
+                is_wo = True
+        
+        if is_wo:
+            return False
+            
+        # 4. Check for punches
+        day_start = datetime.combine(dt, datetime.min.time())
+        day_end = datetime.combine(dt, datetime.max.time())
+        punches = db.query(HRAttendancePunch).filter(
+            HRAttendancePunch.employee_id == employee_id,
+            HRAttendancePunch.punch_time >= day_start,
+            HRAttendancePunch.punch_time <= day_end
+        ).first()
+        if punches:
+            return False
+            
         today = date.today()
         if dt < today:
-            # Past working days without records default to absent
+            # Past working days without records and no punches/leave default to absent
             return True
         return False
         
