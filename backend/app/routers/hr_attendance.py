@@ -974,7 +974,9 @@ def get_records(
     return result
 
 @router.post("/correct")
-def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    if not is_hr_admin(current_user, db):
+        raise HTTPException(status_code=403, detail="Admin required")
     record = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == data.employee_id,
         HRAttendanceRecord.date == data.date

@@ -61,7 +61,8 @@ def send_email(
     subject: str,
     body_html: str,
     attachment_bytes: bytes = None,
-    attachment_filename: str = None
+    attachment_filename: str = None,
+    explicit_config: dict = None
 ):
     """
     Send an email with optional attachment using SMTP configurations.
@@ -70,7 +71,7 @@ def send_email(
         logger.error(f"Invalid recipient email address: {to_email}")
         raise ValueError("Invalid recipient email address")
 
-    config = get_smtp_config(db)
+    config = explicit_config or get_smtp_config(db)
     
     # Construct MIME message
     msg = MIMEMultipart("alternative" if not attachment_bytes else "mixed")
@@ -135,7 +136,7 @@ def send_email(
         logger.error(f"Failed to send email to {to_email}: {str(e)}")
         # Provide clean, descriptive error messages
         err_msg = str(e)
-        if "Authentication failed" in err_msg or "Username and Password not accepted" in err_msg or "authentication failed" in err_msg.lower():
+        if "Authentication failed" in err_msg or "Username and Password not accepted" in err_msg or "authentication failed" in err_msg.lower() or "authentication unsuccessful" in err_msg.lower():
             raise Exception("Invalid SMTP username or password.")
         elif "timed out" in err_msg or "timeout" in err_msg.lower():
             raise Exception(f"Connection timed out. Check host '{config['host']}' and port {config['port']}.")

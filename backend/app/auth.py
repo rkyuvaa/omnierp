@@ -56,9 +56,17 @@ def require_admin(current_user: User = Depends(get_current_user), db: Session = 
     if current_user.is_superadmin:
         return current_user
     
+    from app.models import Role
+    
+    # Check global role first
+    if current_user.role_id:
+        role = db.query(Role).filter(Role.id == current_user.role_id).first()
+        if role and role.permissions:
+            if role.permissions.get("can_edit") or role.permissions.get("can_delete"):
+                return current_user
+                
     # Allow module managers who have can_edit or can_delete permissions in their module roles
     allowed = current_user.allowed_modules or {}
-    from app.models import Role
     for mod, role_id in allowed.items():
         role = db.query(Role).filter(Role.id == role_id).first()
         if role and role.permissions:
@@ -84,7 +92,7 @@ def is_hr_admin(user: User, db: Session) -> bool:
                 return True
                 
     allowed = user.allowed_modules or {}
-    role_id = allowed.get("expenses") or allowed.get("hr")
+    role_id = allowed.get("expenses") or allowed.get("hr") or user.role_id
     if not role_id:
         return False
     from app.models import Role

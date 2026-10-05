@@ -144,7 +144,7 @@ def update_user(user_id: int, data: UserUpdate, db: Session = Depends(get_db), c
     if not user: raise HTTPException(404, "Not found")
     
     changes = {}
-    new_data = data.model_dump(exclude_none=True)
+    new_data = data.model_dump(exclude_unset=True)
     
     # Handle reset_totp if provided
     if "reset_totp" in new_data:

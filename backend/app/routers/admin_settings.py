@@ -129,39 +129,12 @@ def test_smtp_connection(data: SmtpTestSchema, db: Session = Depends(get_db), cu
         </div>
         """
         
-        # Override smtp configs inside standard helper function by passing it in SystemSetting mock
-        db_setting = db.query(SystemSetting).filter(SystemSetting.key == "smtp_config_test_temp").first()
-        if not db_setting:
-            db_setting = SystemSetting(key="smtp_config_test_temp", value=temp_val)
-            db.add(db_setting)
-        else:
-            db_setting.value = temp_val
-        db.commit()
-
         # Execute using temporary setting
-        db_setting_live = db.query(SystemSetting).filter(SystemSetting.key == "smtp_config").first()
-        backup_val = db_setting_live.value if db_setting_live else None
-        
         try:
-            if not db_setting_live:
-                db_setting_live = SystemSetting(key="smtp_config", value=temp_val)
-                db.add(db_setting_live)
-            else:
-                db_setting_live.value = temp_val
-            db.commit()
-            
             # Fire
-            send_email(db, data.test_email, subject, body_html)
-        finally:
-            # Revert to backup state
-            if backup_val is None:
-                if db_setting_live: db.delete(db_setting_live)
-            else:
-                db_setting_live.value = backup_val
-            
-            # Delete temp config
-            db.delete(db_setting)
-            db.commit()
+            send_email(db, data.test_email, subject, body_html, explicit_config=temp_val)
+        except Exception as send_err:
+            raise send_err
 
         return {"message": f"Test email successfully dispatched to {data.test_email}"}
     except Exception as e:
