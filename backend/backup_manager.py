@@ -108,10 +108,13 @@ def create_backup():
             if os.path.exists(uploads_zip):
                 zipf.write(uploads_zip, "uploads.zip")
             
-            # Pack .env if it exists
-            env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
-            if os.path.exists(env_path):
-                zipf.write(env_path, ".env")
+            # Pack .env if it exists in backend or project root
+            backend_env = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+            root_env = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), ".env")
+            if os.path.exists(backend_env):
+                zipf.write(backend_env, ".env")
+            elif os.path.exists(root_env):
+                zipf.write(root_env, ".env")
         
         return bundle_name, None
         

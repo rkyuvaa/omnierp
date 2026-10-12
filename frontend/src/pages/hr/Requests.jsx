@@ -233,6 +233,25 @@ export default function Requests() {
               <PlusCircle size={14} /> Apply Leave
             </button>
             <button className="btn" onClick={() => { 
+              const eid = selectedEmp || user?.employee_id; 
+              const currentEmp = employees.find(e => e.id === parseInt(eid)) || employees.find(e => e.id === eid);
+              const permType = leaveTypes.find(t => t.name.toLowerCase().includes('permission') || t.code.toLowerCase() === 'perm');
+              const todayStr = new Date().toLocaleDateString('en-CA');
+              setLeaveForm({ 
+                is_half_day: true, 
+                employee_id: eid, 
+                leave_type_id: permType ? permType.id : '',
+                from_date: todayStr,
+                to_date: todayStr,
+                cc_employee_ids: currentEmp?.cc_manager_ids || [] 
+              }); 
+              setShowLeaveModal(true); 
+              fetchLeaveBalances(eid); 
+            }}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
+              <PlusCircle size={14} /> Apply Permission
+            </button>
+            <button className="btn" onClick={() => { 
               const now = new Date();
               const hh = String(now.getHours()).padStart(2, '0');
               const mm = String(now.getMinutes()).padStart(2, '0');

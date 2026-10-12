@@ -133,8 +133,29 @@ def _recompute_attendance(db: Session, employee_id: int, target_date: date, leav
     record.updated_at = datetime.utcnow()
 
 # ── Leave Type Routes ────────────────────────────────────────────────────────
+def seed_default_leave_types(db: Session):
+    """Seed standard Leave Types including Permission, Casual Leave, Sick Leave, Privilege Leave, and Comp-Off if missing."""
+    default_types = [
+        {"name": "Privilege Leave", "code": "PL", "max_days_per_year": 15, "is_paid": True, "carry_forward": True, "carry_forward_max": 30},
+        {"name": "Casual Leave", "code": "CL", "max_days_per_year": 12, "is_paid": True, "carry_forward": False, "carry_forward_max": 0},
+        {"name": "Sick Leave", "code": "SL", "max_days_per_year": 12, "is_paid": True, "carry_forward": False, "carry_forward_max": 0},
+        {"name": "Comp-Off", "code": "CO", "max_days_per_year": 0, "is_paid": True, "carry_forward": False, "carry_forward_max": 0},
+        {"name": "Permission", "code": "PERM", "max_days_per_year": 24, "is_paid": True, "carry_forward": False, "carry_forward_max": 0},
+        {"name": "Leave Without Pay", "code": "LOP", "max_days_per_year": 0, "is_paid": False, "carry_forward": False, "carry_forward_max": 0},
+    ]
+    for dt in default_types:
+        existing = db.query(HRLeaveType).filter(
+            (HRLeaveType.code == dt["code"]) | (HRLeaveType.name.ilike(dt["name"]))
+        ).first()
+        if not existing:
+            new_lt = HRLeaveType(**dt, is_active=True)
+            db.add(new_lt)
+    db.commit()
+
+
 @router.get("/types")
 def list_leave_types(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    seed_default_leave_types(db)
     types = db.query(HRLeaveType).all()
     return [{"id": t.id, "name": t.name, "code": t.code,
              "max_days_per_year": t.max_days_per_year, "is_paid": t.is_paid,
