@@ -4,7 +4,7 @@ from app.database import engine, Base
 from fastapi.staticfiles import StaticFiles
 import os
 from app.routers import auth, users, branches, departments, roles, modules, crm, installation, installationlayout, service, studio, dashboard, audit, warranty, crm_layout, forms, konwertcare, issue_matrix, admin, admin_settings, tasks
-from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions, hr_lop_rules, hr_leave_ledger
+from app.routers import hr_employees, hr_shifts, hr_holidays, hr_leave, hr_onduty, hr_attendance, hr_biometric, hr_reports, hr_payroll, hr_notifications, hr_salary_templates, hr_salary_components, hr_config, hr_push_subscriptions, hr_lop_rules, hr_leave_ledger, hr_permission
 from app.routers import bank
 from app.routers import finance
 from app.routers import expenses
@@ -236,6 +236,7 @@ app.include_router(hr_employees.router, prefix="/api/hr/employees", tags=["HR-Em
 app.include_router(hr_shifts.router, prefix="/api/hr/shifts", tags=["HR-Shifts"])
 app.include_router(hr_holidays.router, prefix="/api/hr/holidays", tags=["HR-Holidays"])
 app.include_router(hr_leave.router, prefix="/api/hr/leave", tags=["HR-Leave"])
+app.include_router(hr_permission.router, prefix="/api/hr/permission", tags=["HR-Permission"])
 app.include_router(hr_onduty.router, prefix="/api/hr/onduty", tags=["HR-OnDuty"])
 app.include_router(hr_attendance.router, prefix="/api/hr/attendance", tags=["HR-Attendance"])
 app.include_router(hr_biometric.router, prefix="/api/hr/biometric", tags=["HR-Biometric"])

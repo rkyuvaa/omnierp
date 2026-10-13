@@ -38,18 +38,23 @@ export default function Requests() {
   const [employees, setEmployees] = useState([]);
   const [leaveTypes, setLeaveTypes] = useState([]);
   const [myLeave, setMyLeave] = useState([]);
+  const [myPerm, setMyPerm] = useState([]);
   const [myOD, setMyOD] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('leave');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showLeaveModal, setShowLeaveModal] = useState(false);
+  const [showPermModal, setShowPermModal] = useState(false);
   const [showODModal, setShowODModal] = useState(false);
   const [leaveForm, setLeaveForm] = useState({ is_half_day: false });
+  const [permForm, setPermForm] = useState({ session: 'morning', duration_hours: 1.0 });
   const [odForm, setODForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [selectedEmp, setSelectedEmp] = useState('');
   const [leaveBalances, setLeaveBalances] = useState([]);
   const [balancesLoading, setBalancesLoading] = useState(false);
+  const [permStatus, setPermStatus] = useState(null);
+  const [permStatusLoading, setPermStatusLoading] = useState(false);
 
   const { user } = useAuth();
 
@@ -66,7 +71,8 @@ export default function Requests() {
     if (!user?.is_superadmin) {
       setSelectedEmp(user?.employee_id || '');
     }
-    api.get('/hr/leave/types').then(r => setLeaveTypes(r.data.filter(t => t.is_active)));
+    // Filter out PERM from standard full/half day leaves
+    api.get('/hr/leave/types').then(r => setLeaveTypes(r.data.filter(t => t.is_active && t.code !== 'PERM')));
   }, [user]);
 
   useEffect(() => {
@@ -79,7 +85,7 @@ export default function Requests() {
 
   useEffect(() => {
     const refId = searchParams.get('id');
-    const refType = searchParams.get('type'); // 'leave' or 'onduty'
+    const refType = searchParams.get('type'); // 'leave', 'permission', or 'onduty'
     if (refId && refType) {
       setTab(refType);
       setStatusFilter('all');
@@ -98,16 +104,18 @@ export default function Requests() {
         }
       }, 600);
     }
-  }, [myLeave, myOD, searchParams]);
+  }, [myLeave, myPerm, myOD, searchParams]);
 
   async function fetchRequests() {
     setLoading(true);
     try {
-      const [lv, od] = await Promise.all([
+      const [lv, pm, od] = await Promise.all([
         api.get('/hr/leave/my-requests', { params: { employee_id: selectedEmp } }),
+        api.get('/hr/permission/my-requests', { params: { employee_id: selectedEmp } }),
         api.get('/hr/onduty/my-requests', { params: { employee_id: selectedEmp } }),
       ]);
       setMyLeave(lv.data);
+      setMyPerm(pm.data);
       setMyOD(od.data);
     } catch { toast.error('Failed to load requests'); }
     finally { setLoading(false); }
@@ -122,6 +130,24 @@ export default function Requests() {
       setLeaveBalances(r.data || []);
     } catch { setLeaveBalances([]); }
     finally { setBalancesLoading(false); }
+  }
+
+  async function fetchPermStatus(empId, dateStr) {
+    if (!empId) return;
+    setPermStatusLoading(true);
+    try {
+      const d = dateStr ? new Date(dateStr) : new Date();
+      const month = isNaN(d.getTime()) ? (new Date().getMonth() + 1) : (d.getMonth() + 1);
+      const year = isNaN(d.getTime()) ? new Date().getFullYear() : d.getFullYear();
+      const r = await api.get('/hr/permission/monthly-status', {
+        params: { employee_id: empId, month, year }
+      });
+      setPermStatus(r.data);
+    } catch {
+      setPermStatus(null);
+    } finally {
+      setPermStatusLoading(false);
+    }
   }
 
   async function applyLeave() {
@@ -148,6 +174,49 @@ export default function Requests() {
       fetchRequests();
     } catch (e) { toast.error(e.response?.data?.detail || 'Failed to apply'); }
     finally { setSaving(false); }
+  }
+
+  async function applyPermission() {
+    const finalForm = { ...permForm };
+    if (!user?.is_superadmin && user?.employee_id) {
+      finalForm.employee_id = user.employee_id;
+    }
+    if (!finalForm.employee_id) {
+      return toast.error(
+        user?.is_superadmin
+          ? "Please select an employee."
+          : "Your user account is not linked to an Employee record. Please contact your administrator."
+      );
+    }
+    if (!finalForm.date || !finalForm.session) {
+      return toast.error('Please select date and session.');
+    }
+    if (!finalForm.reason || !finalForm.reason.trim()) {
+      return toast.error('Please provide a reason for the permission request.');
+    }
+    setSaving(true);
+    try {
+      const res = await api.post('/hr/permission/apply', finalForm);
+      toast.success(res.data.message || 'Permission request submitted');
+      setShowPermModal(false);
+      setPermForm({ session: 'morning', duration_hours: 1.0 });
+      fetchRequests();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to submit permission');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function cancelPermission(id) {
+    if (!confirm('Cancel this permission request? Monthly allowance will be released.')) return;
+    try {
+      await api.post(`/hr/permission/${id}/cancel`);
+      toast.success('Permission cancelled. Allowance released.');
+      fetchRequests();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Failed to cancel');
+    }
   }
 
   async function applyOD() {
@@ -219,6 +288,7 @@ export default function Requests() {
           )}
           <div style={{ display: 'flex', gap: 6 }}>
             <button style={tabStyle(tab === 'leave')} onClick={() => setTab('leave')}>Leave Requests</button>
+            <button style={tabStyle(tab === 'permission')} onClick={() => setTab('permission')}>Permission Requests</button>
             <button style={tabStyle(tab === 'od')} onClick={() => setTab('od')}>On-Duty Requests</button>
           </div>
           <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
@@ -235,18 +305,17 @@ export default function Requests() {
             <button className="btn" onClick={() => { 
               const eid = selectedEmp || user?.employee_id; 
               const currentEmp = employees.find(e => e.id === parseInt(eid)) || employees.find(e => e.id === eid);
-              const permType = leaveTypes.find(t => t.name.toLowerCase().includes('permission') || t.code.toLowerCase() === 'perm');
               const todayStr = new Date().toLocaleDateString('en-CA');
-              setLeaveForm({ 
-                is_half_day: true, 
-                employee_id: eid, 
-                leave_type_id: permType ? permType.id : '',
-                from_date: todayStr,
-                to_date: todayStr,
+              setPermForm({ 
+                employee_id: eid,
+                date: todayStr,
+                session: 'morning',
+                duration_hours: 1.0,
+                reason: '',
                 cc_employee_ids: currentEmp?.cc_manager_ids || [] 
               }); 
-              setShowLeaveModal(true); 
-              fetchLeaveBalances(eid); 
+              setShowPermModal(true); 
+              fetchPermStatus(eid); 
             }}
               style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
               <PlusCircle size={14} /> Apply Permission
@@ -325,6 +394,51 @@ export default function Requests() {
                       )}
                       {req.status === 'pending' && (
                         <button onClick={() => cancelLeave(req.id)} style={{ fontSize: 11, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ));
+            })()}
+
+            {tab === 'permission' && (() => {
+              const filtered = myPerm.filter(req => {
+                if (statusFilter === 'all') return true;
+                if (statusFilter === 'pending') return req.status === 'pending';
+                if (statusFilter === 'approved') return req.status === 'approved';
+                if (statusFilter === 'rejected') return req.status === 'rejected';
+                return true;
+              });
+              if (filtered.length === 0) {
+                return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>No permission requests found</div>;
+              }
+              return filtered.map(req => (
+                <div key={req.id} id={`permission-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14 }}>
+                          Permission — {req.date}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg || '#f3f4f6', color: STATUS_BADGE[req.status]?.color || '#374151' }}>
+                          {STATUS_BADGE[req.status]?.label || req.status}
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 6, background: 'var(--bg)', border: '1px solid var(--border)', color: 'var(--text)' }}>
+                          {req.session === 'morning' ? 'Morning Session' : 'Evening Session'} ({req.duration_hours || 1.0} hr)
+                        </span>
+                      </div>
+                      <div style={{ color: 'var(--text2)', fontSize: 13 }}>
+                        Approver: {req.approver_name || 'Reporting Manager'}
+                      </div>
+                      {req.reason && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 2 }}>Reason: {req.reason}</div>}
+                      {req.approver_remarks && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 2 }}>Remarks: {req.approver_remarks}</div>}
+                    </div>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                      <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'JetBrains Mono, monospace' }}>{req.reference}</span>
+                      {req.status === 'pending' && (
+                        <button onClick={() => cancelPermission(req.id)} style={{ fontSize: 11, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}>
+                          Cancel
+                        </button>
                       )}
                     </div>
                   </div>
@@ -496,6 +610,183 @@ export default function Requests() {
             <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
               <button onClick={() => setShowLeaveModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
               <button onClick={applyLeave} disabled={saving} className="btn btn-primary" style={{ flex: 1 }}>{saving ? 'Submitting...' : 'Submit'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Permission Apply Modal */}
+      {showPermModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 14, padding: 20, width: 480, maxWidth: '100%', maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontWeight: 700 }}>Apply Permission</h3>
+              <button onClick={() => setShowPermModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Policy Allowance Banner */}
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    Monthly Allowance ({new Date().toLocaleString('default', { month: 'short', year: 'numeric' })})
+                  </span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: (permStatus?.remaining_hours || 0) <= 0 ? '#ef4444' : 'var(--accent)' }}>
+                    {permStatus ? `${permStatus.remaining_hours} hr${permStatus.remaining_hours === 1 ? '' : 's'} remaining` : '3 hrs allowed'}
+                  </span>
+                </div>
+                <div style={{ display: 'flex', gap: 8, fontSize: 12, color: 'var(--text2)' }}>
+                  <span>Approved: <strong>{permStatus?.approved_hours ?? 0} hr</strong></span>
+                  <span>·</span>
+                  <span>Pending: <strong>{permStatus?.pending_hours ?? 0} hr</strong></span>
+                  <span>·</span>
+                  <span>Max Limit: <strong>{permStatus?.monthly_limit ?? 3} hrs/mo</strong></span>
+                </div>
+                {(permStatus?.remaining_hours || 0) <= 0 && permStatus && (
+                  <div style={{ fontSize: 11, color: '#ef4444', marginTop: 8, fontWeight: 600, background: '#fee2e2', padding: '6px 8px', borderRadius: 6 }}>
+                    ⚠ You have reached the maximum monthly permission allowance ({permStatus?.monthly_limit ?? 3} requests / {permStatus?.monthly_limit ?? 3} hours).
+                  </div>
+                )}
+              </div>
+
+              {user?.is_superadmin && (
+                <div>
+                  <label style={labelStyle}>Employee</label>
+                  <select 
+                    value={permForm.employee_id || ''} 
+                    onChange={e => { 
+                      const eid = parseInt(e.target.value); 
+                      setPermForm({ ...permForm, employee_id: eid }); 
+                      fetchPermStatus(eid, permForm.date); 
+                    }} 
+                    style={inputStyle}
+                  >
+                    <option value="">— Select —</option>
+                    {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
+                  </select>
+                </div>
+              )}
+
+              <div>
+                <label style={labelStyle}>Date</label>
+                <input 
+                  type="date" 
+                  value={permForm.date || ''} 
+                  onChange={e => { 
+                    const newDate = e.target.value;
+                    setPermForm({ ...permForm, date: newDate }); 
+                    fetchPermStatus(permForm.employee_id, newDate);
+                  }} 
+                  style={inputStyle} 
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>Session</label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  <button 
+                    type="button"
+                    onClick={() => setPermForm({ ...permForm, session: 'morning' })}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid ' + (permForm.session === 'morning' ? 'var(--accent)' : 'var(--border)'),
+                      background: permForm.session === 'morning' ? 'rgba(25, 84, 2, 0.08)' : 'var(--bg2)',
+                      color: permForm.session === 'morning' ? 'var(--accent)' : 'var(--text)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2
+                    }}
+                  >
+                    <span>Morning Session</span>
+                    <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text3)' }}>Late arrival / start</span>
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => setPermForm({ ...permForm, session: 'evening' })}
+                    style={{
+                      padding: '10px 12px',
+                      borderRadius: 8,
+                      border: '1px solid ' + (permForm.session === 'evening' ? 'var(--accent)' : 'var(--border)'),
+                      background: permForm.session === 'evening' ? 'rgba(25, 84, 2, 0.08)' : 'var(--bg2)',
+                      color: permForm.session === 'evening' ? 'var(--accent)' : 'var(--text)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontSize: 13,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: 2
+                    }}
+                  >
+                    <span>Evening Session</span>
+                    <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--text3)' }}>Early departure / exit</span>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Duration</label>
+                <div style={{ ...inputStyle, background: 'var(--bg)', color: 'var(--text2)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span>1.0 Hour (Fixed)</span>
+                  <span style={{ fontSize: 11, color: 'var(--text3)' }}>Max 1 hour per policy</span>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Reason <span style={{ color: '#ef4444' }}>*</span></label>
+                <textarea 
+                  placeholder="Explain why you need permission (e.g. medical appointment, urgent personal errand)..."
+                  value={permForm.reason || ''} 
+                  onChange={e => setPermForm({ ...permForm, reason: e.target.value })} 
+                  style={{ ...inputStyle, minHeight: 70, resize: 'vertical' }} 
+                />
+              </div>
+
+              <div>
+                <label style={labelStyle}>CC (Informational notification sent upon submission)</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                  {(permForm.cc_employee_ids || []).map(ccId => {
+                    const ccEmp = employees.find(e => e.id === ccId);
+                    return (
+                      <span key={ccId} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, fontSize: 12 }}>
+                        {ccEmp ? ccEmp.name : `Emp #${ccId}`}
+                        <X size={12} style={{ cursor: 'pointer', color: 'var(--text3)' }} onClick={() => {
+                          setPermForm({ ...permForm, cc_employee_ids: (permForm.cc_employee_ids || []).filter(id => id !== ccId) });
+                        }} />
+                      </span>
+                    );
+                  })}
+                </div>
+                <select value="" onChange={e => {
+                  if (!e.target.value) return;
+                  const val = parseInt(e.target.value);
+                  const curr = permForm.cc_employee_ids || [];
+                  if (!curr.includes(val)) {
+                    setPermForm({ ...permForm, cc_employee_ids: [...curr, val] });
+                  }
+                }} style={inputStyle}>
+                  <option value="">+ Add CC Person...</option>
+                  {employees.filter(emp => emp.id !== parseInt(permForm.employee_id || selectedEmp || user?.employee_id) && !(permForm.cc_employee_ids || []).includes(emp.id)).map(emp => (
+                    <option key={emp.id} value={emp.id}>{emp.name} ({emp.employee_id})</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
+              <button onClick={() => setShowPermModal(false)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none' }}>Cancel</button>
+              <button 
+                onClick={applyPermission} 
+                disabled={saving || (permStatus && permStatus.remaining_hours <= 0)} 
+                className="btn btn-primary" 
+                style={{ flex: 1, opacity: (permStatus && permStatus.remaining_hours <= 0) ? 0.6 : 1 }}
+              >
+                {saving ? 'Submitting...' : 'Submit'}
+              </button>
             </div>
           </div>
         </div>

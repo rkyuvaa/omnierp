@@ -12,8 +12,10 @@ export default function Approvals() {
   const [approvers, setApprovers] = useState([]);
   const [selectedApprover, setSelectedApprover] = useState('');
   const [pendingLeave, setPendingLeave] = useState([]);
+  const [pendingPerm, setPendingPerm] = useState([]);
   const [pendingOD, setPendingOD] = useState([]);
   const [allLeave, setAllLeave] = useState([]);
+  const [allPerm, setAllPerm] = useState([]);
   const [allOD, setAllOD] = useState([]);
   const [loading, setLoading] = useState(false);
   const [tab, setTab] = useState('pending');
@@ -78,18 +80,22 @@ export default function Approvals() {
     try {
       if (tab === 'pending') {
         const params = selectedApprover ? { approver_id: selectedApprover } : {};
-        const [lv, od] = await Promise.all([
+        const [lv, pm, od] = await Promise.all([
           api.get('/hr/leave/pending', { params }),
+          api.get('/hr/permission/pending', { params }),
           api.get('/hr/onduty/pending', { params }),
         ]);
         setPendingLeave(lv.data);
+        setPendingPerm(pm.data);
         setPendingOD(od.data);
       } else if (tab === 'history') {
-        const [lv, od] = await Promise.all([
+        const [lv, pm, od] = await Promise.all([
           api.get('/hr/leave/all'),
+          api.get('/hr/permission/all'),
           api.get('/hr/onduty/all'),
         ]);
         setAllLeave(lv.data.filter(r => r.status !== 'pending'));
+        setAllPerm(pm.data.filter(r => r.status !== 'pending'));
         setAllOD(od.data.filter(r => r.status !== 'pending'));
       } else if (tab === 'sandwich') {
         const res = await api.get('/hr/attendance/sandwich-leaves', {
@@ -154,6 +160,8 @@ export default function Approvals() {
     try {
       const endpoint = type === 'leave'
         ? `/hr/leave/${req.id}/${action}`
+        : type === 'permission'
+        ? `/hr/permission/${req.id}/${action}`
         : `/hr/onduty/${req.id}/${action}`;
       await api.post(endpoint, { remarks: remark });
       toast.success(`${action === 'approve' ? 'Approved' : 'Rejected'} successfully`);
@@ -243,6 +251,11 @@ export default function Approvals() {
                 <strong>{req.leave_type_name}</strong> · {req.from_date} → {req.to_date} · {req.total_days} day{req.total_days > 1 ? 's' : ''}
                 {req.reason && <div style={{ marginTop: 2, color: 'var(--text3)' }}>Reason: {req.reason}</div>}
               </div>
+            ) : type === 'permission' ? (
+              <div style={{ fontSize: 13, color: 'var(--text2)' }}>
+                <strong>Permission ({req.duration_hours || 1} hr)</strong> · {req.date} · {req.session ? req.session.charAt(0).toUpperCase() + req.session.slice(1) : ''} Session
+                {req.reason && <div style={{ marginTop: 2, color: 'var(--text3)' }}>Reason: {req.reason}</div>}
+              </div>
             ) : (
               <div style={{ fontSize: 13, color: 'var(--text2)' }}>
                 On-Duty · {req.date} · {req.from_time}–{req.to_time}
@@ -297,7 +310,7 @@ export default function Approvals() {
     );
   }
 
-  const pendingCount = pendingLeave.length + pendingOD.length;
+  const pendingCount = pendingLeave.length + pendingPerm.length + pendingOD.length;
 
   return (
     <Layout title="Approvals">
@@ -320,7 +333,7 @@ export default function Approvals() {
           <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading...</div>
         ) : tab === 'pending' ? (
           <div>
-            {pendingLeave.length === 0 && pendingOD.length === 0 ? (
+            {pendingLeave.length === 0 && pendingPerm.length === 0 && pendingOD.length === 0 ? (
               <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>
                 <CheckCircle size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
                 No pending approvals
@@ -329,6 +342,8 @@ export default function Approvals() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pendingLeave.length > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1 }}>Leave Requests ({pendingLeave.length})</div>}
                 {pendingLeave.map(r => <RequestCard key={r.id} req={r} type="leave" showActions />)}
+                {pendingPerm.length > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 6 }}>Permission Requests ({pendingPerm.length})</div>}
+                {pendingPerm.map(r => <RequestCard key={r.id} req={r} type="permission" showActions />)}
                 {pendingOD.length > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 6 }}>On-Duty Requests ({pendingOD.length})</div>}
                 {pendingOD.map(r => <RequestCard key={r.id} req={r} type="od" showActions />)}
               </div>
@@ -336,7 +351,7 @@ export default function Approvals() {
           </div>
         ) : tab === 'history' ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {[...allLeave.map(r => ({ ...r, _type: 'leave' })), ...allOD.map(r => ({ ...r, _type: 'od' }))]
+            {[...allLeave.map(r => ({ ...r, _type: 'leave' })), ...allPerm.map(r => ({ ...r, _type: 'permission' })), ...allOD.map(r => ({ ...r, _type: 'od' }))]
               .filter(r => !selectedApprover || String(r.employee_id) === String(selectedApprover))
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
               .map(r => <RequestCard key={`${r._type}-${r.id}`} req={r} type={r._type} showActions={false} />)}
@@ -523,7 +538,7 @@ export default function Approvals() {
           <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 400, maxWidth: '95vw' }}>
             <h3 style={{ margin: '0 0 16px', fontWeight: 700 }}>{action === 'approve' ? '✓ Approve' : '✗ Reject'} Request</h3>
             <p style={{ margin: '0 0 12px', color: 'var(--text2)', fontSize: 13 }}>
-              {remarkModal.req.employee_name} · {remarkModal.type === 'leave' ? `${remarkModal.req.leave_type_name} (${remarkModal.req.from_date}–${remarkModal.req.to_date})` : `On-Duty (${remarkModal.req.date})`}
+              {remarkModal.req.employee_name} · {remarkModal.type === 'leave' ? `${remarkModal.req.leave_type_name} (${remarkModal.req.from_date}–${remarkModal.req.to_date})` : remarkModal.type === 'permission' ? `Permission (${remarkModal.req.date} · ${remarkModal.req.session?.toUpperCase()} session)` : `On-Duty (${remarkModal.req.date})`}
             </p>
             <textarea value={remark} onChange={e => setRemark(e.target.value)}
               placeholder={action === 'approve' ? 'Add remarks (optional)...' : 'Reason for rejection...'}

@@ -226,6 +226,30 @@ class HROnDutyRequest(Base):
 
 
 # ─────────────────────────────────────────────
+# PERMISSION REQUESTS
+# ─────────────────────────────────────────────
+class HRPermissionRequest(Base):
+    __tablename__ = "hr_permission_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    reference = Column(String(30), unique=True, index=True)  # PRM00001
+    employee_id = Column(Integer, ForeignKey("hr_employees.id"), index=True)
+    date = Column(Date, index=True)
+    session = Column(String(20))                             # "morning" / "evening"
+    duration_hours = Column(Float, default=1.0)              # Exactly 1 hour maximum
+    reason = Column(Text, nullable=True)
+    status = Column(String(20), default="pending")           # pending / approved / rejected / cancelled
+    approver_id = Column(Integer, ForeignKey("hr_employees.id"), nullable=True)
+    approver_remarks = Column(Text, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    cc_employee_ids = Column(JSON, default=[])
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    employee = relationship("HREmployee", foreign_keys=[employee_id])
+    approver = relationship("HREmployee", foreign_keys=[approver_id])
+
+
+# ─────────────────────────────────────────────
 # BIOMETRIC MACHINES
 # ─────────────────────────────────────────────
 class HRBiometricMachine(Base):

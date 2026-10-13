@@ -291,6 +291,8 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
 
     leave_type = db.query(HRLeaveType).filter(HRLeaveType.id == data.leave_type_id).first()
     if not leave_type: raise HTTPException(404, "Leave type not found")
+    if leave_type.code == "PERM":
+        raise HTTPException(400, "Permission must be submitted via the Permission workflow (/hr/permission/apply).")
 
     total_days = 0.5 if data.is_half_day else _working_days_count(data.from_date, data.to_date, db)
 

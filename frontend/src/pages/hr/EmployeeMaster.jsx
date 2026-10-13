@@ -844,20 +844,24 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
             <div style={{ fontWeight: 700 }}>Leave Balances — 2026</div>
             <button onClick={() => setShowBalanceModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
           </div>
-          {balances.map(b => (
-            <div key={b.id} style={{ marginBottom: 8 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, fontSize: 13 }}>
-                <span>
-                  {b.leave_type_name}
-                  {b.monthly_limit > 0 ? ` (Max ${b.monthly_limit}/mo)` : ''}
-                </span>
-                <span style={{ color: 'var(--text2)' }}>{b.used_days} / {b.allocated_days} used</span>
+          {balances.map(b => {
+            const isPerm = b.leave_type_code === 'PERM' || b.leave_type_name?.toLowerCase().includes('permission');
+            const unit = isPerm ? 'hrs' : 'days';
+            return (
+              <div key={b.id} style={{ marginBottom: 8 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, fontSize: 13 }}>
+                  <span>
+                    {b.leave_type_name} {isPerm ? '(Hourly)' : ''}
+                    {b.monthly_limit > 0 ? ` (Max ${b.monthly_limit} ${unit}/mo)` : ''}
+                  </span>
+                  <span style={{ color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>{b.used_days} / {b.allocated_days} {unit} used</span>
+                </div>
+                <div style={{ background: 'var(--border)', borderRadius: 999, height: 6 }}>
+                  <div style={{ width: `${b.allocated_days > 0 ? Math.min(100, (b.used_days/b.allocated_days)*100) : 0}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
+                </div>
               </div>
-              <div style={{ background: 'var(--border)', borderRadius: 999, height: 6 }}>
-                <div style={{ width: `${b.allocated_days > 0 ? (b.used_days/b.allocated_days)*100 : 0}%`, background: 'var(--accent)', borderRadius: 999, height: '100%' }} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Salary Info */}
@@ -901,7 +905,7 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
       {/* Balance Modal */}
       {showBalanceModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 500, maxWidth: '100%' }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 520, maxWidth: '100%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
               <h3 style={{ margin: 0, fontWeight: 700 }}>Manage Leave Balances</h3>
               <button onClick={() => setShowBalanceModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
@@ -909,31 +913,36 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
             
             {/* Headers */}
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12, marginBottom: 8, paddingBottom: 8, borderBottom: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Leave Type</div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Total Days</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Leave / Type</div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Allocated</div>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase' }}>Monthly Limit</div>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, maxHeight: '50vh', overflowY: 'auto', paddingRight: 4 }}>
               {leaveTypes.map(lt => {
-                const b = balances.find(x => x.leave_type_id === lt.id) || { leave_type_id: lt.id, allocated_days: 0, monthly_limit: 0 };
+                const isPerm = lt.code === 'PERM' || lt.name?.toLowerCase().includes('permission');
+                const b = balances.find(x => x.leave_type_id === lt.id) || { leave_type_id: lt.id, allocated_days: isPerm ? 36 : 0, monthly_limit: isPerm ? 3 : 0 };
                 return (
                   <div key={lt.id} style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12, alignItems: 'center' }}>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>{lt.name}</div>
-                    <input type="number" step="0.5" value={b.allocated_days} 
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 600 }}>{lt.name}</div>
+                      <div style={{ fontSize: 10.5, color: 'var(--text3)' }}>{isPerm ? 'Hourly (e.g. 1 hr/request)' : 'Daily unit'}</div>
+                    </div>
+                    <input type="number" step={isPerm ? "1" : "0.5"} value={b.allocated_days} 
+                      placeholder={isPerm ? "Total hrs (36)" : "Days"}
                       onChange={e => {
                         const newB = [...balances];
                         const idx = newB.findIndex(x => x.leave_type_id === lt.id);
                         if (idx >= 0) newB[idx].allocated_days = parseFloat(e.target.value) || 0;
-                        else newB.push({ leave_type_id: lt.id, allocated_days: parseFloat(e.target.value) || 0, monthly_limit: 0 });
+                        else newB.push({ leave_type_id: lt.id, allocated_days: parseFloat(e.target.value) || 0, monthly_limit: isPerm ? 3 : 0 });
                         setBalances(newB);
                       }} style={inputStyle} />
-                    <input type="number" step="0.5" placeholder="unlimited" value={b.monthly_limit || ''} 
+                    <input type="number" step={isPerm ? "1" : "0.5"} placeholder={isPerm ? "Max hrs/mo (3)" : "unlimited"} value={b.monthly_limit !== undefined && b.monthly_limit !== null ? b.monthly_limit : ''} 
                       onChange={e => {
                         const newB = [...balances];
                         const idx = newB.findIndex(x => x.leave_type_id === lt.id);
                         if (idx >= 0) newB[idx].monthly_limit = parseFloat(e.target.value) || 0;
-                        else newB.push({ leave_type_id: lt.id, allocated_days: 0, monthly_limit: parseFloat(e.target.value) || 0 });
+                        else newB.push({ leave_type_id: lt.id, allocated_days: isPerm ? 36 : 0, monthly_limit: parseFloat(e.target.value) || 0 });
                         setBalances(newB);
                       }} style={inputStyle} />
                   </div>
