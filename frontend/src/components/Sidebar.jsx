@@ -34,7 +34,7 @@ const adminItems = [
 ];
 
 
-const NavItem=({to,label,icon:Icon,active,onClick,compact})=>(<Link to={to} onClick={onClick} className={`nav-item ${active?'active':''}`} style={{display:'flex',alignItems:'center',gap:compact?9:12,padding:compact?'7px 10px':'10px 14px',borderRadius:8,marginBottom:compact?2:4,textDecoration:'none',fontSize:compact?13:14,fontWeight:active?600:500,color:active?'#ffffff':'var(--text2)',background:active?'var(--accent)':'transparent'}} onMouseEnter={e=>{if(!active){e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)';}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)';}}}><Icon size={compact?16:18} style={{opacity:active?1:0.8,flexShrink:0}}/><span style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</span></Link>);
+const NavItem=({to,label,icon:Icon,active,onClick,compact})=>(<Link to={to} onClick={onClick} className={`nav-item ${active?'active':''}`} style={{display:'flex',alignItems:'center',gap:compact?8:10,padding:compact?'6px 8px':'8px 10px',borderRadius:8,marginBottom:compact?2:4,textDecoration:'none',fontSize:compact?12.5:13.5,fontWeight:active?600:500,color:active?'#ffffff':'var(--text2)',background:active?'var(--accent)':'transparent'}} onMouseEnter={e=>{if(!active){e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)';}}} onMouseLeave={e=>{if(!active){e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)';}}}><Icon size={compact?15:17} style={{opacity:active?1:0.8,flexShrink:0}}/><span style={{whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{label}</span></Link>);
 
 function HRModule({ isActive, handleNav, isExpanded, onToggle, compact }) {
   const { user } = useAuth();
@@ -83,11 +83,11 @@ function HRModule({ isActive, handleNav, isExpanded, onToggle, compact }) {
     <div style={{ marginBottom: compact ? 2 : 4 }}>
       <button
         onClick={onToggle}
-        style={{display:'flex',alignItems:'center',gap:compact?9:12,padding:compact?'7px 10px':'10px 14px',borderRadius:8,marginBottom:compact?2:4,width:'100%',border:'none',cursor:'pointer',fontSize:compact?13:14,fontWeight:isHRActive?600:500,color:isHRActive?'var(--text)':'var(--text2)',background:isHRActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
+        style={{display:'flex',alignItems:'center',gap:compact?8:10,padding:compact?'6px 8px':'8px 10px',borderRadius:8,marginBottom:compact?2:4,width:'100%',border:'none',cursor:'pointer',fontSize:compact?12.5:13.5,fontWeight:isHRActive?600:500,color:isHRActive?'var(--text)':'var(--text2)',background:isHRActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
       >
-        <Clock size={compact?16:18} style={{opacity:0.8,flexShrink:0}}/>
+        <Clock size={compact?15:17} style={{opacity:0.8,flexShrink:0}}/>
         <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>Attendance & HR</span>
-        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', flexShrink: 0 }} />
+        <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', flexShrink: 0 }} />
       </button>
       <div
         style={{
@@ -98,7 +98,7 @@ function HRModule({ isActive, handleNav, isExpanded, onToggle, compact }) {
           overflow: 'hidden'
         }}
       >
-        <div style={{ minHeight: 0, paddingLeft: compact ? 10 : 16 }}>
+        <div style={{ minHeight: 0, paddingLeft: compact ? 8 : 14 }}>
           {filteredHRItems.map(i => (
             <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav} compact={compact}/>
           ))}
@@ -125,11 +125,11 @@ function FinanceModule({ isActive, handleNav, isExpanded, onToggle, compact }) {
     <div style={{marginBottom:compact?2:4}}>
       <button
         onClick={onToggle}
-        style={{display:'flex',alignItems:'center',gap:compact?9:12,padding:compact?'7px 10px':'10px 14px',borderRadius:8,marginBottom:compact?2:4,width:'100%',border:'none',cursor:'pointer',fontSize:compact?13:14,fontWeight:isFinanceActive?600:500,color:isFinanceActive?'var(--text)':'var(--text2)',background:isFinanceActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
+        style={{display:'flex',alignItems:'center',gap:compact?8:10,padding:compact?'6px 8px':'8px 10px',borderRadius:8,marginBottom:compact?2:4,width:'100%',border:'none',cursor:'pointer',fontSize:compact?12.5:13.5,fontWeight:isFinanceActive?600:500,color:isFinanceActive?'var(--text)':'var(--text2)',background:isFinanceActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
       >
-        <TrendingUp size={compact?16:18} style={{opacity:0.8,flexShrink:0}}/>
+        <TrendingUp size={compact?15:17} style={{opacity:0.8,flexShrink:0}}/>
         <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>Finance</span>
-        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', flexShrink: 0 }} />
+        <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', flexShrink: 0 }} />
       </button>
       <div
         style={{
@@ -140,7 +140,7 @@ function FinanceModule({ isActive, handleNav, isExpanded, onToggle, compact }) {
           overflow: 'hidden'
         }}
       >
-        <div style={{ minHeight: 0, paddingLeft: compact ? 10 : 16 }}>
+        <div style={{ minHeight: 0, paddingLeft: compact ? 8 : 14 }}>
           {financeItems.map(i => (
             <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav} compact={compact}/>
           ))}
@@ -175,11 +175,11 @@ function ExpensesModule({ isActive, handleNav, isExpanded, onToggle, compact }) 
     <div style={{marginBottom: compact ? 2 : 4}}>
       <button
         onClick={onToggle}
-        style={{display:'flex',alignItems:'center',gap:compact?9:12,padding:compact?'7px 10px':'10px 14px',borderRadius:8,marginBottom:compact?2:4,width:'100%',border:'none',cursor:'pointer',fontSize:compact?13:14,fontWeight:isExpensesActive?600:500,color:isExpensesActive?'var(--text)':'var(--text2)',background:isExpensesActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
+        style={{display:'flex',alignItems:'center',gap:compact?8:10,padding:compact?'6px 8px':'8px 10px',borderRadius:8,marginBottom:compact?2:4,width:'100%',border:'none',cursor:'pointer',fontSize:compact?12.5:13.5,fontWeight:isExpensesActive?600:500,color:isExpensesActive?'var(--text)':'var(--text2)',background:isExpensesActive?'var(--bg3)':'transparent',textAlign:'left',transition:'background 0.2s, color 0.2s'}}
       >
-        <Receipt size={compact?16:18} style={{opacity:0.8,flexShrink:0}}/>
+        <Receipt size={compact?15:17} style={{opacity:0.8,flexShrink:0}}/>
         <span style={{flex:1,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>Expenses & Reimb.</span>
-        <ChevronDown size={14} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', flexShrink: 0 }} />
+        <ChevronDown size={13} style={{ transform: isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)', flexShrink: 0 }} />
       </button>
       <div
         style={{
@@ -190,7 +190,7 @@ function ExpensesModule({ isActive, handleNav, isExpanded, onToggle, compact }) 
           overflow: 'hidden'
         }}
       >
-        <div style={{ minHeight: 0, paddingLeft: compact ? 10 : 16 }}>
+        <div style={{ minHeight: 0, paddingLeft: compact ? 8 : 14 }}>
           {filteredItems.map(i => (
             <NavItem key={i.to} {...i} active={isActive(i.to)} onClick={handleNav} compact={compact}/>
           ))}
@@ -205,7 +205,7 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
   const { user, logout } = useAuth();
   const location = useLocation();
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const isCompact = location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
+  const isCompact = location.pathname === '/' || location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
 
   const getInitialModule = (path) => {
     if (path.startsWith('/hr')) return 'hr';
@@ -230,13 +230,13 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
   
   return (
     <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`} style={{display:'flex', flexDirection:'column', height: '100vh', borderRight: '1px solid var(--border)', background: 'var(--bg)'}}>
-      <div className="sidebar-header" style={{padding: isCompact ? '12px 14px' : '24px 20px', display:'flex', alignItems:'center', gap: isCompact ? 10 : 12}}>
-        <img src="/favicon.png" style={{width: isCompact ? 28 : 32, height: isCompact ? 28 : 32, objectFit:'contain'}} alt="Logo" />
-        <span style={{color:'var(--text)', fontSize: isCompact ? 18 : 20, fontWeight:700, letterSpacing:'-0.5px'}}>KIM ERP</span>
+      <div className="sidebar-header" style={{padding: isCompact ? '10px 12px' : '20px 16px', display:'flex', alignItems:'center', gap: isCompact ? 8 : 10}}>
+        <img src="/favicon.png" style={{width: isCompact ? 26 : 30, height: isCompact ? 26 : 30, objectFit:'contain'}} alt="Logo" />
+        <span style={{color:'var(--text)', fontSize: isCompact ? 17 : 19, fontWeight:700, letterSpacing:'-0.5px'}}>KIM ERP</span>
       </div>
       
-      <div className="sidebar-nav" style={{flex:1, padding: isCompact ? '6px 10px' : '10px 16px', overflowY:'auto'}}>
-        <div style={{marginBottom: isCompact ? 12 : 24}}>
+      <div className="sidebar-nav" style={{flex:1, padding: isCompact ? '4px 8px' : '8px 12px', overflowY:'auto'}}>
+        <div style={{marginBottom: isCompact ? 10 : 20}}>
           {mainItems.map(i => (
             <div key={i.to} style={{ display: 'flex', alignItems: 'center' }}>
               <Link
@@ -247,12 +247,12 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
                   flex: 1,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: isCompact ? 9 : 12,
-                  padding: isCompact ? '7px 10px' : '10px 14px',
+                  gap: isCompact ? 8 : 10,
+                  padding: isCompact ? '6px 8px' : '8px 10px',
                   borderRadius: 8,
                   marginBottom: isCompact ? 2 : 4,
                   textDecoration: 'none',
-                  fontSize: isCompact ? 13 : 14,
+                  fontSize: isCompact ? 12.5 : 13.5,
                   fontWeight: isActive(i.to) ? 600 : 500,
                   color: isActive(i.to) ? '#ffffff' : 'var(--text2)',
                   background: isActive(i.to) ? 'var(--accent)' : 'transparent',
@@ -261,7 +261,7 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
                 onMouseEnter={e => { if (!isActive(i.to)) { e.currentTarget.style.background = 'var(--bg3)'; e.currentTarget.style.color = 'var(--text)'; } }}
                 onMouseLeave={e => { if (!isActive(i.to)) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text2)'; } }}
               >
-                <i.icon size={isCompact ? 16 : 18} style={{ opacity: isActive(i.to) ? 1 : 0.8, flexShrink: 0 }} />
+                <i.icon size={isCompact ? 15 : 17} style={{ opacity: isActive(i.to) ? 1 : 0.8, flexShrink: 0 }} />
                 <span style={{ flex: 1 }}>{i.label}</span>
                 <button
                   onClick={(e) => {
@@ -275,8 +275,8 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    width: isCompact ? 24 : 28,
-                    height: isCompact ? 24 : 28,
+                    width: isCompact ? 22 : 26,
+                    height: isCompact ? 22 : 26,
                     borderRadius: 6,
                     border: 'none',
                     background: 'transparent',
@@ -293,15 +293,15 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
                     e.currentTarget.style.background = 'transparent';
                   }}
                 >
-                  <Menu size={isCompact ? 16 : 18} />
+                  <Menu size={isCompact ? 15 : 17} />
                 </button>
               </Link>
             </div>
           ))}
         </div>
         
-        <div style={{marginBottom: isCompact ? 12 : 24}}>
-          <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom: isCompact ? 6 : 12, paddingLeft: isCompact ? 10 : 14}}>Modules</div>
+        <div style={{marginBottom: isCompact ? 10 : 20}}>
+          <div style={{fontSize:10.5, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text3)', fontWeight:700, marginBottom: isCompact ? 4 : 8, paddingLeft: isCompact ? 8 : 10}}>Modules</div>
           {moduleItems.filter(i => {
             const isActiveGlobally = user?.active_modules?.includes(i.key);
             if (!isActiveGlobally) return false;
@@ -340,8 +340,8 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
                 compact={isCompact}
               />
             )}
-            <div style={{marginBottom: isCompact ? 12 : 24}}>
-              <div style={{fontSize:11, textTransform:'uppercase', letterSpacing:'1px', color:'var(--text3)', fontWeight:700, marginBottom: isCompact ? 6 : 12, paddingLeft: isCompact ? 10 : 14}}>Admin</div>
+            <div style={{marginBottom: isCompact ? 10 : 20}}>
+              <div style={{fontSize:10.5, textTransform:'uppercase', letterSpacing:'0.8px', color:'var(--text3)', fontWeight:700, marginBottom: isCompact ? 4 : 8, paddingLeft: isCompact ? 8 : 10}}>Admin</div>
               {adminItems.filter(i => {
                 if (i.to === '/studio') {
                   return user?.active_modules?.includes('studio');
@@ -353,14 +353,14 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
         )}
       </div>
 
-      <div className="sidebar-footer" style={{padding: isCompact ? '10px 12px' : '16px', borderTop:'1px solid var(--border)'}}>
-        <button className="btn btn-ghost" onClick={() => { logout(); handleNav(); }} style={{width:'100%', display:'flex', alignItems:'center', gap: isCompact ? 9 : 12, padding: isCompact ? '7px 10px' : '10px 14px', borderRadius:8, background:'transparent', border:'none', color:'var(--text2)', cursor:'pointer', fontSize: isCompact ? 13 : 14, fontWeight:600}} onMouseEnter={e=>{e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)'}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)'}}>
-          <LogOut size={isCompact ? 16 : 18} /> Logout
+      <div className="sidebar-footer" style={{padding: isCompact ? '8px 10px' : '12px', borderTop:'1px solid var(--border)'}}>
+        <button className="btn btn-ghost" onClick={() => { logout(); handleNav(); }} style={{width:'100%', display:'flex', alignItems:'center', gap: isCompact ? 8 : 10, padding: isCompact ? '6px 8px' : '8px 10px', borderRadius:8, background:'transparent', border:'none', color:'var(--text2)', cursor:'pointer', fontSize: isCompact ? 12.5 : 13.5, fontWeight:600}} onMouseEnter={e=>{e.currentTarget.style.background='var(--bg3)';e.currentTarget.style.color='var(--text)'}} onMouseLeave={e=>{e.currentTarget.style.background='transparent';e.currentTarget.style.color='var(--text2)'}}>
+          <LogOut size={isCompact ? 15 : 17} /> Logout
         </button>
         {user?.name && (
           <div 
             onClick={() => setShowProfileModal(true)}
-            style={{display:'flex', alignItems:'center', gap:10, padding: isCompact ? '6px 10px 2px 10px' : '8px 14px 2px 14px', cursor: 'pointer', transition: 'all 0.2s'}}
+            style={{display:'flex', alignItems:'center', gap:8, padding: isCompact ? '5px 8px 2px 8px' : '8px 10px 2px 10px', cursor: 'pointer', transition: 'all 0.2s'}}
             onMouseEnter={e=>{e.currentTarget.style.background='var(--bg3)'; e.currentTarget.style.borderRadius='8px';}}
             onMouseLeave={e=>{e.currentTarget.style.background='transparent';}}
             title="Open Profile Settings"

@@ -164,20 +164,20 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
   const selectedHolidays = holidayMap[selectedDate] || [];
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 8 }}>
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 4 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4, flexShrink: 0 }}>
-        <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2, flexShrink: 0 }}>
+        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>
           {MONTHS[month]} {year}
         </span>
-        <div style={{ display: 'flex', gap: 6 }}>
-          <button onClick={prev} style={navBtn}><ChevronLeft size={15} /></button>
-          <button onClick={next} style={navBtn}><ChevronRight size={15} /></button>
+        <div style={{ display: 'flex', gap: 4 }}>
+          <button onClick={prev} style={navBtn}><ChevronLeft size={14} /></button>
+          <button onClick={next} style={navBtn}><ChevronRight size={14} /></button>
         </div>
       </div>
 
       {/* Day names */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 4, flexShrink: 0 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 2, flexShrink: 0 }}>
         {SHORT_DAYS.map(d => (
           <div key={d} style={{
             textAlign: 'center', fontSize: 10, fontWeight: 700,
@@ -215,7 +215,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
               onClick={() => setSelectedDate(dateStr)}
               style={{
                 borderRadius: 6,
-                padding: '4px 6px',
+                padding: '3px 5px',
                 background: isToday
                   ? 'var(--bg3)'
                   : hasHoliday
@@ -242,17 +242,17 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 2,
+                marginBottom: 1,
                 flexShrink: 0,
                 position: 'relative'
               }}>
                 <span style={{
-                  fontSize: 12,
+                  fontSize: 11.5,
                   fontWeight: 800,
                   color: isToday ? 'var(--accent)' : hasHoliday ? '#000000' : 'var(--text)',
                   background: isToday ? 'var(--accent-dim)' : 'transparent',
-                  minWidth: 18,
-                  height: 18,
+                  minWidth: 17,
+                  height: 17,
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -266,7 +266,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                     left: 0,
                     right: 0,
                     textAlign: 'center',
-                    fontSize: 12,
+                    fontSize: 11.5,
                     fontWeight: 800,
                     color: '#000000',
                     pointerEvents: 'none',
@@ -298,10 +298,10 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                     title={`Holiday: ${h.name} (${h.holiday_type === 'national' ? 'National' : (h.branch_name || 'Company')})`}
                     style={{
                       color: '#000000',
-                      fontSize: '12px',
+                      fontSize: '11.5px',
                       fontWeight: '800',
                       textAlign: 'center',
-                      padding: '4px 2px',
+                      padding: '2px',
                       margin: 'auto 0',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
@@ -328,7 +328,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                         color: c.text,
                         fontSize: '9.5px',
                         fontWeight: '700',
-                        padding: '2px 5px',
+                        padding: '1.5px 4px',
                         borderRadius: '4px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
@@ -337,7 +337,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                         boxShadow: `0 1px 3px ${c.bg}80`,
                         opacity: isPending ? 0.85 : 1,
                         borderLeft: isPending ? `3px dashed ${c.dot}` : `3px solid ${c.dot}`,
-                        marginTop: 2
+                        marginTop: 1.5
                       }}
                     >
                       {l.employee_name}{isPending ? ' ⏳' : ''}
@@ -395,7 +395,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 14, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 6, marginTop: 2, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 12, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 4, marginTop: 2, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
           <span style={{ width: 10, height: 10, borderRadius: 3, background: 'linear-gradient(135deg,#f59e0b,#d97706)', display: 'inline-block', boxShadow: '0 1px 3px rgba(245,158,11,0.5)' }} />
           <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 600 }}>🎉 Holiday</span>
@@ -532,8 +532,8 @@ const navBtn = {
   background: 'var(--bg3)',
   border: '1px solid var(--border)',
   borderRadius: 6,
-  width: 26,
-  height: 26,
+  width: 24,
+  height: 24,
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
@@ -629,8 +629,8 @@ export default function Dashboard() {
           100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 90, 39, 0); }
         }
         .dash-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; }
-        .dash-sec-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text3); margin-bottom:10px; display:flex; align-items:center; gap:6px; }
-        .emp-row { display:flex; align-items:center; gap:8px; padding:7px 0; border-bottom:1px solid var(--border); }
+        .dash-sec-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text3); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+        .emp-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); }
         .emp-row:last-child { border-bottom:none; }
         .scroll-list { overflow-y:auto; flex:1; padding-right:2px; }
         .scroll-list::-webkit-scrollbar { width:3px; }
@@ -639,13 +639,13 @@ export default function Dashboard() {
         /* Responsive Grid & Columns */
         .dash-grid {
           display: grid;
-          grid-template-columns: 1fr 300px;
-          gap: 12px;
-          height: calc(100vh - 56px - 48px);
+          grid-template-columns: 1fr 270px;
+          gap: 10px;
+          height: calc(100vh - 44px - 16px);
           overflow: hidden;
         }
         .calendar-card {
-          padding: 16px;
+          padding: 10px 12px;
           display: flex;
           flex-direction: column;
           overflow: hidden;
@@ -653,11 +653,11 @@ export default function Dashboard() {
         .right-column-container {
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 10px;
           overflow: hidden;
         }
         .onduty-card {
-          padding: 14px 16px;
+          padding: 10px 12px;
           display: flex;
           flex-direction: column;
           overflow: hidden;

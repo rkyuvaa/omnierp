@@ -363,8 +363,8 @@ tbody td { padding: 11px 14px; color: var(--text); vertical-align: middle; }
 
 /* ── COMPACT LAYOUT SCOPED TO ATTENDANCE & HR AND EXPENSES & REIMBURSEMENT ── */
 .app-shell.compact-module-shell .sidebar {
-  width: 192px;
-  min-width: 192px;
+  width: 204px;
+  min-width: 204px;
 }
 .app-shell.compact-module-shell .topbar {
   height: 44px;

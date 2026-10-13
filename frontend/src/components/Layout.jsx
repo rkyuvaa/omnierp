@@ -14,7 +14,7 @@ export function LayoutShell() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [title, setTitle] = useState('');
   const [headerTabs, setHeaderTabs] = useState(null);
-  const isCompactModule = location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
+  const isCompactModule = location.pathname === '/' || location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
 
   return (
     <LayoutContext.Provider value={{ setTitle, setHeaderTabs }}>
@@ -65,7 +65,7 @@ export default function Layout({ children, title, headerTabs }) {
   const { user } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const isCompactModule = location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
+  const isCompactModule = location.pathname === '/' || location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
 
   useEffect(() => {
     if (ctx) {
