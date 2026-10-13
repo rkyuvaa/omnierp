@@ -253,7 +253,7 @@ export default function EmployeeMaster() {
 
   return (
     <Layout title="Employee Master">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {activeTab === 'detail' && selectedEmp ? (
           <EmployeeDetail 
             emp={selectedEmp} 
@@ -267,27 +267,27 @@ export default function EmployeeMaster() {
         ) : (
           <>
             {/* Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-              <div style={{ position: 'relative', flex: 1, minWidth: 240 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+              <div style={{ position: 'relative', flex: 1, minWidth: 220 }}>
                 <Search size={14} style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', color: 'var(--text3)' }} />
                 <input placeholder="Search by name, ID or email..." value={search} onChange={e => setSearch(e.target.value)}
-                  style={{ ...inputStyle, paddingLeft: 32 }} />
+                  style={{ ...inputStyle, padding: '6px 10px 6px 32px' }} />
               </div>
-              <button className="btn" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-                <Download size={15} /> Export
+              <button className="btn" onClick={handleExport} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid var(--border)', padding: '6px 12px' }}>
+                <Download size={14} /> Export
               </button>
-              <button className="btn" onClick={() => setShowImportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid var(--border)' }}>
-                <Upload size={15} /> Import
+              <button className="btn" onClick={() => setShowImportModal(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid var(--border)', padding: '6px 12px' }}>
+                <Upload size={14} /> Import
               </button>
-              <button className="btn btn-primary" onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap' }}>
-                <UserPlus size={15} /> Add Employee
+              <button className="btn btn-primary" onClick={openCreate} style={{ display: 'flex', alignItems: 'center', gap: 6, whiteSpace: 'nowrap', padding: '6px 12px' }}>
+                <UserPlus size={14} /> Add Employee
               </button>
             </div>
 
             {/* Table */}
-            {loading ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div> : (
-              <div style={{ overflowX: 'auto' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+            {loading ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading...</div> : (
+              <div style={{ overflowX: 'auto', background: 'var(--bg2)', borderRadius: 10, border: '1px solid var(--border)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg2)', borderBottom: '1px solid var(--border)' }}>
                       {['Emp ID','Name','Designation','Department','Branch','Shift','Status','Actions'].map(h => {
@@ -299,11 +299,11 @@ export default function EmployeeMaster() {
                             key={h} 
                             onClick={() => isSortable && handleSort(h)}
                             style={{ 
-                              padding: '10px 12px', 
+                              padding: '7px 10px', 
                               textAlign: 'left', 
                               fontWeight: 700, 
                               color: isCurrent ? 'var(--accent)' : 'var(--text2)', 
-                              fontSize: 12, 
+                              fontSize: 11.5, 
                               textTransform: 'uppercase', 
                               letterSpacing: '0.5px',
                               cursor: isSortable ? 'pointer' : 'default',
@@ -325,33 +325,33 @@ export default function EmployeeMaster() {
                   </thead>
                   <tbody>
                     {filtered.length === 0 ? (
-                      <tr><td colSpan={8} style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>No employees found</td></tr>
+                      <tr><td colSpan={8} style={{ textAlign: 'center', padding: 30, color: 'var(--text3)' }}>No employees found</td></tr>
                     ) : filtered.map(emp => (
                       <tr key={emp.id} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}
-                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'}
+                        onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                        <td style={{ padding: '10px 12px' }}>
+                        <td style={{ padding: '7px 10px' }}>
                           <span style={{ fontWeight: 700, color: 'var(--accent)', cursor: 'pointer' }} onClick={() => openDetail(emp)}>{emp.employee_id}</span>
                         </td>
-                        <td style={{ padding: '10px 12px', fontWeight: 600 }} onClick={() => openDetail(emp)}>{emp.name}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.designation || '—'}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.department_name || '—'}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.branch_name || '—'}</td>
-                        <td style={{ padding: '10px 12px', color: 'var(--text2)' }}>{emp.shift_name || '—'}</td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <span style={{ padding: '3px 10px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: STATUS_BADGE[emp.is_active].bg, color: STATUS_BADGE[emp.is_active].color }}>
+                        <td style={{ padding: '7px 10px', fontWeight: 600 }} onClick={() => openDetail(emp)}>{emp.name}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text2)' }}>{emp.designation || '—'}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text2)' }}>{emp.department_name || '—'}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text2)' }}>{emp.branch_name || '—'}</td>
+                        <td style={{ padding: '7px 10px', color: 'var(--text2)' }}>{emp.shift_name || '—'}</td>
+                        <td style={{ padding: '7px 10px' }}>
+                          <span style={{ padding: '2px 8px', borderRadius: 999, fontSize: 11, fontWeight: 700, background: STATUS_BADGE[emp.is_active].bg, color: STATUS_BADGE[emp.is_active].color }}>
                             {STATUS_BADGE[emp.is_active].label}
                           </span>
                         </td>
-                        <td style={{ padding: '10px 12px' }}>
-                          <div style={{ display: 'flex', gap: 8 }} onClick={e => e.stopPropagation()}>
-                            <button onClick={() => openEdit(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: 'var(--text2)' }} title="Edit Profile">
+                        <td style={{ padding: '7px 10px' }}>
+                          <div style={{ display: 'flex', gap: 6 }} onClick={e => e.stopPropagation()}>
+                            <button onClick={() => openEdit(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '4px 7px', cursor: 'pointer', color: 'var(--text2)' }} title="Edit Profile">
                               <Edit2 size={13} />
                             </button>
-                            <button onClick={() => toggleActive(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: emp.is_active ? '#22c55e' : '#94a3b8' }} title={emp.is_active ? "Deactivate" : "Activate"}>
+                            <button onClick={() => toggleActive(emp)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 6, padding: '4px 7px', cursor: 'pointer', color: emp.is_active ? '#22c55e' : '#94a3b8' }} title={emp.is_active ? "Deactivate" : "Activate"}>
                               {emp.is_active ? <ToggleRight size={13} /> : <ToggleLeft size={13} />}
                             </button>
-                            <button onClick={() => deleteEmployee(emp)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }} title="Delete Employee">
+                            <button onClick={() => deleteEmployee(emp)} style={{ background: '#fee2e2', border: 'none', borderRadius: 6, padding: '4px 7px', cursor: 'pointer', color: '#dc2626' }} title="Delete Employee">
                               <Trash2 size={13} />
                             </button>
                           </div>
@@ -368,14 +368,14 @@ export default function EmployeeMaster() {
 
       {/* Modal */}
       {showModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: 720, maxHeight: '90vh', overflow: 'auto', padding: 28 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-              <h3 style={{ margin: 0, fontSize: 18, fontWeight: 700 }}>{editEmp ? 'Edit Employee' : 'Add Employee'}</h3>
-              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={20} /></button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 14, width: '100%', maxWidth: 720, maxHeight: '92vh', overflow: 'auto', padding: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>{editEmp ? 'Edit Employee' : 'Add Employee'}</h3>
+              <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               {[
                 { key: 'employee_id', label: 'Employee ID', type: 'text' },
                 { key: 'name', label: 'Full Name', type: 'text' },
@@ -789,21 +789,21 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <button onClick={onBack} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', cursor: 'pointer', color: 'var(--text2)', fontSize: 13 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <button onClick={onBack} style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', color: 'var(--text2)', fontSize: 13 }}>
           ← Back to List
         </button>
         
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 6 }}>
           <button onClick={onPrev} title="Previous Employee (Left Arrow)" style={{ 
-            background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
           onMouseLeave={e => e.currentTarget.style.background = 'var(--bg2)'}>
             <ChevronLeft size={16} />
           </button>
           <button onClick={onNext} title="Next Employee (Right Arrow)" style={{ 
-            background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
+            background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', justifyContent: 'center'
           }}
           onMouseEnter={e => e.currentTarget.style.background = 'var(--bg3)'}
           onMouseLeave={e => e.currentTarget.style.background = 'var(--bg2)'}>
@@ -812,14 +812,14 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-        <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 24, border: '1px solid var(--border)', gridColumn: '1 / -1' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--border)', gridColumn: '1 / -1' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ width: 60, height: 60, background: 'var(--accent)', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 22, fontWeight: 700 }}>{emp.name?.[0]}</div>
+            <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div style={{ width: 48, height: 48, background: 'var(--accent)', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: 18, fontWeight: 700 }}>{emp.name?.[0]}</div>
               <div>
-                <div style={{ fontSize: 20, fontWeight: 700 }}>{emp.name}</div>
-                <div style={{ color: 'var(--text2)', fontSize: 14, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ fontSize: 18, fontWeight: 700 }}>{emp.name}</div>
+                <div style={{ color: 'var(--text2)', fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span>{emp.designation} · {emp.employee_id}</span>
                   <span style={{ 
                     fontSize: 11, 
@@ -839,14 +839,14 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
         </div>
 
         {/* Leave Balances */}
-        <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: 14, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ fontWeight: 700 }}>Leave Balances — 2026</div>
             <button onClick={() => setShowBalanceModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
           </div>
           {balances.map(b => (
-            <div key={b.id} style={{ marginBottom: 12 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
+            <div key={b.id} style={{ marginBottom: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 3, fontSize: 13 }}>
                 <span>
                   {b.leave_type_name}
                   {b.monthly_limit > 0 ? ` (Max ${b.monthly_limit}/mo)` : ''}
@@ -861,8 +861,8 @@ function EmployeeDetail({ emp, onBack, onEdit, shifts, onNext, onPrev, onRefresh
         </div>
 
         {/* Salary Info */}
-        <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+        <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: 14, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <div style={{ fontWeight: 700 }}>Salary Structure</div>
             <button onClick={() => setShowSalaryModal(true)} style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Manage</button>
           </div>

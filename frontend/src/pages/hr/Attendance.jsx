@@ -610,12 +610,12 @@ export default function Attendance() {
 
   const inputStyle = { 
     width: '100%', 
-    padding: '8px 12px', 
+    padding: '5px 10px', 
     borderRadius: 8, 
     border: '1px solid var(--border)', 
     background: 'var(--bg2)', 
     color: 'var(--text)', 
-    fontSize: 13, 
+    fontSize: 12.5, 
     boxSizing: 'border-box',
     fontFamily: 'inherit',
     outline: 'none',
@@ -624,17 +624,17 @@ export default function Attendance() {
 
   return (
     <Layout title="Attendance">
-      <div style={{ padding: '0 16px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Tab Switcher & Month Navigator */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', marginBottom: 20, paddingBottom: 4 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid var(--border)', marginBottom: 8, paddingBottom: 2 }}>
           {isHRAdmin ? (
-            <div style={{ display: 'flex', gap: 20 }}>
+            <div style={{ display: 'flex', gap: 16 }}>
               {['grid', 'punches'].map(t => (
                 <button 
                   key={t}
                   onClick={() => setTab(t)}
                   style={{ 
-                    padding: '10px 4px', 
+                    padding: '6px 4px', 
                     background: 'none', 
                     border: 'none', 
                     borderBottom: tab === t ? '2px solid var(--accent)' : '2px solid transparent',
@@ -652,36 +652,36 @@ export default function Attendance() {
           ) : <div />}
 
           {/* Month Selector (Shrunk by 20%) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 8, padding: '3px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', flexShrink: 0 }}>
-            <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '5px', borderRadius: '5px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronLeft size={13} /></button>
-            <span style={{ fontWeight: 700, fontSize: 12.5, minWidth: 110, textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 8, padding: '2px', boxShadow: '0 1px 3px rgba(0,0,0,0.02)', flexShrink: 0 }}>
+            <button onClick={prevMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '4px', borderRadius: '5px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronLeft size={13} /></button>
+            <span style={{ fontWeight: 700, fontSize: 12.5, minWidth: 105, textAlign: 'center', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5 }}>
               <Calendar size={12} style={{ color: 'var(--accent)' }} />
               {MONTH_NAMES[month - 1]} {year}
             </span>
-            <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '5px', borderRadius: '5px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronRight size={13} /></button>
+            <button onClick={nextMonth} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)', display: 'flex', alignItems: 'center', padding: '4px', borderRadius: '5px', transition: 'background-color 0.2s' }} onMouseEnter={e => e.currentTarget.style.backgroundColor = 'var(--bg3)'} onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}><ChevronRight size={13} /></button>
           </div>
         </div>
 
         {/* Controls / Filter Bar */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'nowrap', overflowX: 'auto', alignItems: 'center', paddingBottom: '6px', width: '100%' }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap', overflowX: 'auto', alignItems: 'center', paddingBottom: '2px', width: '100%' }}>
 
           {/* Search Box */}
           {isHRAdmin && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 10, padding: '6px 12px', minWidth: 160, flex: '0 1 180px', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-              <Search size={15} style={{ color: 'var(--text3)' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', borderRadius: 8, padding: '5px 10px', minWidth: 150, flex: '0 1 180px', flexShrink: 0, boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <Search size={14} style={{ color: 'var(--text3)' }} />
               <input 
                 type="text" 
                 placeholder="Search employee..." 
                 value={searchTerm}
                 onChange={e => setSearchTerm(e.target.value)}
-                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: 'var(--text)', width: '100%', fontFamily: 'inherit' }}
+                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '12.5px', color: 'var(--text)', width: '100%', fontFamily: 'inherit' }}
               />
             </div>
           )}
 
           {/* Branch Select */}
           {isHRAdmin && (
-            <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 120, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <select value={filterBranch} onChange={e => setFilterBranch(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 115, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <option value="">All Branches</option>
               {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
@@ -689,7 +689,7 @@ export default function Attendance() {
 
           {/* Dept Select */}
           {isHRAdmin && (
-            <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 120, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+            <select value={filterDept} onChange={e => setFilterDept(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 115, flexShrink: 0, background: 'var(--bg2)', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
               <option value="">All Departments</option>
               {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
             </select>
@@ -713,7 +713,7 @@ export default function Attendance() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
                   flexShrink: 0,
-                  padding: '6px 12px'
+                  padding: '5px 10px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
@@ -736,7 +736,7 @@ export default function Attendance() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
                   flexShrink: 0,
-                  padding: '6px 12px'
+                  padding: '5px 10px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
@@ -769,7 +769,7 @@ export default function Attendance() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
                   flexShrink: 0,
-                  padding: '6px 12px'
+                  padding: '5px 10px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
@@ -793,7 +793,7 @@ export default function Attendance() {
                   boxShadow: '0 1px 3px rgba(0,0,0,0.02)',
                   transition: 'all 0.2s',
                   flexShrink: 0,
-                  padding: '6px 12px'
+                  padding: '5px 10px'
                 }}
                 onMouseEnter={e => { e.currentTarget.style.backgroundColor = 'var(--bg3)'; e.currentTarget.style.borderColor = 'var(--border)'; }}
                 onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'var(--bg2)'; e.currentTarget.style.borderColor = 'rgba(226, 232, 240, 0.8)'; }}
@@ -814,7 +814,7 @@ export default function Attendance() {
                   boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
                   transition: 'all 0.2s',
                   flexShrink: 0,
-                  padding: '6px 12px'
+                  padding: '5px 10px'
                 }}
               >
                 <RefreshCw size={12} /> Recompute Month
@@ -828,43 +828,43 @@ export default function Attendance() {
             {/* Status Legend capsules shelf */}
         <div style={{ 
           display: 'flex', 
-          gap: '12px', 
-          marginBottom: '20px', 
+          gap: '10px', 
+          marginBottom: '8px', 
           flexWrap: 'wrap', 
           background: 'rgba(255, 255, 255, 0.9)',
           backdropFilter: 'blur(8px)',
           border: '1px solid rgba(226, 232, 240, 0.8)', 
-          borderRadius: '12px', 
-          padding: '10px 16px',
+          borderRadius: '10px', 
+          padding: '6px 12px',
           boxShadow: '0 2px 10px rgba(0,0,0,0.02)'
         }}>
-          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', display: 'flex', alignItems: 'center', marginRight: '4px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status Legend:</span>
+          <span style={{ fontSize: '11px', fontWeight: '700', color: 'var(--text3)', display: 'flex', alignItems: 'center', marginRight: '2px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status Legend:</span>
           {Object.entries(STATUS_CONFIG).map(([k, v]) => (
-            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
+            <div key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5 }}>
               <div style={{ 
-                width: 22, 
-                height: 22, 
+                width: 20, 
+                height: 20, 
                 background: v.bg, 
                 border: `1px solid ${v.border}`,
-                borderRadius: 6, 
+                borderRadius: 5, 
                 display: 'flex', 
                 alignItems: 'center', 
                 justifyContent: 'center', 
                 color: v.color, 
                 fontWeight: 700, 
-                fontSize: v.label.length > 2 ? '7px' : '9px' 
+                fontSize: v.label.length > 2 ? '7px' : '8.5px' 
               }}>{v.label}</div>
               <span style={{ color: 'var(--text2)', fontWeight: 500 }}>{v.full}</span>
             </div>
           ))}
           {/* Late indicator legend */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12 }}>
-            <div style={{ position: 'relative', width: 22, height: 22, flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5 }}>
+            <div style={{ position: 'relative', width: 20, height: 20, flexShrink: 0 }}>
               <div style={{
-                width: 22, height: 22, background: 'rgba(34,197,94,0.08)',
-                border: '1px solid rgba(34,197,94,0.25)', borderRadius: 6,
+                width: 20, height: 20, background: 'rgba(34,197,94,0.08)',
+                border: '1px solid rgba(34,197,94,0.25)', borderRadius: 5,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#16a34a', fontWeight: 700, fontSize: '9px'
+                color: '#16a34a', fontWeight: 700, fontSize: '8.5px'
               }}>P</div>
               <div style={{
                 position: 'absolute', top: -4, right: -5,
@@ -878,36 +878,37 @@ export default function Attendance() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: '16px', border: '1px solid rgba(226, 232, 240, 0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-            <div className="spinner" style={{ width: 28, height: 28 }}></div>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: '12px', border: '1px solid rgba(226, 232, 240, 0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            <div className="spinner" style={{ width: 24, height: 24 }}></div>
             <div>Loading attendance database...</div>
           </div>
         ) : (
           <div style={{ 
             background: 'var(--bg2)',
-            borderRadius: '16px',
+            borderRadius: '12px',
             border: '1px solid rgba(226, 232, 240, 0.8)',
             boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
             overflow: 'hidden'
           }}>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ borderCollapse: 'collapse', minWidth: '100%', fontSize: 12 }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: '100%', fontSize: 12 }}>
                 <thead>
                   <tr style={{ background: 'rgba(248, 250, 252, 0.8)', borderBottom: '1px solid rgba(226, 232, 240, 0.8)' }}>
                     {/* Employee sticky header */}
                     <th style={{ 
-                      padding: '12px 18px', 
+                      padding: '6px 10px', 
                       textAlign: 'left', 
-                      minWidth: 190, 
+                      minWidth: 145, 
+                      maxWidth: 165,
                       position: 'sticky', 
                       left: 0, 
                       background: '#f8fafc', 
                       borderRight: '1px solid rgba(226, 232, 240, 0.8)', 
                       fontWeight: 700, 
                       zIndex: 2,
-                      fontSize: '11px',
+                      fontSize: '10.5px',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.5px'
+                      letterSpacing: '0.4px'
                     }}>
                       Employee
                     </th>
@@ -918,8 +919,8 @@ export default function Attendance() {
                         onMouseEnter={() => setHoveredCol(d.num)}
                         onMouseLeave={() => setHoveredCol(null)}
                         style={{ 
-                          padding: '8px 4px', 
-                          minWidth: 36, 
+                          padding: '4px 1px', 
+                          minWidth: 27, 
                           textAlign: 'center', 
                           fontWeight: 600, 
                           color: d.dayOfWeek === 'Sun' ? '#ef4444' : 'var(--text2)', 
@@ -927,22 +928,22 @@ export default function Attendance() {
                           transition: 'background-color 0.2s'
                         }}
                       >
-                        <div style={{ fontSize: '10px', textTransform: 'uppercase', opacity: 0.6, letterSpacing: '0.3px' }}>{d.dayOfWeek}</div>
-                        <div style={{ fontSize: '14px', fontWeight: 800, marginTop: '2px' }}>{d.num}</div>
+                        <div style={{ fontSize: '9px', textTransform: 'uppercase', opacity: 0.65, letterSpacing: '0.2px', lineHeight: 1.1 }}>{d.dayOfWeek}</div>
+                        <div style={{ fontSize: '12px', fontWeight: 800, marginTop: '1px', lineHeight: 1.2 }}>{d.num}</div>
                       </th>
                     ))}
                     {/* Summary columns sticky headers */}
-                    <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#16a34a', borderLeft: '1px solid rgba(226, 232, 240, 0.8)' }}>P</th>
-                    <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#dc2626' }}>A</th>
-                    <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#4f46e5' }}>L</th>
-                    <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#7c3aed' }}>HOL</th>
-                    <th style={{ padding: '12px 6px', textAlign: 'center', minWidth: 36, fontWeight: 700, fontSize: '10px', color: '#64748b' }}>WO</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#16a34a', borderLeft: '1px solid rgba(226, 232, 240, 0.8)' }}>P</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#dc2626' }}>A</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#4f46e5' }}>L</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#7c3aed' }}>HOL</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#64748b' }}>WO</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredEmployees.length === 0 ? (
                     <tr>
-                      <td colSpan={days.length + 6} style={{ textAlign: 'center', padding: '50px 20px', color: 'var(--text3)' }}>
+                      <td colSpan={days.length + 6} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text3)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                           <Users size={32} style={{ opacity: 0.2 }} />
                           <span style={{ fontSize: 13, fontWeight: 500 }}>No employees match your search query</span>
@@ -989,7 +990,8 @@ export default function Attendance() {
                       >
                         {/* Employee Details Sticky Info cell */}
                         <td style={{ 
-                          padding: '10px 16px', 
+                          padding: '5px 10px', 
+                          maxWidth: 165,
                           position: 'sticky', 
                           left: 0, 
                           background: 'var(--bg2)', 
@@ -998,11 +1000,11 @@ export default function Attendance() {
                           zIndex: 1,
                           boxShadow: '4px 0 8px -4px rgba(0, 0, 0, 0.05)'
                         }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {/* Name & ID */}
                             <div style={{ overflow: 'hidden' }}>
-                              <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '13px', color: 'var(--text)' }}>{emp.name}</div>
-                              <div style={{ fontSize: '10px', color: 'var(--text3)', fontFamily: 'monospace' }}>{emp.employee_id}</div>
+                              <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '12.5px', lineHeight: 1.25, color: 'var(--text)' }}>{emp.name}</div>
+                              <div style={{ fontSize: '9.5px', lineHeight: 1.2, color: 'var(--text3)', fontFamily: 'monospace' }}>{emp.employee_id}</div>
                             </div>
                           </div>
                         </td>
@@ -1053,23 +1055,23 @@ export default function Attendance() {
                               onMouseEnter={() => setHoveredCol(d.num)}
                               onMouseLeave={() => setHoveredCol(null)}
                               style={{ 
-                                padding: '3px', 
+                                padding: '2px 1px', 
                                 textAlign: 'center', 
                                 borderRight: '1px solid rgba(226, 232, 240, 0.5)', 
                                 background: ghostPunch ? 'rgba(234, 179, 8, 0.06)' : v ? 'rgba(249, 115, 22, 0.05)' : (hoveredCol === d.num ? 'rgba(25, 84, 2, 0.03)' : 'transparent'),
                                 transition: 'background-color 0.2s'
                               }}
                             >
-                              <div style={{ position: 'relative', width: 28, margin: '0 auto' }}>
+                              <div style={{ position: 'relative', width: 24, margin: '0 auto' }}>
                                 <div
                                   title={badgeTitle}
                                   onClick={() => isHRAdmin && openCorrect(emp, d)}
                                   style={{
-                                    width: 28, height: 28, borderRadius: 8, cursor: isHRAdmin ? 'pointer' : 'default',
+                                    width: 24, height: 24, borderRadius: 6, cursor: isHRAdmin ? 'pointer' : 'default',
                                     background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
                                     color: cfg ? cfg.color : 'var(--text3)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '8px' : '10px', 
+                                    fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '7.5px' : '9.5px', 
                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                     border: ghostPunch ? '2px solid #eab308' : v ? '2px solid #f97316' : isLate && status === 'present' ? '1px solid rgba(245,158,11,0.4)' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
                                     boxShadow: ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : isLate && status === 'present' ? '0 0 0 2px rgba(245,158,11,0.12)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
@@ -1093,13 +1095,13 @@ export default function Attendance() {
                                 {/* Late indicator — small amber 'L' tag in top-right corner of the P badge */}
                                 {isLate && status === 'present' && (
                                   <div title={`Late by ${rec.late_minutes} min`} style={{
-                                    position: 'absolute', top: -4, right: -6,
+                                    position: 'absolute', top: -3, right: -4,
                                     background: '#f59e0b', color: '#fff',
-                                    borderRadius: 4, fontSize: '7px', fontWeight: 800,
-                                    padding: '1px 3px', lineHeight: 1.3,
+                                    borderRadius: 4, fontSize: '6.5px', fontWeight: 800,
+                                    padding: '0.5px 2.5px', lineHeight: 1.2,
                                     pointerEvents: 'none', zIndex: 1,
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
-                                    letterSpacing: '0.3px'
+                                    letterSpacing: '0.2px'
                                   }}>L</div>
                                 )}
                               </div>
@@ -1108,20 +1110,20 @@ export default function Attendance() {
                         })}
 
                         {/* Summary metrics counts pills */}
-                        <td style={{ textAlign: 'center', borderLeft: '1px solid rgba(226, 232, 240, 0.8)', padding: '4px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, height: 20, borderRadius: 99, background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', fontWeight: 700, fontSize: '11px' }}>{pCount}</div>
+                        <td style={{ textAlign: 'center', borderLeft: '1px solid rgba(226, 232, 240, 0.8)', padding: '2px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', fontWeight: 700, fontSize: '10.5px' }}>{pCount}</div>
                         </td>
-                        <td style={{ textAlign: 'center', padding: '4px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, height: 20, borderRadius: 99, background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', fontWeight: 700, fontSize: '11px' }}>{aCount}</div>
+                        <td style={{ textAlign: 'center', padding: '2px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', fontWeight: 700, fontSize: '10.5px' }}>{aCount}</div>
                         </td>
-                        <td style={{ textAlign: 'center', padding: '4px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, height: 20, borderRadius: 99, background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', fontWeight: 700, fontSize: '11px' }}>{lvCount}</div>
+                        <td style={{ textAlign: 'center', padding: '2px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', fontWeight: 700, fontSize: '10.5px' }}>{lvCount}</div>
                         </td>
-                        <td style={{ textAlign: 'center', padding: '4px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, height: 20, borderRadius: 99, background: 'rgba(139, 92, 246, 0.1)', color: '#7c3aed', fontWeight: 700, fontSize: '11px' }}>{holCount}</div>
+                        <td style={{ textAlign: 'center', padding: '2px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(139, 92, 246, 0.1)', color: '#7c3aed', fontWeight: 700, fontSize: '10.5px' }}>{holCount}</div>
                         </td>
-                        <td style={{ textAlign: 'center', padding: '4px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 26, height: 20, borderRadius: 99, background: 'rgba(148, 163, 184, 0.1)', color: '#64748b', fontWeight: 700, fontSize: '11px' }}>{woCount}</div>
+                        <td style={{ textAlign: 'center', padding: '2px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(148, 163, 184, 0.1)', color: '#64748b', fontWeight: 700, fontSize: '10.5px' }}>{woCount}</div>
                         </td>
                       </tr>
                     );
@@ -1136,20 +1138,20 @@ export default function Attendance() {
 
         {tab === 'punches' && (
           loading ? (
-            <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: '16px', border: '1px solid rgba(226, 232, 240, 0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-              <div className="spinner" style={{ width: 28, height: 28 }}></div>
+            <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: '12px', border: '1px solid rgba(226, 232, 240, 0.8)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+              <div className="spinner" style={{ width: 24, height: 24 }}></div>
               <div>Loading punch records...</div>
             </div>
           ) : (
             <div style={{ 
               background: 'var(--bg2)',
-              borderRadius: '16px',
+              borderRadius: '12px',
               border: '1px solid rgba(226, 232, 240, 0.8)',
               boxShadow: '0 4px 20px -2px rgba(0, 0, 0, 0.05)',
               overflow: 'hidden',
-              padding: '16px 20px 24px'
+              padding: '10px 14px 14px'
             }}>
-              <h3 style={{ margin: '0 0 16px 0', fontSize: 16, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
                 📋 Raw Punch History
                 <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text3)', background: 'var(--bg3)', padding: '2px 8px', borderRadius: 99 }}>
                   {filteredPunches.length} records
@@ -1160,17 +1162,17 @@ export default function Attendance() {
                 <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13, textAlign: 'left' }}>
                   <thead>
                     <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text2)', fontWeight: 700 }}>
-                      <th style={{ padding: '12px 16px' }}>Employee</th>
-                      <th style={{ padding: '12px 16px' }}>Punch Time</th>
-                      <th style={{ padding: '12px 16px' }}>Source / Device</th>
-                      <th style={{ padding: '12px 16px' }}>Location Details</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'center' }}>Selfie</th>
+                      <th style={{ padding: '8px 12px' }}>Employee</th>
+                      <th style={{ padding: '8px 12px' }}>Punch Time</th>
+                      <th style={{ padding: '8px 12px' }}>Source / Device</th>
+                      <th style={{ padding: '8px 12px' }}>Location Details</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center' }}>Selfie</th>
                     </tr>
                   </thead>
                   <tbody>
                     {filteredPunches.length === 0 ? (
                       <tr>
-                        <td colSpan={5} style={{ textAlign: 'center', padding: '40px 20px', color: 'var(--text3)' }}>
+                        <td colSpan={5} style={{ textAlign: 'center', padding: '30px 20px', color: 'var(--text3)' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
                             <AlertCircle size={32} style={{ opacity: 0.3 }} />
                             <span>No raw punches found for this period</span>
@@ -1188,26 +1190,26 @@ export default function Attendance() {
                           onMouseEnter={e => e.currentTarget.style.backgroundColor = 'rgba(248, 250, 252, 0.4)'}
                           onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
-                          <td style={{ padding: '14px 16px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             <div style={{ fontWeight: 600, color: 'var(--text)' }}>{p.employee_name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace', marginTop: 2 }}>{p.employee_code}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace', marginTop: 1 }}>{p.employee_code}</div>
                           </td>
-                          <td style={{ padding: '14px 16px', color: 'var(--text2)' }}>
+                          <td style={{ padding: '8px 12px', color: 'var(--text2)' }}>
                             <div style={{ fontWeight: 500 }}>
                               {punchDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                             </div>
-                            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
+                            <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>
                               {punchDate.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                             </div>
                           </td>
-                          <td style={{ padding: '14px 16px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             <span style={{ 
                               display: 'inline-flex', 
                               alignItems: 'center', 
                               gap: 6, 
                               fontSize: 11, 
                               fontWeight: 700, 
-                              padding: '4px 10px', 
+                              padding: '3px 9px', 
                               borderRadius: 99,
                               textTransform: 'uppercase',
                               background: isMobile ? 'rgba(99, 102, 241, 0.1)' : 'rgba(16, 185, 129, 0.1)',
@@ -1217,7 +1219,7 @@ export default function Attendance() {
                               {isMobile ? '📱 Mobile' : '📟 Biometric'}
                             </span>
                           </td>
-                          <td style={{ padding: '14px 16px', color: 'var(--text2)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <td style={{ padding: '8px 12px', color: 'var(--text2)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {isMobile ? (
                               p.location_name ? (
                                 (() => {
@@ -1230,7 +1232,7 @@ export default function Attendance() {
                                         gap: 4, 
                                         fontSize: 11, 
                                         fontWeight: 800, 
-                                        padding: '4px 10px', 
+                                        padding: '3px 8px', 
                                         borderRadius: 6, 
                                         background: 'rgba(16, 185, 129, 0.1)', 
                                         color: '#10b981',
@@ -1253,12 +1255,12 @@ export default function Attendance() {
                               <span style={{ color: 'var(--text3)', fontSize: 12 }}>Biometric Terminal</span>
                             )}
                             {isMobile && (p.latitude && p.longitude) && (
-                              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 2, paddingLeft: 20 }}>
+                              <div style={{ fontSize: 10, color: 'var(--text3)', marginTop: 1, paddingLeft: 20 }}>
                                 Lat: {p.latitude.toFixed(5)}, Lon: {p.longitude.toFixed(5)}
                               </div>
                             )}
                           </td>
-                          <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                             {isMobile && p.photo_url ? (
                               <button 
                                 onClick={() => setSelectedSelfie({
@@ -1269,8 +1271,8 @@ export default function Attendance() {
                                 })}
                                 className="btn"
                                 style={{ 
-                                  padding: '5px 12px', 
-                                  fontSize: 12, 
+                                  padding: '4px 10px', 
+                                  fontSize: 11.5, 
                                   fontWeight: 600, 
                                   background: 'rgba(99, 102, 241, 0.06)', 
                                   color: '#4f46e5', 
@@ -1280,7 +1282,7 @@ export default function Attendance() {
                                   transition: 'all 0.15s',
                                   display: 'inline-flex',
                                   alignItems: 'center',
-                                  gap: 6
+                                  gap: 5
                                 }}
                                 onMouseEnter={e => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.12)'; }}
                                 onMouseLeave={e => { e.currentTarget.style.background = 'rgba(99, 102, 241, 0.06)'; }}
@@ -1305,41 +1307,41 @@ export default function Attendance() {
       {/* Correction Modal */}
       {correcting && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.35)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-          <div style={{ background: 'var(--bg2)', borderRadius: 16, padding: 28, width: 440, maxWidth: '95vw', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(25, 84, 2, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Calendar size={18} />
+          <div style={{ background: 'var(--bg2)', borderRadius: 14, padding: 20, width: 440, maxWidth: '95vw', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(25, 84, 2, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Calendar size={16} />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Correct Attendance</h3>
+                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Correct Attendance</h3>
                 <p style={{ margin: 0, color: 'var(--text3)', fontSize: 12 }}>{correcting.emp.name} — {correcting.day.dayStr}</p>
               </div>
             </div>
             
-            <div style={{ height: '1px', background: 'rgba(226, 232, 240, 0.8)', margin: '16px 0' }} />
+            <div style={{ height: '1px', background: 'rgba(226, 232, 240, 0.8)', margin: '12px 0' }} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Status</label>
                 <select value={correctForm.status} onChange={e => setCorrectForm({ ...correctForm, status: e.target.value })} style={{ ...inputStyle, background: 'var(--bg3)', border: '1px solid var(--border)' }}>
                   {Object.entries(STATUS_CONFIG).map(([k, v]) => <option key={k} value={k}>{v.full}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check In</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check In</label>
                 <input type="datetime-local" value={correctForm.check_in} onChange={e => setCorrectForm({ ...correctForm, check_in: e.target.value })} style={{ ...inputStyle, background: 'var(--bg3)', border: '1px solid var(--border)' }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Out</label>
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Check Out</label>
                 <input type="datetime-local" value={correctForm.check_out} onChange={e => setCorrectForm({ ...correctForm, check_out: e.target.value })} style={{ ...inputStyle, background: 'var(--bg3)', border: '1px solid var(--border)' }} />
               </div>
               <div>
-                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 6, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reason for Correction *</label>
-                <textarea value={correctForm.correction_reason} onChange={e => setCorrectForm({ ...correctForm, correction_reason: e.target.value })} style={{ ...inputStyle, minHeight: 70, resize: 'vertical', background: 'var(--bg3)', border: '1px solid var(--border)' }} placeholder="e.g. Card not swiped / Forgot to punch..." />
+                <label style={{ fontSize: 11, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Reason for Correction *</label>
+                <textarea value={correctForm.correction_reason} onChange={e => setCorrectForm({ ...correctForm, correction_reason: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical', background: 'var(--bg3)', border: '1px solid var(--border)' }} placeholder="e.g. Card not swiped / Forgot to punch..." />
               </div>
 
               {/* Raw Punches reference */}
-              <div style={{ background: 'var(--bg3)', padding: 12, borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <div style={{ background: 'var(--bg3)', padding: 10, borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Raw Punch Logs</span>
                   {dayPunches.length > 0 && (
@@ -1383,7 +1385,7 @@ export default function Attendance() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
               <button onClick={() => setCorrecting(null)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none', borderRadius: 8, fontWeight: 600 }}>Cancel</button>
               {existingRecord?.corrected_by && (
                 <button onClick={handleRecalculateAuto} className="btn" style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, fontWeight: 600 }}>Reset to Auto</button>
@@ -1397,20 +1399,20 @@ export default function Attendance() {
       {/* Bulk Import Modal */}
       {importOpen && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.35)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.3s' }}>
-          <div style={{ background: 'var(--bg2)', borderRadius: 16, padding: 28, width: 550, maxWidth: '95vw', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(25, 84, 2, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <Upload size={18} />
+          <div style={{ background: 'var(--bg2)', borderRadius: 14, padding: 20, width: 550, maxWidth: '95vw', border: '1px solid rgba(226, 232, 240, 0.8)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+              <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'rgba(25, 84, 2, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Upload size={16} />
               </div>
               <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Import Attendance Sheets</h3>
+                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Import Attendance Sheets</h3>
                 <p style={{ margin: 0, color: 'var(--text3)', fontSize: 12 }}>Bulk record attendance for remote branches and historical logs</p>
               </div>
             </div>
             
-            <div style={{ height: '1px', background: 'rgba(226, 232, 240, 0.8)', margin: '16px 0' }} />
+            <div style={{ height: '1px', background: 'rgba(226, 232, 240, 0.8)', margin: '12px 0' }} />
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               {/* Step 1: Download pre-populated template */}
               <div style={{ background: 'rgba(25, 84, 2, 0.03)', border: '1px dashed rgba(25, 84, 2, 0.15)', borderRadius: 12, padding: 14 }}>
                 <h4 style={{ margin: '0 0 6px 0', fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Step 1: Download Attendance Template</h4>

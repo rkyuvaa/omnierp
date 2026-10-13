@@ -494,16 +494,16 @@ export default function MyExpenses() {
 
   return (
     <Layout title={activeTab === 'reimbursements' ? 'My Expenses & Claims' : 'My Cash Advances'}>
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Main Tabs */}
-        <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 20, borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
           <button
             onClick={() => {
               setActiveTab('advances');
               setFilterStatus('');
             }}
             style={{
-              padding: '12px 4px',
+              padding: '8px 4px',
               background: 'none',
               border: 'none',
               borderBottom: activeTab === 'advances' ? '2px solid var(--accent)' : '2px solid transparent',
@@ -521,7 +521,7 @@ export default function MyExpenses() {
               setFilterStatus('');
             }}
             style={{
-              padding: '12px 4px',
+              padding: '8px 4px',
               background: 'none',
               border: 'none',
               borderBottom: activeTab === 'reimbursements' ? '2px solid var(--accent)' : '2px solid transparent',
@@ -539,14 +539,14 @@ export default function MyExpenses() {
         {activeTab === 'reimbursements' && (
           <>
             {/* Filter tabs & Actions */}
-            <div style={{ display: 'flex', gap: 8, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               {[{ v: '', l: 'All' }, ...Object.entries(STATUS_CONFIG).map(([v, c]) => ({ v, l: c.label }))].map(
                 ({ v, l }) => (
                   <button
                     key={v}
                     onClick={() => setFilterStatus(v)}
                     style={{
-                      padding: '6px 14px',
+                      padding: '5px 12px',
                       borderRadius: 20,
                       border: '1px solid var(--border)',
                       background: filterStatus === v ? 'var(--accent)' : 'var(--bg2)',
@@ -565,9 +565,9 @@ export default function MyExpenses() {
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 7,
-                  padding: '9px 18px',
-                  borderRadius: 9,
+                  gap: 6,
+                  padding: '6px 14px',
+                  borderRadius: 8,
                   border: 'none',
                   background: 'var(--accent)',
                   color: '#fff',
@@ -578,30 +578,30 @@ export default function MyExpenses() {
                   marginLeft: 'auto',
                 }}
               >
-                <Plus size={16} /> New Claim
+                <Plus size={15} /> New Claim
               </button>
             </div>
 
             {/* Claims list */}
             {loading ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading...</div>
             ) : claims.length === 0 ? (
               <div
                 style={{
                   textAlign: 'center',
-                  padding: 60,
+                  padding: 40,
                   color: 'var(--text3)',
                   background: 'var(--bg2)',
-                  borderRadius: 14,
+                  borderRadius: 12,
                   border: '1px solid var(--border)',
                 }}
               >
-                <Receipt size={40} style={{ opacity: 0.2, marginBottom: 12 }} />
+                <Receipt size={36} style={{ opacity: 0.2, marginBottom: 10 }} />
                 <div style={{ fontSize: 15, fontWeight: 600 }}>No expense claims found</div>
-                <div style={{ fontSize: 13, marginTop: 6 }}>Click "New Claim" to submit your first expense</div>
+                <div style={{ fontSize: 13, marginTop: 4 }}>Click "New Claim" to submit your first expense</div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {claims.map(c => {
                   const cfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.pending;
                   const isExpanded = expandedClaimId === c.id;
@@ -612,27 +612,27 @@ export default function MyExpenses() {
                       style={{
                         background: 'var(--bg2)',
                         border: '1px solid var(--border)',
-                        borderRadius: 12,
-                        padding: '16px 20px',
+                        borderRadius: 10,
+                        padding: '10px 14px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 12,
+                        gap: 8,
                         transition: 'box-shadow 0.15s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)')}
                       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         {/* Left accent bar */}
-                        <div style={{ width: 4, height: 48, borderRadius: 4, background: cfg.color, flexShrink: 0 }} />
+                        <div style={{ width: 4, height: 42, borderRadius: 4, background: cfg.color, flexShrink: 0 }} />
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div
                             style={{
                               display: 'flex',
                               alignItems: 'center',
-                              gap: 10,
-                              marginBottom: 4,
+                              gap: 8,
+                              marginBottom: 2,
                               flexWrap: 'wrap',
                             }}
                           >
@@ -686,17 +686,17 @@ export default function MyExpenses() {
                             Expense date: {c.expense_date || '—'} · Submitted: {c.claim_date || '—'}
                           </div>
                           {c.approver_remarks && (
-                            <div style={{ fontSize: 12, color: '#ef4444', marginTop: 4, fontStyle: 'italic' }}>
+                            <div style={{ fontSize: 12, color: '#ef4444', marginTop: 2, fontStyle: 'italic' }}>
                               Remark: {c.approver_remarks}
                             </div>
                           )}
                           {c.reimbursement_ref && (
-                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
+                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 2 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
                           )}
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>{INR(c.amount)}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{INR(c.amount)}</div>
 
                           {c.lines && c.lines.length > 0 && (
                             <button
@@ -743,7 +743,7 @@ export default function MyExpenses() {
                               target="_blank"
                               rel="noreferrer"
                               style={{
-                                padding: '6px 10px',
+                                padding: '5px 10px',
                                 borderRadius: 7,
                                 border: '1px solid var(--border)',
                                 background: 'var(--bg3)',
@@ -763,7 +763,7 @@ export default function MyExpenses() {
                             <button
                               onClick={() => handleDeleteClaim(c.id)}
                               style={{
-                                padding: '6px 10px',
+                                padding: '5px 10px',
                                 borderRadius: 7,
                                 border: '1px solid #ef4444',
                                 background: '#ef444415',
@@ -784,12 +784,12 @@ export default function MyExpenses() {
                         <div
                           style={{
                             borderTop: '1px solid var(--border)',
-                            paddingTop: 12,
-                            marginTop: 4,
+                            paddingTop: 8,
+                            marginTop: 2,
                             overflowX: 'auto',
                           }}
                         >
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
                             Itemized Expense Claim Breakdown Grid
                           </div>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -810,18 +810,18 @@ export default function MyExpenses() {
                             <tbody>
                               {c.lines.map((row, rIdx) => (
                                 <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{row.date}</td>
-                                  <td style={{ padding: '8px', fontWeight: 600 }}>{row.expense_type}</td>
-                                  <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
-                                  <td style={{ padding: '8px' }}>{row.cost_to || '—'}</td>
-                                  <td style={{ padding: '8px' }}>
+                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '6px 8px', fontWeight: 600 }}>{row.expense_type}</td>
+                                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>{row.cost_to || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>
                                     {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
                                   </td>
-                                  <td style={{ padding: '8px' }}>{row.description || '—'}</td>
-                                  <td style={{ padding: '8px' }}>{row.paid_to || '—'}</td>
-                                  <td style={{ padding: '8px', textAlign: 'right' }}>{row.gst_rate}%</td>
-                                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
-                                  <td style={{ padding: '8px' }}>
+                                  <td style={{ padding: '6px 8px' }}>{row.description || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>{row.paid_to || '—'}</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '6px 8px' }}>
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                       {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
                                         <a
@@ -868,32 +868,32 @@ export default function MyExpenses() {
             <div
               style={{
                 background: 'linear-gradient(135deg, var(--accent) 0%, #3b82f6 100%)',
-                borderRadius: 14,
-                padding: '20px 24px',
+                borderRadius: 12,
+                padding: '12px 18px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 20,
+                marginBottom: 10,
                 boxShadow: '0 4px 20px rgba(99, 102, 241, 0.15)',
                 color: '#fff',
               }}
             >
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.85, marginBottom: 4 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.85, marginBottom: 2 }}>
                   Advance Ledger Balance
                 </div>
-                <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: '-0.5px' }}>
+                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>
                   {INR(ledger.balance)}
                 </div>
               </div>
-              <div style={{ display: 'flex', gap: 12 }}>
+              <div style={{ display: 'flex', gap: 10 }}>
                 <button
                   onClick={() => setShowLedgerModal(true)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    padding: '8px 16px',
+                    padding: '6px 14px',
                     borderRadius: 8,
                     border: '1px solid rgba(255, 255, 255, 0.3)',
                     background: 'rgba(255, 255, 255, 0.1)',
@@ -915,7 +915,7 @@ export default function MyExpenses() {
                     display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    padding: '8px 16px',
+                    padding: '6px 14px',
                     borderRadius: 8,
                     border: 'none',
                     background: '#fff',
@@ -936,24 +936,24 @@ export default function MyExpenses() {
 
             {/* Advances List */}
             {advancesLoading ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading advances...</div>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading advances...</div>
             ) : advances.length === 0 ? (
               <div
                 style={{
                   textAlign: 'center',
-                  padding: 60,
+                  padding: 40,
                   color: 'var(--text3)',
                   background: 'var(--bg2)',
-                  borderRadius: 14,
+                  borderRadius: 12,
                   border: '1px solid var(--border)',
                 }}
               >
-                <Wallet size={40} style={{ opacity: 0.2, marginBottom: 12 }} />
+                <Wallet size={36} style={{ opacity: 0.2, marginBottom: 10 }} />
                 <div style={{ fontSize: 15, fontWeight: 600 }}>No advance requests found</div>
-                <div style={{ fontSize: 13, marginTop: 6 }}>Click "New Advance Request" to submit one</div>
+                <div style={{ fontSize: 13, marginTop: 4 }}>Click "New Advance Request" to submit one</div>
               </div>
             ) : (
-              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ overflowX: 'auto' }}>
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                     <thead>
@@ -962,7 +962,7 @@ export default function MyExpenses() {
                           <th
                             key={h}
                             style={{
-                              padding: '12px 18px',
+                              padding: '8px 12px',
                               textAlign: 'left',
                               fontWeight: 700,
                               fontSize: 11,
@@ -989,27 +989,27 @@ export default function MyExpenses() {
                             }}
                           >
                             {/* Record Number / Ref */}
-                            <td style={{ padding: '14px 18px', fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>
+                            <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>
                               {a.reference || `(Draft #${a.id})`}
                             </td>
                             {/* Amount */}
-                            <td style={{ padding: '14px 18px', fontWeight: 800, color: 'var(--text)' }}>
+                            <td style={{ padding: '8px 12px', fontWeight: 800, color: 'var(--text)' }}>
                               {INR(a.amount)}
                             </td>
                             {/* Purpose */}
-                            <td style={{ padding: '14px 18px', color: 'var(--text2)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text2)', maxWidth: 280, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                               {a.purpose}
                             </td>
                             {/* Project Code */}
-                            <td style={{ padding: '14px 18px', color: 'var(--text)', fontFamily: 'monospace', fontSize: 12 }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text)', fontFamily: 'monospace', fontSize: 12 }}>
                               {a.project_code || '—'}
                             </td>
                             {/* Required Date */}
-                            <td style={{ padding: '14px 18px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>
                               {a.required_date || '—'}
                             </td>
                             {/* Status */}
-                            <td style={{ padding: '14px 18px' }}>
+                            <td style={{ padding: '8px 12px' }}>
                               <span
                                 style={{
                                   fontSize: 10,
@@ -1028,14 +1028,14 @@ export default function MyExpenses() {
                                 {cfg.label}
                               </span>
                               {a.status === 'clarification_pending' && a.clarification_remarks && (
-                                <div style={{ fontSize: 11, color: '#ec4899', marginTop: 4, fontStyle: 'italic' }}>
+                                <div style={{ fontSize: 11, color: '#ec4899', marginTop: 2, fontStyle: 'italic' }}>
                                   Q: {a.clarification_remarks}
                                 </div>
                               )}
                             </td>
                             {/* Actions */}
-                            <td style={{ padding: '14px 18px', whiteSpace: 'nowrap' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                            <td style={{ padding: '8px 12px', whiteSpace: 'nowrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                                 {/* Edit action for Draft or Clarification Pending */}
                                 {(a.status === 'draft' || a.status === 'clarification_pending') && (
                                   <button
@@ -1354,24 +1354,24 @@ export default function MyExpenses() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 16,
+              padding: 10,
             }}
           >
             <div
               style={{
                 background: 'var(--bg)',
-                borderRadius: 16,
-                padding: 24,
-                width: '95vw',
-                maxWidth: 1240,
-                maxHeight: '90vh',
+                borderRadius: 14,
+                padding: 16,
+                width: '98vw',
+                maxWidth: 1440,
+                maxHeight: '94vh',
                 overflowY: 'auto',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
               {/* Modal Header */}
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Wallet size={18} style={{ color: 'var(--accent)' }} />
                   {modalFormType === 'claim'
                     ? (editingRecord ? 'Edit Reimbursement Claim' : 'New Reimbursement Claim')
@@ -1392,52 +1392,53 @@ export default function MyExpenses() {
                   display: 'grid',
                   gridTemplateColumns: '160px 1fr auto',
                   alignItems: 'start',
-                  gap: 16,
-                  marginBottom: 18,
+                  gap: 12,
+                  marginBottom: 10,
                   background: 'var(--bg3)',
-                  padding: '12px 18px',
-                  borderRadius: 10,
+                  padding: '8px 12px',
+                  borderRadius: 8,
                   border: '1px solid var(--border)',
                 }}
               >
                 {/* Required Date */}
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 4 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 3 }}>
                     Required Date
                   </label>
                   <input
                     type="date"
                     value={advanceForm.required_date}
                     onChange={e => setAdvanceForm(f => ({ ...f, required_date: e.target.value }))}
-                    style={{ ...inputStyle, padding: '6px 10px' }}
+                    style={{ ...inputStyle, padding: '5px 8px' }}
                   />
                 </div>
 
                 {/* Purpose / Clarification */}
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 4 }}>
+                  <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 3 }}>
                     Purpose / Clarification
                   </label>
                   <textarea
                     placeholder="e.g. Advance required for supplier visit and travel expenses to Bangalore."
                     value={advanceForm.purpose}
                     onChange={e => setAdvanceForm(f => ({ ...f, purpose: e.target.value }))}
-                    rows={2}
+                    rows={1}
                     style={{
                       ...inputStyle,
+                      padding: '5px 8px',
                       resize: 'vertical',
                       fontFamily: 'inherit',
-                      minHeight: 58,
+                      minHeight: 34,
                     }}
                   />
                 </div>
 
                 {/* Total Calculated Amount */}
-                <div style={{ textAlign: 'right', paddingTop: 4 }}>
+                <div style={{ textAlign: 'right', paddingTop: 2 }}>
                   <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 2 }}>
                     Total Request Amount
                   </div>
-                  <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
+                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
                     ₹ {advanceLines.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -1445,7 +1446,7 @@ export default function MyExpenses() {
 
               {/* ── ITEMIZED EXPENSE BREAKDOWN SHEET TABLE ────────────────────── */}
               <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <FileText size={15} style={{ color: 'var(--accent)' }} /> Itemized Expense / Request Breakdown Sheet
                   </div>
@@ -1453,7 +1454,7 @@ export default function MyExpenses() {
                     type="button"
                     onClick={addAdvanceLine}
                     style={{
-                      padding: '6px 14px',
+                      padding: '5px 12px',
                       borderRadius: 6,
                       border: 'none',
                       background: 'var(--accent)',
@@ -1470,47 +1471,47 @@ export default function MyExpenses() {
                   </button>
                 </div>
 
-                <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
                   <div style={{ overflowX: 'auto' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                       <thead>
                         <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 10.5, color: 'var(--text3)', letterSpacing: '0.4px' }}>
-                          <th style={{ padding: '10px 8px', textAlign: 'center', width: 35 }}>S#</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 125 }}>Date *</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 130 }}>Type *</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 100 }}>Cost Code</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 100 }}>Cost to</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 95 }}>From</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 95 }}>To</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 150 }}>Description</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 110 }}>Paid to</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 130 }}>GST Bill</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'right', width: 110 }}>Amt (Rs. Ps) *</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'left', width: 160 }}>Bills Attached</th>
-                          <th style={{ padding: '10px 8px', textAlign: 'center', width: 40 }}></th>
+                          <th style={{ padding: '7px 6px', textAlign: 'center', width: 32 }}>S#</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 120 }}>Date *</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 125 }}>Type *</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 95 }}>Cost Code</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 95 }}>Cost to</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 90 }}>From</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 90 }}>To</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 150 }}>Description</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 110 }}>Paid to</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 125 }}>GST Bill</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'right', width: 105 }}>Amt (Rs. Ps) *</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'left', width: 145 }}>Bills Attached</th>
+                          <th style={{ padding: '7px 6px', textAlign: 'center', width: 34 }}></th>
                         </tr>
                       </thead>
                       <tbody>
                         {advanceLines.map((row, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                            <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
+                            <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
                               {idx + 1}
                             </td>
 
                             {/* Date */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="date"
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.date}
                                 onChange={e => updateAdvanceLineField(idx, 'date', e.target.value)}
                               />
                             </td>
 
                             {/* Type / Expense Category */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <select
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.expense_type}
                                 onChange={e => updateAdvanceLineField(idx, 'expense_type', e.target.value)}
                               >
@@ -1522,73 +1523,73 @@ export default function MyExpenses() {
                             </td>
 
                             {/* Cost Code */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="text"
                                 placeholder="Cost Code"
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.cost_code || ''}
                                 onChange={e => updateAdvanceLineField(idx, 'cost_code', e.target.value)}
                               />
                             </td>
 
                             {/* Cost to */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="text"
                                 placeholder="Cost Center"
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.cost_to || ''}
                                 onChange={e => updateAdvanceLineField(idx, 'cost_to', e.target.value)}
                               />
                             </td>
 
                             {/* From */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="text"
                                 placeholder="From"
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.from_location || ''}
                                 onChange={e => updateAdvanceLineField(idx, 'from_location', e.target.value)}
                               />
                             </td>
 
                             {/* To */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="text"
                                 placeholder="To"
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.to_location || ''}
                                 onChange={e => updateAdvanceLineField(idx, 'to_location', e.target.value)}
                               />
                             </td>
 
                             {/* Description */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="text"
                                 placeholder="Description/Remarks"
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.description || ''}
                                 onChange={e => updateAdvanceLineField(idx, 'description', e.target.value)}
                               />
                             </td>
 
                             {/* Paid to */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="text"
                                 placeholder="Vendor/Merchant"
-                                style={{ ...inputStyle, padding: '6px 8px' }}
+                                style={{ ...inputStyle, padding: '5px 6px' }}
                                 value={row.paid_to || ''}
                                 onChange={e => updateAdvanceLineField(idx, 'paid_to', e.target.value)}
                               />
                             </td>
 
                             {/* GST Bill (Yes/No Toggle + GSTIN) */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                 <select
                                   value={row.has_gst_bill ? 'Yes' : 'No'}
@@ -1598,7 +1599,7 @@ export default function MyExpenses() {
                                     if (!isYes) updateAdvanceLineField(idx, 'gst_number', '');
                                   }}
                                   style={{
-                                    padding: '5px 8px',
+                                    padding: '4px 6px',
                                     borderRadius: 6,
                                     border: '1px solid var(--border)',
                                     background: row.has_gst_bill ? '#dcfce7' : 'var(--bg3)',
@@ -1633,20 +1634,20 @@ export default function MyExpenses() {
                             </td>
 
                             {/* Amt (Rs. Ps) */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               <input
                                 type="number"
                                 min="0"
                                 step="0.01"
                                 placeholder="0.00"
-                                style={{ ...inputStyle, padding: '6px 8px', fontWeight: 700, textAlign: 'right' }}
+                                style={{ ...inputStyle, padding: '5px 6px', fontWeight: 700, textAlign: 'right' }}
                                 value={row.amount}
                                 onChange={e => updateAdvanceLineField(idx, 'amount', e.target.value)}
                               />
                             </td>
 
                             {/* Bills Attached (Single Bill Max: Attach OR View/Download/Remove) */}
-                            <td style={{ padding: '8px' }}>
+                            <td style={{ padding: '5px 6px' }}>
                               {row.bill_attachments && row.bill_attachments.length > 0 ? (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                                   {row.bill_attachments.map((file, fIdx) => (
@@ -1706,7 +1707,7 @@ export default function MyExpenses() {
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: 4,
-                                    padding: '5px 10px',
+                                    padding: '5px 8px',
                                     borderRadius: 4,
                                     border: '1px dashed var(--accent)',
                                     background: 'transparent',
@@ -1724,7 +1725,7 @@ export default function MyExpenses() {
                             </td>
 
                             {/* Delete Line */}
-                            <td style={{ padding: '8px', textAlign: 'center' }}>
+                            <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                               <button
                                 type="button"
                                 onClick={() => deleteAdvanceLine(idx)}
@@ -1743,11 +1744,11 @@ export default function MyExpenses() {
               </div>
 
               {/* Modal Actions */}
-              <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
                 <button
                   onClick={closeAdvanceModal}
                   style={{
-                    padding: '9px 18px',
+                    padding: '7px 14px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg2)',
@@ -1763,7 +1764,7 @@ export default function MyExpenses() {
                   onClick={() => handleFormSubmit(false)}
                   disabled={advanceSaving}
                   style={{
-                    padding: '9px 18px',
+                    padding: '7px 14px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg2)',
@@ -1780,7 +1781,7 @@ export default function MyExpenses() {
                   onClick={() => handleFormSubmit(true)}
                   disabled={advanceSaving}
                   style={{
-                    padding: '9px 20px',
+                    padding: '7px 16px',
                     borderRadius: 8,
                     border: 'none',
                     background: 'var(--accent)',
@@ -1809,23 +1810,23 @@ export default function MyExpenses() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 16,
+              padding: 12,
             }}
           >
             <div
               style={{
                 background: 'var(--bg)',
-                borderRadius: 16,
-                padding: 28,
+                borderRadius: 14,
+                padding: 18,
                 width: 600,
                 maxWidth: '100%',
-                maxHeight: '80vh',
+                maxHeight: '85vh',
                 overflowY: 'auto',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <History size={18} style={{ color: 'var(--accent)' }} /> Advance Ledger History
                 </h3>
                 <button
@@ -1837,11 +1838,11 @@ export default function MyExpenses() {
               </div>
 
               {ledger.transactions.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>
+                <div style={{ textAlign: 'center', padding: 32, color: 'var(--text3)' }}>
                   No ledger transactions recorded yet.
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {ledger.transactions.map(t => {
                     const isCredit = t.transaction_type === 'credit';
                     const isDebit = t.transaction_type === 'debit';
@@ -1854,19 +1855,19 @@ export default function MyExpenses() {
                           background: 'var(--bg2)',
                           border: '1px solid var(--border)',
                           borderRadius: 10,
-                          padding: '12px 16px',
+                          padding: '10px 14px',
                           display: 'flex',
                           alignItems: 'center',
                           justifyContent: 'space-between',
-                          gap: 12,
+                          gap: 10,
                         }}
                       >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                           {/* Transaction Type Indicator */}
                           <div
                             style={{
-                              width: 32,
-                              height: 32,
+                              width: 30,
+                              height: 30,
                               borderRadius: 8,
                               background: isCredit ? '#22c55e15' : isDebit ? '#ef444415' : '#f59e0b15',
                               display: 'flex',
@@ -1907,11 +1908,11 @@ export default function MyExpenses() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', marginTop: 24, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', marginTop: 16, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => setShowLedgerModal(false)}
                   style={{
-                    padding: '8px 20px',
+                    padding: '6px 16px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg2)',

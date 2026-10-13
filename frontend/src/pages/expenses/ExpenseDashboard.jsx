@@ -21,12 +21,12 @@ function KpiCard({ label, value, icon: Icon, color, bg, sub }) {
       style={{
         background: 'var(--bg2)',
         border: '1px solid var(--border)',
-        borderRadius: 14,
-        padding: '20px 22px',
+        borderRadius: 10,
+        padding: '12px 14px',
         display: 'flex',
         alignItems: 'flex-start',
         justifyContent: 'space-between',
-        gap: 16,
+        gap: 10,
         boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
         transition: 'transform 0.18s, box-shadow 0.18s',
         cursor: 'default',
@@ -41,12 +41,12 @@ function KpiCard({ label, value, icon: Icon, color, bg, sub }) {
       }}
     >
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text3)', marginBottom: 8 }}>{label}</div>
-        <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.5px' }}>{value}</div>
-        {sub && <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 6 }}>{sub}</div>}
+        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text3)', marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 22, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.5px' }}>{value}</div>
+        {sub && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>{sub}</div>}
       </div>
-      <div style={{ width: 44, height: 44, borderRadius: 12, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-        <Icon size={20} style={{ color }} />
+      <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+        <Icon size={18} style={{ color }} />
       </div>
     </div>
   );
@@ -75,13 +75,13 @@ export default function ExpenseDashboard() {
 
   return (
     <Layout title="Expenses & Reimbursement">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Header Actions */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginBottom: 20 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginBottom: 10 }}>
           <button
             onClick={() => navigate('/expenses/my')}
             style={{
-              padding: '9px 18px',
+              padding: '6px 14px',
               borderRadius: 8,
               border: '1px solid var(--border)',
               background: 'var(--bg2)',
@@ -97,7 +97,7 @@ export default function ExpenseDashboard() {
             <button
               onClick={() => navigate('/expenses/approvals')}
               style={{
-                padding: '9px 18px',
+                padding: '6px 14px',
                 borderRadius: 8,
                 border: 'none',
                 background: 'var(--accent)',
@@ -113,7 +113,7 @@ export default function ExpenseDashboard() {
         </div>
 
         {/* KPI Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 28 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: 10, marginBottom: 12 }}>
           <KpiCard
             label="Pending Claims"
             value={loading ? '—' : summary.pending_count ?? 0}
@@ -163,12 +163,12 @@ export default function ExpenseDashboard() {
             style={{
               background: '#f59e0b15',
               border: '1px solid #f59e0b40',
-              borderRadius: 12,
-              padding: '14px 18px',
-              marginBottom: 24,
+              borderRadius: 10,
+              padding: '10px 14px',
+              marginBottom: 12,
               display: 'flex',
               alignItems: 'center',
-              gap: 12,
+              gap: 10,
               cursor: 'pointer',
               transition: 'background 0.2s',
             }}
@@ -176,7 +176,7 @@ export default function ExpenseDashboard() {
             onMouseLeave={e => (e.currentTarget.style.background = '#f59e0b15')}
           >
             <AlertCircle size={18} style={{ color: '#f59e0b', flexShrink: 0 }} />
-            <span style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>
+            <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text)' }}>
               {summary.pending_my_approval} claim{summary.pending_my_approval > 1 ? 's' : ''} pending your approval
             </span>
             <ChevronRight size={16} style={{ color: 'var(--text3)', marginLeft: 'auto' }} />
@@ -184,17 +184,17 @@ export default function ExpenseDashboard() {
         )}
 
         {/* Recent Claims Table */}
-        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
           <div
             style={{
-              padding: '18px 22px',
+              padding: '10px 14px',
               borderBottom: '1px solid var(--border)',
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center',
             }}
           >
-            <h3 style={{ margin: 0, fontWeight: 700, fontSize: 15 }}>Recent Claims</h3>
+            <h3 style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Recent Claims</h3>
             <button
               onClick={() => navigate('/expenses/my')}
               style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
@@ -203,9 +203,9 @@ export default function ExpenseDashboard() {
             </button>
           </div>
           {loading ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>Loading...</div>
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text3)' }}>Loading...</div>
           ) : recentClaims.length === 0 ? (
-            <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
+            <div style={{ padding: 32, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
               No claims yet.{' '}
               <button
                 onClick={() => navigate('/expenses/my')}
@@ -223,7 +223,7 @@ export default function ExpenseDashboard() {
                       <th
                         key={h}
                         style={{
-                          padding: '10px 16px',
+                          padding: '8px 12px',
                           textAlign: 'left',
                           fontWeight: 700,
                           fontSize: 11,
@@ -251,12 +251,12 @@ export default function ExpenseDashboard() {
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg3)')}
                       onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg3)10')}
                     >
-                      <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>{c.reference}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text)' }}>{c.employee_name || '—'}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text2)' }}>{c.category_name || '—'}</td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>{c.expense_date}</td>
-                      <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)' }}>{INR(c.amount)}</td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>{c.reference}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text)' }}>{c.employee_name || '—'}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text2)' }}>{c.category_name || '—'}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>{c.expense_date}</td>
+                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--text)' }}>{INR(c.amount)}</td>
+                      <td style={{ padding: '8px 12px' }}>
                         <span
                           style={{
                             fontSize: 11,

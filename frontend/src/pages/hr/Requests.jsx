@@ -187,11 +187,11 @@ export default function Requests() {
   const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 14, boxSizing: 'border-box' };
   const labelStyle = { fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block' };
   const tabStyle = (active) => ({
-    padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+    padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
     background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)',
   });
   const subTabStyle = (active) => ({
-    padding: '6px 14px', borderRadius: 20, border: '1px solid ' + (active ? 'var(--accent)' : 'var(--border)'), cursor: 'pointer', fontWeight: 600, fontSize: 12,
+    padding: '5px 12px', borderRadius: 20, border: '1px solid ' + (active ? 'var(--accent)' : 'var(--border)'), cursor: 'pointer', fontWeight: 600, fontSize: 12,
     background: active ? 'rgba(25, 84, 2, 0.08)' : 'var(--bg2)', color: active ? 'var(--accent)' : 'var(--text2)', transition: 'all 0.2s ease',
   });
 
@@ -209,19 +209,19 @@ export default function Requests() {
 
   return (
     <Layout title="My Requests">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Employee selector (for HR view) */}
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
           {user?.is_superadmin && (
-            <select value={selectedEmp} onChange={e => setSelectedEmp(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 200 }}>
+            <select value={selectedEmp} onChange={e => setSelectedEmp(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 200, padding: '6px 10px' }}>
               {employees.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
             </select>
           )}
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
             <button style={tabStyle(tab === 'leave')} onClick={() => setTab('leave')}>Leave Requests</button>
             <button style={tabStyle(tab === 'od')} onClick={() => setTab('od')}>On-Duty Requests</button>
           </div>
-          <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
             <button className="btn btn-primary" onClick={() => { 
               const eid = selectedEmp || user?.employee_id; 
               const currentEmp = employees.find(e => e.id === parseInt(eid)) || employees.find(e => e.id === eid);
@@ -269,7 +269,7 @@ export default function Requests() {
         </div>
 
         {/* Status Filters */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
           <button style={subTabStyle(statusFilter === 'all')} onClick={() => setStatusFilter('all')}>All</button>
           <button style={subTabStyle(statusFilter === 'pending')} onClick={() => setStatusFilter('pending')}>Pending</button>
           <button style={subTabStyle(statusFilter === 'approved')} onClick={() => setStatusFilter('approved')}>Approved</button>
@@ -277,8 +277,8 @@ export default function Requests() {
         </div>
 
         {/* Request List */}
-        {loading ? <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div> : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {loading ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading...</div> : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {tab === 'leave' && (() => {
               const filtered = myLeave.filter(req => {
                 if (statusFilter === 'all') return true;
@@ -288,14 +288,14 @@ export default function Requests() {
                 return true;
               });
               if (filtered.length === 0) {
-                return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No leave requests found</div>;
+                return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>No leave requests found</div>;
               }
               return filtered.map(req => (
-                <div key={req.id} id={`leave-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+                <div key={req.id} id={`leave-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                        <span style={{ fontWeight: 700, fontSize: 15 }}>{req.leave_type_name}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14 }}>{req.leave_type_name}</span>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
                           {STATUS_BADGE[req.status]?.label}
                         </span>
@@ -312,10 +312,10 @@ export default function Requests() {
                         {req.is_auto_approved && <span style={{ fontSize: 11, color: '#2563eb' }}>⏰ Auto-approved</span>}
                       </div>
                       <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_date} → {req.to_date} · <strong>{req.total_days} day{req.total_days > 1 ? 's' : ''}</strong></div>
-                      {req.reason && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Reason: {req.reason}</div>}
-                      {req.approver_remarks && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 4 }}>Remarks: {req.approver_remarks}</div>}
+                      {req.reason && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 2 }}>Reason: {req.reason}</div>}
+                      {req.approver_remarks && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 2 }}>Remarks: {req.approver_remarks}</div>}
                     </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
                       <span style={{ fontSize: 11, color: 'var(--text3)' }}>{req.reference}</span>
                       {req.status === 'pending' && req.seconds_until_auto_approve > 0 && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
@@ -324,7 +324,7 @@ export default function Requests() {
                         </div>
                       )}
                       {req.status === 'pending' && (
-                        <button onClick={() => cancelLeave(req.id)} style={{ fontSize: 11, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '4px 10px', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
+                        <button onClick={() => cancelLeave(req.id)} style={{ fontSize: 11, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '3px 8px', cursor: 'pointer', fontWeight: 600 }}>Cancel</button>
                       )}
                     </div>
                   </div>
@@ -341,14 +341,14 @@ export default function Requests() {
                 return true;
               });
               if (filtered.length === 0) {
-                return <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>No on-duty requests found</div>;
+                return <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>No on-duty requests found</div>;
               }
               return filtered.map(req => (
-                <div key={req.id} id={`od-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
+                <div key={req.id} id={`od-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 8 }}>
                     <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                        <span style={{ fontWeight: 700, fontSize: 15 }}>On-Duty — {req.date}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontWeight: 700, fontSize: 14 }}>On-Duty — {req.date}</span>
                         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: STATUS_BADGE[req.status]?.bg, color: STATUS_BADGE[req.status]?.color }}>
                           {STATUS_BADGE[req.status]?.label}
                         </span>
@@ -364,7 +364,7 @@ export default function Requests() {
                         )}
                       </div>
                       <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_time} – {req.to_time} · {req.work_location}</div>
-                      {req.purpose && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 4 }}>Purpose: {req.purpose}</div>}
+                      {req.purpose && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 2 }}>Purpose: {req.purpose}</div>}
                     </div>
                     <div style={{ fontSize: 11, color: 'var(--text3)' }}>{req.reference}</div>
                   </div>
@@ -377,13 +377,13 @@ export default function Requests() {
 
       {/* Leave Apply Modal */}
       {showLeaveModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 480, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 14, padding: 20, width: 480, maxWidth: '100%', maxHeight: '92vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h3 style={{ margin: 0, fontWeight: 700 }}>Apply Leave</h3>
               <button onClick={() => { setShowLeaveModal(false); setLeaveBalances([]); }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {user?.is_superadmin && (
                 <div>
                   <label style={labelStyle}>Employee</label>

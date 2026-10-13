@@ -196,11 +196,11 @@ export default function Approvals() {
   }
 
   const tabStyle = (active) => ({
-    padding: '8px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+    padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
     background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)',
   });
 
-  const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' };
+  const inputStyle = { width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' };
 
   function CountdownTimer({ seconds }) {
     const [secs, setSecs] = useState(seconds);
@@ -212,16 +212,16 @@ export default function Approvals() {
   function RequestCard({ req, type, showActions }) {
     const statusColors = { pending: '#f59e0b', approved: '#22c55e', auto_approved: '#3b82f6', rejected: '#ef4444', cancelled: '#94a3b8', revoked: '#8b5cf6' };
     return (
-      <div id={`${type}-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+      <div id={`${type}-${req.id}`} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-              <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+              <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>
                 {req.employee_name?.[0] || 'E'}
               </div>
               <div>
-                <div style={{ fontWeight: 700, fontSize: 14 }}>{req.employee_name}</div>
-                <div style={{ fontSize: 12, color: 'var(--text3)' }}>{req.reference}</div>
+                <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.25 }}>{req.employee_name}</div>
+                <div style={{ fontSize: 11.5, color: 'var(--text3)' }}>{req.reference}</div>
               </div>
               <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 700, background: `${statusColors[req.status] || '#f59e0b'}20`, color: statusColors[req.status] || '#f59e0b' }}>
                 {(req.status || 'pending').replace('_', ' ').toUpperCase()}
@@ -241,22 +241,22 @@ export default function Approvals() {
             {type === 'leave' ? (
               <div style={{ fontSize: 13, color: 'var(--text2)' }}>
                 <strong>{req.leave_type_name}</strong> · {req.from_date} → {req.to_date} · {req.total_days} day{req.total_days > 1 ? 's' : ''}
-                {req.reason && <div style={{ marginTop: 4, color: 'var(--text3)' }}>Reason: {req.reason}</div>}
+                {req.reason && <div style={{ marginTop: 2, color: 'var(--text3)' }}>Reason: {req.reason}</div>}
               </div>
             ) : (
               <div style={{ fontSize: 13, color: 'var(--text2)' }}>
                 On-Duty · {req.date} · {req.from_time}–{req.to_time}
                 {req.work_location && <span> · {req.work_location}</span>}
-                {req.purpose && <div style={{ marginTop: 4, color: 'var(--text3)' }}>Purpose: {req.purpose}</div>}
+                {req.purpose && <div style={{ marginTop: 2, color: 'var(--text3)' }}>Purpose: {req.purpose}</div>}
               </div>
             )}
 
             {req.approver_remarks && (
-              <div style={{ marginTop: 6, fontSize: 12, color: '#ef4444', fontStyle: 'italic' }}>Remarks: {req.approver_remarks}</div>
+              <div style={{ marginTop: 4, fontSize: 12, color: '#ef4444', fontStyle: 'italic' }}>Remarks: {req.approver_remarks}</div>
             )}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-end' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
             {req.status === 'pending' && req.seconds_until_auto_approve > 0 && (
               <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12 }}>
                 <Clock size={12} style={{ color: '#f59e0b' }} />
@@ -264,13 +264,13 @@ export default function Approvals() {
               </div>
             )}
             {showActions && req.status === 'pending' && (
-              <div style={{ display: 'flex', gap: 8 }}>
+              <div style={{ display: 'flex', gap: 6 }}>
                 <button onClick={() => openAction(req, 'approve', type)}
-                  style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontWeight: 700, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <CheckCircle size={14} /> Approve
                 </button>
                 <button onClick={() => openAction(req, 'reject', type)}
-                  style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontWeight: 700, fontSize: 12.5, display: 'flex', alignItems: 'center', gap: 5 }}>
                   <XCircle size={14} /> Reject
                 </button>
               </div>
@@ -279,13 +279,13 @@ export default function Approvals() {
               <div style={{ display: 'flex', gap: 6 }}>
                 <button
                   onClick={() => { setRevokeModal(req); setRevokeRemark(''); }}
-                  style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #f59e0b', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                  style={{ background: '#fef3c7', color: '#d97706', border: '1px solid #f59e0b', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
                 >
                   <RotateCcw size={13} /> Revoke
                 </button>
                 <button
                   onClick={() => openChangeType(req)}
-                  style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #93c5fd', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                  style={{ background: '#eff6ff', color: '#2563eb', border: '1px solid #93c5fd', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
                 >
                   ⇄ Change Type
                 </button>
@@ -301,13 +301,13 @@ export default function Approvals() {
 
   return (
     <Layout title="Approvals">
-      <div style={{ padding: '0 24px 24px' }}>
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap', alignItems: 'center' }}>
-          <select value={selectedApprover} onChange={e => setSelectedApprover(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 220 }}>
+      <div style={{ padding: 0 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+          <select value={selectedApprover} onChange={e => setSelectedApprover(e.target.value)} style={{ ...inputStyle, width: 'auto', minWidth: 210 }}>
             <option value=''>All Employees</option>
             {approvers.map(e => <option key={e.id} value={e.id}>{e.name} ({e.employee_id})</option>)}
           </select>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 6 }}>
             <button style={tabStyle(tab === 'pending')} onClick={() => setTab('pending')}>
               Pending {pendingCount > 0 && <span style={{ background: '#ef4444', color: '#fff', borderRadius: 999, padding: '1px 6px', fontSize: 11, marginLeft: 4 }}>{pendingCount}</span>}
             </button>
@@ -317,25 +317,25 @@ export default function Approvals() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div>
+          <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading...</div>
         ) : tab === 'pending' ? (
           <div>
             {pendingLeave.length === 0 && pendingOD.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>
                 <CheckCircle size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
                 No pending approvals
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {pendingLeave.length > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1 }}>Leave Requests ({pendingLeave.length})</div>}
                 {pendingLeave.map(r => <RequestCard key={r.id} req={r} type="leave" showActions />)}
-                {pendingOD.length > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 8 }}>On-Duty Requests ({pendingOD.length})</div>}
+                {pendingOD.length > 0 && <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 1, marginTop: 6 }}>On-Duty Requests ({pendingOD.length})</div>}
                 {pendingOD.map(r => <RequestCard key={r.id} req={r} type="od" showActions />)}
               </div>
             )}
           </div>
         ) : tab === 'history' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {[...allLeave.map(r => ({ ...r, _type: 'leave' })), ...allOD.map(r => ({ ...r, _type: 'od' }))]
               .filter(r => !selectedApprover || String(r.employee_id) === String(selectedApprover))
               .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
@@ -354,7 +354,7 @@ export default function Approvals() {
 
             return (
               <div>
-                <div style={{ display: 'flex', gap: 12, marginBottom: 20, alignItems: 'center', flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', gap: 8, marginBottom: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>Select Month/Year:</span>
                   <select value={sandwichMonth} onChange={e => setSandwichMonth(Number(e.target.value))} style={{ ...inputStyle, width: 'auto' }}>
                     {Array.from({ length: 12 }, (_, i) => (
@@ -380,7 +380,7 @@ export default function Approvals() {
                 </div>
 
                 {filteredSandwich.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>
                     <CheckCircle size={40} style={{ margin: '0 auto 12px', display: 'block', opacity: 0.3 }} />
                     No pending sandwich leaves for this month
                   </div>
@@ -389,21 +389,21 @@ export default function Approvals() {
                     {/* Bulk Actions Panel */}
                     <div style={{
                       background: 'var(--bg2)',
-                      borderRadius: 12,
-                      padding: 16,
-                      marginBottom: 16,
+                      borderRadius: 10,
+                      padding: '10px 14px',
+                      marginBottom: 10,
                       border: '1px dashed var(--accent)',
                       display: 'flex',
                       justifyContent: 'space-between',
                       alignItems: 'center',
                       flexWrap: 'wrap',
-                      gap: 12
+                      gap: 10
                     }}>
                       <div>
                         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>Bulk Decisions ({filteredSandwich.length} items)</div>
                         <div style={{ fontSize: 12, color: 'var(--text3)' }}>Apply deduction or exemption to all detected sandwich Sundays in one click.</div>
                       </div>
-                      <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <input
                           type="text"
                           placeholder="Bulk reason (optional)..."
@@ -416,7 +416,7 @@ export default function Approvals() {
                           disabled={bulkLoading}
                           style={{
                             background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8,
-                            padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
+                            padding: '6px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 12
                           }}
                         >
                           {bulkLoading ? 'Processing...' : 'Bulk Deduct LOP'}
@@ -426,7 +426,7 @@ export default function Approvals() {
                           disabled={bulkLoading}
                           style={{
                             background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 8,
-                            padding: '8px 16px', cursor: 'pointer', fontWeight: 700, fontSize: 12
+                            padding: '6px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 12
                           }}
                         >
                           {bulkLoading ? 'Processing...' : 'Bulk Ignore'}
@@ -434,22 +434,22 @@ export default function Approvals() {
                       </div>
                     </div>
 
-                    <div style={{ display: 'grid', gap: 12 }}>
+                    <div style={{ display: 'grid', gap: 8 }}>
                       {filteredSandwich.map(item => {
                         const key = `${item.employee_id}-${item.date}`;
                         const isDeducted = item.current_status === 'sandwich_lop';
                         const isIgnored = item.current_status === 'weekly_off' && item.reason && item.reason.includes('Ignored');
                         
                         return (
-                          <div key={key} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 18, border: '1px solid var(--border)' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                          <div key={key} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', border: '1px solid var(--border)' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                               <div>
-                                <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 8 }}>
-                                  <div style={{ width: 34, height: 34, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>
+                                <div style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 4 }}>
+                                  <div style={{ width: 30, height: 30, borderRadius: 8, background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13 }}>
                                     {item.employee_name?.[0] || 'E'}
                                   </div>
                                   <div>
-                                    <div style={{ fontWeight: 700, fontSize: 14 }}>{item.employee_name} ({item.employee_code})</div>
+                                    <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.25 }}>{item.employee_name} ({item.employee_code})</div>
                                     <div style={{ fontSize: 12, color: 'var(--text3)' }}>
                                       Sandwich Date: <strong>{item.date}</strong> (Sunday)
                                     </div>
@@ -462,7 +462,7 @@ export default function Approvals() {
                                     {isDeducted ? 'DEDUCTED (LOP)' : isIgnored ? 'PAID (EXEMPTED)' : 'PENDING DECISION'}
                                   </span>
                                 </div>
-                                <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 8 }}>
+                                <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 4 }}>
                                   Saturday: <span style={{ color: '#ef4444', fontWeight: 600 }}>{item.sat_status.toUpperCase()}</span> · 
                                   Monday: <span style={{ color: '#ef4444', fontWeight: 600 }}> {item.mon_status.toUpperCase()}</span>
                                 </div>
@@ -473,7 +473,7 @@ export default function Approvals() {
                                 )}
                               </div>
 
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, minWidth: 240 }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 240 }}>
                                 <input
                                   type="text"
                                   placeholder="Reason for exemption (optional)..."
@@ -481,12 +481,12 @@ export default function Approvals() {
                                   onChange={e => setSandwichReason(prev => ({ ...prev, [key]: e.target.value }))}
                                   style={inputStyle}
                                 />
-                                <div style={{ display: 'flex', gap: 8 }}>
+                                <div style={{ display: 'flex', gap: 6 }}>
                                   <button
                                     onClick={() => handleSandwichDecision(item.employee_id, item.date, 'deduct')}
                                     style={{
                                       flex: 1, background: isDeducted ? '#fca5a5' : '#fee2e2', color: '#dc2626',
-                                      border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
+                                      border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
                                       fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
                                     }}
                                   >
@@ -496,7 +496,7 @@ export default function Approvals() {
                                     onClick={() => handleSandwichDecision(item.employee_id, item.date, 'ignore')}
                                     style={{
                                       flex: 1, background: isIgnored ? '#86efac' : '#dcfce7', color: '#16a34a',
-                                      border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer',
+                                      border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
                                       fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4
                                     }}
                                   >

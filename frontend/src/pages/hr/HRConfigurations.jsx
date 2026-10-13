@@ -275,19 +275,19 @@ export default function HRConfigurations() {
   }
 
   const tabStyle = (active) => ({
-    padding: '8px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
+    padding: '6px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 13,
     background: active ? 'var(--accent)' : 'var(--bg2)', color: active ? '#fff' : 'var(--text2)',
     display: 'flex', alignItems: 'center', gap: 6,
   });
 
-  const inputStyle = { width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' };
+  const inputStyle = { width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' };
   const labelStyle = { fontSize: 12, fontWeight: 600, color: 'var(--text2)', marginBottom: 4, display: 'block' };
 
   return (
     <Layout title="HR Configurations">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 8, marginBottom: 24, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
           <button style={tabStyle(tab === 'shifts')} onClick={() => setTab('shifts')}><Clock size={14} /> Shifts</button>
           <button style={tabStyle(tab === 'leave')} onClick={() => setTab('leave')}><Gift size={14} /> Leave Types</button>
           <button style={tabStyle(tab === 'holidays')} onClick={() => setTab('holidays')}><Calendar size={14} /> Holidays</button>
@@ -364,12 +364,12 @@ export default function HRConfigurations() {
         {tab === 'biometric' && (
           <Section title="Biometric Machines (eSSL)" onAdd={() => openModal('biometric')}>
             {machines.map(m => (
-              <div key={m.id} style={{ background: 'var(--bg2)', borderRadius: 12, padding: 16, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+              <div key={m.id} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '10px 14px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 4 }}>{m.name}</div>
-                  <div style={{ fontSize: 13, color: 'var(--text2)' }}>IP: <strong>{m.ip_address}:{m.port}</strong> · {m.branch_name || 'All Branches'}</div>
+                  <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 2 }}>{m.name}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text2)' }}>IP: <strong>{m.ip_address}:{m.port}</strong> · {m.branch_name || 'All Branches'}</div>
                   {m.last_sync_at && (
-                    <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 4 }}>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
                       Last sync: {new Date(m.last_sync_at).toLocaleString()} ·
                       <span style={{ color: m.last_sync_status === 'success' ? '#22c55e' : '#ef4444', fontWeight: 600 }}> {m.last_sync_status}</span>
                       {m.last_sync_count > 0 && ` · ${m.last_sync_count} records`}
@@ -377,11 +377,11 @@ export default function HRConfigurations() {
                   )}
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button onClick={() => syncMachine(m.id)} style={{ background: '#dbeafe', color: '#2563eb', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+                  <button onClick={() => syncMachine(m.id)} style={{ background: '#dbeafe', color: '#2563eb', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
                     <RefreshCw size={13} /> Sync Now
                   </button>
-                  <button onClick={() => openModal('biometric', m)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 12 }}>Edit</button>
-                  <button onClick={() => deleteItem('biometric', m.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '7px 12px', cursor: 'pointer', fontSize: 12 }}>Remove</button>
+                  <button onClick={() => openModal('biometric', m)} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}>Edit</button>
+                  <button onClick={() => deleteItem('biometric', m.id)} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 10px', cursor: 'pointer', fontSize: 12 }}>Remove</button>
                 </div>
               </div>
             ))}
@@ -430,18 +430,18 @@ export default function HRConfigurations() {
 
         {/* SALARY RULES */}
         {tab === 'salary_rules' && (
-          <div style={{ maxWidth: 700 }}>
-            <h3 style={{ fontSize: 16, fontWeight: 700, marginBottom: 20 }}>Attendance & Payroll Rules</h3>
-            <div style={{ display: 'grid', gap: 20 }}>
+          <div style={{ maxWidth: '100%' }}>
+            <h3 style={{ fontSize: 15, fontWeight: 700, marginBottom: 10 }}>Attendance & Payroll Rules</h3>
+            <div style={{ display: 'grid', gap: 10 }}>
 
               {/* ── Leave Auto-Approval ────────────────────────────── */}
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Leave / On-Duty Auto-Approval Time</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Leave / On-Duty Auto-Approval Time</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>
                     If a manager doesn't act on a pending request within this many hours, it will be <strong>automatically approved</strong> by the system.
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 6 }}>
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
                     ⏱ Current: <strong>{configs.leave_auto_approve_hours ?? 6} hour{(configs.leave_auto_approve_hours ?? 6) !== 1 ? 's' : ''}</strong> — applies to both Leave and On-Duty requests
                   </div>
                 </div>
@@ -454,85 +454,85 @@ export default function HRConfigurations() {
                     value={configs.leave_auto_approve_hours ?? 6}
                     onChange={e => setConfigs(prev => ({ ...prev, leave_auto_approve_hours: parseInt(e.target.value) || 6 }))}
                     onBlur={e => updateConfig('leave_auto_approve_hours', parseInt(e.target.value) || 6)}
-                    style={{ width: 80, padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, fontWeight: 700, textAlign: 'center' }}
+                    style={{ width: 80, padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 14, fontWeight: 700, textAlign: 'center' }}
                   />
                   <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>hrs</span>
                 </div>
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)' }}>
-                <div style={{ fontWeight: 700, marginBottom: 4 }}>Global Working Days</div>
-                <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 16 }}>Define which days are considered standard working days for the organization.</div>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)' }}>
+                <div style={{ fontWeight: 700, marginBottom: 2 }}>Global Working Days</div>
+                <div style={{ fontSize: 13, color: 'var(--text2)', marginBottom: 10 }}>Define which days are considered standard working days for the organization.</div>
                 <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                   {DAYS.map(d => (
-                    <button key={d} onClick={() => toggleWorkingDay(d)} style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: (configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat']).includes(d) ? 'var(--accent)' : 'var(--bg3)', color: (configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat']).includes(d) ? '#fff' : 'var(--text2)' }}>
+                    <button key={d} onClick={() => toggleWorkingDay(d)} style={{ padding: '6px 14px', borderRadius: 8, border: '1px solid var(--border)', cursor: 'pointer', fontWeight: 700, fontSize: 13, background: (configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat']).includes(d) ? 'var(--accent)' : 'var(--bg3)', color: (configs.working_days || ['Mon','Tue','Wed','Thu','Fri','Sat']).includes(d) ? '#fff' : 'var(--text2)' }}>
                       {d}
                     </button>
                   ))}
                 </div>
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Sandwich Policy Highlighting</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Sandwich Policy Highlighting</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Flag Sundays/Holidays as potential LOP if preceded and followed by absences.</div>
                 </div>
                 <input type="checkbox" checked={configs.enable_sandwich_highlight !== false} onChange={e => updateConfig('enable_sandwich_highlight', e.target.checked)} style={{ width: 20, height: 20 }} />
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Auto-Deduct Sandwich Sundays</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Auto-Deduct Sandwich Sundays</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Automatically deduct sandwich Sundays as LOP days without waiting for manual confirmation.</div>
                 </div>
                 <input type="checkbox" checked={configs.auto_deduct_sandwich === true} onChange={e => updateConfig('auto_deduct_sandwich', e.target.checked)} style={{ width: 20, height: 20 }} />
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Treat Excess Leaves as LOP</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Treat Excess Leaves as LOP</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Automatically split leave requests into LOP if they exceed the employee's available paid leave balance.</div>
                 </div>
                 <input type="checkbox" checked={configs.lop_overflow !== false} onChange={e => updateConfig('lop_overflow', e.target.checked)} style={{ width: 20, height: 20 }} />
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Regular Employee Check</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Regular Employee Check</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Highlight employees who take non-allocated leaves as "Irregular" for holiday pay decisions.</div>
                 </div>
                 <input type="checkbox" checked={configs.regular_employee_check !== false} onChange={e => updateConfig('regular_employee_check', e.target.checked)} style={{ width: 20, height: 20 }} />
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>Salary Calculation Method</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Salary Calculation Method</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Pro-rata (pro-rate all components) or Deduction (explicit LOP deduction line).</div>
                 </div>
-                <select value={configs.salary_calculation_method || 'pro_rata'} onChange={e => updateConfig('salary_calculation_method', e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
+                <select value={configs.salary_calculation_method || 'pro_rata'} onChange={e => updateConfig('salary_calculation_method', e.target.value)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
                   <option value="pro_rata">Pro-rata (Recommended)</option>
                   <option value="deduction">Explicit LOP Deduction</option>
                 </select>
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>LOP Calculation Base</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>LOP Calculation Base</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Choose if LOP is deducted based on Gross earnings, Total CTC, or Net Pay (In-Hand).</div>
                 </div>
-                <select value={configs.lop_calculation_base || 'gross'} onChange={e => updateConfig('lop_calculation_base', e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
+                <select value={configs.lop_calculation_base || 'gross'} onChange={e => updateConfig('lop_calculation_base', e.target.value)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
                   <option value="gross">Gross Salary</option>
                   <option value="ctc">Total CTC</option>
                   <option value="net_pay">Net Pay (In-Hand)</option>
                 </select>
               </div>
 
-              <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 16px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
-                  <div style={{ fontWeight: 700, marginBottom: 4 }}>LOP Denominator Basis</div>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>LOP Denominator Basis</div>
                   <div style={{ fontSize: 13, color: 'var(--text2)' }}>Set the monthly divisor to include the whole calendar month (e.g. 30 days) or exclude week-offs (e.g. 26 days).</div>
                 </div>
-                <select value={configs.lop_denominator_basis || 'working_days'} onChange={e => updateConfig('lop_denominator_basis', e.target.value)} style={{ padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
+                <select value={configs.lop_denominator_basis || 'working_days'} onChange={e => updateConfig('lop_denominator_basis', e.target.value)} style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13, fontWeight: 600 }}>
                   <option value="working_days">Exclude Week Offs (e.g. 26 Days)</option>
                   <option value="calendar_days">Whole Month's Days (e.g. 30 Days)</option>
                 </select>
@@ -543,9 +543,9 @@ export default function HRConfigurations() {
 
       {/* Modal */}
       {modal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-          <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: modal === 'salary_template' ? 600 : 480, maxHeight: '90vh', overflow: 'auto', padding: 28 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 14, width: '100%', maxWidth: modal === 'salary_template' ? 600 : 480, maxHeight: '90vh', overflow: 'auto', padding: 18 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <h3 style={{ margin: 0, fontWeight: 700 }}>
                 {modal === 'shift' ? 'Shift Configuration' : 
                  modal === 'leave' ? 'Leave Type' : 
@@ -937,10 +937,10 @@ export default function HRConfigurations() {
         {/* LOP WATERFALL RULES */}
         {tab === 'lop_rules' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 10 }}>
               <div>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>LOP Waterfall Rules</h3>
-                <p style={{ margin: '4px 0 0', fontSize: 12, color: 'var(--text2)' }}>
+                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>LOP Waterfall Rules</h3>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text2)' }}>
                   Define which leave types to auto-consume (in order) before marking a day as Loss of Pay.
                 </p>
               </div>
@@ -950,7 +950,7 @@ export default function HRConfigurations() {
             </div>
 
             {lopRules.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 48, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 12, border: '2px dashed var(--border)' }}>
+              <div style={{ textAlign: 'center', padding: 32, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 12, border: '2px dashed var(--border)' }}>
                 <GitBranch size={32} style={{ marginBottom: 8, opacity: 0.4 }} />
                 <div style={{ fontWeight: 600, marginBottom: 4 }}>No waterfall rules configured</div>
                 <div style={{ fontSize: 12 }}>Without rules, leaves fall back to alphabetical order before LOP</div>
@@ -981,7 +981,7 @@ export default function HRConfigurations() {
                     }}
                     style={{
                       background: 'var(--bg2)', border: `2px solid ${dragOverIdx === idx ? 'var(--accent)' : 'var(--border)'}`,
-                      borderRadius: 10, padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 14,
+                      borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12,
                       cursor: 'grab', transition: 'border-color 0.15s',
                     }}
                   >
@@ -1030,12 +1030,12 @@ export default function HRConfigurations() {
 
         {/* COMP-OFF SETTINGS */}
         {tab === 'comp_off' && (
-          <div style={{ maxWidth: 560 }}>
-            <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Compensatory Off (Comp-Off) Settings</h3>
-            <p style={{ margin: '0 0 20px', fontSize: 12, color: 'var(--text2)' }}>
+          <div style={{ maxWidth: '100%' }}>
+            <h3 style={{ margin: '0 0 2px', fontSize: 15, fontWeight: 700 }}>Compensatory Off (Comp-Off) Settings</h3>
+            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text2)' }}>
               When an employee works more than the threshold hours in a day, excess hours automatically accumulate as Comp-Off leave.
             </p>
-            <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: 20, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '14px 16px', border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
               {/* Enable toggle */}
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: compOffSettings.enabled ? '#22c55e20' : 'var(--bg3)', borderRadius: 8, border: `1px solid ${compOffSettings.enabled ? '#22c55e40' : 'var(--border)'}`, transition: 'all 0.2s' }}>
                 <div>
@@ -1050,23 +1050,23 @@ export default function HRConfigurations() {
                 </label>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 4 }}>Daily Threshold (hours)</label>
-                  <input type="number" step="0.5" min="1" value={compOffSettings.threshold_hours} onChange={e => setCompOffSettings({ ...compOffSettings, threshold_hours: parseFloat(e.target.value) })} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
+                  <input type="number" step="0.5" min="1" value={compOffSettings.threshold_hours} onChange={e => setCompOffSettings({ ...compOffSettings, threshold_hours: parseFloat(e.target.value) })} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
                   <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 3 }}>Overtime starts after this many hours</div>
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 4 }}>Hours per 1 Comp-Off Day</label>
-                  <input type="number" step="0.5" min="1" value={compOffSettings.hours_per_day} onChange={e => setCompOffSettings({ ...compOffSettings, hours_per_day: parseFloat(e.target.value) })} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
+                  <input type="number" step="0.5" min="1" value={compOffSettings.hours_per_day} onChange={e => setCompOffSettings({ ...compOffSettings, hours_per_day: parseFloat(e.target.value) })} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
                   <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 3 }}>Excess hours ÷ this = CO days earned</div>
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 4 }}>Comp-Off Leave Type</label>
-                  <select value={compOffSettings.leave_type_id || ''} onChange={e => setCompOffSettings({ ...compOffSettings, leave_type_id: e.target.value ? parseInt(e.target.value) : null })} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }}>
+                  <select value={compOffSettings.leave_type_id || ''} onChange={e => setCompOffSettings({ ...compOffSettings, leave_type_id: e.target.value ? parseInt(e.target.value) : null })} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg2)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }}>
                     <option value="">Auto-create Comp-Off (CO)</option>
                     {leaveTypes.map(t => <option key={t.id} value={t.id}>{t.name} ({t.code})</option>)}
                   </select>
@@ -1074,13 +1074,13 @@ export default function HRConfigurations() {
                 </div>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 4 }}>Activation Date</label>
-                  <input type="date" value={compOffSettings.activation_date || ''} onChange={e => setCompOffSettings({ ...compOffSettings, activation_date: e.target.value })} style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
+                  <input type="date" value={compOffSettings.activation_date || ''} onChange={e => setCompOffSettings({ ...compOffSettings, activation_date: e.target.value })} style={{ width: '100%', padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 13, boxSizing: 'border-box' }} />
                   <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 3 }}>Only accrue CO from this date onward</div>
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 8 }}>Comp-Off Expiry</label>
+                <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', display: 'block', marginBottom: 6 }}>Comp-Off Expiry</label>
                 <div style={{ display: 'flex', gap: 8 }}>
                   <button onClick={() => setCompOffSettings({ ...compOffSettings, expiry_months: null })} style={{ padding: '6px 14px', borderRadius: 7, border: `2px solid ${compOffSettings.expiry_months === null ? 'var(--accent)' : 'var(--border)'}`, background: compOffSettings.expiry_months === null ? 'var(--accent)15' : 'var(--bg)', color: compOffSettings.expiry_months === null ? 'var(--accent)' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: 12, transition: 'all 0.15s' }}>No Expiry</button>
                   <button onClick={() => setCompOffSettings({ ...compOffSettings, expiry_months: compOffSettings.expiry_months || 3 })} style={{ padding: '6px 14px', borderRadius: 7, border: `2px solid ${compOffSettings.expiry_months !== null ? 'var(--accent)' : 'var(--border)'}`, background: compOffSettings.expiry_months !== null ? 'var(--accent)15' : 'var(--bg)', color: compOffSettings.expiry_months !== null ? 'var(--accent)' : 'var(--text)', fontWeight: 600, cursor: 'pointer', fontSize: 12, transition: 'all 0.15s' }}>Expires After</button>
@@ -1118,7 +1118,7 @@ export default function HRConfigurations() {
                   finally { setSavingCompOff(false); }
                 }}
                 className="btn btn-primary"
-                style={{ width: '100%', padding: '10px', fontWeight: 700 }}
+                style={{ width: '100%', padding: '8px', fontWeight: 700 }}
               >
                 {savingCompOff ? 'Saving...' : 'Save Comp-Off Settings'}
               </button>
@@ -1127,13 +1127,13 @@ export default function HRConfigurations() {
         )}
 
         {tab === 'custom_notifications' && (
-          <div style={{ background: 'var(--bg2)', borderRadius: 16, border: '1px solid rgba(226, 232, 240, 0.8)', padding: 24, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', maxWidth: 700 }}>
-            <h3 style={{ margin: '0 0 4px', fontSize: 16, fontWeight: 700 }}>Send Custom Broadcast Message</h3>
-            <p style={{ margin: '0 0 20px', fontSize: 12, color: 'var(--text2)' }}>
+          <div style={{ background: 'var(--bg2)', borderRadius: 12, border: '1px solid rgba(226, 232, 240, 0.8)', padding: 16, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', maxWidth: '100%' }}>
+            <h3 style={{ margin: '0 0 2px', fontSize: 15, fontWeight: 700 }}>Send Custom Broadcast Message</h3>
+            <p style={{ margin: '0 0 12px', fontSize: 12, color: 'var(--text2)' }}>
               Send custom push and in-app notifications targeting specific branches, departments, employee types, or individuals.
             </p>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div>
                 <label style={labelStyle}>Notification Title</label>
                 <input 
@@ -1151,7 +1151,7 @@ export default function HRConfigurations() {
                   value={notifForm.message} 
                   onChange={e => setNotifForm({ ...notifForm, message: e.target.value })} 
                   placeholder="Type your custom message here..."
-                  rows={4}
+                  rows={3}
                   style={{ ...inputStyle, fontFamily: 'inherit', resize: 'vertical' }} 
                 />
               </div>
@@ -1185,11 +1185,11 @@ export default function HRConfigurations() {
               </div>
 
               {notifForm.targetType === 'selective' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 14, background: 'var(--bg3)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg3)', padding: 12, borderRadius: 10, border: '1px solid var(--border)' }}>
                   {/* Branch Select */}
                   <div>
                     <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Branch</label>
-                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 6 }}>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
                       {branches.map(b => {
                         const checked = notifForm.selectedBranches.includes(b.id);
                         return (
@@ -1212,9 +1212,9 @@ export default function HRConfigurations() {
                   </div>
 
                   {/* Dept Select */}
-                  <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 12 }}>
+                  <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 10 }}>
                     <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Department</label>
-                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 6 }}>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
                       {departments.map(d => {
                         const checked = notifForm.selectedDepartments.includes(d.id);
                         return (
@@ -1237,9 +1237,9 @@ export default function HRConfigurations() {
                   </div>
 
                   {/* Category / Type Select */}
-                  <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 12 }}>
+                  <div style={{ borderTop: '1px dashed var(--border)', paddingTop: 10 }}>
                     <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Filter by Employee Type / Category</label>
-                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 6 }}>
+                    <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 4 }}>
                       {['regular', 'fixed'].map(cat => {
                         const checked = notifForm.selectedCategories.includes(cat);
                         return (
@@ -1264,7 +1264,7 @@ export default function HRConfigurations() {
               )}
 
               {notifForm.targetType === 'specific' && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 10, background: 'var(--bg3)', padding: 16, borderRadius: 12, border: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'var(--bg3)', padding: 12, borderRadius: 10, border: '1px solid var(--border)' }}>
                   <label style={{ ...labelStyle, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Select Specific Employees</label>
                   
                   <input 
@@ -1300,7 +1300,7 @@ export default function HRConfigurations() {
                 </div>
               )}
 
-              <div style={{ marginTop: 8 }}>
+              <div style={{ marginTop: 4 }}>
                 <button
                   type="button"
                   onClick={sendCustomNotification}
@@ -1309,13 +1309,13 @@ export default function HRConfigurations() {
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    padding: '10px 20px',
-                    borderRadius: 10,
+                    padding: '8px 16px',
+                    borderRadius: 8,
                     border: 'none',
                     background: 'var(--accent)',
                     color: 'white',
                     fontWeight: 700,
-                    fontSize: 13.5,
+                    fontSize: 13,
                     cursor: 'pointer',
                     boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
                     transition: 'all 0.2s'
@@ -1338,8 +1338,8 @@ export default function HRConfigurations() {
 function Section({ title, children, onAdd, extra }) {
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-        <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{title}</h3>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>{title}</h3>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           {extra}
           <button onClick={onAdd} className="btn btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13 }}>
@@ -1347,8 +1347,8 @@ function Section({ title, children, onAdd, extra }) {
           </button>
         </div>
       </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {children?.length === 0 ? <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>No items yet. Click "Add New" to start.</div> : children}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {children?.length === 0 ? <div style={{ textAlign: 'center', padding: 32, color: 'var(--text3)' }}>No items yet. Click "Add New" to start.</div> : children}
       </div>
     </div>
   );
@@ -1356,9 +1356,9 @@ function Section({ title, children, onAdd, extra }) {
 
 function Card({ title, badge, badgeColor, subtitle, extra, onEdit, onDelete }) {
   return (
-    <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: 16, border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+    <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '10px 14px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
       <div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 2 }}>
           <span style={{ fontWeight: 700, fontSize: 14 }}>{title}</span>
           <span style={{ fontSize: 11, padding: '2px 7px', borderRadius: 999, fontWeight: 700, background: `${badgeColor}20`, color: badgeColor }}>{badge}</span>
         </div>
@@ -1366,8 +1366,8 @@ function Card({ title, badge, badgeColor, subtitle, extra, onEdit, onDelete }) {
         {extra && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>{extra}</div>}
       </div>
       <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={onEdit} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Edit</button>
-        <button onClick={onDelete} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '6px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}><Trash2 size={12} /></button>
+        <button onClick={onEdit} style={{ background: 'var(--bg3)', border: 'none', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>Edit</button>
+        <button onClick={onDelete} style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, padding: '5px 10px', cursor: 'pointer', fontSize: 12, fontWeight: 600 }}><Trash2 size={12} /></button>
       </div>
     </div>
   );

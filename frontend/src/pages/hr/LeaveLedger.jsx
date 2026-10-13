@@ -105,21 +105,21 @@ export default function LeaveLedger() {
 
   return (
     <Layout title="Leave Ledger">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Top Header / Actions Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
-              <BookOpen style={{ color: 'var(--accent, #3b82f6)' }} size={22} /> Leave Ledger
+            <h1 style={{ fontSize: 18, fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BookOpen style={{ color: 'var(--accent, #3b82f6)' }} size={18} /> Leave Ledger
             </h1>
-            <p style={{ color: 'var(--text2)', margin: '4px 0 0 0', fontSize: 13 }}>
+            <p style={{ color: 'var(--text2)', margin: '2px 0 0 0', fontSize: 12.5 }}>
               Detailed breakdown of leaves taken, earned compensatory off summary, and leave balances ledger.
             </p>
           </div>
           <button
             onClick={loadTabContent}
             style={{
-              display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 6,
+              display: 'flex', alignItems: 'center', gap: 6, padding: '6px 12px', borderRadius: 6,
               background: 'var(--bg2)', border: '1px solid var(--border)', cursor: 'pointer', fontSize: 13
             }}
           >
@@ -128,11 +128,11 @@ export default function LeaveLedger() {
         </div>
 
         {/* Tabs */}
-        <div style={{ display: 'flex', gap: 12, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 10, borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
           <button
             onClick={() => setActiveTab('taken')}
             style={{
-              padding: '10px 16px', fontSize: 14, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
+              padding: '7px 12px', fontSize: 13, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
               borderBottom: activeTab === 'taken' ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
               color: activeTab === 'taken' ? 'var(--accent, #3b82f6)' : 'var(--text2)'
             }}
@@ -142,7 +142,7 @@ export default function LeaveLedger() {
           <button
             onClick={() => setActiveTab('compoff')}
             style={{
-              padding: '10px 16px', fontSize: 14, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
+              padding: '7px 12px', fontSize: 13, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
               borderBottom: activeTab === 'compoff' ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
               color: activeTab === 'compoff' ? 'var(--accent, #3b82f6)' : 'var(--text2)'
             }}
@@ -152,7 +152,7 @@ export default function LeaveLedger() {
           <button
             onClick={() => setActiveTab('balance')}
             style={{
-              padding: '10px 16px', fontSize: 14, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
+              padding: '7px 12px', fontSize: 13, fontWeight: 600, border: 'none', background: 'none', cursor: 'pointer',
               borderBottom: activeTab === 'balance' ? '2px solid var(--accent, #3b82f6)' : '2px solid transparent',
               color: activeTab === 'balance' ? 'var(--accent, #3b82f6)' : 'var(--text2)'
             }}
@@ -163,17 +163,17 @@ export default function LeaveLedger() {
 
         {/* Filter Bar */}
         <div style={{
-          display: 'flex', flexWrap: 'wrap', gap: 12, padding: 16, background: 'var(--bg2)',
-          borderRadius: 8, border: '1px solid var(--border)', marginBottom: 24, alignItems: 'center'
+          display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 12px', background: 'var(--bg2)',
+          borderRadius: 8, border: '1px solid var(--border)', marginBottom: 10, alignItems: 'center'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
-            <Filter size={16} /> Filters:
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, fontWeight: 600, color: 'var(--text)' }}>
+            <Filter size={15} /> Filters:
           </div>
 
           <select
             value={filterEmployee}
             onChange={e => setFilterEmployee(e.target.value)}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13 }}
+            style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12.5 }}
           >
             <option value="">All Employees</option>
             {employees.map(e => (
@@ -184,7 +184,7 @@ export default function LeaveLedger() {
           <select
             value={filterBranch}
             onChange={e => setFilterBranch(e.target.value)}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13 }}
+            style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12.5 }}
           >
             <option value="">All Branches</option>
             {branches.map(b => (
@@ -195,7 +195,7 @@ export default function LeaveLedger() {
           <select
             value={filterDepartment}
             onChange={e => setFilterDepartment(e.target.value)}
-            style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13 }}
+            style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12.5 }}
           >
             <option value="">All Departments</option>
             {departments.map(d => (
@@ -207,7 +207,7 @@ export default function LeaveLedger() {
             <select
               value={filterLeaveType}
               onChange={e => setFilterLeaveType(e.target.value)}
-              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13 }}
+              style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12.5 }}
             >
               <option value="">All Leave Types</option>
               {leaveTypes.map(lt => (
@@ -222,14 +222,14 @@ export default function LeaveLedger() {
                 type="date"
                 value={fromDate}
                 onChange={e => setFromDate(e.target.value)}
-                style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13 }}
+                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12.5 }}
               />
-              <span style={{ fontSize: 13, color: 'var(--text2)' }}>to</span>
+              <span style={{ fontSize: 12.5, color: 'var(--text2)' }}>to</span>
               <input
                 type="date"
                 value={toDate}
                 onChange={e => setToDate(e.target.value)}
-                style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13 }}
+                style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12.5 }}
               />
             </>
           )}
@@ -238,7 +238,7 @@ export default function LeaveLedger() {
             <select
               value={selectedYear}
               onChange={e => setSelectedYear(parseInt(e.target.value))}
-              style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 13 }}
+              style={{ padding: '5px 10px', borderRadius: 6, border: '1px solid var(--border)', background: 'var(--bg)', fontSize: 12.5 }}
             >
               {[2024, 2025, 2026, 2027].map(y => (
                 <option key={y} value={y}>Year {y}</option>
@@ -249,7 +249,7 @@ export default function LeaveLedger() {
 
         {/* Main Tab Content */}
         {loading ? (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text2)' }}>
+          <div style={{ padding: 30, textAlign: 'center', color: 'var(--text2)' }}>
             <RefreshCw className="spin" size={24} style={{ marginBottom: 8 }} />
             <p>Loading ledger data...</p>
           </div>
@@ -257,52 +257,52 @@ export default function LeaveLedger() {
           <>
             {/* TAB 1: Leave Taken Summary */}
             {activeTab === 'taken' && (
-              <div style={{ background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
                   <thead>
                     <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-                      <th style={{ padding: '12px 16px' }}>Ref #</th>
-                      <th style={{ padding: '12px 16px' }}>Employee</th>
-                      <th style={{ padding: '12px 16px' }}>Department / Branch</th>
-                      <th style={{ padding: '12px 16px' }}>Leave Type</th>
-                      <th style={{ padding: '12px 16px' }}>Date Range</th>
-                      <th style={{ padding: '12px 16px' }}>Days</th>
-                      <th style={{ padding: '12px 16px' }}>Status</th>
-                      <th style={{ padding: '12px 16px' }}>Reason</th>
+                      <th style={{ padding: '8px 12px' }}>Ref #</th>
+                      <th style={{ padding: '8px 12px' }}>Employee</th>
+                      <th style={{ padding: '8px 12px' }}>Department / Branch</th>
+                      <th style={{ padding: '8px 12px' }}>Leave Type</th>
+                      <th style={{ padding: '8px 12px' }}>Date Range</th>
+                      <th style={{ padding: '8px 12px' }}>Days</th>
+                      <th style={{ padding: '8px 12px' }}>Status</th>
+                      <th style={{ padding: '8px 12px' }}>Reason</th>
                     </tr>
                   </thead>
                   <tbody>
                     {takenSummary.length === 0 ? (
                       <tr>
-                        <td colSpan={8} style={{ padding: 24, textAlign: 'center', color: 'var(--text2)' }}>
+                        <td colSpan={8} style={{ padding: 20, textAlign: 'center', color: 'var(--text2)' }}>
                           No leave records found matching your filters.
                         </td>
                       </tr>
                     ) : (
                       takenSummary.map(row => (
                         <tr key={row.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: 600 }}>{row.reference}</td>
-                          <td style={{ padding: '12px 16px' }}>
+                          <td style={{ padding: '8px 12px', fontWeight: 600 }}>{row.reference}</td>
+                          <td style={{ padding: '8px 12px' }}>
                             <div style={{ fontWeight: 600 }}>{row.employee_name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{row.employee_code}</div>
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             <div>{row.department_name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{row.branch_name}</div>
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             <span style={{ padding: '2px 6px', borderRadius: 4, background: 'var(--bg3)', fontWeight: 600 }}>
                               {row.leave_type_code}
                             </span> {row.leave_type_name}
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             {row.from_date} to {row.to_date}
                           </td>
-                          <td style={{ padding: '12px 16px', fontWeight: 600 }}>
+                          <td style={{ padding: '8px 12px', fontWeight: 600 }}>
                             {row.total_days} {row.is_half_day ? `(Half-day: ${row.half_day_session})` : ''}
                           </td>
-                          <td style={{ padding: '12px 16px' }}>{getStatusBadge(row.status)}</td>
-                          <td style={{ padding: '12px 16px', color: 'var(--text2)', maxWidth: 200 }}>{row.reason || '-'}</td>
+                          <td style={{ padding: '8px 12px' }}>{getStatusBadge(row.status)}</td>
+                          <td style={{ padding: '8px 12px', color: 'var(--text2)', maxWidth: 220 }}>{row.reason || '-'}</td>
                         </tr>
                       ))
                     )}
@@ -313,48 +313,48 @@ export default function LeaveLedger() {
 
             {/* TAB 2: Comp-Off Earned Summary */}
             {activeTab === 'compoff' && (
-              <div style={{ background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden' }}>
+              <div style={{ background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
                   <thead>
                     <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-                      <th style={{ padding: '12px 16px' }}>Earned Date</th>
-                      <th style={{ padding: '12px 16px' }}>Employee</th>
-                      <th style={{ padding: '12px 16px' }}>Department / Branch</th>
-                      <th style={{ padding: '12px 16px' }}>Punches</th>
-                      <th style={{ padding: '12px 16px' }}>Hours Worked</th>
-                      <th style={{ padding: '12px 16px' }}>OT / Comp-Off Hours</th>
-                      <th style={{ padding: '12px 16px' }}>Comp-Off Credited</th>
+                      <th style={{ padding: '8px 12px' }}>Earned Date</th>
+                      <th style={{ padding: '8px 12px' }}>Employee</th>
+                      <th style={{ padding: '8px 12px' }}>Department / Branch</th>
+                      <th style={{ padding: '8px 12px' }}>Punches</th>
+                      <th style={{ padding: '8px 12px' }}>Hours Worked</th>
+                      <th style={{ padding: '8px 12px' }}>OT / Comp-Off Hours</th>
+                      <th style={{ padding: '8px 12px' }}>Comp-Off Credited</th>
                     </tr>
                   </thead>
                   <tbody>
                     {compOffSummary.length === 0 ? (
                       <tr>
-                        <td colSpan={7} style={{ padding: 24, textAlign: 'center', color: 'var(--text2)' }}>
+                        <td colSpan={7} style={{ padding: 20, textAlign: 'center', color: 'var(--text2)' }}>
                           No compensatory off earned records found for the selected period.
                         </td>
                       </tr>
                     ) : (
                       compOffSummary.map(row => (
                         <tr key={row.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                          <td style={{ padding: '12px 16px', fontWeight: 600 }}>{row.date}</td>
-                          <td style={{ padding: '12px 16px' }}>
+                          <td style={{ padding: '8px 12px', fontWeight: 600 }}>{row.date}</td>
+                          <td style={{ padding: '8px 12px' }}>
                             <div style={{ fontWeight: 600 }}>{row.employee_name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{row.employee_code}</div>
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             <div>{row.department_name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text2)' }}>{row.branch_name}</div>
                           </td>
-                          <td style={{ padding: '12px 16px', fontSize: 12 }}>
+                          <td style={{ padding: '8px 12px', fontSize: 12 }}>
                             <div>IN: {row.check_in ? row.check_in.split('T')[1]?.substring(0, 5) : '-'}</div>
                             <div>OUT: {row.check_out ? row.check_out.split('T')[1]?.substring(0, 5) : '-'}</div>
                           </td>
-                          <td style={{ padding: '12px 16px' }}>{row.hours_worked} hrs</td>
-                          <td style={{ padding: '12px 16px', color: '#16a34a', fontWeight: 600 }}>
+                          <td style={{ padding: '8px 12px' }}>{row.hours_worked} hrs</td>
+                          <td style={{ padding: '8px 12px', color: '#16a34a', fontWeight: 600 }}>
                             +{row.comp_off_hours} hrs
                           </td>
-                          <td style={{ padding: '12px 16px' }}>
-                            <span style={{ padding: '3px 8px', borderRadius: 12, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>
+                          <td style={{ padding: '8px 12px' }}>
+                            <span style={{ padding: '2px 8px', borderRadius: 12, background: '#dcfce7', color: '#15803d', fontWeight: 600 }}>
                               {row.comp_off_days_earned} Day(s)
                             </span>
                           </td>
@@ -368,28 +368,28 @@ export default function LeaveLedger() {
 
             {/* TAB 3: Leave Balance Ledger */}
             {activeTab === 'balance' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {balanceLedger.length === 0 ? (
-                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text2)', background: 'var(--bg2)', borderRadius: 8 }}>
+                  <div style={{ padding: 20, textAlign: 'center', color: 'var(--text2)', background: 'var(--bg2)', borderRadius: 8 }}>
                     No balance ledger records found for {selectedYear}.
                   </div>
                 ) : (
                   balanceLedger.map(empLedger => (
                     <div key={empLedger.employee_id} style={{
-                      background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', overflow: 'hidden'
+                      background: 'var(--bg2)', borderRadius: 8, border: '1px solid var(--border)', overflowX: 'auto'
                     }}>
                       <div style={{
-                        padding: '12px 16px', background: 'var(--bg3)', borderBottom: '1px solid var(--border)',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center'
+                        padding: '8px 12px', background: 'var(--bg3)', borderBottom: '1px solid var(--border)',
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8
                       }}>
                         <div>
-                          <span style={{ fontWeight: 700, fontSize: 15 }}>{empLedger.employee_name}</span>
-                          <span style={{ fontSize: 13, color: 'var(--text2)', marginLeft: 8 }}>({empLedger.employee_code})</span>
-                          <span style={{ fontSize: 12, color: 'var(--text2)', marginLeft: 16 }}>
+                          <span style={{ fontWeight: 700, fontSize: 14 }}>{empLedger.employee_name}</span>
+                          <span style={{ fontSize: 12.5, color: 'var(--text2)', marginLeft: 8 }}>({empLedger.employee_code})</span>
+                          <span style={{ fontSize: 12, color: 'var(--text2)', marginLeft: 12 }}>
                             {empLedger.department_name} | {empLedger.branch_name}
                           </span>
                         </div>
-                        <div style={{ display: 'flex', gap: 16, fontSize: 13 }}>
+                        <div style={{ display: 'flex', gap: 14, fontSize: 12.5 }}>
                           <div>Total Allocated: <strong>{empLedger.total_allocated}</strong></div>
                           <div>Total Used: <strong style={{ color: '#b91c1c' }}>{empLedger.total_used}</strong></div>
                           <div>Available Balance: <strong style={{ color: '#15803d' }}>{empLedger.total_available}</strong></div>
@@ -397,24 +397,24 @@ export default function LeaveLedger() {
                       </div>
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, textAlign: 'left' }}>
                         <thead>
-                          <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', fontSize: 12, color: 'var(--text2)' }}>
-                            <th style={{ padding: '8px 16px' }}>Leave Type</th>
-                            <th style={{ padding: '8px 16px' }}>Allocated Days</th>
-                            <th style={{ padding: '8px 16px' }}>Carry Forwarded</th>
-                            <th style={{ padding: '8px 16px' }}>Used Days</th>
-                            <th style={{ padding: '8px 16px' }}>Net Available Balance</th>
+                          <tr style={{ background: 'var(--bg)', borderBottom: '1px solid var(--border)', fontSize: 11.5, color: 'var(--text2)' }}>
+                            <th style={{ padding: '6px 12px' }}>Leave Type</th>
+                            <th style={{ padding: '6px 12px' }}>Allocated Days</th>
+                            <th style={{ padding: '6px 12px' }}>Carry Forwarded</th>
+                            <th style={{ padding: '6px 12px' }}>Used Days</th>
+                            <th style={{ padding: '6px 12px' }}>Net Available Balance</th>
                           </tr>
                         </thead>
                         <tbody>
                           {empLedger.leave_breakdown.map(item => (
                             <tr key={item.leave_type_id} style={{ borderBottom: '1px solid var(--border)' }}>
-                              <td style={{ padding: '10px 16px', fontWeight: 600 }}>
+                              <td style={{ padding: '6px 12px', fontWeight: 600 }}>
                                 {item.leave_type_name} ({item.leave_type_code})
                               </td>
-                              <td style={{ padding: '10px 16px' }}>{item.allocated_days}</td>
-                              <td style={{ padding: '10px 16px' }}>{item.carry_forwarded}</td>
-                              <td style={{ padding: '10px 16px', color: '#b91c1c' }}>{item.used_days}</td>
-                              <td style={{ padding: '10px 16px', fontWeight: 700, color: '#15803d' }}>
+                              <td style={{ padding: '6px 12px' }}>{item.allocated_days}</td>
+                              <td style={{ padding: '6px 12px' }}>{item.carry_forwarded}</td>
+                              <td style={{ padding: '6px 12px', color: '#b91c1c' }}>{item.used_days}</td>
+                              <td style={{ padding: '6px 12px', fontWeight: 700, color: '#15803d' }}>
                                 {item.available_balance}
                               </td>
                             </tr>

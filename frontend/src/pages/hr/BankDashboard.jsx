@@ -34,11 +34,11 @@ function StatCard({ label, value, sub, icon: Icon, color, trend }) {
     <div style={{
       background: 'var(--bg)',
       border: '1px solid var(--border)',
-      borderRadius: 16,
-      padding: '20px 24px',
+      borderRadius: 12,
+      padding: '12px 16px',
       display: 'flex',
       flexDirection: 'column',
-      gap: 8,
+      gap: 4,
       position: 'relative',
       overflow: 'hidden',
       boxShadow: '0 2px 12px rgba(0,0,0,0.07)'
@@ -49,13 +49,13 @@ function StatCard({ label, value, sub, icon: Icon, color, trend }) {
         borderRadius: '0 16px 0 80px'
       }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-        <div style={{ width: 38, height: 38, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <Icon size={18} color={color} />
+        <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Icon size={16} color={color} />
         </div>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>{label}</span>
       </div>
-      <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--text)', marginTop: 2 }}>{value}</div>
-      {sub && <div style={{ fontSize: 12, color: 'var(--text3)' }}>{sub}</div>}
+      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginTop: 2 }}>{value}</div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--text3)' }}>{sub}</div>}
     </div>
   );
 }
@@ -97,9 +97,9 @@ function DailyChart({ daily }) {
 // ─── Modal wrapper ────────────────────────────────────────────────────────────
 function Modal({ title, onClose, children, width = 520 }) {
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div style={{ background: 'var(--bg)', borderRadius: 18, padding: '28px 28px 24px', width, maxWidth: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'modalIn 0.22s ease-out', maxHeight: '90vh', overflowY: 'auto' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+      <div style={{ background: 'var(--bg)', borderRadius: 14, padding: '18px 20px', width, maxWidth: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'modalIn 0.22s ease-out', maxHeight: '90vh', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 4 }}><X size={18} /></button>
         </div>
@@ -112,15 +112,15 @@ function Modal({ title, onClose, children, width = 520 }) {
 
 function Field({ label, children }) {
   return (
-    <div style={{ marginBottom: 14 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 5, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
+    <div style={{ marginBottom: 10 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', marginBottom: 4, display: 'block', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{label}</label>
       {children}
     </div>
   );
 }
 
 const inputStyle = {
-  width: '100%', padding: '9px 12px', border: '1.5px solid var(--border)',
+  width: '100%', padding: '7px 10px', border: '1.5px solid var(--border)',
   borderRadius: 8, background: 'var(--bg2)', color: 'var(--text)', fontSize: 13,
   outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s'
 };
@@ -257,7 +257,7 @@ export default function BankDashboard() {
   };
 
   const tabStyle = (t) => ({
-    padding: '8px 20px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
+    padding: '6px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13, fontWeight: 600,
     background: tab === t ? 'var(--accent)' : 'transparent',
     color: tab === t ? '#fff' : 'var(--text2)',
     transition: 'all 0.2s'
@@ -265,10 +265,10 @@ export default function BankDashboard() {
 
   return (
     <Layout title="Bank Dashboard">
-      <div style={{ padding: '20px 24px', minHeight: '100vh', background: 'var(--bg2)' }}>
+      <div style={{ padding: '10px 14px', minHeight: '100vh', background: 'var(--bg2)' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, flexWrap: 'wrap', gap: 8 }}>
           {/* Tabs on the left */}
           <div style={{ display: 'flex', gap: 4, background: 'var(--bg)', borderRadius: 10, padding: 4, width: 'fit-content', border: '1px solid var(--border)' }}>
             <button style={tabStyle('dashboard')} onClick={() => setTab('dashboard')}>📊 Overview</button>
@@ -278,17 +278,17 @@ export default function BankDashboard() {
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
             {/* Account filter */}
-            <select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '8px 12px', fontSize: 12 }}>
+            <select value={selectedAccount} onChange={e => setSelectedAccount(e.target.value)} style={{ ...inputStyle, width: 'auto', padding: '6px 10px', fontSize: 12 }}>
               <option value="">All Accounts</option>
               {accounts.map(a => <option key={a.id} value={a.id}>{a.account_name}</option>)}
             </select>
-            <button onClick={() => { loadDashboard(); loadTransactions(); }} style={{ ...inputStyle, width: 'auto', padding: '8px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, background: 'var(--bg)', border: '1.5px solid var(--border)' }}>
+            <button onClick={() => { loadDashboard(); loadTransactions(); }} style={{ ...inputStyle, width: 'auto', padding: '6px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 600, background: 'var(--bg)', border: '1.5px solid var(--border)' }}>
               <RefreshCw size={13} /> Refresh
             </button>
-            <button onClick={() => setShowNewTxn(true)} style={{ padding: '9px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: '#6366f1', color: '#fff', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={() => setShowNewTxn(true)} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: '#6366f1', color: '#fff', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
               <PlusCircle size={15} /> New Payment
             </button>
-            <button onClick={() => setShowNewAcc(true)} style={{ padding: '9px 16px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--bg)', border: '1.5px solid var(--border)', color: 'var(--text)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <button onClick={() => setShowNewAcc(true)} style={{ padding: '7px 14px', borderRadius: 8, border: 'none', cursor: 'pointer', background: 'var(--bg)', border: '1.5px solid var(--border)', color: 'var(--text)', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Landmark size={15} /> Add Account
             </button>
           </div>
@@ -298,31 +298,31 @@ export default function BankDashboard() {
         {tab === 'dashboard' && (
           <div>
             {loading ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading...</div>
             ) : summary ? (
               <>
                 {/* KPI cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 12 }}>
                   <StatCard label="Current Balance" value={fmt(summary.total_balance)} icon={DollarSign} color="#10b981" />
                   <StatCard label="Lien Amount" value={fmt(summary.total_lien)} sub="Blocked / Held" icon={Shield} color="#f59e0b" />
                   <StatCard label="Available (Net of Lien)" value={fmt(summary.balance_with_lien)} sub="Balance − Lien" icon={TrendingUp} color="#6366f1" />
                 </div>
 
                 {/* Status counts */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 12, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 12 }}>
                   {[
                     { key: 'entered',  icon: FileClock,    color: '#f59e0b', label: 'Payment Entered' },
                     { key: 'verified', icon: BadgeCheck,   color: '#3b82f6', label: 'Verified' },
                     { key: 'approved', icon: CheckCircle2, color: '#10b981', label: 'Approved' },
                     { key: 'rejected', icon: XCircle,      color: '#ef4444', label: 'Rejected' },
                   ].map(({ key, icon: Icon, color, label }) => (
-                    <div key={key} style={{ background: 'var(--bg)', border: `1.5px solid ${color}30`, borderRadius: 12, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 12, cursor: 'pointer', transition: 'all 0.2s' }}
+                    <div key={key} style={{ background: 'var(--bg)', border: `1.5px solid ${color}30`, borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', transition: 'all 0.2s' }}
                       onClick={() => { setFilterStatus(key); setTab('transactions'); }}>
-                      <div style={{ width: 36, height: 36, borderRadius: 10, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                        <Icon size={18} color={color} />
+                      <div style={{ width: 32, height: 32, borderRadius: 8, background: `${color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                        <Icon size={16} color={color} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)' }}>{summary.counts?.[key] ?? 0}</div>
+                        <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)' }}>{summary.counts?.[key] ?? 0}</div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>{label}</div>
                       </div>
                     </div>
@@ -330,14 +330,14 @@ export default function BankDashboard() {
                 </div>
 
                 {/* Daily chart + accounts */}
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 24 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10, marginBottom: 12 }}>
                   {/* Chart */}
-                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Daily Payment Activity <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(last 14 days)</span></div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Total transactions per day</div>
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Daily Payment Activity <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(last 14 days)</span></div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 10 }}>Total transactions per day</div>
                     {summary.daily && <DailyChart daily={summary.daily} />}
                     {/* Legend */}
-                    <div style={{ display: 'flex', gap: 16, marginTop: 12, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
                       {[
                         { color: '#f59e0b', label: 'Entered' },
                         { color: '#3b82f6', label: 'Verified' },
@@ -353,12 +353,12 @@ export default function BankDashboard() {
                   </div>
 
                   {/* Approved amounts per day */}
-                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: 20 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>Approved Payments <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(day-wise)</span></div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>Amount disbursed per day</div>
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Approved Payments <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(day-wise)</span></div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 10 }}>Amount disbursed per day</div>
                     <div style={{ overflowY: 'auto', maxHeight: 200 }}>
                       {(summary.daily || []).filter(d => d.approved > 0 || d.total_amount > 0).slice(-10).reverse().map((d, i) => (
-                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '7px 0', borderBottom: '1px solid var(--border)' }}>
+                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
                           <span style={{ fontSize: 12, color: 'var(--text2)' }}>{fmtDate(d.date)}</span>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
                             <span style={{ fontSize: 11, color: '#10b981', background: '#10b98115', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{d.approved} approved</span>
@@ -382,10 +382,10 @@ export default function BankDashboard() {
         {/* ── Transactions Tab ── */}
         {tab === 'transactions' && (
           <div>
-            <div style={{ display: 'flex', gap: 8, marginBottom: 16, flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
               {['', 'entered', 'verified', 'approved', 'rejected'].map(s => (
                 <button key={s} onClick={() => setFilterStatus(s)} style={{
-                  padding: '6px 14px', borderRadius: 20, border: '1.5px solid',
+                  padding: '5px 12px', borderRadius: 20, border: '1.5px solid',
                   borderColor: filterStatus === s ? '#6366f1' : 'var(--border)',
                   background: filterStatus === s ? '#6366f118' : 'var(--bg)',
                   color: filterStatus === s ? '#6366f1' : 'var(--text2)',
@@ -397,20 +397,20 @@ export default function BankDashboard() {
             </div>
 
             {txnLoading ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading...</div>
             ) : (
-              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, overflow: 'hidden' }}>
+              <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, overflowX: 'auto' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ background: 'var(--bg2)' }}>
                       {['Ref', 'Date', 'Account', 'Payee', 'Description', 'Amount', 'Status', 'Workflow', ''].map(h => (
-                        <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
                     {transactions.length === 0 && (
-                      <tr><td colSpan={9} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No transactions found</td></tr>
+                      <tr><td colSpan={9} style={{ padding: 32, textAlign: 'center', color: 'var(--text3)', fontSize: 13 }}>No transactions found</td></tr>
                     )}
                     {transactions.map(t => {
                       const acc = accounts.find(a => a.id === t.account_id);
@@ -418,14 +418,14 @@ export default function BankDashboard() {
                         <tr key={t.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                          <td style={{ padding: '11px 14px', fontSize: 12, fontWeight: 700, color: '#6366f1', fontFamily: 'monospace' }}>{t.reference}</td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{fmtDate(t.transaction_date)}</td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: 'var(--text2)', maxWidth: 120, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc?.account_name || '—'}</td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: 'var(--text)', fontWeight: 600, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.payee_name || '—'}</td>
-                          <td style={{ padding: '11px 14px', fontSize: 12, color: 'var(--text2)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description || '—'}</td>
-                          <td style={{ padding: '11px 14px', fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{fmt(t.amount)}</td>
-                          <td style={{ padding: '11px 14px' }}><StatusBadge status={t.status} /></td>
-                          <td style={{ padding: '11px 14px' }}>
+                          <td style={{ padding: '8px 12px', fontSize: 12, fontWeight: 700, color: '#6366f1', fontFamily: 'monospace' }}>{t.reference}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{fmtDate(t.transaction_date)}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text2)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc?.account_name || '—'}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text)', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.payee_name || '—'}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text2)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description || '—'}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{fmt(t.amount)}</td>
+                          <td style={{ padding: '8px 12px' }}><StatusBadge status={t.status} /></td>
+                          <td style={{ padding: '8px 12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                               {/* Stage dots */}
                               {[
@@ -445,9 +445,9 @@ export default function BankDashboard() {
                               })}
                             </div>
                           </td>
-                          <td style={{ padding: '11px 14px' }}>
+                          <td style={{ padding: '8px 12px' }}>
                             <button onClick={() => { setDetailTxn(t); setRemarkInput(''); }}
-                              style={{ padding: '5px 12px', borderRadius: 7, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+                              style={{ padding: '4px 10px', borderRadius: 7, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', fontSize: 11, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
                               <Eye size={12} /> View
                             </button>
                           </td>
@@ -463,26 +463,26 @@ export default function BankDashboard() {
 
         {/* ── Accounts Tab ── */}
         {tab === 'accounts' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 10 }}>
             {accounts.map(a => (
-              <div key={a.id} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 16, padding: '20px 22px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
-                  <div style={{ width: 42, height: 42, borderRadius: 12, background: '#6366f118', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <Landmark size={20} color="#6366f1" />
+              <div key={a.id} style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 16px', boxShadow: '0 2px 10px rgba(0,0,0,0.06)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: '#6366f118', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <Landmark size={18} color="#6366f1" />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>{a.account_name}</div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{a.account_name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{a.bank_name || 'Bank'}{a.branch_name ? ` · ${a.branch_name}` : ''}</div>
                   </div>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 12 }}>
-                  <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '10px 12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
+                  <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '8px 10px' }}>
                     <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>CURRENT BALANCE</div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: '#10b981', marginTop: 2 }}>{fmt(a.current_balance)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981', marginTop: 2 }}>{fmt(a.current_balance)}</div>
                   </div>
-                  <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '10px 12px' }}>
+                  <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '8px 10px' }}>
                     <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>NET OF LIEN</div>
-                    <div style={{ fontSize: 17, fontWeight: 800, color: '#6366f1', marginTop: 2 }}>{fmt(a.balance_with_lien)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: '#6366f1', marginTop: 2 }}>{fmt(a.balance_with_lien)}</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
@@ -493,11 +493,11 @@ export default function BankDashboard() {
                     </span>
                   )}
                 </div>
-                {a.ifsc_code && <div style={{ marginTop: 6, fontSize: 11, color: 'var(--text3)' }}>IFSC: {a.ifsc_code}</div>}
+                {a.ifsc_code && <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text3)' }}>IFSC: {a.ifsc_code}</div>}
               </div>
             ))}
             {accounts.length === 0 && (
-              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 60, color: 'var(--text3)', fontSize: 13 }}>
+              <div style={{ gridColumn: '1/-1', textAlign: 'center', padding: 40, color: 'var(--text3)', fontSize: 13 }}>
                 No accounts yet. Click "Add Account" to get started.
               </div>
             )}

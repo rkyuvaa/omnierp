@@ -31,7 +31,7 @@ const INR = v =>
 
 const inputStyle = {
   width: '100%',
-  padding: '6px 8px',
+  padding: '5px 6px',
   borderRadius: 6,
   border: '1px solid var(--border)',
   background: 'var(--bg3)',
@@ -42,7 +42,7 @@ const inputStyle = {
 };
 
 const cellHeaderStyle = {
-  padding: '10px 8px',
+  padding: '7px 6px',
   textAlign: 'left',
   fontWeight: 700,
   fontSize: 10,
@@ -253,13 +253,13 @@ export default function ExpenseSettlement() {
 
   return (
     <Layout title={`Settlement: ${advance.reference || `Draft Request #${advance.id}`}`}>
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Back and Page Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
           <button
             onClick={() => navigate('/expenses/my')}
             style={{
-              padding: '6px 12px',
+              padding: '5px 10px',
               borderRadius: 8,
               border: '1px solid var(--border)',
               background: 'var(--bg2)',
@@ -281,7 +281,7 @@ export default function ExpenseSettlement() {
                 onClick={() => handleSaveOrSubmit(false)}
                 disabled={saving}
                 style={{
-                  padding: '8px 16px',
+                  padding: '6px 12px',
                   borderRadius: 8,
                   border: '1px solid var(--border)',
                   background: 'var(--bg2)',
@@ -300,7 +300,7 @@ export default function ExpenseSettlement() {
                 onClick={() => handleSaveOrSubmit(true)}
                 disabled={saving}
                 style={{
-                  padding: '8px 18px',
+                  padding: '6px 14px',
                   borderRadius: 8,
                   border: 'none',
                   background: 'var(--accent)',
@@ -321,66 +321,66 @@ export default function ExpenseSettlement() {
         </div>
 
         {/* Top Summary Cards Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 10, marginBottom: 10 }}>
           {/* Card 1: Approved Advance */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Approved Advance</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{INR(approvedAmount)}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Approved Advance</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{INR(approvedAmount)}</div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: '#3b82f615', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
-              <Wallet size={16} />
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: '#3b82f615', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
+              <Wallet size={15} />
             </div>
           </div>
 
           {/* Card 2: Total Claimed */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Claimed Expenses</div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>{INR(claimedAmount)}</div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Claimed Expenses</div>
+              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{INR(claimedAmount)}</div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: 'var(--accent)15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
-              <TrendingUp size={16} />
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent)15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
+              <TrendingUp size={15} />
             </div>
           </div>
 
           {/* Card 3: Remaining / Excess Balance */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
                 {excessAmount > 0 ? 'Excess Amount (Claim)' : 'Remaining Balance (Return)'}
               </div>
-              <div style={{ fontSize: 20, fontWeight: 800, color: excessAmount > 0 ? '#ef4444' : '#22c55e' }}>
+              <div style={{ fontSize: 18, fontWeight: 800, color: excessAmount > 0 ? '#ef4444' : '#22c55e' }}>
                 {excessAmount > 0 ? INR(excessAmount) : INR(netBalance)}
               </div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: excessAmount > 0 ? '#ef444415' : '#22c55e15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: excessAmount > 0 ? '#ef4444' : '#22c55e' }}>
-              {excessAmount > 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: excessAmount > 0 ? '#ef444415' : '#22c55e15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: excessAmount > 0 ? '#ef4444' : '#22c55e' }}>
+              {excessAmount > 0 ? <TrendingUp size={15} /> : <TrendingDown size={15} />}
             </div>
           </div>
 
           {/* Card 4: Settlement Status */}
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 4 }}>Settlement Status</div>
-              <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 4 }}>
+              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Settlement Status</div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>
                 {advance.status.replace('_', ' ')}
               </div>
             </div>
-            <div style={{ width: 36, height: 36, borderRadius: 8, background: isReadOnly ? '#10b98115' : '#f59e0b15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isReadOnly ? '#10b981' : '#f59e0b' }}>
-              <CheckCircle size={16} />
+            <div style={{ width: 32, height: 32, borderRadius: 8, background: isReadOnly ? '#10b98115' : '#f59e0b15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: isReadOnly ? '#10b981' : '#f59e0b' }}>
+              <CheckCircle size={15} />
             </div>
           </div>
         </div>
 
         {/* Manager Review Status Alert */}
         {(advance.l1_remarks || advance.l2_remarks) && (
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '14px 18px', marginBottom: 20 }}>
-            <h4 style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text2)' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', marginBottom: 10 }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text2)' }}>
               <Info size={14} style={{ color: 'var(--accent)' }} /> Manager Review Log
             </h4>
             {advance.l1_remarks && (
-              <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 6 }}>
+              <div style={{ fontSize: 12, color: 'var(--text2)', marginBottom: 4 }}>
                 <strong>L1 Approver Remarks:</strong> {advance.l1_remarks} <span style={{ color: 'var(--text3)', fontSize: 11 }}>({advance.l1_status})</span>
               </div>
             )}
@@ -393,7 +393,7 @@ export default function ExpenseSettlement() {
         )}
 
         {/* Settlement Grid Sheet */}
-        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden', marginBottom: 20 }}>
+        <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden', marginBottom: 10 }}>
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
               <thead>
@@ -419,12 +419,12 @@ export default function ExpenseSettlement() {
                 {lines.map((row, idx) => (
                   <tr key={idx} style={{ borderTop: '1px solid var(--border)' }}>
                     {/* S# */}
-                    <td style={{ padding: '8px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
+                    <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
                       {idx + 1}
                     </td>
 
                     {/* Date */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="date"
                         value={row.date}
@@ -435,7 +435,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* Type / Expense Category */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <select
                         value={row.expense_type}
                         disabled={isReadOnly}
@@ -452,7 +452,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* Cost Code */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="text"
                         placeholder="Cost Code"
@@ -464,7 +464,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* Cost to */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="text"
                         placeholder="Cost Center/Client"
@@ -476,7 +476,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* From */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="text"
                         placeholder="From Location"
@@ -488,7 +488,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* To */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="text"
                         placeholder="To Location"
@@ -500,7 +500,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* Description */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="text"
                         placeholder="Description/Remarks"
@@ -512,7 +512,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* Paid to */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="text"
                         placeholder="Vendor/Merchant"
@@ -524,7 +524,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* GST Bill (Yes/No Toggle + GSTIN) */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                         <select
                           disabled={isReadOnly}
@@ -535,7 +535,7 @@ export default function ExpenseSettlement() {
                             if (!isYes) updateRowField(idx, 'gst_number', '');
                           }}
                           style={{
-                            padding: '5px 8px',
+                            padding: '4px 6px',
                             borderRadius: 6,
                             border: '1px solid var(--border)',
                             background: (row.gst_number || row.has_gst_bill) ? '#dcfce7' : 'var(--bg3)',
@@ -557,7 +557,7 @@ export default function ExpenseSettlement() {
                             value={row.gst_number || ''}
                             onChange={e => updateRowField(idx, 'gst_number', e.target.value)}
                             style={{
-                              padding: '4px 6px',
+                              padding: '3px 5px',
                               borderRadius: 4,
                               border: '1px solid var(--border)',
                               background: 'var(--bg)',
@@ -571,7 +571,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* Amt (Rs. Ps) */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="number"
                         min="0"
@@ -585,7 +585,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* Bills Attached (Single Bill Max: Attach OR View/Download/Remove) */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       {row.bill_attachments && row.bill_attachments.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                           {row.bill_attachments.map((file, fIdx) => (
@@ -597,7 +597,7 @@ export default function ExpenseSettlement() {
                                 gap: 4,
                                 background: 'var(--bg3)',
                                 borderRadius: 4,
-                                padding: '4px 6px',
+                                padding: '3px 6px',
                                 fontSize: 11,
                                 border: '1px solid var(--border)',
                               }}
@@ -654,7 +654,7 @@ export default function ExpenseSettlement() {
                               alignItems: 'center',
                               justifyContent: 'center',
                               gap: 4,
-                              padding: '5px 10px',
+                              padding: '4px 8px',
                               borderRadius: 4,
                               border: '1px dashed var(--accent)',
                               background: 'transparent',
@@ -672,7 +672,7 @@ export default function ExpenseSettlement() {
                     </td>
 
                     {/* A/c verification */}
-                    <td style={{ padding: '8px' }}>
+                    <td style={{ padding: '5px 6px' }}>
                       <input
                         type="text"
                         placeholder="A/c Status/Notes"
@@ -685,7 +685,7 @@ export default function ExpenseSettlement() {
 
                     {/* Delete button */}
                     {!isReadOnly && (
-                      <td style={{ padding: '8px', textAlign: 'center' }}>
+                      <td style={{ padding: '5px 6px', textAlign: 'center' }}>
                         <button
                           onClick={() => deleteRow(idx)}
                           style={{
@@ -712,14 +712,14 @@ export default function ExpenseSettlement() {
 
           {/* Add Row Button under table */}
           {!isReadOnly && (
-            <div style={{ padding: 12, borderTop: '1px solid var(--border)', background: 'var(--bg3)30' }}>
+            <div style={{ padding: '8px 12px', borderTop: '1px solid var(--border)', background: 'var(--bg3)30' }}>
               <button
                 onClick={addRow}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
                   gap: 6,
-                  padding: '6px 14px',
+                  padding: '5px 12px',
                   borderRadius: 6,
                   border: '1px solid var(--border)',
                   background: 'var(--bg2)',
@@ -744,11 +744,11 @@ export default function ExpenseSettlement() {
             style={{
               background: 'var(--bg2)',
               border: '1px solid var(--border)',
-              borderRadius: 12,
-              padding: '14px 18px',
+              borderRadius: 10,
+              padding: '10px 14px',
               display: 'flex',
               alignItems: 'flex-start',
-              gap: 12,
+              gap: 10,
             }}
           >
             <AlertCircle size={16} style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 2 }} />

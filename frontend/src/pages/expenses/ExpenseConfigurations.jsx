@@ -6,7 +6,7 @@ import { SlidersHorizontal, Tag, ShieldCheck, Save, Plus, Edit2, Trash2, X, Chec
 
 const inputStyle = {
   width: '100%',
-  padding: '9px 12px',
+  padding: '7px 10px',
   borderRadius: 8,
   border: '1px solid var(--border)',
   background: 'var(--bg3)',
@@ -20,7 +20,7 @@ const labelStyle = {
   fontSize: 12,
   fontWeight: 700,
   color: 'var(--text2)',
-  marginBottom: 5,
+  marginBottom: 4,
   display: 'block',
   textTransform: 'uppercase',
   letterSpacing: '0.4px',
@@ -134,13 +134,13 @@ export default function ExpenseConfigurations() {
 
   return (
     <Layout title="Expense Configurations">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Navigation Tabs */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 24, borderBottom: '1px solid var(--border)', paddingBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 8, marginBottom: 10, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
           <button
             onClick={() => setActiveTab('categories')}
             style={{
-              padding: '9px 18px',
+              padding: '6px 14px',
               borderRadius: 8,
               border: 'none',
               background: activeTab === 'categories' ? 'var(--accent)' : 'var(--bg3)',
@@ -158,7 +158,7 @@ export default function ExpenseConfigurations() {
           <button
             onClick={() => setActiveTab('policies')}
             style={{
-              padding: '9px 18px',
+              padding: '6px 14px',
               borderRadius: 8,
               border: 'none',
               background: activeTab === 'policies' ? 'var(--accent)' : 'var(--bg3)',
@@ -178,12 +178,12 @@ export default function ExpenseConfigurations() {
         {/* TAB 1: CATEGORIES */}
         {activeTab === 'categories' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--text)' }}>Expense Categories</h2>
-                <p style={{ fontSize: 13, color: 'var(--text3)', margin: '4px 0 0' }}>Configure claim types, maximum thresholds, and receipt requirements</p>
+                <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text)' }}>Expense Categories</h2>
+                <p style={{ fontSize: 12, color: 'var(--text3)', margin: '2px 0 0' }}>Configure claim types, maximum thresholds, and receipt requirements</p>
               </div>
-              <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
                 <label style={{ fontSize: 12, color: 'var(--text2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
                   <input
                     type="checkbox"
@@ -195,7 +195,7 @@ export default function ExpenseConfigurations() {
                 <button
                   onClick={() => { setCatForm(EMPTY_CAT_FORM); setEditCatId(null); setCatModal('add'); }}
                   style={{
-                    padding: '9px 18px',
+                    padding: '6px 14px',
                     borderRadius: 8,
                     background: 'var(--accent)',
                     color: '#fff',
@@ -213,42 +213,42 @@ export default function ExpenseConfigurations() {
               </div>
             </div>
 
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
               {catLoading ? (
-                <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>Loading categories...</div>
+                <div style={{ padding: 28, textAlign: 'center', color: 'var(--text3)' }}>Loading categories...</div>
               ) : categories.length === 0 ? (
-                <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>No categories configured yet.</div>
+                <div style={{ padding: 28, textAlign: 'center', color: 'var(--text3)' }}>No categories configured yet.</div>
               ) : (
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13.5 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 11, color: 'var(--text3)' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Category Name</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Code</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Max Limit</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'center' }}>Receipt Req.</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'center' }}>Status</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Actions</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left' }}>Category Name</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left' }}>Code</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left' }}>Max Limit</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center' }}>Receipt Req.</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'center' }}>Status</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {categories.map(c => (
                       <tr key={c.id} style={{ borderBottom: '1px solid var(--border)', opacity: c.is_active ? 1 : 0.6 }}>
-                        <td style={{ padding: '14px 16px', fontWeight: 600 }}>
+                        <td style={{ padding: '8px 12px', fontWeight: 600 }}>
                           <div>{c.name}</div>
                           {c.description && <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>{c.description}</div>}
                         </td>
-                        <td style={{ padding: '14px 16px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent2)' }}>{c.code}</td>
-                        <td style={{ padding: '14px 16px', fontWeight: 600 }}>
+                        <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent2)' }}>{c.code}</td>
+                        <td style={{ padding: '8px 12px', fontWeight: 600 }}>
                           {c.max_limit ? `₹${c.max_limit.toLocaleString('en-IN')}` : <span style={{ color: 'var(--text3)' }}>No Limit</span>}
                         </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                           {c.requires_receipt ? (
                             <span style={{ color: '#16a34a', fontWeight: 600, fontSize: 12 }}>Required</span>
                           ) : (
                             <span style={{ color: 'var(--text3)', fontSize: 12 }}>Optional</span>
                           )}
                         </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'center' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                           <span style={{
                             padding: '3px 10px',
                             borderRadius: 12,
@@ -260,7 +260,7 @@ export default function ExpenseConfigurations() {
                             {c.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
-                        <td style={{ padding: '14px 16px', textAlign: 'right' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right' }}>
                           <button
                             onClick={() => {
                               setCatForm({
@@ -297,16 +297,16 @@ export default function ExpenseConfigurations() {
 
         {/* TAB 2: POLICIES */}
         {activeTab === 'policies' && (
-          <div style={{ maxWidth: 640 }}>
-            <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--text)' }}>Expense & Cash Advance Policies</h2>
-              <p style={{ fontSize: 13, color: 'var(--text3)', margin: '4px 0 0' }}>Configure approval thresholds, advance limits, and policy notices</p>
+          <div style={{ maxWidth: '100%' }}>
+            <div style={{ marginBottom: 10 }}>
+              <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text)' }}>Expense & Cash Advance Policies</h2>
+              <p style={{ fontSize: 12, color: 'var(--text3)', margin: '2px 0 0' }}>Configure approval thresholds, advance limits, and policy notices</p>
             </div>
 
             {policyLoading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>Loading policy rules...</div>
+              <div style={{ padding: 28, textAlign: 'center', color: 'var(--text3)' }}>Loading policy rules...</div>
             ) : (
-              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 24, display: 'flex', flexDirection: 'column', gap: 20 }}>
+              <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 <div>
                   <label style={labelStyle}>L2 Escalation Threshold (₹)</label>
                   <input
@@ -368,25 +368,25 @@ export default function ExpenseConfigurations() {
                   />
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 6 }}>
                   <button
                     onClick={handleSavePolicies}
                     disabled={policySaving}
                     style={{
-                      padding: '10px 24px',
+                      padding: '8px 18px',
                       borderRadius: 8,
                       background: 'var(--accent)',
                       color: '#fff',
                       border: 'none',
                       cursor: 'pointer',
                       fontWeight: 700,
-                      fontSize: 14,
+                      fontSize: 13,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 8,
                     }}
                   >
-                    <Save size={16} /> {policySaving ? 'Saving...' : 'Save Configurations'}
+                    <Save size={15} /> {policySaving ? 'Saving...' : 'Save Configurations'}
                   </button>
                 </div>
               </div>
@@ -396,16 +396,16 @@ export default function ExpenseConfigurations() {
 
         {/* MODAL: ADD / EDIT CATEGORY */}
         {catModal && (
-          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 16, width: 480, maxWidth: '100%', padding: 24, boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
+            <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, width: 480, maxWidth: '100%', padding: 18, boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
                 <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{catModal === 'add' ? 'Add Expense Category' : 'Edit Expense Category'}</h3>
                 <button onClick={() => setCatModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}>
                   <X size={18} />
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div>
                   <label style={labelStyle}>Category Name *</label>
                   <input
@@ -461,7 +461,7 @@ export default function ExpenseConfigurations() {
                   </label>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 16 }}>
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 12 }}>
                   <button onClick={() => setCatModal(null)} className="btn btn-ghost">Cancel</button>
                   <button onClick={handleSaveCategory} disabled={catSaving} className="btn btn-primary">
                     {catSaving ? 'Saving...' : 'Save Category'}

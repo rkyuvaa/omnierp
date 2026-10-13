@@ -6,7 +6,7 @@ import { Tag, Plus, Edit2, Trash2, X, CheckCircle, AlertCircle } from 'lucide-re
 
 const inputStyle = {
   width: '100%',
-  padding: '9px 12px',
+  padding: '7px 10px',
   borderRadius: 8,
   border: '1px solid var(--border)',
   background: 'var(--bg3)',
@@ -20,7 +20,7 @@ const labelStyle = {
   fontSize: 12,
   fontWeight: 700,
   color: 'var(--text2)',
-  marginBottom: 5,
+  marginBottom: 4,
   display: 'block',
   textTransform: 'uppercase',
   letterSpacing: '0.4px',
@@ -114,9 +114,9 @@ export default function ExpenseCategories() {
 
   return (
     <Layout title="Expense Categories">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Header Actions */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 16, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 12, marginBottom: 10 }}>
           <label
             style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--text2)', cursor: 'pointer' }}
           >
@@ -133,9 +133,9 @@ export default function ExpenseCategories() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: 7,
-              padding: '9px 18px',
-              borderRadius: 9,
+              gap: 6,
+              padding: '6px 14px',
+              borderRadius: 8,
               border: 'none',
               background: 'var(--accent)',
               color: '#fff',
@@ -149,13 +149,13 @@ export default function ExpenseCategories() {
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading...</div>
+          <div style={{ textAlign: 'center', padding: 32, color: 'var(--text3)' }}>Loading...</div>
         ) : (
           <div
             style={{
               background: 'var(--bg2)',
               border: '1px solid var(--border)',
-              borderRadius: 14,
+              borderRadius: 10,
               overflow: 'hidden',
             }}
           >
@@ -166,7 +166,7 @@ export default function ExpenseCategories() {
                     <th
                       key={h}
                       style={{
-                        padding: '11px 16px',
+                        padding: '8px 12px',
                         textAlign: 'left',
                         fontWeight: 700,
                         fontSize: 11,
@@ -184,7 +184,7 @@ export default function ExpenseCategories() {
               <tbody>
                 {categories.length === 0 ? (
                   <tr>
-                    <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>
+                    <td colSpan={7} style={{ padding: 28, textAlign: 'center', color: 'var(--text3)' }}>
                       No categories found
                     </td>
                   </tr>
@@ -201,10 +201,10 @@ export default function ExpenseCategories() {
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg3)')}
                       onMouseLeave={e => (e.currentTarget.style.background = i % 2 ? 'var(--bg3)10' : 'transparent')}
                     >
-                      <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)' }}>{cat.name}</td>
+                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--text)' }}>{cat.name}</td>
                       <td
                         style={{
-                          padding: '12px 16px',
+                          padding: '8px 12px',
                           fontFamily: 'monospace',
                           fontWeight: 700,
                           fontSize: 12,
@@ -215,9 +215,9 @@ export default function ExpenseCategories() {
                       </td>
                       <td
                         style={{
-                          padding: '12px 16px',
+                          padding: '8px 12px',
                           color: 'var(--text2)',
-                          maxWidth: 200,
+                          maxWidth: 280,
                           overflow: 'hidden',
                           textOverflow: 'ellipsis',
                           whiteSpace: 'nowrap',
@@ -225,10 +225,10 @@ export default function ExpenseCategories() {
                       >
                         {cat.description || '—'}
                       </td>
-                      <td style={{ padding: '12px 16px', color: 'var(--text2)' }}>
+                      <td style={{ padding: '8px 12px', color: 'var(--text2)' }}>
                         {cat.max_limit ? `₹${cat.max_limit.toLocaleString()}` : '—'}
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td style={{ padding: '8px 12px' }}>
                         {cat.requires_receipt ? (
                           <span
                             style={{
@@ -246,7 +246,7 @@ export default function ExpenseCategories() {
                           <span style={{ color: 'var(--text3)', fontSize: 12 }}>No</span>
                         )}
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
+                      <td style={{ padding: '8px 12px' }}>
                         <span
                           style={{
                             fontSize: 11,
@@ -261,13 +261,13 @@ export default function ExpenseCategories() {
                           {cat.is_active ? 'Active' : 'Inactive'}
                         </span>
                       </td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <div style={{ display: 'flex', gap: 8 }}>
+                      <td style={{ padding: '8px 12px' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
                           <button
                             onClick={() => openEdit(cat)}
                             style={{
-                              padding: '5px 10px',
-                              borderRadius: 7,
+                              padding: '4px 8px',
+                              borderRadius: 6,
                               border: '1px solid var(--border)',
                               background: 'var(--bg3)',
                               color: 'var(--text2)',
@@ -284,8 +284,8 @@ export default function ExpenseCategories() {
                             <button
                               onClick={() => handleDeactivate(cat.id)}
                               style={{
-                                padding: '5px 10px',
-                                borderRadius: 7,
+                                padding: '4px 8px',
+                                borderRadius: 6,
                                 border: '1px solid #ef444460',
                                 background: '#ef444412',
                                 color: '#ef4444',
@@ -320,14 +320,14 @@ export default function ExpenseCategories() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 16,
+              padding: 12,
             }}
           >
             <div
               style={{
                 background: 'var(--bg)',
-                borderRadius: 16,
-                padding: 28,
+                borderRadius: 12,
+                padding: 18,
                 width: 480,
                 maxWidth: '100%',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
@@ -338,14 +338,14 @@ export default function ExpenseCategories() {
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center',
-                  marginBottom: 22,
+                  marginBottom: 14,
                 }}
               >
                 <h3
                   style={{
                     margin: 0,
                     fontWeight: 800,
-                    fontSize: 17,
+                    fontSize: 16,
                     color: 'var(--text)',
                     display: 'flex',
                     alignItems: 'center',
@@ -363,8 +363,8 @@ export default function ExpenseCategories() {
                 </button>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
                   <div>
                     <label style={labelStyle}>
                       Name <span style={{ color: '#ef4444' }}>*</span>
@@ -427,7 +427,7 @@ export default function ExpenseCategories() {
                       alignItems: 'center',
                       gap: 10,
                       cursor: 'pointer',
-                      padding: '10px 14px',
+                      padding: '8px 12px',
                       borderRadius: 8,
                       border: '1px solid var(--border)',
                       background: 'var(--bg3)',
@@ -454,11 +454,11 @@ export default function ExpenseCategories() {
                 </div>
               </div>
 
-              <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 8, marginTop: 14, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => setModal(null)}
                   style={{
-                    padding: '9px 18px',
+                    padding: '7px 14px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg2)',
@@ -474,7 +474,7 @@ export default function ExpenseCategories() {
                   onClick={handleSave}
                   disabled={saving}
                   style={{
-                    padding: '9px 20px',
+                    padding: '7px 16px',
                     borderRadius: 8,
                     border: 'none',
                     background: 'var(--accent)',

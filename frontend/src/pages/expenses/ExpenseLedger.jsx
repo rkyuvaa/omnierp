@@ -196,26 +196,26 @@ export default function ExpenseLedger() {
 
   return (
     <Layout title="Employee Expense & Advance Ledger">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Top Controls Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
           <div>
-            <h2 style={{ margin: 0, fontWeight: 800, fontSize: 20, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <BookOpen size={22} style={{ color: 'var(--accent)' }} />
+            <h2 style={{ margin: 0, fontWeight: 800, fontSize: 18, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <BookOpen size={20} style={{ color: 'var(--accent)' }} />
               Employee Expense & Advance Ledger
             </h2>
-            <p style={{ margin: '4px 0 0', fontSize: 13, color: 'var(--text3)' }}>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: 'var(--text3)' }}>
               Stage 3 Accountant Settlement & Live Running Balance Statement
             </p>
           </div>
 
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             {isAdmin && (
-              <div style={{ display: 'flex', gap: 6, background: 'var(--bg3)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
+              <div style={{ display: 'flex', gap: 4, background: 'var(--bg3)', padding: 3, borderRadius: 8, border: '1px solid var(--border)' }}>
                 <button
                   onClick={() => setActiveView('statement')}
                   style={{
-                    padding: '6px 12px',
+                    padding: '5px 10px',
                     borderRadius: 6,
                     border: 'none',
                     background: activeView === 'statement' ? 'var(--bg)' : 'transparent',
@@ -230,7 +230,7 @@ export default function ExpenseLedger() {
                 <button
                   onClick={() => setActiveView('summary')}
                   style={{
-                    padding: '6px 12px',
+                    padding: '5px 10px',
                     borderRadius: 6,
                     border: 'none',
                     background: activeView === 'summary' ? 'var(--bg)' : 'transparent',
@@ -245,7 +245,7 @@ export default function ExpenseLedger() {
                 <button
                   onClick={() => setActiveView('settings')}
                   style={{
-                    padding: '6px 12px',
+                    padding: '5px 10px',
                     borderRadius: 6,
                     border: 'none',
                     background: activeView === 'settings' ? 'var(--bg)' : 'transparent',
@@ -265,7 +265,7 @@ export default function ExpenseLedger() {
                 value={selectedEmpId}
                 onChange={e => setSelectedEmpId(e.target.value)}
                 style={{
-                  padding: '8px 12px',
+                  padding: '6px 10px',
                   borderRadius: 8,
                   border: '1px solid var(--border)',
                   background: 'var(--bg3)',
@@ -288,7 +288,7 @@ export default function ExpenseLedger() {
               <button
                 onClick={() => openObModalForEmp(selectedEmpId || (ledgerData.employee_id || ''), ledgerData.opening_balance || 0)}
                 style={{
-                  padding: '8px 14px',
+                  padding: '6px 12px',
                   borderRadius: 8,
                   border: '1px solid #16a34a',
                   background: '#f0fdf4',
@@ -311,7 +311,7 @@ export default function ExpenseLedger() {
                 fetchLedger(selectedEmpId);
               }}
               style={{
-                padding: '8px 12px',
+                padding: '6px 10px',
                 borderRadius: 8,
                 border: '1px solid var(--border)',
                 background: 'var(--bg2)',
@@ -330,19 +330,19 @@ export default function ExpenseLedger() {
         </div>
 
         {/* ── KPI METRIC CARDS ───────────────────────────────────────────────── */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 16, marginBottom: 24 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 10, marginBottom: 10 }}>
           {/* Card 1: Opening Balance */}
           <div
             style={{
               background: 'var(--bg2)',
               border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: 20,
+              borderRadius: 10,
+              padding: '12px 14px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
               position: 'relative',
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span>Opening Balance</span>
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                 {isAdmin && (
@@ -356,10 +356,10 @@ export default function ExpenseLedger() {
                 <Wallet size={16} style={{ color: '#6366f1' }} />
               </div>
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--text)' }}>
               {INR(ledgerData.opening_balance)}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 2 }}>
               Initial balance baseline
             </div>
           </div>
@@ -369,18 +369,18 @@ export default function ExpenseLedger() {
             style={{
               background: 'var(--bg2)',
               border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: 20,
+              borderRadius: 10,
+              padding: '12px 14px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               Unsettled Amount <TrendingUp size={16} style={{ color: '#f59e0b' }} />
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#f59e0b' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#f59e0b' }}>
               {INR(ledgerData.unsettled_amount)}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 2 }}>
               Active advances given (unsettled)
             </div>
           </div>
@@ -390,18 +390,18 @@ export default function ExpenseLedger() {
             style={{
               background: 'var(--bg2)',
               border: '1px solid var(--border)',
-              borderRadius: 14,
-              padding: 20,
+              borderRadius: 10,
+              padding: '12px 14px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               Reimbursement Pending <Clock size={16} style={{ color: '#3b82f6' }} />
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#3b82f6' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#3b82f6' }}>
               {INR(ledgerData.reimbursement_pending)}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 2 }}>
               Approved claims awaiting payout
             </div>
           </div>
@@ -411,18 +411,18 @@ export default function ExpenseLedger() {
             style={{
               background: 'var(--bg2)',
               border: '1px solid #10b98140',
-              borderRadius: 14,
-              padding: 20,
+              borderRadius: 10,
+              padding: '12px 14px',
               boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
             }}
           >
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.4px', marginBottom: 4, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               Net Balance <DollarSign size={16} style={{ color: '#10b981' }} />
             </div>
-            <div style={{ fontSize: 24, fontWeight: 800, color: '#10b981' }}>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#10b981' }}>
               {INR(ledgerData.net_balance)}
             </div>
-            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 4 }}>
+            <div style={{ fontSize: 11.5, color: 'var(--text3)', marginTop: 2 }}>
               Running balance statement
             </div>
           </div>
@@ -434,19 +434,19 @@ export default function ExpenseLedger() {
             style={{
               background: '#f0fdf4',
               border: '1px solid #22c55e60',
-              borderRadius: 12,
-              padding: '16px 20px',
-              marginBottom: 24,
+              borderRadius: 10,
+              padding: '10px 14px',
+              marginBottom: 10,
             }}
           >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <div style={{ fontSize: 14, fontWeight: 800, color: '#15803d', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <CheckCircle size={18} />
                 Stage 3 Accountant Action Required ({approvedAdvances.length} Manager-Approved Advances Pending Disburse)
               </div>
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {approvedAdvances.map(adv => (
                 <div
                   key={adv.id}
@@ -455,7 +455,7 @@ export default function ExpenseLedger() {
                     alignItems: 'center',
                     justifyContent: 'space-between',
                     background: '#ffffff',
-                    padding: '10px 14px',
+                    padding: '8px 12px',
                     borderRadius: 8,
                     border: '1px solid #cbd5e1',
                   }}
@@ -475,7 +475,7 @@ export default function ExpenseLedger() {
                         setShowPayoutModal(true);
                       }}
                       style={{
-                        padding: '6px 14px',
+                        padding: '5px 12px',
                         borderRadius: 6,
                         border: 'none',
                         background: '#15803d',
@@ -499,8 +499,8 @@ export default function ExpenseLedger() {
 
         {/* ── MAIN LEDGER TABLE VIEW ────────────────────────────────────────── */}
         {activeView === 'statement' && (
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ margin: 0, fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
                 Transaction History Statement {ledgerData.employee_name && `— ${ledgerData.employee_name}`}
               </h3>
@@ -510,11 +510,11 @@ export default function ExpenseLedger() {
             </div>
 
             {loading ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
+              <div style={{ padding: 28, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
                 Loading statement...
               </div>
             ) : ledgerData.transactions?.length === 0 ? (
-              <div style={{ padding: 40, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
+              <div style={{ padding: 28, textAlign: 'center', color: 'var(--text3)', fontSize: 14 }}>
                 No ledger transactions found for this employee.
               </div>
             ) : (
@@ -522,22 +522,22 @@ export default function ExpenseLedger() {
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 11, color: 'var(--text3)', letterSpacing: '0.4px' }}>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Date</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Type</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'left' }}>Description</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Debit (Given)</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Credit (Settled)</th>
-                      <th style={{ padding: '12px 16px', textAlign: 'right' }}>Running Balance</th>
-                      {isAdmin && <th style={{ padding: '12px 16px', textAlign: 'center' }}>Actions</th>}
+                      <th style={{ padding: '8px 12px', textAlign: 'left' }}>Date</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left' }}>Type</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'left' }}>Description</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Debit (Given)</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Credit (Settled)</th>
+                      <th style={{ padding: '8px 12px', textAlign: 'right' }}>Running Balance</th>
+                      {isAdmin && <th style={{ padding: '8px 12px', textAlign: 'center' }}>Actions</th>}
                     </tr>
                   </thead>
                   <tbody>
                     {ledgerData.transactions.map((tx, idx) => (
                       <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '12px 16px', color: 'var(--text2)', fontWeight: 600 }}>
+                        <td style={{ padding: '8px 12px', color: 'var(--text2)', fontWeight: 600 }}>
                           {tx.created_at ? new Date(tx.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                         </td>
-                        <td style={{ padding: '12px 16px' }}>
+                        <td style={{ padding: '8px 12px' }}>
                           <span
                             style={{
                               padding: '3px 8px',
@@ -552,20 +552,20 @@ export default function ExpenseLedger() {
                             {tx.transaction_type}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 16px', color: 'var(--text)' }}>
+                        <td style={{ padding: '8px 12px', color: 'var(--text)' }}>
                           {tx.description}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: tx.transaction_type === 'debit' ? '#ef4444' : 'var(--text3)' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: tx.transaction_type === 'debit' ? '#ef4444' : 'var(--text3)' }}>
                           {tx.transaction_type === 'debit' ? INR(tx.amount) : '-'}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: tx.transaction_type === 'credit' ? '#10b981' : 'var(--text3)' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: tx.transaction_type === 'credit' ? '#10b981' : 'var(--text3)' }}>
                           {tx.transaction_type === 'credit' ? INR(tx.amount) : '-'}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: 'var(--text)' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: 'var(--text)' }}>
                           {INR(tx.running_balance)}
                         </td>
                         {isAdmin && (
-                          <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                          <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                             <button
                               onClick={() => handleDeleteLedgerTx(tx.id)}
                               style={{
@@ -597,8 +597,8 @@ export default function ExpenseLedger() {
 
         {activeView === 'summary' && (
           /* ── ALL EMPLOYEES SUMMARY VIEW (ONLY ACTIVE / PENDING / NON-ZERO BALANCES) ── */
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, overflow: 'hidden' }}>
-            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+            <div style={{ padding: '10px 14px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div>
                 <h3 style={{ margin: 0, fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
                   Active Employees Ledger Summary
@@ -616,38 +616,38 @@ export default function ExpenseLedger() {
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                 <thead>
                   <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)', textTransform: 'uppercase', fontSize: 11, color: 'var(--text3)', letterSpacing: '0.4px' }}>
-                    <th style={{ padding: '12px 16px', textAlign: 'left' }}>Employee Name</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Opening Bal</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Unsettled Adv</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Pending Reimb</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>Pending Review</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'right' }}>Net Balance</th>
-                    <th style={{ padding: '12px 16px', textAlign: 'center' }}>Actions</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'left' }}>Employee Name</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'right' }}>Opening Bal</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'right' }}>Unsettled Adv</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'right' }}>Pending Reimb</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'center' }}>Pending Review</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'right' }}>Net Balance</th>
+                    <th style={{ padding: '8px 12px', textAlign: 'center' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allSummary.length === 0 ? (
                     <tr>
-                      <td colSpan={7} style={{ padding: 40, textAlign: 'center', color: 'var(--text3)' }}>
+                      <td colSpan={7} style={{ padding: 28, textAlign: 'center', color: 'var(--text3)' }}>
                         No active employees with pending advances, reimbursements, or opening balances.
                       </td>
                     </tr>
                   ) : (
                     allSummary.map(emp => (
                       <tr key={emp.employee_id} style={{ borderBottom: '1px solid var(--border)' }}>
-                        <td style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)' }}>
+                        <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--text)' }}>
                           {emp.employee_name}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', color: 'var(--text2)' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', color: 'var(--text2)' }}>
                           {INR(emp.opening_balance)}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#f59e0b' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#f59e0b' }}>
                           {INR(emp.unsettled_amount)}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 700, color: '#3b82f6' }}>
                           {INR(emp.reimbursement_pending)}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                           {emp.pending_review ? (
                             <span
                               style={{
@@ -669,10 +669,10 @@ export default function ExpenseLedger() {
                             <span style={{ color: 'var(--text3)', fontSize: 12 }}>—</span>
                           )}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, color: emp.net_balance > 0 ? '#10b981' : 'var(--text)' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 800, color: emp.net_balance > 0 ? '#10b981' : 'var(--text)' }}>
                           {INR(emp.net_balance)}
                         </td>
-                        <td style={{ padding: '12px 16px', textAlign: 'center' }}>
+                        <td style={{ padding: '8px 12px', textAlign: 'center' }}>
                           <div style={{ display: 'flex', justifyContent: 'center', gap: 6 }}>
                             <button
                               onClick={() => {
@@ -720,12 +720,12 @@ export default function ExpenseLedger() {
         )}
 
         {activeView === 'settings' && (
-          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 14, padding: 24, maxWidth: 600 }}>
-            <h3 style={{ margin: '0 0 20px', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
+          <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: 16, maxWidth: '100%' }}>
+            <h3 style={{ margin: '0 0 12px', fontWeight: 800, fontSize: 15, color: 'var(--text)' }}>
               Expenses Flow Configuration
             </h3>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <label style={{ fontSize: 13, fontWeight: 700, color: 'var(--text2)' }}>
                   Configured Accountant / Distributor
@@ -734,7 +734,7 @@ export default function ExpenseLedger() {
                   value={settings.accountant_id || ''}
                   onChange={e => setSettings({ ...settings, accountant_id: e.target.value ? parseInt(e.target.value) : null })}
                   style={{
-                    padding: '10px 14px',
+                    padding: '7px 10px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg3)',
@@ -760,7 +760,7 @@ export default function ExpenseLedger() {
                 disabled={savingSettings}
                 style={{
                   alignSelf: 'flex-start',
-                  padding: '10px 20px',
+                  padding: '8px 16px',
                   borderRadius: 8,
                   background: 'var(--accent)',
                   color: '#fff',
@@ -768,7 +768,7 @@ export default function ExpenseLedger() {
                   fontWeight: 700,
                   fontSize: 13,
                   cursor: 'pointer',
-                  marginTop: 10,
+                  marginTop: 4,
                 }}
               >
                 {savingSettings ? 'Saving...' : 'Save Configuration'}
@@ -788,26 +788,26 @@ export default function ExpenseLedger() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 16,
+              padding: 12,
             }}
           >
             <div
               style={{
                 background: 'var(--bg)',
-                borderRadius: 16,
-                padding: 24,
+                borderRadius: 12,
+                padding: 18,
                 width: 450,
                 maxWidth: '100%',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
-              <h3 style={{ margin: '0 0 16px 0', fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Wallet size={20} style={{ color: 'var(--accent)' }} />
+              <h3 style={{ margin: '0 0 12px 0', fontWeight: 800, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Wallet size={18} style={{ color: 'var(--accent)' }} />
                 Set / Edit Employee Opening Balance
               </h3>
 
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 4 }}>
                   Select Employee *
                 </label>
                 <select
@@ -815,7 +815,7 @@ export default function ExpenseLedger() {
                   onChange={e => setObEmpId(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '9px 12px',
+                    padding: '7px 10px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg3)',
@@ -834,8 +834,8 @@ export default function ExpenseLedger() {
                 </select>
               </div>
 
-              <div style={{ marginBottom: 14 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+              <div style={{ marginBottom: 10 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 4 }}>
                   Opening Balance Amount (₹) *
                 </label>
                 <input
@@ -845,7 +845,7 @@ export default function ExpenseLedger() {
                   onChange={e => setObAmount(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '9px 12px',
+                    padding: '7px 10px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg3)',
@@ -857,8 +857,8 @@ export default function ExpenseLedger() {
                 />
               </div>
 
-              <div style={{ marginBottom: 18 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 4 }}>
                   Remarks / Reference (Optional)
                 </label>
                 <input
@@ -868,7 +868,7 @@ export default function ExpenseLedger() {
                   onChange={e => setObRemarks(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '9px 12px',
+                    padding: '7px 10px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg3)',
@@ -880,11 +880,11 @@ export default function ExpenseLedger() {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => setShowObModal(false)}
                   style={{
-                    padding: '9px 16px',
+                    padding: '7px 14px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg2)',
@@ -900,7 +900,7 @@ export default function ExpenseLedger() {
                   onClick={handleObSubmit}
                   disabled={obSaving}
                   style={{
-                    padding: '9px 20px',
+                    padding: '7px 16px',
                     borderRadius: 8,
                     border: 'none',
                     background: 'var(--accent)',
@@ -929,32 +929,32 @@ export default function ExpenseLedger() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 16,
+              padding: 12,
             }}
           >
             <div
               style={{
                 background: 'var(--bg)',
-                borderRadius: 16,
-                padding: 24,
+                borderRadius: 12,
+                padding: 18,
                 width: 480,
                 maxWidth: '100%',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
-              <h3 style={{ margin: '0 0 16px 0', fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>
+              <h3 style={{ margin: '0 0 12px 0', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
                 Stage 3: Disburse Cash Advance & Log to Ledger
               </h3>
 
-              <div style={{ background: 'var(--bg3)', borderRadius: 10, padding: 14, marginBottom: 16, border: '1px solid var(--border)', fontSize: 13 }}>
+              <div style={{ background: 'var(--bg3)', borderRadius: 8, padding: 10, marginBottom: 12, border: '1px solid var(--border)', fontSize: 13 }}>
                 <div style={{ marginBottom: 4 }}><strong>Employee:</strong> {payoutAdv.employee_name}</div>
                 <div style={{ marginBottom: 4 }}><strong>Reference #:</strong> {payoutAdv.reference}</div>
                 <div style={{ marginBottom: 4 }}><strong>Approved Amount:</strong> <span style={{ color: '#10b981', fontWeight: 800 }}>₹ {payoutAdv.amount?.toLocaleString('en-IN')}</span></div>
                 <div><strong>Purpose:</strong> {payoutAdv.purpose}</div>
               </div>
 
-              <div style={{ marginBottom: 16 }}>
-                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 6 }}>
+              <div style={{ marginBottom: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 4 }}>
                   Payout Payment / Voucher Remarks
                 </label>
                 <input
@@ -964,7 +964,7 @@ export default function ExpenseLedger() {
                   onChange={e => setPayoutRemarks(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '9px 12px',
+                    padding: '7px 10px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg3)',
@@ -976,11 +976,11 @@ export default function ExpenseLedger() {
                 />
               </div>
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => setShowPayoutModal(false)}
                   style={{
-                    padding: '9px 16px',
+                    padding: '7px 14px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg2)',
@@ -996,7 +996,7 @@ export default function ExpenseLedger() {
                   onClick={handlePayoutSubmit}
                   disabled={payoutSaving}
                   style={{
-                    padding: '9px 20px',
+                    padding: '7px 16px',
                     borderRadius: 8,
                     border: 'none',
                     background: '#15803d',

@@ -186,9 +186,9 @@ export default function ExpenseApprovals() {
 
   return (
     <Layout title="Expense Approvals Dashboard">
-      <div style={{ padding: '0 24px 24px' }}>
+      <div style={{ padding: 0 }}>
         {/* Main tabs */}
-        <div style={{ display: 'flex', gap: 24, borderBottom: '1px solid var(--border)', marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 20, borderBottom: '1px solid var(--border)', marginBottom: 10 }}>
           <button
             onClick={() => {
               setMainTab('advances');
@@ -196,7 +196,7 @@ export default function ExpenseApprovals() {
               setSearch('');
             }}
             style={{
-              padding: '12px 4px',
+              padding: '8px 4px',
               background: 'none',
               border: 'none',
               borderBottom: mainTab === 'advances' ? '2px solid var(--accent)' : '2px solid transparent',
@@ -215,7 +215,7 @@ export default function ExpenseApprovals() {
               setSearch('');
             }}
             style={{
-              padding: '12px 4px',
+              padding: '8px 4px',
               background: 'none',
               border: 'none',
               borderBottom: mainTab === 'reimbursements' ? '2px solid var(--accent)' : '2px solid transparent',
@@ -230,11 +230,11 @@ export default function ExpenseApprovals() {
         </div>
 
         {/* Sub-tabs & Search bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
           <button
             onClick={() => setSubTab('pending')}
             style={{
-              padding: '8px 16px',
+              padding: '6px 14px',
               borderRadius: 8,
               border: subTab === 'pending' ? 'none' : '1px solid var(--border)',
               background: subTab === 'pending' ? 'var(--accent)' : 'var(--bg2)',
@@ -252,7 +252,7 @@ export default function ExpenseApprovals() {
             <button
               onClick={() => setSubTab('all')}
               style={{
-                padding: '8px 16px',
+                padding: '6px 14px',
                 borderRadius: 8,
                 border: subTab === 'all' ? 'none' : '1px solid var(--border)',
                 background: subTab === 'all' ? 'var(--accent)' : 'var(--bg2)',
@@ -267,7 +267,7 @@ export default function ExpenseApprovals() {
           )}
 
           <div style={{ flex: 1 }} />
-          <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600, marginRight: 10 }}>
+          <div style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600, marginRight: 6 }}>
             {mainTab === 'reimbursements' ? (
               <>
                 {filteredClaims.length} claim{filteredClaims.length !== 1 ? 's' : ''} ·{' '}
@@ -291,9 +291,9 @@ export default function ExpenseApprovals() {
               onChange={e => setSearch(e.target.value)}
               style={{
                 paddingLeft: 32,
-                paddingRight: 12,
-                paddingTop: 8,
-                paddingBottom: 8,
+                paddingRight: 10,
+                paddingTop: 6,
+                paddingBottom: 6,
                 borderRadius: 8,
                 border: '1px solid var(--border)',
                 background: 'var(--bg2)',
@@ -310,16 +310,16 @@ export default function ExpenseApprovals() {
         {mainTab === 'reimbursements' && (
           <>
             {loading ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading claims...</div>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading claims...</div>
             ) : filteredClaims.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 14, border: '1px solid var(--border)' }}>
-                <Receipt size={40} style={{ opacity: 0.2, marginBottom: 12 }} />
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                <Receipt size={36} style={{ opacity: 0.2, marginBottom: 10 }} />
                 <div style={{ fontSize: 15, fontWeight: 600 }}>
                   {subTab === 'pending' ? 'No pending reimbursement claims' : 'No claims found'}
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {filteredClaims.map(c => {
                   const isExpanded = expandedSettlement === `claim_${c.id}`;
                   const color = STATUS_COLORS[c.status] || '#888';
@@ -329,21 +329,21 @@ export default function ExpenseApprovals() {
                       style={{
                         background: 'var(--bg2)',
                         border: '1px solid var(--border)',
-                        borderRadius: 12,
-                        padding: '16px 20px',
+                        borderRadius: 10,
+                        padding: '10px 14px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 12,
+                        gap: 8,
                         transition: 'box-shadow 0.15s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.08)')}
                       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ width: 4, height: 52, borderRadius: 4, background: color, flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 4, height: 42, borderRadius: 4, background: color, flexShrink: 0 }} />
                         
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
                             <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--accent)', fontFamily: 'monospace' }}>{c.reference || `(Claim #${c.id})`}</span>
                             <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: `${color}20`, color: color, textTransform: 'uppercase' }}>
                               {c.status === 'approved' ? 'APPROVED – PENDING ACCOUNTS DISBURSEMENT' : c.status}
@@ -354,22 +354,22 @@ export default function ExpenseApprovals() {
                             <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 12 }}>·</span>
                             <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>{c.purpose || c.description || 'Itemized Reimbursement Claim'}</span>
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
                             Expense date: {c.expense_date || '—'} · Submitted: {c.claim_date || '—'}
                           </div>
                           {c.reimbursement_ref && (
-                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 4 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
+                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 2 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
                           )}
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 19, color: 'var(--text)', marginRight: 4 }}>{INR(c.amount)}</div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)', marginRight: 4 }}>{INR(c.amount)}</div>
 
                           {c.lines && c.lines.length > 0 && (
                             <button
                               onClick={() => setExpandedSettlement(isExpanded ? null : `claim_${c.id}`)}
                               style={{
-                                padding: '6px 12px',
+                                padding: '5px 10px',
                                 borderRadius: 6,
                                 border: '1px solid var(--border)',
                                 background: 'var(--bg3)',
@@ -392,7 +392,7 @@ export default function ExpenseApprovals() {
                               target="_blank"
                               rel="noreferrer"
                               style={{
-                                padding: '6px 9px',
+                                padding: '5px 9px',
                                 borderRadius: 7,
                                 border: '1px solid var(--border)',
                                 background: 'var(--bg3)',
@@ -414,7 +414,7 @@ export default function ExpenseApprovals() {
                                   setActionModal({ record: c, type: 'approve_claim' });
                                   setRemarks('');
                                 }}
-                                style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
                               >
                                 Approve
                               </button>
@@ -423,7 +423,7 @@ export default function ExpenseApprovals() {
                                   setActionModal({ record: c, type: 'reject_claim' });
                                   setRemarks('');
                                 }}
-                                style={{ padding: '7px 14px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
                               >
                                 Reject
                               </button>
@@ -436,7 +436,7 @@ export default function ExpenseApprovals() {
                                 setReimbMode('direct');
                                 setReimbRef('');
                               }}
-                              style={{ padding: '7px 14px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
+                              style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
                             >
                               💰 Disburse Payout
                             </button>
@@ -449,12 +449,12 @@ export default function ExpenseApprovals() {
                         <div
                           style={{
                             borderTop: '1px solid var(--border)',
-                            paddingTop: 12,
-                            marginTop: 4,
+                            paddingTop: 8,
+                            marginTop: 2,
                             overflowX: 'auto',
                           }}
                         >
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
                             Itemized Expense Claim Breakdown Grid
                           </div>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -475,18 +475,18 @@ export default function ExpenseApprovals() {
                             <tbody>
                               {c.lines.map((row, rIdx) => (
                                 <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{row.date}</td>
-                                  <td style={{ padding: '8px', fontWeight: 600 }}>{row.expense_type}</td>
-                                  <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
-                                  <td style={{ padding: '8px' }}>{row.cost_to || '—'}</td>
-                                  <td style={{ padding: '8px' }}>
+                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '6px 8px', fontWeight: 600 }}>{row.expense_type}</td>
+                                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>{row.cost_to || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>
                                     {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
                                   </td>
-                                  <td style={{ padding: '8px' }}>{row.description || '—'}</td>
-                                  <td style={{ padding: '8px' }}>{row.paid_to || '—'}</td>
-                                  <td style={{ padding: '8px', textAlign: 'right' }}>{row.gst_rate}%</td>
-                                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
-                                  <td style={{ padding: '8px' }}>
+                                  <td style={{ padding: '6px 8px' }}>{row.description || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>{row.paid_to || '—'}</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '6px 8px' }}>
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                       {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
                                         <a
@@ -530,16 +530,16 @@ export default function ExpenseApprovals() {
         {mainTab === 'advances' && (
           <>
             {loading ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)' }}>Loading advances...</div>
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)' }}>Loading advances...</div>
             ) : filteredAdvances.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: 60, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 14, border: '1px solid var(--border)' }}>
-                <Wallet size={40} style={{ opacity: 0.2, marginBottom: 12 }} />
+              <div style={{ textAlign: 'center', padding: 40, color: 'var(--text3)', background: 'var(--bg2)', borderRadius: 12, border: '1px solid var(--border)' }}>
+                <Wallet size={36} style={{ opacity: 0.2, marginBottom: 10 }} />
                 <div style={{ fontSize: 15, fontWeight: 600 }}>
                   {subTab === 'pending' ? 'No pending advance requests or settlements' : 'No records found'}
                 </div>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {filteredAdvances.map(a => {
                   const color = ADV_STATUS_COLORS[a.status] || '#888';
                   const isSettlement = a.status === 'settlement_submitted';
@@ -551,22 +551,22 @@ export default function ExpenseApprovals() {
                       style={{
                         background: 'var(--bg2)',
                         border: '1px solid var(--border)',
-                        borderRadius: 12,
-                        padding: '16px 20px',
+                        borderRadius: 10,
+                        padding: '10px 14px',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: 12,
+                        gap: 8,
                         transition: 'box-shadow 0.15s',
                       }}
                       onMouseEnter={e => (e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.06)')}
                       onMouseLeave={e => (e.currentTarget.style.boxShadow = 'none')}
                     >
                       {/* Top row */}
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                        <div style={{ width: 4, height: 48, borderRadius: 4, background: color, flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 4, height: 42, borderRadius: 4, background: color, flexShrink: 0 }} />
 
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
                             <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--accent)', fontFamily: 'monospace' }}>
                               {a.reference || `(Draft Request #${a.id})`}
                             </span>
@@ -586,27 +586,27 @@ export default function ExpenseApprovals() {
                           <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <User size={13} style={{ color: 'var(--text3)' }} /> {a.employee_name}
                           </div>
-                          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>
+                          <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
                             Purpose: {a.purpose} · Required: {a.required_date || '—'}
                           </div>
                         </div>
 
                         {/* Amount & action buttons */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                           <div style={{ textAlign: 'right', marginRight: 4 }}>
                             <div style={{ fontSize: 11, color: 'var(--text3)' }}>
                               {isSettlement || isClaimedSettle ? 'Advance Amount' : 'Requested Amt'}
                             </div>
-                            <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--text)' }}>
+                            <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>
                               {INR(a.amount)}
                             </div>
                           </div>
 
                           {/* If a settlement exists, show claimed sum */}
                           {(isSettlement || isClaimedSettle) && (
-                            <div style={{ textAlign: 'right', marginRight: 12 }}>
+                            <div style={{ textAlign: 'right', marginRight: 8 }}>
                               <div style={{ fontSize: 11, color: 'var(--text3)' }}>Claimed expenses</div>
-                              <div style={{ fontWeight: 800, fontSize: 18, color: 'var(--accent)' }}>
+                              <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--accent)' }}>
                                 {INR(a.lines.reduce((s, row) => s + (row.amount || 0), 0))}
                               </div>
                             </div>
@@ -619,7 +619,7 @@ export default function ExpenseApprovals() {
                               target="_blank"
                               rel="noreferrer"
                               style={{
-                                padding: '6px 9px',
+                                padding: '5px 9px',
                                 borderRadius: 7,
                                 border: '1px solid var(--border)',
                                 background: 'var(--bg3)',
@@ -665,7 +665,7 @@ export default function ExpenseApprovals() {
                               <button
                                 onClick={() => setExpandedSettlement(expandedSettlement === a.id ? null : a.id)}
                                 style={{
-                                  padding: '6px 12px',
+                                  padding: '5px 10px',
                                   borderRadius: 6,
                                   border: '1px solid var(--border)',
                                   background: 'var(--bg3)',
@@ -705,7 +705,7 @@ export default function ExpenseApprovals() {
                               <button
                                 onClick={() => setExpandedSettlement(expandedSettlement === a.id ? null : a.id)}
                                 style={{
-                                  padding: '6px 12px',
+                                  padding: '5px 10px',
                                   borderRadius: 6,
                                   border: '1px solid var(--border)',
                                   background: 'var(--bg3)',
@@ -744,7 +744,7 @@ export default function ExpenseApprovals() {
                             <button
                               onClick={() => setActionModal({ record: a, type: 'close_adv' })}
                               style={{
-                                padding: '7px 14px',
+                                padding: '6px 12px',
                                 borderRadius: 6,
                                 border: 'none',
                                 background: 'var(--accent)',
@@ -768,12 +768,12 @@ export default function ExpenseApprovals() {
                         <div
                           style={{
                             borderTop: '1px solid var(--border)',
-                            paddingTop: 12,
-                            marginTop: 4,
+                            paddingTop: 8,
+                            marginTop: 2,
                             overflowX: 'auto',
                           }}
                         >
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 8 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
                             Itemized Expense Settlement Grid
                           </div>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
@@ -794,18 +794,18 @@ export default function ExpenseApprovals() {
                             <tbody>
                               {a.lines.map((row, rIdx) => (
                                 <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '8px', whiteSpace: 'nowrap' }}>{row.date}</td>
-                                  <td style={{ padding: '8px', fontWeight: 600 }}>{row.expense_type}</td>
-                                  <td style={{ padding: '8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
-                                  <td style={{ padding: '8px' }}>{row.cost_to || '—'}</td>
-                                  <td style={{ padding: '8px' }}>
+                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '6px 8px', fontWeight: 600 }}>{row.expense_type}</td>
+                                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>{row.cost_to || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>
                                     {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
                                   </td>
-                                  <td style={{ padding: '8px' }}>{row.description || '—'}</td>
-                                  <td style={{ padding: '8px' }}>{row.paid_to || '—'}</td>
-                                  <td style={{ padding: '8px', textAlign: 'right' }}>{row.gst_rate}%</td>
-                                  <td style={{ padding: '8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
-                                  <td style={{ padding: '8px' }}>
+                                  <td style={{ padding: '6px 8px' }}>{row.description || '—'}</td>
+                                  <td style={{ padding: '6px 8px' }}>{row.paid_to || '—'}</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '6px 8px' }}>
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                       {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
                                         <a
@@ -856,20 +856,20 @@ export default function ExpenseApprovals() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              padding: 16,
+              padding: 12,
             }}
           >
             <div
               style={{
                 background: 'var(--bg)',
-                borderRadius: 16,
-                padding: 28,
+                borderRadius: 14,
+                padding: 18,
                 width: 440,
                 maxWidth: '100%',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
-              <h3 style={{ margin: '0 0 18px', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
+              <h3 style={{ margin: '0 0 12px', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
                 {actionModal.type === 'approve_claim' && '✓ Approve Claim'}
                 {actionModal.type === 'reject_claim' && '✗ Reject Claim'}
                 {actionModal.type === 'reimburse_claim' && '💰 Mark as Reimbursed'}
@@ -888,8 +888,8 @@ export default function ExpenseApprovals() {
                   background: 'var(--bg2)',
                   border: '1px solid var(--border)',
                   borderRadius: 10,
-                  padding: '12px 16px',
-                  marginBottom: 18,
+                  padding: '10px 14px',
+                  marginBottom: 14,
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: 14 }}>
@@ -902,41 +902,41 @@ export default function ExpenseApprovals() {
 
               {actionModal.type === 'reimburse_claim' ? (
                 <>
-                  <div style={{ marginBottom: 14 }}>
-                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 5, display: 'block', textTransform: 'uppercase' }}>
+                  <div style={{ marginBottom: 10 }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
                       Reimbursement Mode
                     </label>
                     <select
                       value={reimbMode}
                       onChange={e => setReimbMode(e.target.value)}
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 13, outline: 'none' }}
+                      style={{ width: '100%', padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 13, outline: 'none' }}
                     >
                       <option value="direct">Direct Payment</option>
                       <option value="payroll">Via Payroll</option>
                     </select>
                   </div>
-                  <div style={{ marginBottom: 18 }}>
-                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 5, display: 'block', textTransform: 'uppercase' }}>
+                  <div style={{ marginBottom: 14 }}>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
                       Reference Number (Optional)
                     </label>
                     <input
                       value={reimbRef}
                       onChange={e => setReimbRef(e.target.value)}
                       placeholder="Transaction/payment reference"
-                      style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
+                      style={{ width: '100%', padding: '7px 10px', borderRadius: 8, border: '1px solid var(--border)', background: 'var(--bg3)', color: 'var(--text)', fontSize: 13, outline: 'none', boxSizing: 'border-box' }}
                     />
                   </div>
                 </>
               ) : actionModal.type === 'close_adv' ? (
-                <div style={{ marginBottom: 18, fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
+                <div style={{ marginBottom: 14, fontSize: 13, color: 'var(--text2)', lineHeight: 1.5 }}>
                   <AlertCircle size={14} style={{ color: '#f59e0b', display: 'inline', marginRight: 4 }} />
                   Are you sure you want to close this advance request? 
                   <br />
                   This will log returns (if requester spent less than advance) or reimbursement credits (if requester spent more than advance) in the employee's ledger and set the status to <strong>closed</strong>.
                 </div>
               ) : (
-                <div style={{ marginBottom: 18 }}>
-                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 5, display: 'block', textTransform: 'uppercase' }}>
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', marginBottom: 4, display: 'block', textTransform: 'uppercase' }}>
                     Remarks {['reject_claim', 'reject_adv', 'clarify_adv', 'reject_settle'].includes(actionModal.type) ? '(Required)' : '(Optional)'}
                   </label>
                   <textarea
@@ -952,7 +952,7 @@ export default function ExpenseApprovals() {
                     }
                     style={{
                       width: '100%',
-                      padding: '9px 12px',
+                      padding: '7px 10px',
                       borderRadius: 8,
                       border: '1px solid var(--border)',
                       background: 'var(--bg3)',
@@ -967,14 +967,14 @@ export default function ExpenseApprovals() {
                 </div>
               )}
 
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                 <button
                   onClick={() => {
                     setActionModal(null);
                     setRemarks('');
                   }}
                   style={{
-                    padding: '9px 18px',
+                    padding: '7px 14px',
                     borderRadius: 8,
                     border: '1px solid var(--border)',
                     background: 'var(--bg2)',
@@ -993,7 +993,7 @@ export default function ExpenseApprovals() {
                     ((['reject_claim', 'reject_adv', 'clarify_adv', 'reject_settle'].includes(actionModal.type)) && !remarks.trim())
                   }
                   style={{
-                    padding: '9px 20px',
+                    padding: '7px 16px',
                     borderRadius: 8,
                     border: 'none',
                     background:

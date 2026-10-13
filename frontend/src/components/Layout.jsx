@@ -4,19 +4,21 @@ import { useAuth } from '../hooks/useAuth';
 import { Menu } from 'lucide-react';
 import PunchButton from './PunchButton';
 import NotificationDropdown from './NotificationDropdown';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 
 export const LayoutContext = createContext(null);
 
 export function LayoutShell() {
   const { user } = useAuth();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [title, setTitle] = useState('');
   const [headerTabs, setHeaderTabs] = useState(null);
+  const isCompactModule = location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
 
   return (
     <LayoutContext.Provider value={{ setTitle, setHeaderTabs }}>
-      <div className="app-shell">
+      <div className={`app-shell${isCompactModule ? ' compact-module-shell' : ''}`}>
         {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
         <Sidebar
           isOpen={sidebarOpen}
@@ -25,7 +27,7 @@ export function LayoutShell() {
         />
         <div className="main-content">
           <div className="topbar">
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isCompactModule ? 8 : 12, minWidth: 0, flex: 1 }}>
               <button
                 className={`menu-toggle ${!sidebarOpen ? 'visible-desktop' : ''}`}
                 onClick={() => setSidebarOpen(prev => !prev)}
@@ -37,7 +39,7 @@ export function LayoutShell() {
               {headerTabs && <div style={{ display: 'flex', gap: 4 }}>{headerTabs}</div>}
             </div>
             {/* Right side: notification bell + punch button */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isCompactModule ? 8 : 10 }}>
               <NotificationDropdown />
               <PunchButton />
             </div>
@@ -61,7 +63,9 @@ export function LayoutShell() {
 export default function Layout({ children, title, headerTabs }) {
   const ctx = useContext(LayoutContext);
   const { user } = useAuth();
+  const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const isCompactModule = location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
 
   useEffect(() => {
     if (ctx) {
@@ -77,7 +81,7 @@ export default function Layout({ children, title, headerTabs }) {
 
   // Fallback standalone rendering if used outside shell
   return (
-    <div className="app-shell">
+    <div className={`app-shell${isCompactModule ? ' compact-module-shell' : ''}`}>
       {sidebarOpen && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
       <Sidebar
         isOpen={sidebarOpen}
@@ -86,7 +90,7 @@ export default function Layout({ children, title, headerTabs }) {
       />
       <div className="main-content">
         <div className="topbar">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0, flex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isCompactModule ? 8 : 12, minWidth: 0, flex: 1 }}>
             <button
               className={`menu-toggle ${!sidebarOpen ? 'visible-desktop' : ''}`}
               onClick={() => setSidebarOpen(prev => !prev)}
@@ -97,7 +101,7 @@ export default function Layout({ children, title, headerTabs }) {
             <span className="topbar-title">{title}</span>
             {headerTabs && <div style={{ display: 'flex', gap: 4 }}>{headerTabs}</div>}
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: isCompactModule ? 8 : 10 }}>
             <NotificationDropdown />
             <PunchButton />
           </div>
