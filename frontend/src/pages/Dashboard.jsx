@@ -52,47 +52,41 @@ function getInitials(name) {
   return name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 }
 
-// Vibrant solid colour palette for employees on calendar
-const EMP_COLORS = [
-  { bg: '#2563eb', text: '#ffffff', dot: '#93c5fd', light: '#dbeafe' },
-  { bg: '#16a34a', text: '#ffffff', dot: '#86efac', light: '#dcfce7' },
-  { bg: '#d97706', text: '#ffffff', dot: '#fcd34d', light: '#fef3c7' },
-  { bg: '#db2777', text: '#ffffff', dot: '#f9a8d4', light: '#fce7f3' },
-  { bg: '#7c3aed', text: '#ffffff', dot: '#c4b5fd', light: '#ede9fe' },
-  { bg: '#dc2626', text: '#ffffff', dot: '#fca5a5', light: '#fee2e2' },
-  { bg: '#0284c7', text: '#ffffff', dot: '#7dd3fc', light: '#e0f2fe' },
-  { bg: '#059669', text: '#ffffff', dot: '#6ee7b7', light: '#d1fae5' },
-  { bg: '#c2410c', text: '#ffffff', dot: '#fdba74', light: '#ffedd5' },
-  { bg: '#6d28d9', text: '#ffffff', dot: '#ddd6fe', light: '#ede9fe' },
-];
+// Consistent, muted green style for employee event bars and avatars
+const EMP_STYLE = {
+  bg: '#f0fdf4',
+  text: '#166534',
+  border: '#bbf7d0',
+  accent: '#16a34a',
+  light: '#f0fdf4',
+};
 
-function empColor(idx) {
-  return EMP_COLORS[idx % EMP_COLORS.length];
+function empColor() {
+  return EMP_STYLE;
 }
 
 // ─── Status Badge ───────────────────────────────────────────────────────────
 function StatusBadge({ status }) {
   const map = {
-    approved: { bg: '#dcfce7', color: '#166534', icon: <CheckCircle size={10} />, label: 'Approved' },
-    pending:  { bg: '#fef3c7', color: '#92400e', icon: <AlertCircle size={10} />, label: 'Pending' },
-    rejected: { bg: '#fee2e2', color: '#991b1b', icon: <XCircle size={10} />,     label: 'Rejected' },
+    approved: { bg: '#f0fdf4', color: '#166534', border: '#bbf7d0', icon: <CheckCircle size={10} />, label: 'Approved' },
+    pending:  { bg: '#fffbeb', color: '#92400e', border: '#fde68a', icon: <AlertCircle size={10} />, label: 'Pending' },
+    rejected: { bg: '#fef2f2', color: '#991b1b', border: '#fecaca', icon: <XCircle size={10} />,     label: 'Rejected' },
   };
   const s = map[status] || map.pending;
   return (
     <span style={{ display:'inline-flex', alignItems:'center', gap:3, padding:'2px 7px',
-      borderRadius:99, background:s.bg, color:s.color, fontSize:10, fontWeight:700 }}>
+      borderRadius:99, background:s.bg, color:s.color, border:`1px solid ${s.border}`, fontSize:10, fontWeight:600 }}>
       {s.icon}{s.label}
     </span>
   );
 }
 
 // ─── Avatar ─────────────────────────────────────────────────────────────────
-function Avatar({ name, color, size = 28 }) {
-  const c = color || EMP_COLORS[0];
+function Avatar({ name, size = 28 }) {
   return (
-    <div style={{ width:size, height:size, borderRadius:'50%', background: c.light || c.bg,
-      color: c.bg, display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize: size < 30 ? 9 : 11, fontWeight:800, flexShrink:0, border:`1.5px solid ${c.bg}` }}>
+    <div style={{ width:size, height:size, borderRadius:'50%', background: EMP_STYLE.bg,
+      color: EMP_STYLE.text, display:'flex', alignItems:'center', justifyContent:'center',
+      fontSize: size < 30 ? 9.5 : 11, fontWeight:700, flexShrink:0, border:`1px solid ${EMP_STYLE.border}` }}>
       {getInitials(name)}
     </div>
   );
@@ -167,7 +161,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: 4 }}>
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 2, flexShrink: 0 }}>
-        <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text)' }}>
+        <span style={{ fontWeight: 600, fontSize: 15, color: 'var(--text)', letterSpacing: '-0.2px' }}>
           {MONTHS[month]} {year}
         </span>
         <div style={{ display: 'flex', gap: 4 }}>
@@ -180,7 +174,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 4, marginBottom: 2, flexShrink: 0 }}>
         {SHORT_DAYS.map(d => (
           <div key={d} style={{
-            textAlign: 'center', fontSize: 10, fontWeight: 700,
+            textAlign: 'center', fontSize: 10, fontWeight: 600,
             color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5
           }}>{d}</div>
         ))}
@@ -192,9 +186,8 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
           if (day === null) {
             return (
               <div key={`empty-${i}`} style={{
-                background: 'var(--bg3)',
-                opacity: 0.25,
-                border: '1px solid var(--border)',
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
                 borderRadius: 6
               }} />
             );
@@ -215,21 +208,19 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
               onClick={() => setSelectedDate(dateStr)}
               style={{
                 borderRadius: 6,
-                padding: '3px 5px',
-                background: isToday
-                  ? 'var(--bg3)'
-                  : hasHoliday
-                    ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
-                    : isSelected
-                      ? 'var(--bg3)'
-                      : 'var(--bg2)',
+                padding: '4px 6px',
+                background: hasHoliday
+                  ? '#fffbeb'
+                  : isSelected
+                    ? '#f8fafc'
+                    : '#ffffff',
                 border: isToday
-                  ? '2px solid var(--accent)'
+                  ? '1px solid #86efac'
                   : hasHoliday
-                    ? '2px solid #d97706'
+                    ? '1px solid #fde68a'
                     : isSelected
-                      ? '2.5px solid var(--accent2)'
-                      : '1px solid var(--border)',
+                      ? '1px solid #94a3b8'
+                      : '1px solid #e2e8f0',
                 display: 'flex',
                 flexDirection: 'column',
                 overflow: 'hidden',
@@ -242,18 +233,19 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                marginBottom: 1,
+                marginBottom: 2,
                 flexShrink: 0,
                 position: 'relative'
               }}>
                 <span style={{
-                  fontSize: 11.5,
-                  fontWeight: 800,
-                  color: isToday ? 'var(--accent)' : hasHoliday ? '#000000' : 'var(--text)',
-                  background: isToday ? 'var(--accent-dim)' : 'transparent',
-                  minWidth: 17,
-                  height: 17,
-                  borderRadius: '50%',
+                  fontSize: 11,
+                  fontWeight: isToday ? 700 : 600,
+                  color: isToday ? '#166534' : hasHoliday ? '#92400e' : 'var(--text2)',
+                  background: isToday ? '#dcfce7' : 'transparent',
+                  minWidth: 18,
+                  height: 18,
+                  padding: isToday ? '0 4px' : 0,
+                  borderRadius: 4,
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -262,13 +254,14 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
 
                 {hasHoliday && (
                   <span style={{
-                    position: 'absolute',
-                    left: 0,
-                    right: 0,
-                    textAlign: 'center',
-                    fontSize: 11.5,
-                    fontWeight: 800,
-                    color: '#000000',
+                    fontSize: 9.5,
+                    fontWeight: 600,
+                    color: '#b45309',
+                    background: '#fef3c7',
+                    border: '1px solid #fde68a',
+                    padding: '0px 5px',
+                    borderRadius: 4,
+                    lineHeight: 1.4,
                     pointerEvents: 'none',
                     zIndex: 1
                   }}>
@@ -278,12 +271,11 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
 
                 {hasOd && (
                   <span title={`${ods.length} On Duty`} style={{
-                    width: 7,
-                    height: 7,
+                    width: 6,
+                    height: 6,
                     borderRadius: '50%',
-                    background: '#10b981',
-                    border: '1px solid #ffffff',
-                    marginLeft: 'auto',
+                    background: '#0d9488',
+                    marginLeft: hasHoliday ? 4 : 'auto',
                     zIndex: 2
                   }} />
                 )}
@@ -291,56 +283,52 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
 
               {/* Event list inside cell (Desktop) */}
               <div className="cell-event-list scroll-list" style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                {/* Holidays - Centered bold text matching reference image */}
+                {/* Holidays - Clean readable label */}
                 {hols.map((h, hi) => (
                   <div
                     key={`h-${hi}`}
                     title={`Holiday: ${h.name} (${h.holiday_type === 'national' ? 'National' : (h.branch_name || 'Company')})`}
                     style={{
-                      color: '#000000',
-                      fontSize: '11.5px',
-                      fontWeight: '800',
-                      textAlign: 'center',
-                      padding: '2px',
-                      margin: 'auto 0',
+                      color: '#92400e',
+                      fontSize: '10.5px',
+                      fontWeight: 600,
+                      padding: '2px 4px',
+                      borderRadius: 4,
+                      background: 'rgba(254, 243, 199, 0.55)',
                       overflow: 'hidden',
                       textOverflow: 'ellipsis',
                       whiteSpace: 'nowrap',
-                      lineHeight: 1.2
+                      lineHeight: 1.3
                     }}
                   >
                     {h.name}
                   </div>
                 ))}
 
-                {/* Leaves - vibrant solid color with employee name only */}
+                {/* Leaves - consistent muted green bar with subtle status indicator */}
                 {leaves.map((l, li) => {
-                  const c = empColor(l._idx);
                   const isPending = l.status === 'pending';
                   return (
                     <div
                       key={`l-${li}`}
                       title={`${l.employee_name}${isPending ? ' (Pending)' : ''}`}
                       style={{
-                        background: isPending
-                          ? `repeating-linear-gradient(45deg, ${c.bg}cc, ${c.bg}cc 3px, ${c.bg}88 3px, ${c.bg}88 6px)`
-                          : c.bg,
-                        color: c.text,
-                        fontSize: '9.5px',
-                        fontWeight: '700',
-                        padding: '1.5px 4px',
+                        background: '#f0fdf4',
+                        color: '#166534',
+                        fontSize: '10px',
+                        fontWeight: 500,
+                        padding: '1.5px 5px',
                         borderRadius: '4px',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
                         whiteSpace: 'nowrap',
                         flexShrink: 0,
-                        boxShadow: `0 1px 3px ${c.bg}80`,
-                        opacity: isPending ? 0.85 : 1,
-                        borderLeft: isPending ? `3px dashed ${c.dot}` : `3px solid ${c.dot}`,
-                        marginTop: 1.5
+                        border: '1px solid #dcfce7',
+                        borderLeft: isPending ? '2.5px solid #d97706' : '2.5px solid #16a34a',
+                        marginTop: 1
                       }}
                     >
-                      {l.employee_name}{isPending ? ' ⏳' : ''}
+                      {l.employee_name}
                     </div>
                   );
                 })}
@@ -356,7 +344,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                       width: 5,
                       height: 5,
                       borderRadius: '50%',
-                      background: '#9333ea',
+                      background: '#d97706',
                       display: 'inline-block'
                     }}
                   />
@@ -370,7 +358,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                         width: 5,
                         height: 5,
                         borderRadius: '50%',
-                        background: isPending ? '#ef4444' : '#3b82f6',
+                        background: isPending ? '#d97706' : '#16a34a',
                         display: 'inline-block'
                       }} 
                     />
@@ -383,7 +371,7 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
                       width: 5,
                       height: 5,
                       borderRadius: '50%',
-                      background: '#f59e0b',
+                      background: '#0d9488',
                       display: 'inline-block'
                     }} 
                   />
@@ -395,29 +383,29 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', gap: 12, flexShrink: 0, borderTop: '1px solid var(--border)', paddingTop: 4, marginTop: 2, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', gap: 14, flexShrink: 0, borderTop: '1px solid #e2e8f0', paddingTop: 6, marginTop: 2, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: 'linear-gradient(135deg,#f59e0b,#d97706)', display: 'inline-block', boxShadow: '0 1px 3px rgba(245,158,11,0.5)' }} />
-          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 600 }}>🎉 Holiday</span>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#fffbeb', border: '1px solid #fde68a', display: 'inline-block' }} />
+          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Holiday</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', borderLeft: '3px solid #93c5fd', display: 'inline-block' }} />
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#f0fdf4', border: '1px solid #bbf7d0', borderLeft: '2.5px solid #16a34a', display: 'inline-block' }} />
           <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Approved Leave</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#2563eb', borderLeft: '3px dashed #93c5fd', opacity: 0.7, display: 'inline-block' }} />
-          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Pending Leave ⏳</span>
+          <span style={{ width: 10, height: 10, borderRadius: 3, background: '#f0fdf4', border: '1px solid #bbf7d0', borderLeft: '2.5px solid #d97706', display: 'inline-block' }} />
+          <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>Pending Leave</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#f59e0b', display: 'inline-block' }} />
+          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#0d9488', display: 'inline-block' }} />
           <span style={{ fontSize: 10, color: 'var(--text2)', fontWeight: 500 }}>On-Duty</span>
         </div>
       </div>
 
       {/* Selected Day Details Panel for Mobile */}
       <div className="selected-day-details">
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
-          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, borderBottom: '1px solid #e2e8f0', paddingBottom: 6 }}>
+          <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
             Schedule: {formatDateFriendly(selectedDate)}
           </span>
           <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>
@@ -428,21 +416,18 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
         {/* Selected Holidays */}
         {selectedHolidays.length > 0 && (
           <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: '#a855f7', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, color: '#92400e', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
               Holidays ({selectedHolidays.length})
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {selectedHolidays.map((h, hi) => (
-                <div key={hi} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg2)', padding: '6px 10px', borderRadius: 6, border: '1px solid rgba(147, 51, 234, 0.3)' }}>
+                <div key={hi} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#fffbeb', padding: '6px 10px', borderRadius: 6, border: '1px solid #fde68a' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <div style={{ width: 24, height: 24, borderRadius: '50%', background: 'rgba(147, 51, 234, 0.15)', color: '#a855f7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12 }}>
-                      🎉
-                    </div>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: '#92400e' }}>
                       {h.name}
                     </span>
                   </div>
-                  <span style={{ fontSize: 10, color: '#a855f7', fontWeight: 600, background: 'rgba(147, 51, 234, 0.1)', padding: '2px 8px', borderRadius: 99, textTransform: 'capitalize' }}>
+                  <span style={{ fontSize: 10, color: '#b45309', fontWeight: 600, background: '#fef3c7', padding: '2px 8px', borderRadius: 99, textTransform: 'capitalize' }}>
                     {h.holiday_type || 'Holiday'} ({h.branch_name || 'All Branches'})
                   </span>
                 </div>
@@ -453,73 +438,67 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
 
         {/* Selected Leaves */}
         <div style={{ marginBottom: 12 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
             Leaves ({selectedLeaves.length})
           </div>
           {selectedLeaves.length === 0 ? (
             <div style={{ fontSize: 11, color: 'var(--text3)', fontStyle: 'italic', paddingLeft: 4 }}>No leaves scheduled</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {selectedLeaves.map((l, li) => {
-                const c = empColor(l._idx);
-                return (
-                  <div key={li} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--bg2)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <Avatar name={l.employee_name} color={c} size={24} />
-                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
-                        {l.employee_name}
-                      </span>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>
-                        {l.leave_type_name}
-                      </span>
-                      <StatusBadge status={l.status} />
-                    </div>
+              {selectedLeaves.map((l, li) => (
+                <div key={li} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#ffffff', padding: '6px 10px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Avatar name={l.employee_name} size={24} />
+                    <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+                      {l.employee_name}
+                    </span>
                   </div>
-                );
-              })}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>
+                      {l.leave_type_name}
+                    </span>
+                    <StatusBadge status={l.status} />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </div>
 
         {/* Selected On-Duty */}
         <div>
-          <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+          <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
             On-Duty ({selectedOds.length})
           </div>
           {selectedOds.length === 0 ? (
             <div style={{ fontSize: 11, color: 'var(--text3)', fontStyle: 'italic', paddingLeft: 4 }}>No on-duty scheduled</div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {selectedOds.map((o, oi) => {
-                const c = empColor(o._odIdx + 5);
-                return (
-                  <div key={oi} style={{ display: 'flex', flexDirection: 'column', background: 'var(--bg2)', padding: '6px 10px', borderRadius: 6, border: '1px solid var(--border)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                        <Avatar name={o.employee_name} color={c} size={24} />
-                        <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
-                          {o.employee_name}
-                        </span>
-                      </div>
-                      <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 500 }}>
-                        {formatTime(o.from_time)} – {formatTime(o.to_time)}
+              {selectedOds.map((o, oi) => (
+                <div key={oi} style={{ display: 'flex', flexDirection: 'column', background: '#ffffff', padding: '6px 10px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <Avatar name={o.employee_name} size={24} />
+                      <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>
+                        {o.employee_name}
                       </span>
                     </div>
-                    {o.work_location && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#10b981', fontWeight: 600, paddingLeft: 32 }}>
-                        <MapPin size={10} />{o.work_location}
-                      </div>
-                    )}
-                    {o.purpose && (
-                      <div style={{ fontSize: 10, color: 'var(--text3)', fontStyle: 'italic', paddingLeft: 32 }}>
-                        "{o.purpose}"
-                      </div>
-                    )}
+                    <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 500 }}>
+                      {formatTime(o.from_time)} – {formatTime(o.to_time)}
+                    </span>
                   </div>
-                );
-              })}
+                  {o.work_location && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: '#0f766e', fontWeight: 600, paddingLeft: 32 }}>
+                      <MapPin size={10} />{o.work_location}
+                    </div>
+                  )}
+                  {o.purpose && (
+                    <div style={{ fontSize: 10, color: 'var(--text3)', fontStyle: 'italic', paddingLeft: 32 }}>
+                      "{o.purpose}"
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -529,8 +508,8 @@ function LeaveCalendar({ leaveEvents, odEvents, holidayEvents }) {
 }
 
 const navBtn = {
-  background: 'var(--bg3)',
-  border: '1px solid var(--border)',
+  background: '#ffffff',
+  border: '1px solid #e2e8f0',
   borderRadius: 6,
   width: 24,
   height: 24,
@@ -628,9 +607,9 @@ export default function Dashboard() {
           70% { transform: scale(1.05); box-shadow: 0 0 0 10px rgba(45, 90, 39, 0); }
           100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(45, 90, 39, 0); }
         }
-        .dash-card { background:var(--bg2); border:1px solid var(--border); border-radius:10px; }
-        .dash-sec-title { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.8px; color:var(--text3); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
-        .emp-row { display:flex; align-items:center; gap:8px; padding:5px 0; border-bottom:1px solid var(--border); }
+        .dash-card { background:#ffffff; border:1px solid #e2e8f0; border-radius:8px; }
+        .dash-sec-title { font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.6px; color:var(--text3); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+        .emp-row { display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid #f1f5f9; }
         .emp-row:last-child { border-bottom:none; }
         .scroll-list { overflow-y:auto; flex:1; padding-right:2px; }
         .scroll-list::-webkit-scrollbar { width:3px; }
@@ -691,19 +670,18 @@ export default function Dashboard() {
           display: none;
           margin-top: 12px;
           padding: 12px;
-          background: var(--bg3);
+          background: #f8fafc;
           border-radius: 8px;
-          border: 1px solid var(--border);
+          border: 1px solid #e2e8f0;
         }
 
         /* Hover and pointer effects */
         .calendar-day-cell {
           cursor: pointer;
-          transition: all 0.15s ease;
+          transition: border-color 0.15s ease, background-color 0.15s ease;
         }
         .calendar-day-cell:hover {
-          background: var(--bg3) !important;
-          border-color: var(--border2) !important;
+          border-color: #cbd5e1 !important;
         }
 
         @media (max-width: 1024px) {
@@ -746,7 +724,7 @@ export default function Dashboard() {
         {/* ── Left Column: Calendar ── */}
         <div className="dash-card calendar-card">
           <div className="dash-sec-title" style={{ flexShrink: 0 }}>
-            <Calendar size={13} style={{ color: 'var(--accent)' }} />
+            <Calendar size={13} style={{ color: '#166534' }} />
             Workforce & Holiday Calendar
           </div>
           <div style={{ flex: 1, overflow: 'hidden' }}>
@@ -760,12 +738,12 @@ export default function Dashboard() {
           {/* Currently On Duty */}
           <div className="dash-card onduty-card">
             <div className="dash-sec-title" style={{ flexShrink: 0 }}>
-              <UserCheck size={13} style={{ color: '#10b981' }} />
+              <UserCheck size={13} style={{ color: '#166534' }} />
               Currently On Duty
               {onDutyToday.length > 0 && (
                 <span style={{
-                  marginLeft: 'auto', background: '#d1fae5', color: '#065f46',
-                  fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 99
+                  marginLeft: 'auto', background: '#f0fdf4', color: '#166534', border: '1px solid #bbf7d0',
+                  fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 99
                 }}>
                   {onDutyToday.length} Active
                 </span>
@@ -783,39 +761,39 @@ export default function Dashboard() {
                   flex: 1,
                   margin: 'auto'
                 }}>
-                  <UserCheck size={28} style={{ color: 'var(--border2)', opacity: 0.5 }} />
+                  <UserCheck size={26} style={{ color: '#cbd5e1' }} />
                   <span style={{ fontSize: 11, color: 'var(--text3)' }}>No one on duty today</span>
                 </div>
               ) : (
-                onDutyToday.map((o, i) => {
-                  const c = empColor(i + 5);
+                onDutyToday.map((o) => {
                   return (
                     <div key={o.id} className="emp-row" style={{ gap: 8 }}>
                       <div style={{ position: 'relative', flexShrink: 0 }}>
-                        <Avatar name={o.employee_name} color={c} size={32} />
+                        <Avatar name={o.employee_name} size={30} />
                         <span style={{
                           position: 'absolute',
                           bottom: 0,
                           right: 0,
-                          width: 8,
-                          height: 8,
+                          width: 7,
+                          height: 7,
                           borderRadius: '50%',
-                          background: o.status === 'pending' ? '#f59e0b' : '#10b981',
-                          border: '1.5px solid var(--bg2)'
+                          background: o.status === 'pending' ? '#d97706' : '#16a34a',
+                          border: '1.5px solid #ffffff'
                         }} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {o.employee_name}
                           </span>
                           {o.status === 'pending' && (
                             <span style={{
                               fontSize: 9,
-                              fontWeight: 700,
-                              background: '#fef3c7',
+                              fontWeight: 600,
+                              background: '#fffbeb',
                               color: '#92400e',
-                              padding: '1px 5px',
+                              border: '1px solid #fde68a',
+                              padding: '0px 5px',
                               borderRadius: 4,
                               textTransform: 'uppercase'
                             }}>
@@ -827,7 +805,7 @@ export default function Dashboard() {
                           {formatTime(o.from_time)} – {formatTime(o.to_time)}
                         </div>
                         {o.work_location && (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#10b981', fontWeight: 600 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: 10, color: '#0f766e', fontWeight: 500 }}>
                             <MapPin size={9} />{o.work_location}
                           </div>
                         )}
@@ -835,7 +813,6 @@ export default function Dashboard() {
                           <div style={{
                             fontSize: 10,
                             color: 'var(--text3)',
-                            fontStyle: 'italic',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap'
@@ -854,12 +831,12 @@ export default function Dashboard() {
           {/* Planned On-Duty */}
           <div className="dash-card onduty-card">
             <div className="dash-sec-title" style={{ flexShrink: 0 }}>
-              <Briefcase size={13} style={{ color: '#f59e0b' }} />
+              <Briefcase size={13} style={{ color: '#64748b' }} />
               Planned On-Duty
               {plannedOnDuty.length > 0 && (
                 <span style={{
-                  marginLeft: 'auto', background: '#fef3c7', color: '#92400e',
-                  fontSize: 10, fontWeight: 700, padding: '1px 7px', borderRadius: 99
+                  marginLeft: 'auto', background: '#f8fafc', color: '#475569', border: '1px solid #e2e8f0',
+                  fontSize: 10, fontWeight: 600, padding: '1px 7px', borderRadius: 99
                 }}>
                   {plannedOnDuty.length} Upcoming
                 </span>
@@ -877,27 +854,27 @@ export default function Dashboard() {
                   flex: 1,
                   margin: 'auto'
                 }}>
-                  <Briefcase size={28} style={{ color: 'var(--border2)', opacity: 0.5 }} />
+                  <Briefcase size={26} style={{ color: '#cbd5e1' }} />
                   <span style={{ fontSize: 11, color: 'var(--text3)' }}>No upcoming on-duty schedules</span>
                 </div>
               ) : (
-                plannedOnDuty.map((o, i) => {
-                  const c = empColor(i + 12);
+                plannedOnDuty.map((o) => {
                   return (
                     <div key={o.id} className="emp-row" style={{ gap: 8 }}>
-                      <Avatar name={o.employee_name} color={c} size={28} />
+                      <Avatar name={o.employee_name} size={28} />
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                             {o.employee_name}
                           </span>
                           {o.status === 'pending' && (
                             <span style={{
                               fontSize: 9,
-                              fontWeight: 700,
-                              background: '#fef3c7',
+                              fontWeight: 600,
+                              background: '#fffbeb',
                               color: '#92400e',
-                              padding: '1px 5px',
+                              border: '1px solid #fde68a',
+                              padding: '0px 5px',
                               borderRadius: 4,
                               textTransform: 'uppercase'
                             }}>

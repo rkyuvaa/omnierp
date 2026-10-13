@@ -22,13 +22,13 @@ import {
 } from 'lucide-react';
 
 const STATUS_CONFIG = {
-  present:    { label: 'P',   bg: 'rgba(34, 197, 94, 0.08)',  border: 'rgba(34, 197, 94, 0.25)',  color: '#16a34a', full: 'Present' },
-  leave:      { label: 'L',   bg: 'rgba(99, 102, 241, 0.08)', border: 'rgba(99, 102, 241, 0.25)', color: '#4f46e5', full: 'On Leave' },
-  absent:     { label: 'A',   bg: 'rgba(239, 68, 68, 0.08)',  border: 'rgba(239, 68, 68, 0.25)',  color: '#dc2626', full: 'Absent' },
-  half_day:   { label: 'H',   bg: 'rgba(249, 115, 22, 0.08)', border: 'rgba(249, 115, 22, 0.25)', color: '#ea580c', full: 'Half Day' },
-  on_duty:    { label: 'OD',  bg: 'rgba(6, 182, 212, 0.08)',  border: 'rgba(6, 182, 212, 0.25)',  color: '#0891b2', full: 'On Duty' },
-  holiday:    { label: 'HOL', bg: 'rgba(139, 92, 246, 0.08)', border: 'rgba(139, 92, 246, 0.25)', color: '#7c3aed', full: 'Holiday' },
-  weekly_off: { label: 'WO',  bg: 'rgba(148, 163, 184, 0.08)', border: 'rgba(148, 163, 184, 0.2)',  color: '#64748b', full: 'Weekly Off' },
+  present:    { label: 'P',   bg: '#f0fdf4', border: '#bbf7d0', color: '#166534', full: 'Present' },
+  leave:      { label: 'L',   bg: '#eef2ff', border: '#c7d2fe', color: '#3730a3', full: 'On Leave' },
+  absent:     { label: 'A',   bg: '#fef2f2', border: '#fecaca', color: '#991b1b', full: 'Absent' },
+  half_day:   { label: 'H',   bg: '#fff7ed', border: '#fed7aa', color: '#9a3412', full: 'Half Day' },
+  on_duty:    { label: 'OD',  bg: '#ecfeff', border: '#a5f3fc', color: '#155e75', full: 'On Duty' },
+  holiday:    { label: 'HOL', bg: '#fffbeb', border: '#fde68a', color: '#b45309', full: 'Holiday' },
+  weekly_off: { label: 'WO',  bg: '#f8fafc', border: '#e2e8f0', color: '#64748b', full: 'Weekly Off' },
 };
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -42,17 +42,8 @@ function getInitials(name) {
   return parts[0].slice(0, 2).toUpperCase();
 }
 
-function getAvatarBg(name) {
-  const hash = Array.from(name || '').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  const colors = [
-    'linear-gradient(135deg, #3b82f6, #1d4ed8)', // Blue
-    'linear-gradient(135deg, #10b981, #047857)', // Green
-    'linear-gradient(135deg, #ec4899, #be185d)', // Pink
-    'linear-gradient(135deg, #8b5cf6, #6d28d9)', // Purple
-    'linear-gradient(135deg, #f59e0b, #b45309)', // Amber
-    'linear-gradient(135deg, #06b6d4, #0891b2)', // Cyan
-  ];
-  return colors[hash % colors.length];
+function getAvatarBg() {
+  return '#166534';
 }
 
 export default function Attendance() {
@@ -933,10 +924,10 @@ export default function Attendance() {
                       </th>
                     ))}
                     {/* Summary columns sticky headers */}
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#16a34a', borderLeft: '1px solid rgba(226, 232, 240, 0.8)' }}>P</th>
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#dc2626' }}>A</th>
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#4f46e5' }}>L</th>
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#7c3aed' }}>HOL</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#166534', borderLeft: '1px solid rgba(226, 232, 240, 0.8)' }}>P</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#991b1b' }}>A</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#3730a3' }}>L</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#b45309' }}>HOL</th>
                     <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#64748b' }}>WO</th>
                   </tr>
                 </thead>
@@ -1111,19 +1102,19 @@ export default function Attendance() {
 
                         {/* Summary metrics counts pills */}
                         <td style={{ textAlign: 'center', borderLeft: '1px solid rgba(226, 232, 240, 0.8)', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(34, 197, 94, 0.1)', color: '#16a34a', fontWeight: 700, fontSize: '10.5px' }}>{pCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontWeight: 700, fontSize: '10.5px' }}>{pCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(239, 68, 68, 0.1)', color: '#dc2626', fontWeight: 700, fontSize: '10.5px' }}>{aCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', fontWeight: 700, fontSize: '10.5px' }}>{aCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(99, 102, 241, 0.1)', color: '#4f46e5', fontWeight: 700, fontSize: '10.5px' }}>{lvCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3', fontWeight: 700, fontSize: '10.5px' }}>{lvCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(139, 92, 246, 0.1)', color: '#7c3aed', fontWeight: 700, fontSize: '10.5px' }}>{holCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', fontWeight: 700, fontSize: '10.5px' }}>{holCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 99, background: 'rgba(148, 163, 184, 0.1)', color: '#64748b', fontWeight: 700, fontSize: '10.5px' }}>{woCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700, fontSize: '10.5px' }}>{woCount}</div>
                         </td>
                       </tr>
                     );
