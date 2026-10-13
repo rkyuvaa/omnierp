@@ -187,7 +187,7 @@ export default function KonwertCareForm() {
           <ArrowLeft size={15} /> Back
         </button>
 
-        <button className="btn btn-primary" onClick={save} disabled={saving} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 800 }}>
+        <button className="btn btn-primary" onClick={save} disabled={saving} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 600 }}>
           {saving ? <div className="spinner" style={{ width: 14, height: 14 }} /> : <><Save size={14} /> Save Changes</>}
         </button>
 
@@ -249,7 +249,7 @@ export default function KonwertCareForm() {
               </div>
               <div className="form-group">
                 <label className="form-label">Product Serial No.</label>
-                <input className="form-input" value={form.product_serial || ''} onChange={e => set('product_serial', e.target.value)} />
+                <input className="form-input" value={form.product_serial || ''} onChange={e => set('product_serial', e.target.value)} style={{ fontFamily: 'var(--font-mono)' }} />
               </div>
               <div className="form-group">
                 <label className="form-label">Vehicle Make</label>
@@ -405,7 +405,7 @@ export default function KonwertCareForm() {
                   </div>
                   <button 
                     className="btn btn-primary" 
-                    style={{ width:'100%', background:'var(--accent)', color:'white', fontWeight:800, gap:8 }}
+                    style={{ width:'100%', background:'var(--accent)', color:'white', fontWeight:600, gap:8 }}
                     onClick={activateWarranty}
                     disabled={activating || !form.product_serial}
                   >

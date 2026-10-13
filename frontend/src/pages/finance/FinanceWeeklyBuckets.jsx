@@ -104,14 +104,14 @@ export default function FinanceWeeklyBuckets() {
       borderRadius: 14, padding: '24px 28px', marginBottom: 28,
       boxShadow: 'var(--shadow)',
     },
-    monthHeading: { fontSize: 20, fontWeight: 800, color: 'var(--text)', marginBottom: 18 },
+    monthHeading: { fontSize: 18, fontWeight: 700, color: 'var(--text)', marginBottom: 18 },
     metricRow: { display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 16 },
     metric: (color) => ({
       flex: 1, minWidth: 130, background: 'var(--bg3)', borderRadius: 10, padding: '14px 18px',
       border: `1px solid ${color ? 'rgba(25,84,2,0.15)' : 'var(--border)'}`,
     }),
     metricLabel: { fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 },
-    metricVal: (color) => ({ fontSize: 22, fontWeight: 800, color: color || 'var(--text)', margin: 0 }),
+    metricVal: (color) => ({ fontSize: 20, fontWeight: 700, color: color || 'var(--text)', margin: 0, fontVariantNumeric: 'tabular-nums' }),
     grid: {
       display: 'grid',
       gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
@@ -230,7 +230,7 @@ export default function FinanceWeeklyBuckets() {
               <div style={{ marginTop: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text3)', marginBottom: 6 }}>
                   <span>Month Progress</span>
-                  <span style={{ fontWeight: 700, color: 'var(--text)' }}>
+                  <span style={{ fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
                     {data.total_monthly_budget ? Math.min(100, Math.round((data.total_actual / data.total_monthly_budget) * 100)) : 0}%
                   </span>
                 </div>
@@ -253,27 +253,27 @@ export default function FinanceWeeklyBuckets() {
                       <div style={{
                         position: 'absolute', top: 12, right: 14,
                         background: 'var(--accent)', color: '#fff',
-                        fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                        fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20,
                         textTransform: 'uppercase', letterSpacing: '.06em',
                       }}>
                         Current
                       </div>
                     )}
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', marginBottom: 4 }}>
                       {wk.label}
                     </div>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 14 }}>
+                    <div style={{ fontSize: 11.5, color: 'var(--text3)', marginBottom: 14 }}>
                       {wk.start} — {wk.end}
                     </div>
 
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12 }}>
                       <div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 3 }}>Planned</div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{fmt(wk.planned)}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{fmt(wk.planned)}</div>
                       </div>
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 3 }}>Actual</div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: colors.badge }}>{fmt(wk.actual)}</div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: colors.badge, fontVariantNumeric: 'tabular-nums' }}>{fmt(wk.actual)}</div>
                       </div>
                     </div>
 
@@ -282,14 +282,14 @@ export default function FinanceWeeklyBuckets() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 10 }}>
                       <span style={{
                         display: 'inline-flex', alignItems: 'center', gap: 4,
-                        padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                        padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
                         background: colors.badgeBg, color: colors.badge,
                       }}>
                         {wk.status === 'Over budget' && <TrendingUp size={11} />}
                         {wk.status === 'Under budget' && <TrendingDown size={11} />}
                         {wk.status}
                       </span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: colors.badge }}>{pct}%</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: colors.badge, fontVariantNumeric: 'tabular-nums' }}>{pct}%</span>
                     </div>
                   </div>
                 );

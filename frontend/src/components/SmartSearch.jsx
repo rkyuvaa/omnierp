@@ -334,7 +334,7 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
           
           {inputValue.trim() && (
             <>
-              <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 Search for "{inputValue}" in
               </div>
               <div style={{ padding: '4px 8px' }}>
@@ -356,7 +356,7 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
           )}
 
           <>
-            <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Filters
             </div>
             <div style={{ padding: '4px 8px' }}>
@@ -392,7 +392,7 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
           </>
 
           <>
-            <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Group By
             </div>
             <div style={{ padding: '4px 8px' }}>
@@ -428,7 +428,7 @@ export default function SmartSearch({ module = 'default', onSearch, filters = []
 
           {/* 4. Favorites & Save Section */}
           <>
-            <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 800, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+            <div style={{ padding: '4px 16px', fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Favorites
             </div>
             <div style={{ padding: '4px 8px' }}>

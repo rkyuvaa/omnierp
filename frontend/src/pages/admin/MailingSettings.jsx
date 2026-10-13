@@ -460,7 +460,7 @@ export default function MailingSettings() {
                       style={{
                         ...inputStyle,
                         minHeight: 280,
-                        fontFamily: 'monospace',
+                        fontFamily: 'var(--font-mono)',
                         lineHeight: 1.5,
                         fontSize: 12,
                         resize: 'vertical'

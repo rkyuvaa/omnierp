@@ -37,7 +37,7 @@ function KanbanCard({ task, onClick }) {
           {task.priority === 'urgent' && <span className="pulse-dot" />}
           {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
         </span>
-        <span style={{ fontSize: 10, color: 'var(--text3)', fontFamily: 'monospace' }}>{task.reference}</span>
+        <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)', fontWeight: 500 }}>{task.reference}</span>
       </div>
 
       {/* Title */}

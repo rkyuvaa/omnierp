@@ -115,10 +115,10 @@ export default function FinancePivotReport() {
     tdR: (over) => ({
       padding: '12px 16px', borderBottom: '1px solid var(--border)',
       color: 'var(--text)', background: over ? 'rgba(239,68,68,0.04)' : 'transparent',
-      verticalAlign: 'middle', textAlign: 'right',
+      verticalAlign: 'middle', textAlign: 'right', fontVariantNumeric: 'tabular-nums',
     }),
     totalRow: {
-      fontWeight: 800, background: 'var(--bg3)', color: 'var(--text)',
+      fontWeight: 700, background: 'var(--bg3)', color: 'var(--text)',
     },
   };
 
@@ -176,8 +176,8 @@ export default function FinancePivotReport() {
           <>
             {/* Report heading */}
             <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <BarChart2 size={22} color="var(--accent)" />
+              <h2 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', marginBottom: 4, display: 'flex', alignItems: 'center', gap: 10 }}>
+                <BarChart2 size={20} color="var(--accent)" />
                 {data.month_name ? `${data.month_name} — Expense Report` : `FY ${data.financial_year} — Expense Report`}
               </h2>
               <p style={{ color: 'var(--text3)', fontSize: 13 }}>
@@ -199,7 +199,7 @@ export default function FinancePivotReport() {
               ].map(m => (
                 <div key={m.label} style={{ flex: 1, minWidth: 140, background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: '16px 20px', boxShadow: 'var(--shadow)' }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>{m.label}</div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: m.color }}>{m.value}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: m.color, fontVariantNumeric: 'tabular-nums' }}>{m.value}</div>
                 </div>
               ))}
             </div>
@@ -232,7 +232,7 @@ export default function FinancePivotReport() {
                         <tr key={i}>
                           <td style={s.td(over)}>
                             <div style={{ fontWeight: 600 }}>{row.head_name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text3)' }}>{row.head_code}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>{row.head_code}</div>
                           </td>
                           <td style={s.td(over)}>
                             <span style={{
@@ -249,7 +249,7 @@ export default function FinancePivotReport() {
                           <td style={s.tdR(over)}>
                             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
                               <MiniBar pct={pct} over={over} />
-                              <span style={{ fontWeight: 700, color: over ? '#ef4444' : pct >= 80 ? '#f59e0b' : 'var(--accent)', minWidth: 38, textAlign: 'right' }}>
+                              <span style={{ fontWeight: 700, color: over ? '#ef4444' : pct >= 80 ? '#f59e0b' : 'var(--accent)', minWidth: 38, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
                                 {pct}%
                               </span>
                             </div>
@@ -259,13 +259,13 @@ export default function FinancePivotReport() {
                     })}
                     {/* Total row */}
                     <tr style={s.totalRow}>
-                      <td style={{ padding: '14px 16px', fontWeight: 800, color: 'var(--text)' }} colSpan={2}>TOTAL</td>
-                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800 }}>{fmt(data.total_planned)}</td>
-                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800 }}>{fmt(data.total_actual)}</td>
-                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800, color: data.total_variance >= 0 ? 'var(--accent)' : '#ef4444' }}>
+                      <td style={{ padding: '14px 16px', fontWeight: 700, color: 'var(--text)' }} colSpan={2}>TOTAL</td>
+                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(data.total_planned)}</td>
+                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{fmt(data.total_actual)}</td>
+                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: data.total_variance >= 0 ? 'var(--accent)' : '#ef4444' }}>
                         {data.total_variance < 0 ? '-' : ''}{fmt(Math.abs(data.total_variance))}
                       </td>
-                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 800 }}>
+                      <td style={{ padding: '14px 16px', textAlign: 'right', fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>
                         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 8 }}>
                           <MiniBar pct={overallPct} over={overallPct > 100} />
                           <span style={{ color: overallPct > 100 ? '#ef4444' : overallPct > 80 ? '#f59e0b' : 'var(--accent)', minWidth: 38, textAlign: 'right' }}>

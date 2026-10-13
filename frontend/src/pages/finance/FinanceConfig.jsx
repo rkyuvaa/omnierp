@@ -219,9 +219,9 @@ function BankAccountsTab() {
                     <div>{acc.bank_name || '—'}</div>
                     <div style={{ fontSize: 11, color: 'var(--text3)' }}>{acc.branch_name}</div>
                   </td>
-                  <td style={{ padding: '11px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--accent2)' }}>{acc.account_number || '—'}</td>
-                  <td style={{ padding: '11px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, color: 'var(--text3)' }}>{acc.ifsc_code || '—'}</td>
-                  <td style={{ padding: '11px 14px', fontWeight: 600, color: 'var(--text)' }}>{INR(acc.opening_balance)}</td>
+                  <td style={{ padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent2)' }}>{acc.account_number || '—'}</td>
+                  <td style={{ padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text3)' }}>{acc.ifsc_code || '—'}</td>
+                  <td style={{ padding: '11px 14px', fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{INR(acc.opening_balance)}</td>
                   <td style={{ padding: '11px 14px' }}>
                     {lienEdit?.id === acc.id ? (
                       <div style={{ display: 'flex', gap: 6 }}>
@@ -242,7 +242,7 @@ function BankAccountsTab() {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontWeight: 600, color: '#b45309' }}>{INR(acc.lien_amount)}</span>
+                        <span style={{ fontWeight: 600, color: '#b45309', fontVariantNumeric: 'tabular-nums' }}>{INR(acc.lien_amount)}</span>
                         <button
                           onClick={() => setLienEdit({ id: acc.id, value: acc.lien_amount ?? 0 })}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 2, borderRadius: 4, display: 'flex', alignItems: 'center' }}
@@ -305,7 +305,7 @@ function BankAccountsTab() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 14 }}>
                 <div className="form-group">
                   <label className="form-label">IFSC Code</label>
-                  <input className="form-input" value={form.ifsc_code} onChange={e => set('ifsc_code', e.target.value.toUpperCase())} placeholder="KKBK0001234" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }} />
+                  <input className="form-input" value={form.ifsc_code} onChange={e => set('ifsc_code', e.target.value.toUpperCase())} placeholder="KKBK0001234" style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }} />
                 </div>
                 <div className="form-group">
                   <label className="form-label">Opening Balance (₹)</label>
@@ -423,7 +423,7 @@ function AccountHeadsTab() {
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Code', 'Name', 'Category', 'Type', 'Status', 'Actions'].map(h => (
-                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>{h}</th>
+                  <th key={h} style={{ padding: '10px 14px', textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -432,7 +432,7 @@ function AccountHeadsTab() {
                 <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text3)' }}>No heads yet.</td></tr>
               ) : heads.map(h => (
                 <tr key={h.id} style={{ borderBottom: '1px solid var(--border)', opacity: h.is_active === false ? 0.6 : 1 }}>
-                  <td style={{ padding: '11px 14px', fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--accent2)', fontWeight: 700 }}>{h.head_code}</td>
+                  <td style={{ padding: '11px 14px', fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent2)', fontWeight: 500 }}>{h.head_code}</td>
                   <td style={{ padding: '11px 14px', fontWeight: 600, color: 'var(--text)' }}>{h.head_name}</td>
                   <td style={{ padding: '11px 14px', color: 'var(--text2)' }}>{h.category || '—'}</td>
                   <td style={{ padding: '11px 14px' }}>
@@ -475,7 +475,7 @@ function AccountHeadsTab() {
                     onChange={e => set('head_code', e.target.value.toUpperCase())}
                     required
                     placeholder="e.g. SALARY"
-                    style={{ fontFamily: "'JetBrains Mono', monospace" }}
+                    style={{ fontFamily: 'var(--font-mono)' }}
                   />
                 </div>
                 <div className="form-group">
@@ -603,9 +603,9 @@ function BudgetMasterTab() {
           <table width="100%" style={{ borderCollapse: 'collapse', fontSize: 13 }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>Account Head</th>
-                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>Code</th>
-                <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>Account Head</th>
+                <th style={{ padding: '10px 16px', textAlign: 'left', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>Code</th>
+                <th style={{ padding: '10px 16px', textAlign: 'right', fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.4px', color: 'var(--text3)' }}>
                   Planned Budget ({MONTHS[parseInt(month) - 1]} {fy})
                 </th>
                 <th style={{ padding: '10px 16px', width: 100 }}></th>
@@ -621,14 +621,14 @@ function BudgetMasterTab() {
                 return (
                   <tr key={head.id} style={{ borderBottom: '1px solid var(--border)', background: isDirty ? 'rgba(25,84,2,0.03)' : 'transparent' }}>
                     <td style={{ padding: '10px 16px', fontWeight: 600, color: 'var(--text)' }}>{head.head_name}</td>
-                    <td style={{ padding: '10px 16px', fontFamily: "'JetBrains Mono', monospace", fontSize: 11.5, color: 'var(--text3)' }}>{head.head_code}</td>
+                    <td style={{ padding: '10px 16px', fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text3)' }}>{head.head_code}</td>
                     <td style={{ padding: '10px 16px', textAlign: 'right' }}>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         className="form-input"
-                        style={{ width: 160, textAlign: 'right', height: 34, fontSize: 13, fontWeight: 600 }}
+                        style={{ width: 160, textAlign: 'right', height: 34, fontSize: 13, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}
                         value={editVal !== undefined ? editVal : current}
                         onChange={e => setEditing(prev => ({ ...prev, [head.id]: e.target.value }))}
                         placeholder="0"
@@ -651,7 +651,7 @@ function BudgetMasterTab() {
               {/* Total row */}
               <tr style={{ background: 'var(--bg3)', borderTop: '2px solid var(--border)' }}>
                 <td colSpan={2} style={{ padding: '12px 16px', fontWeight: 700, color: 'var(--text)', fontSize: 13 }}>Total Budget</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 800, fontSize: 15, color: 'var(--accent)' }}>{INR(total)}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 700, fontSize: 15, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>{INR(total)}</td>
                 <td />
               </tr>
             </tbody>
@@ -824,7 +824,7 @@ function ColumnMappingTab() {
         <>
           {/* Column Mapping Form */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 22, marginBottom: 20 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
               <FileText size={14} style={{ color: 'var(--accent)' }} /> CSV / Excel Column Mapping
             </div>
             <form onSubmit={saveMapping}>
@@ -842,7 +842,7 @@ function ColumnMappingTab() {
                     value={mapForm.date_format}
                     onChange={e => setM('date_format', e.target.value)}
                     placeholder="%d/%m/%Y"
-                    style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}
+                    style={{ fontFamily: 'var(--font-mono)', fontSize: 13 }}
                   />
                   <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 3 }}>
                     dd/mm/yyyy = %d/%m/%Y &nbsp;·&nbsp; mm-dd-yyyy = %m-%d-%Y
@@ -873,7 +873,7 @@ function ColumnMappingTab() {
 
           {/* Mapping Rules */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, padding: 22 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, marginBottom: 16, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Tag size={14} style={{ color: 'var(--accent)' }} /> Auto-Classification Rules
             </div>
 
@@ -923,7 +923,7 @@ function ColumnMappingTab() {
                     background: 'var(--bg3)', borderRadius: 8, border: '1px solid var(--border)'
                   }}>
                     <div style={{
-                      fontFamily: "'JetBrains Mono', monospace", fontSize: 12.5, fontWeight: 700,
+                      fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500,
                       color: 'var(--accent2)', background: 'var(--accent-dim)', padding: '2px 8px', borderRadius: 5
                     }}>
                       {rule.keyword}
@@ -933,7 +933,7 @@ function ColumnMappingTab() {
                       {rule.account_head_name || `Head #${rule.account_head_id}`}
                     </div>
                     {rule.bank_specific && (
-                      <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 99, background: 'rgba(59,130,246,0.1)', color: '#2563eb', border: '1px solid rgba(59,130,246,0.2)' }}>
+                      <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 99, background: 'rgba(59,130,246,0.1)', color: '#2563eb', border: '1px solid rgba(59,130,246,0.2)' }}>
                         Bank-specific
                       </span>
                     )}
@@ -992,7 +992,7 @@ export default function FinanceConfig() {
           padding: 10, display: 'flex', flexDirection: 'column', gap: 2,
           alignSelf: 'flex-start', position: 'sticky', top: 0
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text3)', padding: '4px 8px 8px' }}>
+          <div style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text3)', padding: '4px 8px 8px' }}>
             Configuration
           </div>
           {TABS.map(tab => {
@@ -1017,7 +1017,7 @@ export default function FinanceConfig() {
             borderRadius: 12, padding: 24
           }}>
             <div style={{ marginBottom: 20 }}>
-              <h2 style={{ fontSize: 17, fontWeight: 800, margin: 0, color: 'var(--text)' }}>
+              <h2 style={{ fontSize: 16, fontWeight: 700, margin: 0, color: 'var(--text)' }}>
                 {TABS.find(t => t.id === activeTab)?.label}
               </h2>
               <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 3 }}>

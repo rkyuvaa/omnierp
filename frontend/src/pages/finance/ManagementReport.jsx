@@ -29,10 +29,10 @@ function SectionHeader({ letter, title, color = 'var(--accent)' }) {
         width: 4, height: 28, background: color, borderRadius: 99,
       }} />
       <div>
-        <span style={{ fontSize: 10, fontWeight: 800, color, textTransform: 'uppercase', letterSpacing: '.1em', display: 'block' }}>
+        <span style={{ fontSize: 10.5, fontWeight: 700, color, textTransform: 'uppercase', letterSpacing: '.08em', display: 'block' }}>
           Section {letter}
         </span>
-        <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>{title}</span>
+        <span style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</span>
       </div>
     </div>
   );
@@ -61,7 +61,7 @@ function MetricPill({ label, value, sub, valueColor }) {
       <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
         {label}
       </div>
-      <div style={{ fontSize: 20, fontWeight: 800, color: valueColor || '#111827' }}>{value}</div>
+      <div style={{ fontSize: 20, fontWeight: 700, color: valueColor || '#111827', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 3 }}>{sub}</div>}
     </div>
   );
@@ -69,12 +69,12 @@ function MetricPill({ label, value, sub, valueColor }) {
 
 const TABLE_TH = {
   padding: '10px 14px', textAlign: 'left', fontSize: 11,
-  fontWeight: 700, textTransform: 'uppercase', letterSpacing: '.05em',
+  fontWeight: 600, textTransform: 'uppercase', letterSpacing: '.05em',
   color: '#6b7280', borderBottom: '2px solid #e5e7eb', background: '#f9fafb',
 };
 const TABLE_TD = {
   padding: '11px 14px', borderBottom: '1px solid #f3f4f6',
-  color: '#111827', fontSize: 13, verticalAlign: 'middle',
+  color: '#111827', fontSize: 13, verticalAlign: 'middle', fontVariantNumeric: 'tabular-nums',
 };
 
 export default function ManagementReport() {
@@ -119,7 +119,7 @@ export default function ManagementReport() {
     wrapper: { background: '#f3f4f6', minHeight: '100vh', padding: '24px' },
     container: {
       maxWidth: 900, margin: '0 auto',
-      fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
+      fontFamily: 'var(--font-sans)',
     },
     reportHeader: {
       background: '#fff', border: '1px solid #e5e7eb',
@@ -180,7 +180,7 @@ export default function ManagementReport() {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
                 <FileBarChart size={22} color="var(--accent)" />
-                <h1 style={{ fontSize: 22, fontWeight: 900, color: '#111827', margin: 0 }}>Management Summary Report</h1>
+                <h1 style={{ fontSize: 20, fontWeight: 700, color: '#111827', margin: 0, letterSpacing: '-0.02em' }}>Management Summary Report</h1>
               </div>
               <p style={{ color: '#6b7280', fontSize: 13, margin: '6px 0 0' }}>
                 <Calendar size={13} style={{ verticalAlign: 'middle', marginRight: 5 }} />
@@ -219,7 +219,7 @@ export default function ManagementReport() {
                         {b.bank_name}
                       </div>
                     </td>
-                    <td style={{ ...TABLE_TD, fontFamily: 'monospace', letterSpacing: '.06em', fontSize: 12 }}>
+                    <td style={{ ...TABLE_TD, fontFamily: 'var(--font-mono)', letterSpacing: '.04em', fontSize: 12 }}>
                       {b.account_number}
                     </td>
                     <td style={TABLE_TD}>{fmt(b.balance)}</td>
@@ -235,11 +235,11 @@ export default function ManagementReport() {
                   </tr>
                 ))}
                 {/* Total row */}
-                <tr style={{ background: '#f9fafb', fontWeight: 800 }}>
-                  <td style={{ ...TABLE_TD, fontWeight: 800 }} colSpan={2}>TOTAL</td>
-                  <td style={{ ...TABLE_TD, fontWeight: 800 }}>{fmt(sA.total_balance)}</td>
-                  <td style={{ ...TABLE_TD, fontWeight: 800, color: '#d97706' }}>{fmt(sA.total_lien)}</td>
-                  <td style={{ ...TABLE_TD, fontWeight: 800, color: '#15803d', fontSize: 15 }}>{fmt(sA.total_actual)}</td>
+                <tr style={{ background: '#f9fafb', fontWeight: 700 }}>
+                  <td style={{ ...TABLE_TD, fontWeight: 700 }} colSpan={2}>TOTAL</td>
+                  <td style={{ ...TABLE_TD, fontWeight: 700 }}>{fmt(sA.total_balance)}</td>
+                  <td style={{ ...TABLE_TD, fontWeight: 700, color: '#d97706' }}>{fmt(sA.total_lien)}</td>
+                  <td style={{ ...TABLE_TD, fontWeight: 700, color: '#15803d', fontSize: 14.5 }}>{fmt(sA.total_actual)}</td>
                   <td style={TABLE_TD} />
                 </tr>
               </tbody>
@@ -313,7 +313,7 @@ export default function ManagementReport() {
                 <div style={{ fontSize: 11, fontWeight: 600, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 6 }}>
                   Pending Transactions
                 </div>
-                <div style={{ fontSize: 20, fontWeight: 800, color: sC.pending_count > 0 ? '#d97706' : '#111827', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div style={{ fontSize: 20, fontWeight: 700, color: sC.pending_count > 0 ? '#d97706' : '#111827', display: 'flex', alignItems: 'center', gap: 8, fontVariantNumeric: 'tabular-nums' }}>
                   {sC.pending_count}
                   {sC.pending_count > 0 && <AlertTriangle size={16} color="#d97706" />}
                 </div>

@@ -852,16 +852,16 @@ export default function Attendance() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11.5 }}>
             <div style={{ position: 'relative', width: 20, height: 20, flexShrink: 0 }}>
               <div style={{
-                width: 20, height: 20, background: 'rgba(34,197,94,0.08)',
-                border: '1px solid rgba(34,197,94,0.25)', borderRadius: 5,
+                width: 20, height: 20, background: '#f0fdf4',
+                border: '1px solid #bbf7d0', borderRadius: 5,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                color: '#16a34a', fontWeight: 700, fontSize: '8.5px'
+                color: '#166534', fontWeight: 600, fontSize: '9.5px'
               }}>P</div>
               <div style={{
                 position: 'absolute', top: -4, right: -5,
                 background: '#f59e0b', color: '#fff',
-                borderRadius: 4, fontSize: '6px', fontWeight: 800,
-                padding: '1px 3px', lineHeight: 1.3, pointerEvents: 'none'
+                borderRadius: 4, fontSize: '7px', fontWeight: 700,
+                padding: '1px 3px', lineHeight: 1.25, pointerEvents: 'none'
               }}>L</div>
             </div>
             <span style={{ color: 'var(--text2)', fontWeight: 500 }}>Late</span>
@@ -882,7 +882,7 @@ export default function Attendance() {
             overflow: 'hidden'
           }}>
             <div style={{ overflowX: 'auto' }}>
-              <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: '100%', fontSize: 12 }}>
+              <table style={{ borderCollapse: 'collapse', width: '100%', minWidth: '100%', fontSize: 12, fontVariantNumeric: 'tabular-nums' }}>
                 <thead>
                   <tr style={{ background: 'rgba(248, 250, 252, 0.8)', borderBottom: '1px solid rgba(226, 232, 240, 0.8)' }}>
                     {/* Employee sticky header */}
@@ -895,11 +895,11 @@ export default function Attendance() {
                       left: 0, 
                       background: '#f8fafc', 
                       borderRight: '1px solid rgba(226, 232, 240, 0.8)', 
-                      fontWeight: 700, 
+                      fontWeight: 600, 
                       zIndex: 2,
-                      fontSize: '10.5px',
+                      fontSize: '11px',
                       textTransform: 'uppercase',
-                      letterSpacing: '0.4px'
+                      letterSpacing: '0.04em'
                     }}>
                       Employee
                     </th>
@@ -919,16 +919,16 @@ export default function Attendance() {
                           transition: 'background-color 0.2s'
                         }}
                       >
-                        <div style={{ fontSize: '9px', textTransform: 'uppercase', opacity: 0.65, letterSpacing: '0.2px', lineHeight: 1.1 }}>{d.dayOfWeek}</div>
-                        <div style={{ fontSize: '12px', fontWeight: 800, marginTop: '1px', lineHeight: 1.2 }}>{d.num}</div>
+                        <div style={{ fontSize: '9.5px', fontWeight: 500, textTransform: 'uppercase', opacity: 0.7, letterSpacing: '0.02em', lineHeight: 1.15 }}>{d.dayOfWeek}</div>
+                        <div style={{ fontSize: '11.5px', fontWeight: 600, marginTop: '1px', lineHeight: 1.2, fontVariantNumeric: 'tabular-nums' }}>{d.num}</div>
                       </th>
                     ))}
                     {/* Summary columns sticky headers */}
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#166534', borderLeft: '1px solid rgba(226, 232, 240, 0.8)' }}>P</th>
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#991b1b' }}>A</th>
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#3730a3' }}>L</th>
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#b45309' }}>HOL</th>
-                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 700, fontSize: '10px', color: '#64748b' }}>WO</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 600, fontSize: '10.5px', color: '#166534', borderLeft: '1px solid rgba(226, 232, 240, 0.8)' }}>P</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 600, fontSize: '10.5px', color: '#991b1b' }}>A</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 600, fontSize: '10.5px', color: '#3730a3' }}>L</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 600, fontSize: '10.5px', color: '#b45309' }}>HOL</th>
+                    <th style={{ padding: '6px 2px', textAlign: 'center', minWidth: 26, fontWeight: 600, fontSize: '10.5px', color: '#64748b' }}>WO</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -987,15 +987,15 @@ export default function Attendance() {
                           left: 0, 
                           background: 'var(--bg2)', 
                           borderRight: '1px solid rgba(226, 232, 240, 0.8)', 
-                          fontWeight: 600, 
+                          fontWeight: 500, 
                           zIndex: 1,
                           boxShadow: '4px 0 8px -4px rgba(0, 0, 0, 0.05)'
                         }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                             {/* Name & ID */}
                             <div style={{ overflow: 'hidden' }}>
-                              <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '12.5px', lineHeight: 1.25, color: 'var(--text)' }}>{emp.name}</div>
-                              <div style={{ fontSize: '9.5px', lineHeight: 1.2, color: 'var(--text3)', fontFamily: 'monospace' }}>{emp.employee_id}</div>
+                              <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '12.5px', fontWeight: 500, lineHeight: 1.3, color: 'var(--text)' }}>{emp.name}</div>
+                              <div style={{ fontSize: '10.5px', lineHeight: 1.25, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>{emp.employee_id}</div>
                             </div>
                           </div>
                         </td>
@@ -1062,7 +1062,7 @@ export default function Attendance() {
                                     background: cfg ? cfg.bg : 'rgba(241, 245, 249, 0.6)',
                                     color: cfg ? cfg.color : 'var(--text3)',
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                    fontWeight: 700, fontSize: cfg?.label?.length > 2 ? '7.5px' : '9.5px', 
+                                    fontWeight: 600, fontSize: cfg?.label?.length > 2 ? '8.5px' : '10px', 
                                     transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
                                     border: ghostPunch ? '2px solid #eab308' : v ? '2px solid #f97316' : isLate && status === 'present' ? '1px solid rgba(245,158,11,0.4)' : (cfg ? `1px solid ${cfg.border}` : '1px dashed rgba(203, 213, 224, 0.6)'),
                                     boxShadow: ghostPunch ? '0 0 0 2px rgba(234,179,8,0.18)' : isLate && status === 'present' ? '0 0 0 2px rgba(245,158,11,0.12)' : cfg ? '0 1px 2px rgba(0,0,0,0.02)' : 'none',
@@ -1088,7 +1088,7 @@ export default function Attendance() {
                                   <div title={`Late by ${rec.late_minutes} min`} style={{
                                     position: 'absolute', top: -3, right: -4,
                                     background: '#f59e0b', color: '#fff',
-                                    borderRadius: 4, fontSize: '6.5px', fontWeight: 800,
+                                    borderRadius: 4, fontSize: '7px', fontWeight: 700,
                                     padding: '0.5px 2.5px', lineHeight: 1.2,
                                     pointerEvents: 'none', zIndex: 1,
                                     boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
@@ -1102,19 +1102,19 @@ export default function Attendance() {
 
                         {/* Summary metrics counts pills */}
                         <td style={{ textAlign: 'center', borderLeft: '1px solid rgba(226, 232, 240, 0.8)', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontWeight: 700, fontSize: '10.5px' }}>{pCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#f0fdf4', border: '1px solid #bbf7d0', color: '#166534', fontWeight: 600, fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>{pCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', fontWeight: 700, fontSize: '10.5px' }}>{aCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#fef2f2', border: '1px solid #fecaca', color: '#991b1b', fontWeight: 600, fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>{aCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3', fontWeight: 700, fontSize: '10.5px' }}>{lvCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#eef2ff', border: '1px solid #c7d2fe', color: '#3730a3', fontWeight: 600, fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>{lvCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', fontWeight: 700, fontSize: '10.5px' }}>{holCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#fffbeb', border: '1px solid #fde68a', color: '#b45309', fontWeight: 600, fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>{holCount}</div>
                         </td>
                         <td style={{ textAlign: 'center', padding: '2px' }}>
-                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 700, fontSize: '10.5px' }}>{woCount}</div>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', minWidth: 22, height: 18, borderRadius: 4, background: '#f8fafc', border: '1px solid #e2e8f0', color: '#64748b', fontWeight: 600, fontSize: '11px', fontVariantNumeric: 'tabular-nums' }}>{woCount}</div>
                         </td>
                       </tr>
                     );
@@ -1142,17 +1142,17 @@ export default function Attendance() {
               overflow: 'hidden',
               padding: '10px 14px 14px'
             }}>
-              <h3 style={{ margin: '0 0 10px 0', fontSize: 15, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h3 style={{ margin: '0 0 10px 0', fontSize: 14.5, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 8 }}>
                 📋 Raw Punch History
-                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text3)', background: 'var(--bg3)', padding: '2px 8px', borderRadius: 99 }}>
+                <span style={{ fontSize: 12, fontWeight: 500, color: 'var(--text3)', background: 'var(--bg3)', padding: '2px 8px', borderRadius: 99, fontVariantNumeric: 'tabular-nums' }}>
                   {filteredPunches.length} records
                 </span>
               </h3>
               
               <div style={{ overflowX: 'auto' }}>
-                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13, textAlign: 'left' }}>
+                <table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13, textAlign: 'left', fontVariantNumeric: 'tabular-nums' }}>
                   <thead>
-                    <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text2)', fontWeight: 700 }}>
+                    <tr style={{ borderBottom: '2px solid var(--border)', color: 'var(--text2)', fontWeight: 600 }}>
                       <th style={{ padding: '8px 12px' }}>Employee</th>
                       <th style={{ padding: '8px 12px' }}>Punch Time</th>
                       <th style={{ padding: '8px 12px' }}>Source / Device</th>
@@ -1182,10 +1182,10 @@ export default function Attendance() {
                           onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
                         >
                           <td style={{ padding: '8px 12px' }}>
-                            <div style={{ fontWeight: 600, color: 'var(--text)' }}>{p.employee_name}</div>
-                            <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace', marginTop: 1 }}>{p.employee_code}</div>
+                            <div style={{ fontWeight: 500, color: 'var(--text)' }}>{p.employee_name}</div>
+                            <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)', marginTop: 1 }}>{p.employee_code}</div>
                           </td>
-                          <td style={{ padding: '8px 12px', color: 'var(--text2)' }}>
+                          <td style={{ padding: '8px 12px', color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
                             <div style={{ fontWeight: 500 }}>
                               {punchDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
                             </div>
@@ -1199,7 +1199,7 @@ export default function Attendance() {
                               alignItems: 'center', 
                               gap: 6, 
                               fontSize: 11, 
-                              fontWeight: 700, 
+                              fontWeight: 600, 
                               padding: '3px 9px', 
                               borderRadius: 99,
                               textTransform: 'uppercase',
@@ -1222,7 +1222,7 @@ export default function Attendance() {
                                         alignItems: 'center', 
                                         gap: 4, 
                                         fontSize: 11, 
-                                        fontWeight: 800, 
+                                        fontWeight: 600, 
                                         padding: '3px 8px', 
                                         borderRadius: 6, 
                                         background: 'rgba(16, 185, 129, 0.1)', 

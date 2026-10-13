@@ -411,7 +411,7 @@ export function TimerField({ value, onChange }) {
       width: '100%', boxSizing: 'border-box'
     }}>
       <div style={{ 
-        flex: 1, fontFamily: 'monospace', fontSize: 20, fontWeight: 700, 
+        flex: 1, fontFamily: 'var(--font-mono)', fontVariantNumeric: 'tabular-nums', fontSize: 20, fontWeight: 700, 
         color: isRunning ? 'var(--green)' : 'var(--text1)', letterSpacing: 1 
       }}>
         {format(seconds)}

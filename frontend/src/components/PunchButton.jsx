@@ -229,31 +229,31 @@ export default function PunchButton() {
         {state === 'none' && (
           isMobilePunch ? (
             <>
-              <span style={{ fontSize: 12, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <LogIn size={12} color="#fff" strokeWidth={2.5} /> Check In
               </span>
-              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: 600, marginTop: 1 }}>--:--</span>
+              <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.75)', fontWeight: 600, marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>--:--</span>
             </>
           ) : (
             <>
-              <span style={{ fontSize: 11, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <Clock size={12} color="var(--text3)" /> Check-In
               </span>
-              <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginTop: 1 }}>--:--</span>
+              <span style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600, marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>--:--</span>
             </>
           )
         )}
         {state === 'in' && (
           <>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
               🟢 In: {formatTime(todayData?.check_in)}
             </span>
             {isMobilePunch ? (
-              <span style={{ fontSize: 11, fontWeight: 800, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: 11, fontWeight: 700, marginTop: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
                 <LogOut size={11} color="#fff" strokeWidth={2.5} /> Check Out
               </span>
             ) : (
-              <span style={{ fontSize: 10, color: '#86efac', fontWeight: 700, marginTop: 1 }}>
+              <span style={{ fontSize: 10, color: '#86efac', fontWeight: 600, marginTop: 1 }}>
                 {todayData?.status ? todayData.status.toUpperCase() : 'PRESENT'}
               </span>
             )}
@@ -261,10 +261,10 @@ export default function PunchButton() {
         )}
         {state === 'done' && (
           <>
-            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 700 }}>
+            <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.9)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
               In: {formatTime(todayData?.check_in)}
             </span>
-            <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 700, marginTop: 1 }}>
+            <span style={{ fontSize: 10, color: '#cbd5e1', fontWeight: 600, marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>
               Out: {formatTime(todayData?.check_out)}
             </span>
           </>
@@ -296,10 +296,10 @@ export default function PunchButton() {
               alignItems: 'center',
             }}>
               <div>
-                <div style={{ color: '#fff', fontWeight: 800, fontSize: 16 }}>
+                <div style={{ color: '#fff', fontWeight: 700, fontSize: 16 }}>
                   {state === 'none' ? '🟢 Check In' : '🔴 Check Out'}
                 </div>
-                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2 }}>
+                <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: 12, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
                   {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })} · {new Date().toLocaleDateString('en-IN')}
                 </div>
               </div>

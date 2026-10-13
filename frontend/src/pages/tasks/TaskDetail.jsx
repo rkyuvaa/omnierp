@@ -271,7 +271,7 @@ export default function TaskDetail({ taskId, onClose, onUpdated }) {
         <div style={{ padding: '16px 22px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', gap: 12, position: 'sticky', top: 0, background: 'var(--bg2)', zIndex: 10, flexShrink: 0 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
-              <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'monospace', background: 'var(--bg3)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)' }}>{task.reference}</span>
+              <span style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)', fontWeight: 500, background: 'var(--bg3)', padding: '2px 8px', borderRadius: 4, border: '1px solid var(--border)' }}>{task.reference}</span>
               {/* Status */}
               <div style={{ position: 'relative' }}>
                 <button onClick={() => !isClosed && setShowStatusPicker(v => !v)}

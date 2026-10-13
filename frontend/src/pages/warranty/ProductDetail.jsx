@@ -194,7 +194,7 @@ export default function ProductDetail() {
       <div className="toolbar" style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
         <button className="btn btn-ghost" onClick={() => navigate('/warranty/products')}><ArrowLeft size={16}/> Back</button>
         
-        <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 800 }}>
+        <button className="btn btn-primary" onClick={save} disabled={saving || recentlySaved} style={{ padding: '8px 20px', borderRadius: 8, fontWeight: 600 }}>
           {saving ? <div className="spinner" style={{ width:14,height:14 }}/> : <>{recentlySaved ? <Check size={14}/> : <Save size={14}/>} {recentlySaved ? 'Saved' : 'Save Changes'}</>}
         </button>
 
@@ -247,7 +247,7 @@ export default function ProductDetail() {
                   minWidth: 0, opacity: isCurrent ? 1 : 0.7,
                   textAlign: 'center'
                 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
+                <span style={{ fontSize: 11.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
               </div>
             );
           })}
@@ -262,7 +262,7 @@ export default function ProductDetail() {
              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
                 <div className="form-group" style={{ gridColumn: 'span 2' }}>
                   <label className="form-label">Vehicle Number *</label>
-                  <input className="form-input fw-800" value={form.name} onChange={e => set('name', e.target.value.toUpperCase())} />
+                  <input className="form-input fw-600 font-mono" value={form.name} onChange={e => set('name', e.target.value.toUpperCase())} />
                 </div>
                 <div className="form-group" style={{ gridColumn: 'span 2' }}>
                   <label className="form-label">KIT Number</label>

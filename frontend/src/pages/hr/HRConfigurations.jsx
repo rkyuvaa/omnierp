@@ -986,11 +986,11 @@ export default function HRConfigurations() {
                     }}
                   >
                     <div style={{ fontSize: 20, color: 'var(--text3)', userSelect: 'none' }}>⠿</div>
-                    <div style={{ background: 'var(--accent)', color: '#fff', borderRadius: 999, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 11, flexShrink: 0 }}>
+                    <div style={{ background: 'var(--accent)', color: '#fff', borderRadius: 999, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 11, flexShrink: 0, fontVariantNumeric: 'tabular-nums' }}>
                       {rule.priority}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{rule.leave_type_name} <span style={{ fontSize: 11, color: 'var(--text2)' }}>({rule.leave_type_code})</span></div>
+                      <div style={{ fontWeight: 600, fontSize: 13.5 }}>{rule.leave_type_name} <span style={{ fontSize: 11.5, color: 'var(--text2)', fontFamily: 'var(--font-mono)' }}>({rule.leave_type_code})</span></div>
                       <div style={{ fontSize: 11, color: 'var(--text2)', marginTop: 2 }}>
                         {rule.respect_monthly_limit ? '✅ Respects monthly limit' : '⬜ Ignores monthly limit'}
                         {!rule.is_active && ' · ⚠ Inactive'}

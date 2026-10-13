@@ -206,7 +206,7 @@ export default function Approvals() {
     const [secs, setSecs] = useState(seconds);
     useEffect(() => { const t = setInterval(() => setSecs(s => Math.max(0, s - 1)), 1000); return () => clearInterval(t); }, []);
     const h = Math.floor(secs / 3600), m = Math.floor((secs % 3600) / 60), s = secs % 60;
-    return <span style={{ fontFamily: 'monospace', color: secs < 3600 ? '#ef4444' : '#f59e0b', fontWeight: 700 }}>{`${h}h ${m}m ${s}s`}</span>;
+    return <span style={{ fontVariantNumeric: 'tabular-nums', color: secs < 3600 ? '#ef4444' : '#f59e0b', fontWeight: 600 }}>{`${h}h ${m}m ${s}s`}</span>;
   }
 
   function RequestCard({ req, type, showActions }) {

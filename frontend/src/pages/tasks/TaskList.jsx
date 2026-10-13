@@ -207,7 +207,7 @@ export default function TaskList() {
             <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 16px', background: s.bg, border: `1px solid ${s.color}30`, borderRadius: 10, flex: 1, minWidth: 140 }}>
               <span style={{ fontSize: 20 }}>{s.icon}</span>
               <div>
-                <div style={{ fontSize: 22, fontWeight: 800, color: s.color, lineHeight: 1 }}>{s.value}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, color: s.color, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>{s.value}</div>
                 <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
               </div>
             </div>
@@ -230,7 +230,7 @@ export default function TaskList() {
           style={{ display: 'flex', alignItems: 'center', gap: 6, background: showFilter ? 'var(--accent)' : undefined, color: showFilter ? 'white' : undefined }}>
           <SlidersHorizontal size={14} />
           Filters
-          {activeFilterCount > 0 && <span style={{ background: showFilter ? 'rgba(255,255,255,0.3)' : 'var(--accent)', color: 'white', borderRadius: 99, padding: '0 6px', fontSize: 10, fontWeight: 800 }}>{activeFilterCount}</span>}
+          {activeFilterCount > 0 && <span style={{ background: showFilter ? 'rgba(255,255,255,0.3)' : 'var(--accent)', color: 'white', borderRadius: 99, padding: '0 6px', fontSize: 10.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums' }}>{activeFilterCount}</span>}
         </button>
 
         {/* Trash toggle */}

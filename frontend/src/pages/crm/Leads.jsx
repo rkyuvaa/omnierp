@@ -167,11 +167,11 @@ function ImportExportModal({ onClose, onImported }) {
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12, fontSize:12 }}>
                 <div style={{ padding:'8px 12px', background:'var(--bg2)', borderRadius:8 }}>
                   <div style={{ color:'var(--text3)', fontSize:11 }}>ROWS TO IMPORT</div>
-                  <div style={{ fontSize:22, fontWeight:800, color:'var(--accent)' }}>{preview.total_rows}</div>
+                  <div style={{ fontSize:22, fontWeight:700, color:'var(--accent)', fontVariantNumeric:'tabular-nums' }}>{preview.total_rows}</div>
                 </div>
                 <div style={{ padding:'8px 12px', background:'var(--bg2)', borderRadius:8 }}>
                   <div style={{ color:'var(--text3)', fontSize:11 }}>MATCHED COLUMNS</div>
-                  <div style={{ fontSize:22, fontWeight:800, color:'var(--green)' }}>{preview.recognised_columns?.length}</div>
+                  <div style={{ fontSize:22, fontWeight:700, color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{preview.recognised_columns?.length}</div>
                 </div>
               </div>
 
@@ -215,18 +215,18 @@ function ImportExportModal({ onClose, onImported }) {
               <div style={{ display:'flex', gap:16, marginBottom: result.errors?.length ? 10 : 0 }}>
                 <div style={{ textAlign:'center' }}>
                   <CheckCircle size={16} style={{ color:'var(--green)' }}/>
-                  <div style={{ fontSize:20, fontWeight:800, color:'var(--green)' }}>{result.created}</div>
+                  <div style={{ fontSize:20, fontWeight:700, color:'var(--green)', fontVariantNumeric:'tabular-nums' }}>{result.created}</div>
                   <div style={{ fontSize:11, color:'var(--text3)' }}>Created</div>
                 </div>
                 <div style={{ textAlign:'center' }}>
                   <CheckCircle size={16} style={{ color:'var(--accent)' }}/>
-                  <div style={{ fontSize:20, fontWeight:800, color:'var(--accent)' }}>{result.updated}</div>
+                  <div style={{ fontSize:20, fontWeight:700, color:'var(--accent)', fontVariantNumeric:'tabular-nums' }}>{result.updated}</div>
                   <div style={{ fontSize:11, color:'var(--text3)' }}>Updated</div>
                 </div>
                 {result.errors?.length > 0 && (
                   <div style={{ textAlign:'center' }}>
                     <AlertCircle size={16} style={{ color:'var(--amber)' }}/>
-                    <div style={{ fontSize:20, fontWeight:800, color:'var(--amber)' }}>{result.errors.length}</div>
+                    <div style={{ fontSize:20, fontWeight:700, color:'var(--amber)', fontVariantNumeric:'tabular-nums' }}>{result.errors.length}</div>
                     <div style={{ fontSize:11, color:'var(--text3)' }}>Errors</div>
                   </div>
                 )}
@@ -340,9 +340,9 @@ export default function CRMLeads() {
                 color: stageFilter === s.id ? '#ffffff' : s.color,
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
               }}>
-              <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
+              <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
               <span style={{ 
-                fontSize: 14, fontWeight: 900,
+                fontSize: 13.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                 background: '#ffffff', color: s.color,
                 minWidth: 26, height: 26, borderRadius: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -492,13 +492,13 @@ export default function CRMLeads() {
             </table>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '12px 20px', background: 'var(--bg2)', borderRadius: 16, border: '1px solid var(--border)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
-        <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>
+        <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
           Showing up to 50 records per page <span style={{opacity:0.6, marginLeft: 8}}>(Total: {filteredItems ? filteredItems.length : total})</span>
         </span>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ padding: '4px 16px', fontWeight: 700, opacity: page === 1 ? 0.3 : 1 }}>← PREVIOUS</button>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary)', border: '2px solid rgba(25,84,2,0.1)', padding: '2px 14px', borderRadius: 20 }}>Page {page} of {Math.max(1, Math.ceil((filteredItems ? filteredItems.length : total) / 50))}</span>
-          <button className="btn btn-ghost btn-sm" disabled={(filteredItems || items).length < 50} onClick={() => setPage(p => p + 1)} style={{ padding: '4px 16px', fontWeight: 700, opacity: (filteredItems || items).length < 50 ? 0.3 : 1 }}>NEXT →</button>
+          <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ padding: '4px 16px', fontWeight: 600, opacity: page === 1 ? 0.3 : 1 }}>← PREVIOUS</button>
+          <span style={{ fontSize: 13.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums', color: 'var(--primary)', border: '2px solid rgba(25,84,2,0.1)', padding: '2px 14px', borderRadius: 20 }}>Page {page} of {Math.max(1, Math.ceil((filteredItems ? filteredItems.length : total) / 50))}</span>
+          <button className="btn btn-ghost btn-sm" disabled={(filteredItems || items).length < 50} onClick={() => setPage(p => p + 1)} style={{ padding: '4px 16px', fontWeight: 600, opacity: (filteredItems || items).length < 50 ? 0.3 : 1 }}>NEXT →</button>
         </div>
       </div>
       </>

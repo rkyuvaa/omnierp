@@ -80,9 +80,9 @@ export default function InstallationList() {
                 color: stageFilter === s.id ? '#ffffff' : s.color,
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
               }}>
-              <span style={{ fontSize: 12, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.15 }}>{s.name}</span>
               <span style={{ 
-                fontSize: 14, fontWeight: 900,
+                fontSize: 13.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                 background: '#ffffff', color: s.color,
                 minWidth: 26, height: 26, borderRadius: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -115,7 +115,7 @@ export default function InstallationList() {
       <div className="card">
         <div className="card-header">
           <span className="card-title">Installations</span>
-          <span className="text-muted text-sm">{total} total</span>
+          <span className="text-muted text-sm" style={{ fontVariantNumeric: 'tabular-nums' }}>{total} total</span>
         </div>
         {loading ? <Loader /> : items.length === 0 ? <Empty message="No installations found" /> : (
           <>
@@ -139,7 +139,7 @@ export default function InstallationList() {
                     <tr key={i.id} style={{ cursor: 'pointer' }} onClick={() => navigate(`/installation/${i.id}`)}>
                       <td><span className="ref-text">{i.reference}</span></td>
                       <td className="fw-600">{i.customer_name || '—'}</td>
-                      <td className="text-muted">{i.vehicle_number || '—'}</td>
+                      <td className="text-muted" style={{ fontFamily: 'var(--font-mono)', fontSize: 12 }}>{i.vehicle_number || '—'}</td>
                       <td className="text-muted">{[i.vehicle_make, i.vehicle_model].filter(Boolean).join(' / ') || '—'}</td>
                       <td>{i.stage_name && <Badge color={i.stage_color}>{i.stage_name}</Badge>}</td>
                       <td className="text-muted">{i.technician_name || '—'}</td>
@@ -162,11 +162,11 @@ export default function InstallationList() {
             {/* Pagination */}
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '12px 20px', background: 'var(--bg2)', borderRadius: 16, border: '1px solid var(--border)' }}>
               <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>
-                Showing up to 50 per page <span style={{ opacity: 0.6, marginLeft: 8 }}>(Total: {total})</span>
+                Showing up to 50 per page <span style={{ opacity: 0.6, marginLeft: 8, fontVariantNumeric: 'tabular-nums' }}>(Total: {total})</span>
               </span>
               <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
                 <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ opacity: page === 1 ? 0.3 : 1 }}>← PREVIOUS</button>
-                <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary)', border: '2px solid rgba(25,84,2,0.1)', padding: '2px 14px', borderRadius: 20 }}>Page {page}</span>
+                <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', border: '1.5px solid rgba(25,84,2,0.12)', padding: '2px 14px', borderRadius: 20, fontVariantNumeric: 'tabular-nums' }}>Page {page}</span>
                 <button className="btn btn-ghost btn-sm" disabled={items.length < 50} onClick={() => setPage(p => p + 1)} style={{ opacity: items.length < 50 ? 0.3 : 1 }}>NEXT →</button>
               </div>
             </div>

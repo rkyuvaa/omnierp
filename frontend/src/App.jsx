@@ -44,7 +44,7 @@ class ErrorBoundary extends Component {
   render() {
     if (this.state.hasError) {
       return (
-        <div style={{ padding: 40, textAlign: 'center', fontFamily: 'sans-serif', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f4fbf0' }}>
+        <div style={{ padding: 40, textAlign: 'center', fontFamily: 'var(--font-sans)', minHeight: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f4fbf0' }}>
           <h2 style={{ fontSize: 20, color: '#1a2e18', marginBottom: 8 }}>Application Updated</h2>
           <p style={{ color: '#6b825e', marginBottom: 20, maxWidth: 400 }}>A new version of OmniERP was deployed. Click below to load the latest update.</p>
           <button
@@ -65,7 +65,7 @@ class ErrorBoundary extends Component {
 
 // Fallback loader that maintains theme background & sleek spinner (prevents white screen flash)
 const ModuleFallback = () => (
-  <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Inter, system-ui, sans-serif' }}>
+  <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)' }}>
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 12 }}>
       <div style={{ width: 34, height: 34, border: '3px solid var(--border)', borderTopColor: 'var(--accent)', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
       <span style={{ fontSize: 13, fontWeight: 600, color: 'var(--text2)' }}>Loading Module...</span>

@@ -201,12 +201,12 @@ export default function ExpenseCategories() {
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg3)')}
                       onMouseLeave={e => (e.currentTarget.style.background = i % 2 ? 'var(--bg3)10' : 'transparent')}
                     >
-                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--text)' }}>{cat.name}</td>
+                      <td style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text)' }}>{cat.name}</td>
                       <td
                         style={{
                           padding: '8px 12px',
-                          fontFamily: 'monospace',
-                          fontWeight: 700,
+                          fontFamily: 'var(--font-mono)',
+                          fontWeight: 500,
                           fontSize: 12,
                           color: 'var(--accent)',
                         }}
@@ -225,7 +225,7 @@ export default function ExpenseCategories() {
                       >
                         {cat.description || '—'}
                       </td>
-                      <td style={{ padding: '8px 12px', color: 'var(--text2)' }}>
+                      <td style={{ padding: '8px 12px', color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
                         {cat.max_limit ? `₹${cat.max_limit.toLocaleString()}` : '—'}
                       </td>
                       <td style={{ padding: '8px 12px' }}>
@@ -237,7 +237,7 @@ export default function ExpenseCategories() {
                               gap: 4,
                               color: '#22c55e',
                               fontSize: 12,
-                              fontWeight: 700,
+                              fontWeight: 600,
                             }}
                           >
                             <CheckCircle size={13} /> Yes
@@ -250,7 +250,7 @@ export default function ExpenseCategories() {
                         <span
                           style={{
                             fontSize: 11,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             padding: '2px 9px',
                             borderRadius: 20,
                             background: cat.is_active ? '#22c55e20' : '#6b728020',
@@ -344,7 +344,7 @@ export default function ExpenseCategories() {
                 <h3
                   style={{
                     margin: 0,
-                    fontWeight: 800,
+                    fontWeight: 600,
                     fontSize: 16,
                     color: 'var(--text)',
                     display: 'flex',
@@ -386,7 +386,7 @@ export default function ExpenseCategories() {
                       placeholder="e.g. TRAVEL"
                       value={form.code}
                       onChange={e => setForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}
-                      style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                      style={{ ...inputStyle, fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
                     />
                   </div>
                 </div>

@@ -35,7 +35,7 @@ export default function AdminModules() {
             <div key={m.id} style={{ display: 'flex', alignItems: 'center', padding: '16px', background: 'var(--bg3)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
               <div style={{ flex: 1 }}>
                 <div className="fw-600" style={{ marginBottom: 4 }}>{m.name}</div>
-                <div className="text-muted text-sm">Module key: <code style={{ color: 'var(--accent2)', fontFamily: 'monospace' }}>{m.key}</code></div>
+                <div className="text-muted text-sm">Module key: <code style={{ color: 'var(--accent2)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>{m.key}</code></div>
               </div>
               <Badge color={m.is_active ? 'var(--green)' : 'var(--text3)'} style={{ marginRight: 16 }}>
                 {m.is_active ? 'Active' : 'Disabled'}

@@ -237,8 +237,8 @@ export default function ExpenseConfigurations() {
                           <div>{c.name}</div>
                           {c.description && <div style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>{c.description}</div>}
                         </td>
-                        <td style={{ padding: '8px 12px', fontFamily: 'monospace', fontWeight: 700, color: 'var(--accent2)' }}>{c.code}</td>
-                        <td style={{ padding: '8px 12px', fontWeight: 600 }}>
+                        <td style={{ padding: '8px 12px', fontFamily: 'var(--font-mono)', fontWeight: 500, fontSize: 12, color: 'var(--accent2)' }}>{c.code}</td>
+                        <td style={{ padding: '8px 12px', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                           {c.max_limit ? `₹${c.max_limit.toLocaleString('en-IN')}` : <span style={{ color: 'var(--text3)' }}>No Limit</span>}
                         </td>
                         <td style={{ padding: '8px 12px', textAlign: 'center' }}>
@@ -253,7 +253,7 @@ export default function ExpenseConfigurations() {
                             padding: '3px 10px',
                             borderRadius: 12,
                             fontSize: 11,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             background: c.is_active ? '#dcfce7' : '#fee2e2',
                             color: c.is_active ? '#15803d' : '#b91c1c'
                           }}>
@@ -299,7 +299,7 @@ export default function ExpenseConfigurations() {
         {activeTab === 'policies' && (
           <div style={{ maxWidth: '100%' }}>
             <div style={{ marginBottom: 10 }}>
-              <h2 style={{ fontSize: 15, fontWeight: 700, margin: 0, color: 'var(--text)' }}>Expense & Cash Advance Policies</h2>
+              <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0, color: 'var(--text)' }}>Expense & Cash Advance Policies</h2>
               <p style={{ fontSize: 12, color: 'var(--text3)', margin: '2px 0 0' }}>Configure approval thresholds, advance limits, and policy notices</p>
             </div>
 
@@ -379,7 +379,7 @@ export default function ExpenseConfigurations() {
                       color: '#fff',
                       border: 'none',
                       cursor: 'pointer',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       fontSize: 13,
                       display: 'flex',
                       alignItems: 'center',
@@ -399,7 +399,7 @@ export default function ExpenseConfigurations() {
           <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
             <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 12, width: 480, maxWidth: '100%', padding: 18, boxShadow: '0 20px 40px rgba(0,0,0,0.2)' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{catModal === 'add' ? 'Add Expense Category' : 'Edit Expense Category'}</h3>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>{catModal === 'add' ? 'Add Expense Category' : 'Edit Expense Category'}</h3>
                 <button onClick={() => setCatModal(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}>
                   <X size={18} />
                 </button>
@@ -421,7 +421,7 @@ export default function ExpenseConfigurations() {
                   <label style={labelStyle}>Category Code *</label>
                   <input
                     type="text"
-                    style={{ ...inputStyle, fontFamily: 'monospace', textTransform: 'uppercase' }}
+                    style={{ ...inputStyle, fontFamily: 'var(--font-mono)', textTransform: 'uppercase' }}
                     placeholder="e.g. TRAVEL"
                     value={catForm.code}
                     onChange={e => setCatForm(f => ({ ...f, code: e.target.value.toUpperCase() }))}

@@ -306,7 +306,7 @@ function TxDetailPanel({ tx, accounts, heads, currentUserId, onClose, onAction, 
         {/* Header */}
         <div style={{ padding: '18px 20px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
           <div>
-            <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13, fontWeight: 700, color: 'var(--accent2)' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: 13, fontWeight: 600, color: 'var(--accent2)' }}>
               {tx.reference}
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
@@ -323,8 +323,8 @@ function TxDetailPanel({ tx, accounts, heads, currentUserId, onClose, onAction, 
         <div style={{ flex: 1, overflowY: 'auto', padding: 20 }}>
           {/* Amount */}
           <div style={{ textAlign: 'center', padding: '20px 0', marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 6 }}>Amount</div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: tx.transaction_type === 'DEBIT' ? '#dc2626' : '#16a34a', letterSpacing: '-1px' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 6 }}>Amount</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: tx.transaction_type === 'DEBIT' ? '#dc2626' : '#16a34a', letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
               {tx.transaction_type === 'DEBIT' ? '−' : '+'}{INR(tx.amount)}
             </div>
           </div>
@@ -338,7 +338,7 @@ function TxDetailPanel({ tx, accounts, heads, currentUserId, onClose, onAction, 
               { label: 'Description', value: tx.description || '—', icon: FileText },
             ].map(({ label, value, icon: Icon }) => (
               <div key={label}>
-                <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
+                <div style={{ fontSize: 10.5, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 3, display: 'flex', alignItems: 'center', gap: 4 }}>
                   <Icon size={10} /> {label}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{value}</div>
@@ -349,7 +349,7 @@ function TxDetailPanel({ tx, accounts, heads, currentUserId, onClose, onAction, 
           {/* Account Head update */}
           {(tx.status === 'entered' || tx.status === 'verified') && tx.transaction_type === 'DEBIT' && (
             <div style={{ marginBottom: 20, padding: 14, background: 'var(--bg3)', borderRadius: 10, border: '1px solid var(--border)' }}>
-              <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 8 }}>
+              <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 8 }}>
                 Account Head
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -376,7 +376,7 @@ function TxDetailPanel({ tx, accounts, heads, currentUserId, onClose, onAction, 
 
           {/* Workflow Timeline */}
           <div style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 14 }}>
               Workflow History
             </div>
             <WorkflowTimeline tx={tx} />
@@ -623,12 +623,12 @@ export default function FinanceTransactions() {
       {/* Status + Type filters */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)' }}>Status</span>
+          <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)' }}>Status</span>
           <PillFilter options={statusOptions} value={status} onChange={setStatus} />
         </div>
         <div style={{ width: 1, height: 24, background: 'var(--border)' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)' }}>Type</span>
+          <span style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)' }}>Type</span>
           <PillFilter options={typeOptions} value={txType} onChange={setTxType} />
         </div>
       </div>
@@ -679,11 +679,11 @@ export default function FinanceTransactions() {
                     <input type="checkbox" checked={selected.has(tx.id)} onChange={() => toggleRow(tx.id)} style={{ cursor: 'pointer' }} />
                   </td>
                   <td>
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 12, color: 'var(--accent2)', fontWeight: 600 }}>
+                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, color: 'var(--accent2)', fontWeight: 500 }}>
                       {tx.reference || '—'}
                     </span>
                   </td>
-                  <td style={{ fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{fmtDate(tx.transaction_date)}</td>
+                  <td style={{ fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(tx.transaction_date)}</td>
                   <td style={{ fontSize: 12, color: 'var(--text2)' }}>{tx.account_name || '—'}</td>
                   <td><TypeBadge type={tx.transaction_type} /></td>
                   <td>
@@ -701,7 +701,7 @@ export default function FinanceTransactions() {
                       <span style={{ fontSize: 11, color: 'var(--text3)' }}>—</span>
                     )}
                   </td>
-                  <td style={{ textAlign: 'right', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', color: tx.transaction_type === 'DEBIT' ? '#dc2626' : '#16a34a' }}>
+                  <td style={{ textAlign: 'right', fontWeight: 700, fontSize: 13, whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums', color: tx.transaction_type === 'DEBIT' ? '#dc2626' : '#16a34a' }}>
                     {tx.transaction_type === 'DEBIT' ? '−' : '+'}{INR(tx.amount)}
                   </td>
                   <td><StatusBadge status={tx.status} /></td>

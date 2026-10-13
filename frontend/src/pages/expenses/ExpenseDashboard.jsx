@@ -41,8 +41,8 @@ function KpiCard({ label, value, icon: Icon, color, bg, sub }) {
       }}
     >
       <div style={{ flex: 1 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text3)', marginBottom: 4 }}>{label}</div>
-        <div style={{ fontSize: 22, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.5px' }}>{value}</div>
+        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 4 }}>{label}</div>
+        <div style={{ fontSize: 20, fontWeight: 700, color, lineHeight: 1.2, letterSpacing: '-0.3px', fontVariantNumeric: 'tabular-nums' }}>{value}</div>
         {sub && <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>{sub}</div>}
       </div>
       <div style={{ width: 36, height: 36, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
@@ -194,7 +194,7 @@ export default function ExpenseDashboard() {
               alignItems: 'center',
             }}
           >
-            <h3 style={{ margin: 0, fontWeight: 700, fontSize: 14 }}>Recent Claims</h3>
+            <h3 style={{ margin: 0, fontWeight: 600, fontSize: 14 }}>Recent Claims</h3>
             <button
               onClick={() => navigate('/expenses/my')}
               style={{ fontSize: 12, color: 'var(--accent)', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600 }}
@@ -225,7 +225,7 @@ export default function ExpenseDashboard() {
                         style={{
                           padding: '8px 12px',
                           textAlign: 'left',
-                          fontWeight: 700,
+                          fontWeight: 600,
                           fontSize: 11,
                           textTransform: 'uppercase',
                           letterSpacing: '0.5px',
@@ -251,16 +251,16 @@ export default function ExpenseDashboard() {
                       onMouseEnter={e => (e.currentTarget.style.background = 'var(--bg3)')}
                       onMouseLeave={e => (e.currentTarget.style.background = i % 2 === 0 ? 'transparent' : 'var(--bg3)10')}
                     >
-                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>{c.reference}</td>
+                      <td style={{ padding: '8px 12px', fontWeight: 500, color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 12.5 }}>{c.reference}</td>
                       <td style={{ padding: '8px 12px', color: 'var(--text)' }}>{c.employee_name || '—'}</td>
                       <td style={{ padding: '8px 12px', color: 'var(--text2)' }}>{c.category_name || '—'}</td>
-                      <td style={{ padding: '8px 12px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>{c.expense_date}</td>
-                      <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--text)' }}>{INR(c.amount)}</td>
+                      <td style={{ padding: '8px 12px', color: 'var(--text2)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{c.expense_date}</td>
+                      <td style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{INR(c.amount)}</td>
                       <td style={{ padding: '8px 12px' }}>
                         <span
                           style={{
                             fontSize: 11,
-                            fontWeight: 700,
+                            fontWeight: 600,
                             padding: '3px 10px',
                             borderRadius: 20,
                             background: `${STATUS_COLORS[c.status] || '#888'}20`,

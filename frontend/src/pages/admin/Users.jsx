@@ -281,38 +281,38 @@ export default function AdminUsers() {
             {/* ROW 1: General Information */}
             <section>
               <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 10 }}>
-                <span style={{ fontSize: 10, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>1. Identity & Core Settings</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>1. Identity & Core Settings</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '10px' }}>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Full Name</label>
-                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} value={form.name} onChange={e => set('name', e.target.value)} />
+                  <label className="form-label" style={{ fontSize: 10.5, marginBottom: 4 }}>Full Name</label>
+                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12.5 }} value={form.name} onChange={e => set('name', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Email Address</label>
-                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
+                  <label className="form-label" style={{ fontSize: 10.5, marginBottom: 4 }}>Email Address</label>
+                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12.5 }} type="email" value={form.email} onChange={e => set('email', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Department</label>
-                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.department_id} onChange={e => set('department_id', e.target.value)}>
+                  <label className="form-label" style={{ fontSize: 10.5, marginBottom: 4 }}>Department</label>
+                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12.5 }} value={form.department_id} onChange={e => set('department_id', e.target.value)}>
                     <option value="">— Select —</option>
                     {departments.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Global Role</label>
-                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.role_id} onChange={e => set('role_id', e.target.value)}>
+                  <label className="form-label" style={{ fontSize: 10.5, marginBottom: 4 }}>Global Role</label>
+                  <select className="form-select" style={{ padding: '5px 8px', fontSize: 12.5 }} value={form.role_id} onChange={e => set('role_id', e.target.value)}>
                     <option value="">— Default —</option>
                     {roles.map(r => <option key={r.id} value={r.id}>{r.name}</option>)}
                   </select>
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>{editing ? 'New Password' : 'Password'}</label>
-                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12 }} type="password" value={form.password} onChange={e => set('password', e.target.value)} />
+                  <label className="form-label" style={{ fontSize: 10.5, marginBottom: 4 }}>{editing ? 'New Password' : 'Password'}</label>
+                  <input className="form-input" style={{ padding: '6px 10px', fontSize: 12.5 }} type="password" value={form.password} onChange={e => set('password', e.target.value)} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 9, marginBottom: 4 }}>Status</label>
-                    <select className="form-select" style={{ padding: '5px 8px', fontSize: 12 }} value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
+                  <label className="form-label" style={{ fontSize: 10.5, marginBottom: 4 }}>Status</label>
+                    <select className="form-select" style={{ padding: '5px 8px', fontSize: 12.5 }} value={form.is_active} onChange={e => set('is_active', e.target.value === 'true')}>
                       <option value="true">Active</option>
                       <option value="false">Inactive</option>
                     </select>
@@ -320,7 +320,7 @@ export default function AdminUsers() {
                 <div className="form-group" style={{ gridColumn: 'span 2', display: 'flex', alignItems: 'flex-end' }}>
                   <label className="flex items-center gap-2 cursor-pointer p-2 bg-accent-dim rounded-lg w-full" style={{ border: '1px solid var(--accent)', height: '32px' }}>
                     <input type="checkbox" checked={form.is_superadmin} onChange={e => set('is_superadmin', e.target.checked)} />
-                    <span className="form-label mb-0" style={{ fontWeight: 900, color: 'var(--accent)', fontSize: 10 }}>GRANT SUPER ADMIN PRIVILEGES</span>
+                    <span className="form-label mb-0" style={{ fontWeight: 600, color: 'var(--accent)', fontSize: 11 }}>GRANT SUPER ADMIN PRIVILEGES</span>
                   </label>
                 </div>
               </div>
@@ -329,7 +329,7 @@ export default function AdminUsers() {
             {/* ROW 2: Branch Authorization (Micro Tiles) */}
             <section>
               <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 8 }}>
-                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>2. Branch Portfolio</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>2. Branch Portfolio</span>
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '6px' }}>
                 {branches.map(b => {
@@ -357,16 +357,16 @@ export default function AdminUsers() {
                         <Building size={14} color={isSelected ? 'var(--accent)' : 'var(--text3)'} />
                       </div>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <span style={{ fontSize: 11, fontWeight: 800, color: isSelected ? 'var(--text1)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</span>
+                        <span style={{ fontSize: 11.5, fontWeight: 600, color: isSelected ? 'var(--text1)' : 'var(--text3)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{b.name}</span>
                         {isSelected && !isPrimary ? (
                           <span 
                             onClick={() => set('branch_id', b.id)} 
-                            style={{ fontSize: 7, color: 'var(--accent)', cursor: 'pointer', fontWeight: 900, textTransform: 'uppercase', textDecoration: 'underline' }}
+                            style={{ fontSize: 9.5, color: 'var(--accent)', cursor: 'pointer', fontWeight: 600, textTransform: 'uppercase', textDecoration: 'underline' }}
                           >
                             Set as Primary
                           </span>
                         ) : (
-                           <span style={{ fontSize: 7, color: 'var(--text3)', textTransform: 'uppercase' }}>{isPrimary ? 'Primary' : (isSelected ? 'Authorized' : 'Locked')}</span>
+                           <span style={{ fontSize: 9.5, color: 'var(--text3)', textTransform: 'uppercase' }}>{isPrimary ? 'Primary' : (isSelected ? 'Authorized' : 'Locked')}</span>
                         )}
                       </div>
                       <div onClick={() => toggleBranch(b.id)} style={{ cursor: 'pointer' }}>
@@ -381,7 +381,7 @@ export default function AdminUsers() {
             {/* ROW 3: Module Permissions (Nano Grid - 6 Columns) */}
             <section style={{ flex: 1 }}>
               <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 4, marginBottom: 8 }}>
-                <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '1px' }}>3. Module Permissions</span>
+                <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>3. Module Permissions</span>
               </div>
               
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
@@ -412,7 +412,7 @@ export default function AdminUsers() {
                           <Shield size={16} />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
-                          <span style={{ fontSize: 10, fontWeight: 900, color: roleId ? 'var(--text1)' : 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: roleId ? 'var(--text1)' : 'var(--text2)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.name}</span>
                         </div>
                       </div>
                       <select 
@@ -423,10 +423,10 @@ export default function AdminUsers() {
                           width: '100%', 
                           borderRadius: 6, 
                           padding: '4px 6px',
-                          fontSize: 10, 
+                          fontSize: 11, 
                           background: roleId ? 'var(--bg)' : 'var(--bg3)',
                           border: roleId ? '1px solid var(--accent)' : '1px solid var(--border)', 
-                          fontWeight: roleId ? 800 : 500
+                          fontWeight: roleId ? 600 : 500
                         }}
                       >
                         <option value="">— None —</option>
@@ -445,24 +445,24 @@ export default function AdminUsers() {
              <div className="card" style={{ padding: 16 }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
                  <Clock size={16} color="var(--accent)" />
-                 <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '1px' }}>Account Lifecycle</span>
+                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Account Lifecycle</span>
                </div>
                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                  <div>
-                   <label style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Member Since</label>
-                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text1)' }}>{editing ? (users.find(u => u.id === editing)?.created_at?.split(' ')[0] || 'N/A') : 'Now'}</span>
+                   <label style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Member Since</label>
+                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text1)' }}>{editing ? (users.find(u => u.id === editing)?.created_at?.split(' ')[0] || 'N/A') : 'Now'}</span>
                  </div>
                  <div>
-                   <label style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Last Active Session</label>
-                   <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--accent)' }}>{editing ? (users.find(u => u.id === editing)?.last_login || 'No recent activity') : 'Pending'}</span>
+                   <label style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Last Active Session</label>
+                   <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent)' }}>{editing ? (users.find(u => u.id === editing)?.last_login || 'No recent activity') : 'Pending'}</span>
                  </div>
                  {editing && (
                     <div>
-                      <label style={{ fontSize: 9, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Two-Factor Auth (2FA)</label>
+                      <label style={{ fontSize: 10, color: 'var(--text3)', textTransform: 'uppercase', display: 'block', marginBottom: 2 }}>Two-Factor Auth (2FA)</label>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
                         <span style={{
-                          fontSize: 10,
-                          fontWeight: 800,
+                          fontSize: 10.5,
+                          fontWeight: 600,
                           padding: '3px 8px',
                           borderRadius: 6,
                           background: users.find(u => u.id === editing)?.totp_enabled ? 'var(--accent-dim)' : 'var(--bg3)',
@@ -480,8 +480,8 @@ export default function AdminUsers() {
                             className="btn btn-sm"
                             style={{ 
                               padding: '3px 8px', 
-                              fontSize: 10, 
-                              fontWeight: 700, 
+                              fontSize: 10.5, 
+                              fontWeight: 600, 
                               height: '22px',
                               background: 'var(--red-dim)',
                               color: 'var(--red)',
@@ -505,7 +505,7 @@ export default function AdminUsers() {
              <div className="card" style={{ flex: 1, padding: 16, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
                  <History size={16} color="var(--accent)" />
-                 <span style={{ fontSize: 11, fontWeight: 900, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '1px' }}>Rights Audit Log</span>
+                 <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rights Audit Log</span>
                </div>
                
                <div style={{ flex: 1, overflowY: 'auto', paddingRight: 4 }}>
@@ -538,8 +538,8 @@ export default function AdminUsers() {
                           <div key={log.id} style={{ borderLeft: '2px solid var(--accent-dim)', paddingLeft: 12, position: 'relative' }}>
                             <div style={{ position: 'absolute', top: 0, left: -4, width: 6, height: 6, borderRadius: '50%', background: 'var(--accent)' }} />
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 2 }}>
-                               <span style={{ fontSize: 10, fontWeight: 900, color: log.action === 'CREATE' ? 'var(--accent)' : 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>{log.action}</span>
-                               <span style={{ fontSize: 9, color: 'var(--text3)' }}>{log.created_at?.split(' ')[1]?.substring(0, 5)}</span>
+                               <span style={{ fontSize: 10.5, fontWeight: 600, color: log.action === 'CREATE' ? 'var(--accent)' : 'var(--text1)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>{log.action}</span>
+                               <span style={{ fontSize: 10.5, color: 'var(--text3)', fontVariantNumeric: 'tabular-nums' }}>{log.created_at?.split(' ')[1]?.substring(0, 5)}</span>
                             </div>
                             <div style={{ fontSize: 11, color: 'var(--text2)', fontWeight: 500, marginBottom: 4 }}>By {log.user_name}</div>
                             <div style={{ fontSize: 11, color: 'var(--text1)', fontWeight: 600, marginBottom: passwordChanged ? 0 : 4 }}>{summary}</div>
@@ -547,8 +547,8 @@ export default function AdminUsers() {
                             {!passwordChanged && changedFields.length > 0 && (
                               <div style={{ marginTop: 4, padding: '4px 8px', background: 'var(--bg3)', borderRadius: 6, border: '1px solid var(--border)' }}>
                                 {changedFields.map(key => (
-                                  <div key={key} style={{ fontSize: 9, marginBottom: 2, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
-                                    <b style={{ color: 'var(--accent)', flexShrink: 0, minWidth: 80 }}>{FIELD_LABELS[key] || key}:</b>
+                                  <div key={key} style={{ fontSize: 10.5, marginBottom: 2, display: 'flex', alignItems: 'flex-start', gap: 4 }}>
+                                    <b style={{ color: 'var(--accent)', flexShrink: 0, minWidth: 80, fontWeight: 600 }}>{FIELD_LABELS[key] || key}:</b>
                                     <span style={{ color: 'var(--text2)', wordBreak: 'break-word' }}>
                                       {formatAuditChange(key, changes[key]?.new ?? changes[key])}
                                     </span>
@@ -610,50 +610,50 @@ export default function AdminUsers() {
               <table>
                 <thead>
                   <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Username</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>User ID</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Department</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Role</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Branches</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Module Rights</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Last Login</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Logged In</th>
-                    <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Status</th>
-                    <th style={{ padding: '12px' }}></th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Username</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>User ID</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Department</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Role</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Branches</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Module Rights</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Last Login</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Logged In</th>
+                    <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Status</th>
+                    <th style={{ padding: '10px 12px' }}></th>
                   </tr>
                 </thead>
                 <tbody>
                   {users.map(u => (
                     <tr key={u.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                      <td style={{ padding: '12px', fontSize: 12, fontWeight: 800, color: 'var(--text1)' }}>{u.name}</td>
-                      <td style={{ padding: '12px', fontSize: 11, color: 'var(--text3)', fontWeight: 500 }}>{u.email}</td>
-                      <td style={{ padding: '12px', fontSize: 11, fontWeight: 700, color: 'var(--text2)' }}>{u.department_name || '—'}</td>
-                      <td style={{ padding: '12px' }}>
-                        <span style={{ fontSize: 9, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', padding: '3px 8px', background: 'var(--accent-dim)', borderRadius: 6 }}>
+                      <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{u.name}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text3)', fontWeight: 400 }}>{u.email}</td>
+                      <td style={{ padding: '10px 12px', fontSize: 12.5, fontWeight: 500, color: 'var(--text2)' }}>{u.department_name || '—'}</td>
+                      <td style={{ padding: '10px 12px' }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 600, color: 'var(--accent)', textTransform: 'uppercase', padding: '3px 8px', background: 'var(--accent-dim)', borderRadius: 6 }}>
                           {u.role_name || 'User'}
                         </span>
                       </td>
-                      <td style={{ padding: '12px' }}>
+                      <td style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--text1)' }}>{u.branch_name || '—'}</span>
+                          <span style={{ fontSize: 12.5, fontWeight: 500, color: 'var(--text1)' }}>{u.branch_name || '—'}</span>
                           {(u.allowed_branches || []).length > 0 && (
-                             <Badge color="var(--bg3)" style={{ fontSize: 8, fontWeight: 900, border: '1px solid var(--border)', color: 'var(--text1)' }}>
+                             <Badge color="var(--bg3)" style={{ fontSize: 10, fontWeight: 600, border: '1px solid var(--border)', color: 'var(--text1)' }}>
                                +{u.allowed_branches.length}
                              </Badge>
                           )}
                         </div>
                       </td>
-                      <td style={{ padding: '12px' }}>
+                      <td style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, maxWidth: 220 }}>
                           {Object.keys(u.allowed_modules || {}).map(mKey => {
                             const mod = ALL_MODULES.find(x => x.key === mKey);
                             const label = mod ? mod.name : (isNaN(mKey) ? mKey : `MOD ${mKey}`);
                             return (
                               <Badge key={mKey} color="#475569" style={{ 
-                                fontSize: 8, padding: '2px 6px', fontWeight: 900, 
+                                fontSize: 9.5, padding: '2px 6px', fontWeight: 600, 
                                 color: '#1e293b', border: '1px solid #cbd5e1',
                                 background: '#f1f5f9',
-                                textTransform: 'uppercase', letterSpacing: '0.2px'
+                                textTransform: 'uppercase', letterSpacing: '0.02em'
                               }}>
                                 {label}
                               </Badge>
@@ -661,24 +661,24 @@ export default function AdminUsers() {
                           })}
                         </div>
                       </td>
-                      <td style={{ padding: '12px', fontSize: 11, color: 'var(--text2)', fontWeight: 500 }}>
+                      <td style={{ padding: '10px 12px', fontSize: 12, color: 'var(--text2)', fontWeight: 400, fontVariantNumeric: 'tabular-nums' }}>
                         {formatDateTime(u.last_login)}
                       </td>
-                      <td style={{ padding: '12px' }}>
+                      <td style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: u.is_online ? 'var(--green)' : '#94a3b8' }} />
-                          <span style={{ fontSize: 10, fontWeight: 900, color: u.is_online ? 'var(--green)' : '#94a3b8', textTransform: 'uppercase' }}>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: u.is_online ? 'var(--green)' : '#94a3b8', textTransform: 'uppercase' }}>
                             {u.is_online ? 'Online' : 'Offline'}
                           </span>
                         </div>
                       </td>
-                      <td style={{ padding: '12px' }}>
+                      <td style={{ padding: '10px 12px' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                           <div style={{ width: 6, height: 6, borderRadius: '50%', background: u.is_active ? 'var(--green)' : 'var(--red)' }} />
-                          <span style={{ fontSize: 10, fontWeight: 900, color: u.is_active ? 'var(--green)' : 'var(--red)', textTransform: 'uppercase' }}>{u.is_active ? 'Active' : 'Offline'}</span>
+                          <span style={{ fontSize: 11, fontWeight: 600, color: u.is_active ? 'var(--green)' : 'var(--red)', textTransform: 'uppercase' }}>{u.is_active ? 'Active' : 'Offline'}</span>
                         </div>
                       </td>
-                      <td style={{ padding: '12px', textAlign: 'right' }}>
+                      <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                         <div style={{ display: 'flex', gap: 4, justifyContent: 'flex-end' }}>
                           <button className="btn btn-ghost btn-sm" style={{ padding: 5 }} onClick={() => openEdit(u)} title="Settings"><Pencil size={13} /></button>
                           <button className="btn btn-danger btn-sm" style={{ padding: 5, opacity: 0.7 }} onClick={() => setConfirming({ type: 'user', id: u.id, name: u.name })} title="Delete"><Trash2 size={13} /></button>
@@ -697,19 +697,19 @@ export default function AdminUsers() {
             <table>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Department Name</th>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Status</th>
-                  <th style={{ padding: '12px' }}></th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Department Name</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Status</th>
+                  <th style={{ padding: '10px 12px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {departments.map(d => (
                   <tr key={d.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{d.name}</td>
-                    <td style={{ padding: '12px' }}>
-                      <Badge color={d.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10, fontWeight: 800 }}>{d.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                    <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{d.name}</td>
+                    <td style={{ padding: '10px 12px' }}>
+                      <Badge color={d.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10.5, fontWeight: 600 }}>{d.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
                     </td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                       <div className="flex gap-2 justify-end">
                         <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { setModalForm({ name: d.name, is_active: d.is_active }); setModalEditing(d.id); setModalMode('dept'); setModal(true); }}><Pencil size={13} /></button>
                         <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.7 }} onClick={() => setConfirming({ type: 'dept', id: d.id, name: d.name })}><Trash2 size={13} /></button>
@@ -727,37 +727,37 @@ export default function AdminUsers() {
             <table>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Branch Name</th>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Location / Address</th>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Office GPS Coordinates</th>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Allowed Radius</th>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Status</th>
-                  <th style={{ padding: '12px' }}></th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Branch Name</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Location / Address</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Office GPS Coordinates</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Allowed Radius</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Status</th>
+                  <th style={{ padding: '10px 12px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {branches.map(b => (
                   <tr key={b.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{b.name}</td>
-                    <td style={{ padding: '12px', fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>{b.address || 'Standard Location'}</td>
-                    <td style={{ padding: '12px' }}>
+                    <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{b.name}</td>
+                    <td style={{ padding: '10px 12px', fontSize: 12.5, color: 'var(--text3)', fontWeight: 400 }}>{b.address || 'Standard Location'}</td>
+                    <td style={{ padding: '10px 12px' }}>
                       {b.latitude !== null && b.longitude !== null ? (
-                        <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 600 }}>
+                        <span style={{ fontSize: 12, color: 'var(--text2)', fontWeight: 500, fontVariantNumeric: 'tabular-nums' }}>
                           Lat: {parseFloat(b.latitude).toFixed(5)}, Lon: {parseFloat(b.longitude).toFixed(5)}
                         </span>
                       ) : (
-                        <span style={{ color: 'var(--text3)', fontSize: 11, fontStyle: 'italic' }}>Not Configured</span>
+                        <span style={{ color: 'var(--text3)', fontSize: 11.5, fontStyle: 'italic' }}>Not Configured</span>
                       )}
                     </td>
-                    <td style={{ padding: '12px' }}>
-                      <span className="fw-600" style={{ fontSize: 12, color: 'var(--text2)' }}>
+                    <td style={{ padding: '10px 12px' }}>
+                      <span className="fw-600" style={{ fontSize: 12.5, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>
                         {b.radius !== null ? `${b.radius}m` : '100m'}
                       </span>
                     </td>
-                    <td style={{ padding: '12px' }}>
-                      <Badge color={b.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10, fontWeight: 800 }}>{b.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
+                    <td style={{ padding: '10px 12px' }}>
+                      <Badge color={b.is_active ? 'var(--green)' : 'var(--red)'} style={{ fontSize: 10.5, fontWeight: 600 }}>{b.is_active ? 'ACTIVE' : 'INACTIVE'}</Badge>
                     </td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                       <div className="flex gap-2 justify-end">
                         <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { 
                           setModalForm({ 
@@ -787,29 +787,29 @@ export default function AdminUsers() {
             <table>
               <thead>
                 <tr style={{ borderBottom: '2px solid var(--border)' }}>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Role Name</th>
-                  <th style={{ padding: '12px', fontSize: 10, textAlign: 'left', textTransform: 'uppercase', letterSpacing: 1, color: 'var(--text3)' }}>Global Permissions</th>
-                  <th style={{ padding: '12px' }}></th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Role Name</th>
+                  <th style={{ padding: '10px 12px', fontSize: 11, textAlign: 'left', textTransform: 'uppercase', letterSpacing: '0.04em', color: 'var(--text2)' }}>Global Permissions</th>
+                  <th style={{ padding: '10px 12px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {roles.map(r => (
                   <tr key={r.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '12px', fontSize: 13, fontWeight: 700, color: 'var(--text1)' }}>{r.name}</td>
-                    <td style={{ padding: '12px' }}>
+                    <td style={{ padding: '10px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text1)' }}>{r.name}</td>
+                    <td style={{ padding: '10px 12px' }}>
                       <div className="flex gap-1" style={{ flexWrap: 'wrap' }}>
                         {CRUD_PERMS.filter(p => r.permissions?.[p.key]).map(p => (
-                          <Badge key={p.key} color="var(--accent-dim)" style={{ color: 'var(--accent)', fontSize: 8, fontWeight: 900 }}>{p.label}</Badge>
+                          <Badge key={p.key} color="var(--accent-dim)" style={{ color: 'var(--accent)', fontSize: 10, fontWeight: 600 }}>{p.label}</Badge>
                         ))}
                         {r.permissions?.view_own_records_only && (
-                          <Badge color="rgba(251, 191, 36, 0.15)" style={{ color: '#f59e0b', fontSize: 8, fontWeight: 900, border: '1px solid rgba(251,191,36,0.3)' }}>OWN RECORDS</Badge>
+                          <Badge color="rgba(251, 191, 36, 0.15)" style={{ color: '#f59e0b', fontSize: 10, fontWeight: 600, border: '1px solid rgba(251,191,36,0.3)' }}>OWN RECORDS</Badge>
                         )}
                         {r.permissions?.view_team_records_only && (
-                          <Badge color="rgba(139, 92, 246, 0.15)" style={{ color: '#8b5cf6', fontSize: 8, fontWeight: 900, border: '1px solid rgba(139,92,246,0.3)' }}>TEAM RECORDS</Badge>
+                          <Badge color="rgba(139, 92, 246, 0.15)" style={{ color: '#8b5cf6', fontSize: 10, fontWeight: 600, border: '1px solid rgba(139,92,246,0.3)' }}>TEAM RECORDS</Badge>
                         )}
                       </div>
                     </td>
-                    <td style={{ padding: '12px', textAlign: 'right' }}>
+                    <td style={{ padding: '10px 12px', textAlign: 'right' }}>
                       <div className="flex gap-2 justify-end">
                         <button className="btn btn-ghost btn-sm" style={{ padding: 6 }} onClick={() => { setModalForm({ name: r.name, permissions: r.permissions || {} }); setModalEditing(r.id); setModalMode('role'); setModal(true); }}><Pencil size={13} /></button>
                         <button className="btn btn-danger btn-sm" style={{ padding: 6, opacity: 0.7 }} onClick={() => setConfirming({ type: 'role', id: r.id, name: r.name })}><Trash2 size={13} /></button>
@@ -831,26 +831,26 @@ export default function AdminUsers() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             <div className="form-group">
-              <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Name / Identifier</label>
+              <label className="form-label" style={{ fontSize: 11, fontWeight: 600 }}>Name / Identifier</label>
               <input className="form-input" value={modalForm.name || ''} onChange={e => setModalForm({...modalForm, name: e.target.value})} placeholder="e.g. Sales, Bangalore Branch, Operator" />
             </div>
 
             {modalMode === 'branch' && (
               <>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Location Address</label>
+                  <label className="form-label" style={{ fontSize: 11, fontWeight: 600 }}>Location Address</label>
                   <textarea className="form-input" value={modalForm.address || ''} onChange={e => setModalForm({...modalForm, address: e.target.value})} placeholder="Full address details..." />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Latitude</label>
+                  <label className="form-label" style={{ fontSize: 11, fontWeight: 600 }}>Latitude</label>
                   <input className="form-input" type="number" step="any" placeholder="e.g. 11.04609" value={modalForm.latitude !== null && modalForm.latitude !== undefined ? modalForm.latitude : ''} onChange={e => setModalForm({...modalForm, latitude: e.target.value})} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Longitude</label>
+                  <label className="form-label" style={{ fontSize: 11, fontWeight: 600 }}>Longitude</label>
                   <input className="form-input" type="number" step="any" placeholder="e.g. 76.89994" value={modalForm.longitude !== null && modalForm.longitude !== undefined ? modalForm.longitude : ''} onChange={e => setModalForm({...modalForm, longitude: e.target.value})} />
                 </div>
                 <div className="form-group">
-                  <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Proximity Radius (Meters)</label>
+                  <label className="form-label" style={{ fontSize: 11, fontWeight: 600 }}>Proximity Radius (Meters)</label>
                   <input className="form-input" type="number" placeholder="e.g. 100" value={modalForm.radius !== null && modalForm.radius !== undefined ? modalForm.radius : 100} onChange={e => setModalForm({...modalForm, radius: e.target.value})} />
                 </div>
               </>
@@ -869,7 +869,7 @@ export default function AdminUsers() {
                         key={mod.key}
                         onClick={() => setModalForm({ ...modalForm, activeModuleTab: mod.key })}
                         style={{
-                          padding: '6px 12px', borderRadius: 6, fontSize: 11, fontWeight: 700, border: 'none', cursor: 'pointer',
+                          padding: '6px 12px', borderRadius: 6, fontSize: 11.5, fontWeight: 600, border: 'none', cursor: 'pointer',
                           whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: 4,
                           background: isActive ? 'var(--accent)' : 'var(--bg2)',
                           color: isActive ? '#fff' : isEnabled ? 'var(--text1)' : 'var(--text3)',
@@ -918,10 +918,10 @@ export default function AdminUsers() {
                     <div style={{ background: 'var(--bg2)', padding: 14, borderRadius: 8, border: '1px solid var(--border)', marginBottom: 8 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
                         <div>
-                          <h4 style={{ margin: 0, fontSize: 13, fontWeight: 800, color: 'var(--text1)' }}>{currentModCatalog.name} Permissions</h4>
-                          <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text3)' }}>Set record scope and sub-menu action access.</p>
+                          <h4 style={{ margin: 0, fontSize: 13.5, fontWeight: 600, color: 'var(--text1)' }}>{currentModCatalog.name} Permissions</h4>
+                          <p style={{ margin: '2px 0 0 0', fontSize: 11.5, color: 'var(--text3)' }}>Set record scope and sub-menu action access.</p>
                         </div>
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+                        <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: 12, fontWeight: 600 }}>
                           <input
                             type="checkbox"
                             checked={currentModState.enabled !== false}
@@ -933,7 +933,7 @@ export default function AdminUsers() {
 
                       {/* Scope Selection */}
                       <div style={{ marginBottom: 14 }}>
-                        <label style={{ display: 'block', fontSize: 11, fontWeight: 800, marginBottom: 6, color: '#f59e0b', textTransform: 'uppercase' }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 6, color: '#f59e0b', textTransform: 'uppercase' }}>
                           Data Scope Settings
                         </label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 6 }}>
@@ -948,7 +948,7 @@ export default function AdminUsers() {
                                   background: isSelected ? 'var(--accent-dim)' : 'var(--bg)', cursor: 'pointer'
                                 }}
                               >
-                                <div style={{ fontWeight: 800, fontSize: 11, color: isSelected ? 'var(--accent)' : 'var(--text1)' }}>
+                                <div style={{ fontWeight: 600, fontSize: 11.5, color: isSelected ? 'var(--accent)' : 'var(--text1)' }}>
                                   {sc.label}
                                 </div>
                               </div>
@@ -959,10 +959,10 @@ export default function AdminUsers() {
 
                       {/* Menu & Action Table */}
                       <div>
-                        <label style={{ display: 'block', fontSize: 11, fontWeight: 800, marginBottom: 6, textTransform: 'uppercase', color: 'var(--text3)' }}>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 600, marginBottom: 6, textTransform: 'uppercase', color: 'var(--text3)' }}>
                           Menu & Action Access Matrix
                         </label>
-                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 11, background: 'var(--bg)', borderRadius: 6, overflow: 'hidden' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, background: 'var(--bg)', borderRadius: 6, overflow: 'hidden' }}>
                           <thead>
                             <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
                               <th style={{ padding: '6px 8px', textAlign: 'left' }}>Sub-Menu</th>
@@ -976,11 +976,11 @@ export default function AdminUsers() {
                               const menuPerms = currentModState.menus?.[menu.path] || {};
                               return (
                                 <tr key={menu.path} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '8px', fontWeight: 600 }}>{menu.label}</td>
+                                  <td style={{ padding: '8px', fontWeight: 500 }}>{menu.label}</td>
                                   {['read', 'create', 'edit', 'delete', 'approve', 'export'].map(act => {
                                     const isAvailable = menu.actions.includes(act);
                                     if (!isAvailable) {
-                                      return <td key={act} style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 10 }}>-</td>;
+                                      return <td key={act} style={{ textAlign: 'center', color: 'var(--text3)', fontSize: 11 }}>-</td>;
                                     }
                                     const isChecked = !!menuPerms[act];
                                     return (
@@ -1006,7 +1006,7 @@ export default function AdminUsers() {
             )}
 
             <div className="form-group">
-               <label className="form-label" style={{ fontSize: 10, fontWeight: 800 }}>Operational Status</label>
+               <label className="form-label" style={{ fontSize: 11, fontWeight: 600 }}>Operational Status</label>
                 <select className="form-select" value={String(modalForm.is_active !== false)} onChange={e => setModalForm({...modalForm, is_active: e.target.value === 'true'})}>
                   <option value="true">Active (Live)</option>
                   <option value="false">Inactive (Disabled)</option>

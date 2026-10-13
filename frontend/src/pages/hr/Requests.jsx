@@ -204,7 +204,7 @@ export default function Requests() {
     const h = Math.floor(secs / 3600);
     const m = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
-    return <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#f59e0b' }}>{`${h}h ${m}m ${s}s`}</span>;
+    return <span style={{ fontVariantNumeric: 'tabular-nums', fontWeight: 600, color: '#f59e0b' }}>{`${h}h ${m}m ${s}s`}</span>;
   }
 
   return (

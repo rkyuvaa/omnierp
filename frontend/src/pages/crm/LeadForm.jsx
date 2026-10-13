@@ -404,7 +404,7 @@ export default function LeadForm() {
                   minWidth: 0, opacity: isCurrent ? 1 : 0.7,
                   textAlign: 'center'
                 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', lineHeight: 1.15 }}>{s.name}</span>
               </div>
             );
           })}

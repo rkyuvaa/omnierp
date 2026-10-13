@@ -638,10 +638,10 @@ export default function MyExpenses() {
                           >
                             <span
                               style={{
-                                fontWeight: 800,
-                                fontSize: 14,
+                                fontWeight: 500,
+                                fontSize: 13.5,
                                 color: 'var(--accent)',
-                                fontFamily: 'monospace',
+                                fontFamily: 'var(--font-mono)',
                               }}
                             >
                               {c.reference || `(Draft Claim #${c.id})`}
@@ -649,7 +649,7 @@ export default function MyExpenses() {
                             <span
                               style={{
                                 fontSize: 11,
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 padding: '2px 9px',
                                 borderRadius: 20,
                                 background: cfg.bg,
@@ -663,7 +663,7 @@ export default function MyExpenses() {
                               <span
                                 style={{
                                   fontSize: 10,
-                                  fontWeight: 700,
+                                  fontWeight: 600,
                                   padding: '2px 7px',
                                   borderRadius: 4,
                                   border: '1px solid var(--border)',
@@ -691,12 +691,12 @@ export default function MyExpenses() {
                             </div>
                           )}
                           {c.reimbursement_ref && (
-                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 2 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
+                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 2 }}>Disbursement Ref: <span style={{ fontFamily: 'var(--font-mono)' }}>{c.reimbursement_ref}</span> ({c.reimbursement_mode || 'Direct'})</div>
                           )}
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>{INR(c.amount)}</div>
+                          <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{INR(c.amount)}</div>
 
                           {c.lines && c.lines.length > 0 && (
                             <button
@@ -789,38 +789,38 @@ export default function MyExpenses() {
                             overflowX: 'auto',
                           }}
                         >
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
                             Itemized Expense Claim Breakdown Grid
                           </div>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                             <thead>
                               <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Date</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Category</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost Code</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost To</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>From / To</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Description</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Vendor</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>GST %</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>Amount</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Bills</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Date</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Category</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Cost Code</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Cost To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>From / To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Description</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Vendor</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>GST %</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>Amount</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Bills</th>
                               </tr>
                             </thead>
                             <tbody>
                               {c.lines.map((row, rIdx) => (
                                 <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{row.date}</td>
                                   <td style={{ padding: '6px 8px', fontWeight: 600 }}>{row.expense_type}</td>
-                                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{row.cost_code || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>{row.cost_to || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>
                                     {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
                                   </td>
                                   <td style={{ padding: '6px 8px' }}>{row.description || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>{row.paid_to || '—'}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.gst_rate}%</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{INR(row.amount)}</td>
                                   <td style={{ padding: '6px 8px' }}>
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                       {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
@@ -879,10 +879,10 @@ export default function MyExpenses() {
               }}
             >
               <div>
-                <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.85, marginBottom: 2 }}>
+                <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.6px', opacity: 0.85, marginBottom: 2 }}>
                   Advance Ledger Balance
                 </div>
-                <div style={{ fontSize: 22, fontWeight: 800, letterSpacing: '-0.5px' }}>
+                <div style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.3px', fontVariantNumeric: 'tabular-nums' }}>
                   {INR(ledger.balance)}
                 </div>
               </div>
@@ -899,7 +899,7 @@ export default function MyExpenses() {
                     background: 'rgba(255, 255, 255, 0.1)',
                     color: '#fff',
                     cursor: 'pointer',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     fontSize: 12,
                     backdropFilter: 'blur(4px)',
                     transition: 'background 0.2s',
@@ -921,7 +921,7 @@ export default function MyExpenses() {
                     background: '#fff',
                     color: 'var(--accent)',
                     cursor: 'pointer',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     fontSize: 12,
                     boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
                     transition: 'transform 0.15s',
@@ -964,7 +964,7 @@ export default function MyExpenses() {
                             style={{
                               padding: '8px 12px',
                               textAlign: 'left',
-                              fontWeight: 700,
+                              fontWeight: 600,
                               fontSize: 11,
                               textTransform: 'uppercase',
                               letterSpacing: '0.5px',
@@ -989,11 +989,11 @@ export default function MyExpenses() {
                             }}
                           >
                             {/* Record Number / Ref */}
-                            <td style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--accent)', fontFamily: 'monospace' }}>
+                            <td style={{ padding: '8px 12px', fontWeight: 500, color: 'var(--accent)', fontFamily: 'var(--font-mono)', fontSize: 12.5 }}>
                               {a.reference || `(Draft #${a.id})`}
                             </td>
                             {/* Amount */}
-                            <td style={{ padding: '8px 12px', fontWeight: 800, color: 'var(--text)' }}>
+                            <td style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
                               {INR(a.amount)}
                             </td>
                             {/* Purpose */}
@@ -1001,11 +1001,11 @@ export default function MyExpenses() {
                               {a.purpose}
                             </td>
                             {/* Project Code */}
-                            <td style={{ padding: '8px 12px', color: 'var(--text)', fontFamily: 'monospace', fontSize: 12 }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text)', fontFamily: 'var(--font-mono)', fontSize: 12 }}>
                               {a.project_code || '—'}
                             </td>
                             {/* Required Date */}
-                            <td style={{ padding: '8px 12px', color: 'var(--text2)', whiteSpace: 'nowrap' }}>
+                            <td style={{ padding: '8px 12px', color: 'var(--text2)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>
                               {a.required_date || '—'}
                             </td>
                             {/* Status */}
@@ -1013,7 +1013,7 @@ export default function MyExpenses() {
                               <span
                                 style={{
                                   fontSize: 10,
-                                  fontWeight: 700,
+                                  fontWeight: 600,
                                   padding: '3px 10px',
                                   borderRadius: 20,
                                   background: cfg.bg,
@@ -1070,7 +1070,7 @@ export default function MyExpenses() {
                                       color: ['paid', 'settlement_pending'].includes(a.status) ? '#fff' : 'var(--text2)',
                                       cursor: 'pointer',
                                       fontSize: 12,
-                                      fontWeight: 700,
+                                      fontWeight: 600,
                                       display: 'flex',
                                       alignItems: 'center',
                                       gap: 4,
@@ -1166,7 +1166,7 @@ export default function MyExpenses() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 17, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ margin: 0, fontWeight: 600, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Receipt size={18} style={{ color: 'var(--accent)' }} /> New Expense Claim
                 </h3>
                 <button
@@ -1323,7 +1323,7 @@ export default function MyExpenses() {
                     background: 'var(--accent)',
                     color: '#fff',
                     cursor: saving ? 'not-allowed' : 'pointer',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     fontSize: 13,
                     opacity: saving ? 0.7 : 1,
                   }}
@@ -1371,7 +1371,7 @@ export default function MyExpenses() {
             >
               {/* Modal Header */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ margin: 0, fontWeight: 600, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <Wallet size={18} style={{ color: 'var(--accent)' }} />
                   {modalFormType === 'claim'
                     ? (editingRecord ? 'Edit Reimbursement Claim' : 'New Reimbursement Claim')
@@ -1402,7 +1402,7 @@ export default function MyExpenses() {
               >
                 {/* Required Date */}
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 3 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 3 }}>
                     Required Date
                   </label>
                   <input
@@ -1415,7 +1415,7 @@ export default function MyExpenses() {
 
                 {/* Purpose / Clarification */}
                 <div>
-                  <label style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 3 }}>
+                  <label style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: 'var(--text3)', display: 'block', marginBottom: 3 }}>
                     Purpose / Clarification
                   </label>
                   <textarea
@@ -1435,10 +1435,10 @@ export default function MyExpenses() {
 
                 {/* Total Calculated Amount */}
                 <div style={{ textAlign: 'right', paddingTop: 2 }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 2 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: 'var(--text3)', marginBottom: 2 }}>
                     Total Request Amount
                   </div>
-                  <div style={{ fontSize: 20, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px' }}>
+                  <div style={{ fontSize: 20, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.3px', fontVariantNumeric: 'tabular-nums' }}>
                     ₹ {advanceLines.reduce((sum, r) => sum + (parseFloat(r.amount) || 0), 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -1447,7 +1447,7 @@ export default function MyExpenses() {
               {/* ── ITEMIZED EXPENSE BREAKDOWN SHEET TABLE ────────────────────── */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <FileText size={15} style={{ color: 'var(--accent)' }} /> Itemized Expense / Request Breakdown Sheet
                   </div>
                   <button
@@ -1461,7 +1461,7 @@ export default function MyExpenses() {
                       color: '#fff',
                       cursor: 'pointer',
                       fontSize: 12,
-                      fontWeight: 700,
+                      fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
                       gap: 5,
@@ -1494,7 +1494,7 @@ export default function MyExpenses() {
                       <tbody>
                         {advanceLines.map((row, idx) => (
                           <tr key={idx} style={{ borderBottom: '1px solid var(--border)' }}>
-                            <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
+                            <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 600, color: 'var(--text3)', fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
                               {idx + 1}
                             </td>
 
@@ -1527,7 +1527,7 @@ export default function MyExpenses() {
                               <input
                                 type="text"
                                 placeholder="Cost Code"
-                                style={{ ...inputStyle, padding: '5px 6px' }}
+                                style={{ ...inputStyle, padding: '5px 6px', fontFamily: 'var(--font-mono)' }}
                                 value={row.cost_code || ''}
                                 onChange={e => updateAdvanceLineField(idx, 'cost_code', e.target.value)}
                               />
@@ -1604,7 +1604,7 @@ export default function MyExpenses() {
                                     border: '1px solid var(--border)',
                                     background: row.has_gst_bill ? '#dcfce7' : 'var(--bg3)',
                                     color: row.has_gst_bill ? '#15803d' : 'var(--text2)',
-                                    fontWeight: 700,
+                                    fontWeight: 600,
                                     fontSize: 11,
                                     cursor: 'pointer',
                                   }}
@@ -1624,9 +1624,9 @@ export default function MyExpenses() {
                                       borderRadius: 4,
                                       border: '1px solid var(--border)',
                                       background: 'var(--bg)',
-                                      fontFamily: 'monospace',
+                                      fontFamily: 'var(--font-mono)',
                                       textTransform: 'uppercase',
-                                      fontSize: 10.5,
+                                      fontSize: 11,
                                     }}
                                   />
                                 )}
@@ -1640,7 +1640,7 @@ export default function MyExpenses() {
                                 min="0"
                                 step="0.01"
                                 placeholder="0.00"
-                                style={{ ...inputStyle, padding: '5px 6px', fontWeight: 700, textAlign: 'right' }}
+                                style={{ ...inputStyle, padding: '5px 6px', fontWeight: 600, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
                                 value={row.amount}
                                 onChange={e => updateAdvanceLineField(idx, 'amount', e.target.value)}
                               />
@@ -1787,7 +1787,7 @@ export default function MyExpenses() {
                     background: 'var(--accent)',
                     color: '#fff',
                     cursor: advanceSaving ? 'not-allowed' : 'pointer',
-                    fontWeight: 700,
+                    fontWeight: 600,
                     fontSize: 13,
                     opacity: advanceSaving ? 0.7 : 1,
                   }}
@@ -1826,7 +1826,7 @@ export default function MyExpenses() {
               }}
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-                <h3 style={{ margin: 0, fontWeight: 800, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <h3 style={{ margin: 0, fontWeight: 600, fontSize: 16, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                   <History size={18} style={{ color: 'var(--accent)' }} /> Advance Ledger History
                 </h3>
                 <button
@@ -1879,11 +1879,11 @@ export default function MyExpenses() {
                             {isCredit ? <ArrowDownLeft size={16} /> : <ArrowUpRight size={16} />}
                           </div>
                           <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
                               {t.description || (isCredit ? 'Cash Advance Credited' : isDebit ? 'Expense Settlement' : 'Excess Advance Returned')}
                             </div>
                             <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
-                              {t.created_at.split(' ')[0]} · Ref: {t.advance_ref || '—'}
+                              {t.created_at.split(' ')[0]} · Ref: <span style={{ fontFamily: 'var(--font-mono)' }}>{t.advance_ref || '—'}</span>
                             </div>
                           </div>
                         </div>
@@ -1892,13 +1892,14 @@ export default function MyExpenses() {
                           <div
                             style={{
                               fontSize: 14,
-                              fontWeight: 800,
+                              fontWeight: 700,
+                              fontVariantNumeric: 'tabular-nums',
                               color: isCredit ? '#22c55e' : isDebit ? '#ef4444' : '#f59e0b',
                             }}
                           >
                             {isCredit ? '+' : '-'}{INR(t.amount)}
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2 }}>
+                          <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>
                             Balance: {INR(t.running_balance)}
                           </div>
                         </div>

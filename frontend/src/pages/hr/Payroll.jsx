@@ -353,8 +353,8 @@ export default function Payroll() {
                   { label: 'Net Payable', value: `₹${totalNet.toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, color: 'var(--accent)' },
                 ].map(c => (
                   <div key={c.label} style={{ background: 'var(--bg2)', borderRadius: 10, padding: '10px 14px', border: '1px solid var(--border)' }}>
-                    <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>{c.label}</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: c.color, marginTop: 2 }}>{c.value}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{c.label}</div>
+                    <div style={{ fontSize: 20, fontWeight: 700, color: c.color, marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{c.value}</div>
                   </div>
                 ))}
               </div>
@@ -370,19 +370,19 @@ export default function Payroll() {
               </div>
             ) : (
               <div style={{ borderRadius: 10, border: '1px solid var(--border)', overflowX: 'auto', background: 'var(--bg2)' }}>
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5 }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12.5, fontVariantNumeric: 'tabular-nums' }}>
                   <thead>
                     <tr style={{ background: 'var(--bg2)' }}>
                       {isHRAdmin && (
-                        <th style={{ padding: '7px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>
+                        <th style={{ padding: '7px 6px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>
                           <input type="checkbox" onChange={e => setSelected(e.target.checked ? filteredRecords.map(r => r.employee_id) : [])} checked={selected.length === filteredRecords.length && filteredRecords.length > 0} />
                         </th>
                       )}
                       {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
-                        if (!isHRAdmin && h === 'Actions') return <th key={h} style={{ padding: '7px 6px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap' }}>Download</th>;
+                        if (!isHRAdmin && h === 'Actions') return <th key={h} style={{ padding: '7px 6px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Download</th>;
                         const isEmp = h === 'Employee';
                         return (
-                          <th key={h} style={{ padding: '7px 5px', textAlign: h === 'Actions' || isEmp ? 'left' : 'center', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.4, whiteSpace: 'nowrap', width: isEmp ? '160px' : h === 'Actions' && isHRAdmin ? '340px' : undefined, maxWidth: isEmp ? '165px' : undefined }}>{h}</th>
+                          <th key={h} style={{ padding: '7px 5px', textAlign: h === 'Actions' || isEmp ? 'left' : 'center', fontWeight: 600, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', width: isEmp ? '160px' : h === 'Actions' && isHRAdmin ? '340px' : undefined, maxWidth: isEmp ? '165px' : undefined }}>{h}</th>
                         );
                       })}
                     </tr>
@@ -396,8 +396,8 @@ export default function Payroll() {
                           </td>
                         )}
                         <td style={{ padding: '6px 5px', width: '160px', maxWidth: '165px', overflow: 'hidden' }}>
-                          <div style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.employee_name}</div>
-                          <div style={{ fontSize: 10.5, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.employee_code} · {r.designation}</div>
+                          <div style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.employee_name}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text3)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}><span style={{ fontFamily: 'var(--font-mono)' }}>{r.employee_code}</span> · {r.designation}</div>
                         </td>
                         <td style={{ padding: '6px 4px', textAlign: 'center' }}>{r.working_days}</td>
                         <td style={{ padding: '6px 4px', textAlign: 'center', color: '#22c55e', fontWeight: 600 }}>{r.present_days}</td>
@@ -405,7 +405,7 @@ export default function Payroll() {
                         <td style={{ padding: '6px 4px', textAlign: 'center', color: '#6366f1', fontWeight: 600 }}>{r.leave_days}</td>
                         <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                           <div style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ color: r.lop_days > 0 ? '#f59e0b' : 'var(--text3)', fontWeight: r.lop_days > 0 ? 700 : 400 }}>{r.lop_days}</span>
+                            <span style={{ color: r.lop_days > 0 ? '#f59e0b' : 'var(--text3)', fontWeight: r.lop_days > 0 ? 600 : 400 }}>{r.lop_days}</span>
                             {r.lop_alert && (
                               <span
                                 title={r.lop_alert}
@@ -420,9 +420,9 @@ export default function Payroll() {
                         <td style={{ padding: '6px 4px', color: '#22c55e', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.total_earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '6px 4px', color: '#6366f1', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.arrears_paid || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '6px 4px', color: '#ef4444', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.total_deductions).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
-                        <td style={{ padding: '6px 4px', fontWeight: 800, fontSize: 14, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.net_salary).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td style={{ padding: '6px 4px', fontWeight: 700, fontSize: 13.5, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.net_salary).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '6px 4px', textAlign: 'center' }}>
-                          <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 999, fontWeight: 700, background: r.status === 'finalized' ? '#dcfce7' : '#fef3c7', color: r.status === 'finalized' ? '#16a34a' : '#d97706' }}>
+                          <span style={{ fontSize: 10.5, padding: '2px 6px', borderRadius: 999, fontWeight: 600, background: r.status === 'finalized' ? '#dcfce7' : '#fef3c7', color: r.status === 'finalized' ? '#16a34a' : '#d97706' }}>
                             {r.status === 'finalized' ? 'Finalized' : 'Draft'}
                           </span>
                         </td>
@@ -518,7 +518,7 @@ export default function Payroll() {
               <thead>
                 <tr style={{ background: 'var(--bg2)' }}>
                   {['Employee','Pending Amount','Status','Action'].map(h => (
-                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 700, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>{h}</th>
+                    <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
@@ -526,17 +526,17 @@ export default function Payroll() {
                 {filteredPendingList.map(p => (
                   <tr key={p.employee_id} style={{ borderBottom: '1px solid var(--border)' }}>
                     <td style={{ padding: '8px 12px' }}>
-                      <div style={{ fontWeight: 700 }}>{p.name}</div>
-                      <div style={{ fontSize: 11, color: 'var(--text3)' }}>{p.code}</div>
+                      <div style={{ fontWeight: 600 }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text3)', fontFamily: 'var(--font-mono)' }}>{p.code}</div>
                     </td>
-                    <td style={{ padding: '8px 12px', color: '#ef4444', fontWeight: 800, fontSize: 15 }}>₹{p.total_pending.toLocaleString()}</td>
+                    <td style={{ padding: '8px 12px', color: '#ef4444', fontWeight: 700, fontSize: 14, fontVariantNumeric: 'tabular-nums' }}>₹{p.total_pending.toLocaleString()}</td>
                     <td style={{ padding: '8px 12px' }}>
-                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 700, background: '#fee2e2', color: '#b91c1c' }}>Pending Hold</span>
+                      <span style={{ fontSize: 11, padding: '2px 8px', borderRadius: 999, fontWeight: 600, background: '#fee2e2', color: '#b91c1c' }}>Pending Hold</span>
                     </td>
                     <td style={{ padding: '8px 12px' }}>
                       <button 
                         onClick={() => setArrearModal({ employee_id: p.employee_id, employee_name: p.name, pending_arrears: p.total_pending })}
-                        style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                        style={{ background: 'var(--accent)', color: 'white', border: 'none', borderRadius: 6, padding: '5px 10px', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                       >
                         Manage & Pay
                       </button>
@@ -691,7 +691,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
       <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: 500, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg2)' }}>
           <div>
-            <div style={{ fontWeight: 800, fontSize: 16 }}>Manage Arrears</div>
+            <div style={{ fontWeight: 600, fontSize: 16 }}>Manage Arrears</div>
             <div style={{ fontSize: 12, color: 'var(--text3)' }}>{data.employee_name}</div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)' }}><X size={20} /></button>
@@ -700,7 +700,7 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
         <div style={{ padding: 24, maxHeight: '70vh', overflowY: 'auto' }}>
           {/* Pay Pending Section */}
           <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
               <Clock size={14} /> Arrears History & Payouts
             </div>
             {loading ? (
@@ -714,12 +714,12 @@ function ArrearsModal({ data, month, year, onClose, onRefresh }) {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ flex: 1 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                          <div style={{ fontWeight: 700, fontSize: 13 }}>₹{a.amount_held.toLocaleString()}</div>
+                          <div style={{ fontWeight: 600, fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>₹{a.amount_held.toLocaleString()}</div>
                           <span style={{ 
                             fontSize: 10, 
                             padding: '2px 6px', 
                             borderRadius: 4, 
-                            fontWeight: 700, 
+                            fontWeight: 600, 
                             background: a.status === 'paid' ? '#dcfce7' : a.status === 'already_paid' ? '#e2e8f0' : a.status === 'one_time' ? '#f3e8ff' : a.status === 'deducted' ? '#dcfce7' : '#fef3c7', 
                             color: a.status === 'paid' ? '#16a34a' : a.status === 'already_paid' ? '#475569' : a.status === 'one_time' ? '#7e22ce' : a.status === 'deducted' ? '#16a34a' : '#d97706', 
                             textTransform: 'uppercase' 

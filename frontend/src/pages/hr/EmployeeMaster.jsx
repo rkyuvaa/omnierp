@@ -486,7 +486,7 @@ export default function EmployeeMaster() {
                 <div style={{ fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: 16 }}>📱</span> Enable Mobile Punch Button
                   {form.enable_mobile_punch && (
-                    <span style={{ background: '#6366f1', color: '#fff', fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 999 }}>ACTIVE</span>
+                    <span style={{ background: '#6366f1', color: '#fff', fontSize: 10, fontWeight: 600, padding: '2px 7px', borderRadius: 999 }}>ACTIVE</span>
                   )}
                 </div>
                 <div style={{ fontSize: 12, color: 'var(--text2)', marginTop: 3 }}>

@@ -60,13 +60,13 @@ function KpiCard({ label, value, icon: Icon, color, bg, loading }) {
       onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.04)'; }}
     >
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px', color: 'var(--text3)', marginBottom: 8 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 8 }}>
           {label}
         </div>
         {loading ? (
           <Skeleton h={30} w={120} r={6} />
         ) : (
-          <div style={{ fontSize: 26, fontWeight: 800, color, lineHeight: 1, letterSpacing: '-0.5px' }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color, lineHeight: 1.15, letterSpacing: '-0.02em', fontVariantNumeric: 'tabular-nums' }}>
             {value}
           </div>
         )}
@@ -104,9 +104,9 @@ function StatusCountsRow({ counts, loading }) {
             <Icon size={16} style={{ color }} />
           </div>
           <div>
-            <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)' }}>{label}</div>
+            <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)' }}>{label}</div>
             {loading ? <Skeleton h={20} w={40} /> : (
-              <div style={{ fontSize: 22, fontWeight: 800, color, lineHeight: 1.1 }}>{counts[key] ?? 0}</div>
+              <div style={{ fontSize: 20, fontWeight: 700, color, lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>{counts[key] ?? 0}</div>
             )}
           </div>
         </div>
@@ -168,8 +168,8 @@ function BankCard({ bank, loading }) {
               <Building2 size={16} style={{ color: 'var(--accent)' }} />
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{bank.account_name}</div>
-              <div style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{bank.account_name}</div>
+              <div style={{ fontFamily: 'var(--font-mono)', fontSize: 11.5, color: 'var(--text3)', marginTop: 1, fontVariantNumeric: 'tabular-nums' }}>
                 {maskAccount(bank.account_number)}
               </div>
             </div>
@@ -179,8 +179,8 @@ function BankCard({ bank, loading }) {
         {bank.week_paid > 0 && (
           <div style={{
             background: 'rgba(59,130,246,0.1)', color: '#2563eb',
-            fontSize: 10, fontWeight: 700, padding: '3px 9px', borderRadius: 99,
-            border: '1px solid rgba(59,130,246,0.2)', whiteSpace: 'nowrap'
+            fontSize: 11, fontWeight: 600, padding: '3px 9px', borderRadius: 99,
+            border: '1px solid rgba(59,130,246,0.2)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums'
           }}>
             Week: {INR(bank.week_paid)}
           </div>
@@ -189,10 +189,10 @@ function BankCard({ bank, loading }) {
 
       {/* Main balance */}
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 4 }}>
+        <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.5px', color: 'var(--text3)', marginBottom: 4 }}>
           Bank Balance
         </div>
-        <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--accent)', letterSpacing: '-0.5px', lineHeight: 1 }}>
+        <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--accent)', letterSpacing: '-0.02em', lineHeight: 1.15, fontVariantNumeric: 'tabular-nums' }}>
           {INR(balance)}
         </div>
       </div>
@@ -203,12 +203,12 @@ function BankCard({ bank, loading }) {
       {/* Lien + Actual */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 14 }}>
         <div style={{ padding: '10px 12px', background: 'rgba(246,173,85,0.08)', borderRadius: 8, border: '1px solid rgba(246,173,85,0.2)' }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>Lien</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: '#b45309' }}>{INR(lien)}</div>
+          <div style={{ fontSize: 10.5, fontWeight: 600, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>Lien</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: '#b45309', fontVariantNumeric: 'tabular-nums' }}>{INR(lien)}</div>
         </div>
         <div style={{ padding: '10px 12px', background: isNegActual ? 'rgba(220,38,38,0.08)' : 'rgba(99,102,241,0.08)', borderRadius: 8, border: `1px solid ${isNegActual ? 'rgba(220,38,38,0.2)' : 'rgba(99,102,241,0.2)'}` }}>
-          <div style={{ fontSize: 10, fontWeight: 600, color: isNegActual ? '#991b1b' : '#4338ca', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>Actual</div>
-          <div style={{ fontSize: 16, fontWeight: 700, color: isNegActual ? '#dc2626' : '#4f46e5' }}>{INR(actual)}</div>
+          <div style={{ fontSize: 10.5, fontWeight: 600, color: isNegActual ? '#991b1b' : '#4338ca', textTransform: 'uppercase', letterSpacing: '0.4px', marginBottom: 4 }}>Actual</div>
+          <div style={{ fontSize: 16, fontWeight: 700, color: isNegActual ? '#dc2626' : '#4f46e5', fontVariantNumeric: 'tabular-nums' }}>{INR(actual)}</div>
         </div>
       </div>
 
@@ -217,8 +217,8 @@ function BankCard({ bank, loading }) {
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 7 }}>
           <ArrowDownCircle size={13} style={{ color: '#dc2626', flexShrink: 0 }} />
           <div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Yest. Debits</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: bank.yesterday_debits > 0 ? '#dc2626' : 'var(--text3)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Yest. Debits</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: bank.yesterday_debits > 0 ? '#dc2626' : 'var(--text3)', fontVariantNumeric: 'tabular-nums' }}>
               {INR(bank.yesterday_debits ?? 0)}
             </div>
           </div>
@@ -226,8 +226,8 @@ function BankCard({ bank, loading }) {
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 10px', background: 'var(--bg3)', borderRadius: 7 }}>
           <ArrowUpCircle size={13} style={{ color: '#16a34a', flexShrink: 0 }} />
           <div>
-            <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Yest. Credits</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: bank.yesterday_credits > 0 ? '#16a34a' : 'var(--text3)' }}>
+            <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.4px' }}>Yest. Credits</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: bank.yesterday_credits > 0 ? '#16a34a' : 'var(--text3)', fontVariantNumeric: 'tabular-nums' }}>
               {INR(bank.yesterday_credits ?? 0)}
             </div>
           </div>
@@ -235,7 +235,7 @@ function BankCard({ bank, loading }) {
       </div>
 
       {/* Last updated */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 10, color: 'var(--text3)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'var(--text3)' }}>
         <Clock size={10} />
         Updated {relativeTime(bank.last_import_at)}
       </div>
@@ -283,7 +283,7 @@ export default function FinanceDashboard() {
       {/* Header row */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', margin: 0, letterSpacing: '-0.4px' }}>
+          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', margin: 0, letterSpacing: '-0.02em' }}>
             Banking Overview
           </h1>
           {d.today && (

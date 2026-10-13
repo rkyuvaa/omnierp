@@ -345,7 +345,7 @@ export default function ServiceForm() {
                   minWidth: 0, opacity: isCurrent ? 1 : 0.7,
                   textAlign: 'center'
                 }}>
-                <span style={{ fontSize: 11, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.2px', lineHeight: 1 }}>{s.name}</span>
+                <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.3px', lineHeight: 1.15 }}>{s.name}</span>
               </div>
             );
           })}
@@ -359,7 +359,7 @@ export default function ServiceForm() {
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20 }}>
                <div className="form-group" ref={searchRef} style={{ position: 'relative' }}>
-                 <label className="form-label" style={{ fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Last 4 Digits)</label>
+                 <label className="form-label" style={{ fontWeight: 600, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.5px' }}>Linked Vehicle (Last 4 Digits)</label>
                  <div style={{ display: 'flex', gap: 8 }}>
                    <div className="search-input-wrapper" style={{ flex: 1, position: 'relative' }}>
                      <Car size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }} />
@@ -401,11 +401,11 @@ export default function ServiceForm() {
                </div>
 
                 <div className="form-group">
-                  <label className="form-label text-xs uppercase fw-800">KIT Number</label>
+                  <label className="form-label text-xs uppercase fw-700">KIT Number</label>
                     <div style={{ position: 'relative' }}>
                       <input 
                         className="form-input" 
-                        style={{ background: 'var(--bg2)', cursor: form.product_id ? 'pointer' : 'text', border: '1px solid var(--border)', paddingRight: form.product_id ? 80 : 12 }} 
+                        style={{ background: 'var(--bg2)', cursor: form.product_id ? 'pointer' : 'text', border: '1px solid var(--border)', paddingRight: form.product_id ? 80 : 12, fontFamily: 'var(--font-mono)' }} 
                         value={form.product_serial || ''} 
                         onChange={e => set('product_serial', e.target.value)} 
                         readOnly={!!form.product_id}
@@ -439,7 +439,7 @@ export default function ServiceForm() {
                           }}
                           style={{ 
                             position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', 
-                            fontSize: 10, color: '#fff', fontWeight: 800, background: 'var(--accent)',
+                            fontSize: 10, color: '#fff', fontWeight: 600, background: 'var(--accent)',
                             border: 'none', padding: '4px 8px', borderRadius: 6, cursor: 'pointer',
                             display: 'flex', alignItems: 'center', gap: 4, boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                           }}
@@ -451,7 +451,7 @@ export default function ServiceForm() {
                   </div>
 
                 <div className="form-group">
-                  <label className="form-label text-xs uppercase fw-800">Installed KIT</label>
+                  <label className="form-label text-xs uppercase fw-700">Installed KIT</label>
                     <input 
                       className="form-input" 
                       style={{ background: 'var(--bg2)', border: '1px solid var(--border)' }} 
@@ -465,7 +465,7 @@ export default function ServiceForm() {
               {/* Second Row for Contact Details */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 20, marginTop: 16 }}>
                 <div className="form-group">
-                  <label className="form-label text-xs uppercase fw-800">Contact Name</label>
+                  <label className="form-label text-xs uppercase fw-700">Contact Name</label>
                   <input 
                     className="form-input" 
                     placeholder="Enter contact name..."
@@ -474,7 +474,7 @@ export default function ServiceForm() {
                   />
                 </div>
                 <div className="form-group">
-                  <label className="form-label text-xs uppercase fw-800">Contact Number</label>
+                  <label className="form-label text-xs uppercase fw-700">Contact Number</label>
                   <input 
                     className="form-input" 
                     placeholder="Enter contact number..."
@@ -566,7 +566,7 @@ export default function ServiceForm() {
         {/* RIGHT SIDEBAR */}
         <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
           <div className="card" style={{ padding: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 900, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 6 }}>
               Customer & Warranty
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -703,7 +703,7 @@ export default function ServiceForm() {
                      border: '1px solid var(--border)'
                    }}>
                      <span style={{ fontWeight: 600 }}>{c.name}</span>
-                     <span style={{ fontWeight: 800, color: 'var(--accent)' }}>{c.serial_number || '— No Serial —'}</span>
+                     <span style={{ fontWeight: 600, fontFamily: 'var(--font-mono)', fontSize: 12.5, color: 'var(--accent)' }}>{c.serial_number || '— No Serial —'}</span>
                    </div>
                  ))}
                </div>

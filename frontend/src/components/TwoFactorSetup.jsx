@@ -130,8 +130,8 @@ export default function TwoFactorSetup() {
               marginLeft: 'auto',
               background: '#22c55e',
               color: '#fff',
-              fontSize: 10,
-              fontWeight: 800,
+              fontSize: 10.5,
+              fontWeight: 600,
               padding: '3px 8px',
               borderRadius: '999px'
             }}>ENABLED</span>
@@ -153,7 +153,7 @@ export default function TwoFactorSetup() {
                   borderBottom: `2.5px solid ${disableMethod === 'code' ? 'var(--accent)' : 'transparent'}`,
                   color: disableMethod === 'code' ? 'var(--accent)' : 'var(--text3)',
                   fontSize: 11,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   padding: '4px 0 6px 0',
                   cursor: 'pointer',
                   transition: 'all 0.2s'
@@ -170,7 +170,7 @@ export default function TwoFactorSetup() {
                   borderBottom: `2.5px solid ${disableMethod === 'password' ? 'var(--accent)' : 'transparent'}`,
                   color: disableMethod === 'password' ? 'var(--accent)' : 'var(--text3)',
                   fontSize: 11,
-                  fontWeight: 700,
+                  fontWeight: 600,
                   padding: '4px 0 6px 0',
                   cursor: 'pointer',
                   transition: 'all 0.2s'
@@ -197,10 +197,11 @@ export default function TwoFactorSetup() {
                     placeholder="000000"
                     required
                     style={{
+                      fontFamily: 'var(--font-mono)',
                       fontSize: 16,
                       letterSpacing: '4px',
                       textAlign: 'center',
-                      fontWeight: 700,
+                      fontWeight: 600,
                       maxWidth: '140px',
                       height: '38px',
                       borderRadius: '8px',
@@ -307,7 +308,7 @@ export default function TwoFactorSetup() {
                 marginBottom: 16,
                 gap: 8
               }}>
-                <span style={{ fontFamily: 'monospace', fontSize: 12, fontWeight: 700, letterSpacing: '1px', color: 'var(--accent)', wordBreak: 'break-all', flex: 1 }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: 12, fontWeight: 500, letterSpacing: '1px', color: 'var(--accent)', wordBreak: 'break-all', flex: 1 }}>
                   {setupData.secret}
                 </span>
                 <button

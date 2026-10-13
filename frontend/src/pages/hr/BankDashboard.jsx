@@ -54,7 +54,7 @@ function StatCard({ label, value, sub, icon: Icon, color, trend }) {
         </div>
         <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.6px' }}>{label}</span>
       </div>
-      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--text)', marginTop: 2 }}>{value}</div>
+      <div style={{ fontSize: 21, fontWeight: 700, color: 'var(--text)', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: 'var(--text3)' }}>{sub}</div>}
     </div>
   );
@@ -65,7 +65,7 @@ function StatusBadge({ status }) {
   const m = STATUS_META[status] || { label: status, color: '#888', bg: '#8882' };
   const Icon = m.icon || CircleDot;
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20, background: m.bg, color: m.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 20, background: m.bg, color: m.color, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
       <Icon size={11} />
       {m.label}
     </span>
@@ -84,7 +84,7 @@ function DailyChart({ daily }) {
           <div key={i} title={`${fmtDate(d.date)}\nEntered: ${d.entered} | Verified: ${d.verified} | Approved: ${d.approved}`}
             style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, cursor: 'default' }}>
             <div style={{ width: '100%', height: h || 3, borderRadius: '3px 3px 0 0', background: `linear-gradient(180deg, #6366f1, #8b5cf6)`, minHeight: 3, transition: 'height 0.4s', opacity: total === 0 ? 0.2 : 1 }} />
-            <div style={{ fontSize: 9, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
+            <div style={{ fontSize: 10, color: 'var(--text3)', whiteSpace: 'nowrap' }}>
               {new Date(d.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }).replace(' ', '\n')}
             </div>
           </div>
@@ -100,7 +100,7 @@ function Modal({ title, onClose, children, width = 520 }) {
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 12 }}>
       <div style={{ background: 'var(--bg)', borderRadius: 14, padding: '18px 20px', width, maxWidth: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', animation: 'modalIn 0.22s ease-out', maxHeight: '90vh', overflowY: 'auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{title}</h3>
+          <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{title}</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text3)', padding: 4 }}><X size={18} /></button>
         </div>
         {children}
@@ -322,7 +322,7 @@ export default function BankDashboard() {
                         <Icon size={16} color={color} />
                       </div>
                       <div>
-                        <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)' }}>{summary.counts?.[key] ?? 0}</div>
+                        <div style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{summary.counts?.[key] ?? 0}</div>
                         <div style={{ fontSize: 11, color: 'var(--text3)', fontWeight: 600 }}>{label}</div>
                       </div>
                     </div>
@@ -333,7 +333,7 @@ export default function BankDashboard() {
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 10, marginBottom: 12 }}>
                   {/* Chart */}
                   <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Daily Payment Activity <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(last 14 days)</span></div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>Daily Payment Activity <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(last 14 days)</span></div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 10 }}>Total transactions per day</div>
                     {summary.daily && <DailyChart daily={summary.daily} />}
                     {/* Legend */}
@@ -354,15 +354,15 @@ export default function BankDashboard() {
 
                   {/* Approved amounts per day */}
                   <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 12, padding: 14 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>Approved Payments <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(day-wise)</span></div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', marginBottom: 2 }}>Approved Payments <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 11 }}>(day-wise)</span></div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 10 }}>Amount disbursed per day</div>
                     <div style={{ overflowY: 'auto', maxHeight: 200 }}>
                       {(summary.daily || []).filter(d => d.approved > 0 || d.total_amount > 0).slice(-10).reverse().map((d, i) => (
                         <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 0', borderBottom: '1px solid var(--border)' }}>
-                          <span style={{ fontSize: 12, color: 'var(--text2)' }}>{fmtDate(d.date)}</span>
+                          <span style={{ fontSize: 12, color: 'var(--text2)', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(d.date)}</span>
                           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-                            <span style={{ fontSize: 11, color: '#10b981', background: '#10b98115', padding: '2px 8px', borderRadius: 20, fontWeight: 600 }}>{d.approved} approved</span>
-                            <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{fmt(d.total_amount)}</span>
+                            <span style={{ fontSize: 11, color: '#10b981', background: '#10b98115', padding: '2px 8px', borderRadius: 20, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{d.approved} approved</span>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{fmt(d.total_amount)}</span>
                           </div>
                         </div>
                       ))}
@@ -404,7 +404,7 @@ export default function BankDashboard() {
                   <thead>
                     <tr style={{ background: 'var(--bg2)' }}>
                       {['Ref', 'Date', 'Account', 'Payee', 'Description', 'Amount', 'Status', 'Workflow', ''].map(h => (
-                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
+                        <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -418,12 +418,12 @@ export default function BankDashboard() {
                         <tr key={t.id} style={{ borderBottom: '1px solid var(--border)', transition: 'background 0.15s' }}
                           onMouseEnter={e => e.currentTarget.style.background = 'var(--bg2)'}
                           onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                          <td style={{ padding: '8px 12px', fontSize: 12, fontWeight: 700, color: '#6366f1', fontFamily: 'monospace' }}>{t.reference}</td>
-                          <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap' }}>{fmtDate(t.transaction_date)}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 12, fontWeight: 500, color: '#6366f1', fontFamily: 'var(--font-mono)' }}>{t.reference}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text2)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{fmtDate(t.transaction_date)}</td>
                           <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text2)', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{acc?.account_name || '—'}</td>
                           <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text)', fontWeight: 600, maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.payee_name || '—'}</td>
                           <td style={{ padding: '8px 12px', fontSize: 12, color: 'var(--text2)', maxWidth: 220, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.description || '—'}</td>
-                          <td style={{ padding: '8px 12px', fontSize: 13, fontWeight: 700, color: 'var(--text)', whiteSpace: 'nowrap' }}>{fmt(t.amount)}</td>
+                          <td style={{ padding: '8px 12px', fontSize: 13, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{fmt(t.amount)}</td>
                           <td style={{ padding: '8px 12px' }}><StatusBadge status={t.status} /></td>
                           <td style={{ padding: '8px 12px' }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
@@ -471,29 +471,29 @@ export default function BankDashboard() {
                     <Landmark size={18} color="#6366f1" />
                   </div>
                   <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)' }}>{a.account_name}</div>
+                    <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)' }}>{a.account_name}</div>
                     <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 1 }}>{a.bank_name || 'Bank'}{a.branch_name ? ` · ${a.branch_name}` : ''}</div>
                   </div>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
                   <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '8px 10px' }}>
                     <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>CURRENT BALANCE</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#10b981', marginTop: 2 }}>{fmt(a.current_balance)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#10b981', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{fmt(a.current_balance)}</div>
                   </div>
                   <div style={{ background: 'var(--bg2)', borderRadius: 8, padding: '8px 10px' }}>
                     <div style={{ fontSize: 10, color: 'var(--text3)', fontWeight: 600 }}>NET OF LIEN</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: '#6366f1', marginTop: 2 }}>{fmt(a.balance_with_lien)}</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: '#6366f1', marginTop: 2, fontVariantNumeric: 'tabular-nums' }}>{fmt(a.balance_with_lien)}</div>
                   </div>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 12 }}>
-                  <span style={{ color: 'var(--text3)' }}>A/C: {a.account_number ? `···${a.account_number.slice(-4)}` : '—'}</span>
+                  <span style={{ color: 'var(--text3)' }}>A/C: <span style={{ fontFamily: 'var(--font-mono)' }}>{a.account_number ? `···${a.account_number.slice(-4)}` : '—'}</span></span>
                   {a.lien_amount > 0 && (
-                    <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600 }}>
+                    <span style={{ color: '#f59e0b', display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>
                       <Shield size={11} /> Lien: {fmt(a.lien_amount)}
                     </span>
                   )}
                 </div>
-                {a.ifsc_code && <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text3)' }}>IFSC: {a.ifsc_code}</div>}
+                {a.ifsc_code && <div style={{ marginTop: 4, fontSize: 11, color: 'var(--text3)' }}>IFSC: <span style={{ fontFamily: 'var(--font-mono)' }}>{a.ifsc_code}</span></div>}
               </div>
             ))}
             {accounts.length === 0 && (
@@ -531,7 +531,7 @@ export default function BankDashboard() {
             </Field>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
               <button type="button" onClick={() => setShowNewTxn(false)} style={{ padding: '9px 18px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Cancel</button>
-              <button type="submit" disabled={actionLoading} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+              <button type="submit" disabled={actionLoading} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                 {actionLoading ? 'Saving…' : 'Submit Payment'}
               </button>
             </div>
@@ -556,10 +556,10 @@ export default function BankDashboard() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               <Field label="Account Number">
-                <input value={accForm.account_number} onChange={e => setAccForm(f => ({ ...f, account_number: e.target.value }))} style={inputStyle} placeholder="XXXXXXXXXXXX" />
+                <input value={accForm.account_number} onChange={e => setAccForm(f => ({ ...f, account_number: e.target.value }))} style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }} placeholder="XXXXXXXXXXXX" />
               </Field>
               <Field label="IFSC Code">
-                <input value={accForm.ifsc_code} onChange={e => setAccForm(f => ({ ...f, ifsc_code: e.target.value }))} style={inputStyle} placeholder="HDFC0001234" />
+                <input value={accForm.ifsc_code} onChange={e => setAccForm(f => ({ ...f, ifsc_code: e.target.value }))} style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }} placeholder="HDFC0001234" />
               </Field>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
@@ -575,7 +575,7 @@ export default function BankDashboard() {
             </Field>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8 }}>
               <button type="button" onClick={() => setShowNewAcc(false)} style={{ padding: '9px 18px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg)', color: 'var(--text)', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Cancel</button>
-              <button type="submit" disabled={actionLoading} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+              <button type="submit" disabled={actionLoading} style={{ padding: '9px 20px', borderRadius: 8, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
                 {actionLoading ? 'Saving…' : 'Add Account'}
               </button>
             </div>
@@ -590,7 +590,7 @@ export default function BankDashboard() {
           <div style={{ background: 'var(--bg2)', borderRadius: 12, padding: '14px 16px', marginBottom: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
             {[
               { label: 'Status', val: <StatusBadge status={detailTxn.status} /> },
-              { label: 'Amount', val: <span style={{ fontWeight: 800, fontSize: 15, color: '#6366f1' }}>{fmt(detailTxn.amount)}</span> },
+              { label: 'Amount', val: <span style={{ fontWeight: 700, fontSize: 15, color: '#6366f1', fontVariantNumeric: 'tabular-nums' }}>{fmt(detailTxn.amount)}</span> },
               { label: 'Date', val: fmtDate(detailTxn.transaction_date) },
               { label: 'Payee', val: detailTxn.payee_name || '—' },
             ].map(({ label, val }) => (

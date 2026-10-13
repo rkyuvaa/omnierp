@@ -325,8 +325,8 @@ export default function ExpenseSettlement() {
           {/* Card 1: Approved Advance */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Approved Advance</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{INR(approvedAmount)}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Approved Advance</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{INR(approvedAmount)}</div>
             </div>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: '#3b82f615', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#3b82f6' }}>
               <Wallet size={15} />
@@ -336,8 +336,8 @@ export default function ExpenseSettlement() {
           {/* Card 2: Total Claimed */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Claimed Expenses</div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)' }}>{INR(claimedAmount)}</div>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Claimed Expenses</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{INR(claimedAmount)}</div>
             </div>
             <div style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--accent)15', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent)' }}>
               <TrendingUp size={15} />
@@ -347,10 +347,10 @@ export default function ExpenseSettlement() {
           {/* Card 3: Remaining / Excess Balance */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>
                 {excessAmount > 0 ? 'Excess Amount (Claim)' : 'Remaining Balance (Return)'}
               </div>
-              <div style={{ fontSize: 18, fontWeight: 800, color: excessAmount > 0 ? '#ef4444' : '#22c55e' }}>
+              <div style={{ fontSize: 18, fontWeight: 700, color: excessAmount > 0 ? '#ef4444' : '#22c55e', fontVariantNumeric: 'tabular-nums' }}>
                 {excessAmount > 0 ? INR(excessAmount) : INR(netBalance)}
               </div>
             </div>
@@ -362,8 +362,8 @@ export default function ExpenseSettlement() {
           {/* Card 4: Settlement Status */}
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
-              <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Settlement Status</div>
-              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>
+              <div style={{ fontSize: 10, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: 2 }}>Settlement Status</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.5px', marginTop: 2 }}>
                 {advance.status.replace('_', ' ')}
               </div>
             </div>
@@ -376,7 +376,7 @@ export default function ExpenseSettlement() {
         {/* Manager Review Status Alert */}
         {(advance.l1_remarks || advance.l2_remarks) && (
           <div style={{ background: 'var(--bg2)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 14px', marginBottom: 10 }}>
-            <h4 style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text2)' }}>
+            <h4 style={{ margin: '0 0 6px', fontSize: 12, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text2)' }}>
               <Info size={14} style={{ color: 'var(--accent)' }} /> Manager Review Log
             </h4>
             {advance.l1_remarks && (
@@ -419,7 +419,7 @@ export default function ExpenseSettlement() {
                 {lines.map((row, idx) => (
                   <tr key={idx} style={{ borderTop: '1px solid var(--border)' }}>
                     {/* S# */}
-                    <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 700, color: 'var(--text3)', fontSize: 11 }}>
+                    <td style={{ padding: '5px 6px', textAlign: 'center', fontWeight: 600, color: 'var(--text3)', fontSize: 11, fontVariantNumeric: 'tabular-nums' }}>
                       {idx + 1}
                     </td>
 
@@ -459,7 +459,7 @@ export default function ExpenseSettlement() {
                         value={row.cost_code || ''}
                         disabled={isReadOnly}
                         onChange={e => updateRowField(idx, 'cost_code', e.target.value)}
-                        style={inputStyle}
+                        style={{ ...inputStyle, fontFamily: 'var(--font-mono)' }}
                       />
                     </td>
 
@@ -540,7 +540,7 @@ export default function ExpenseSettlement() {
                             border: '1px solid var(--border)',
                             background: (row.gst_number || row.has_gst_bill) ? '#dcfce7' : 'var(--bg3)',
                             color: (row.gst_number || row.has_gst_bill) ? '#15803d' : 'var(--text2)',
-                            fontWeight: 700,
+                            fontWeight: 600,
                             fontSize: 11,
                             cursor: 'pointer',
                           }}
@@ -561,9 +561,9 @@ export default function ExpenseSettlement() {
                               borderRadius: 4,
                               border: '1px solid var(--border)',
                               background: 'var(--bg)',
-                              fontFamily: 'monospace',
+                              fontFamily: 'var(--font-mono)',
                               textTransform: 'uppercase',
-                              fontSize: 10.5,
+                              fontSize: 11,
                             }}
                           />
                         )}
@@ -580,7 +580,7 @@ export default function ExpenseSettlement() {
                         value={row.amount}
                         disabled={isReadOnly}
                         onChange={e => updateRowField(idx, 'amount', e.target.value)}
-                        style={{ ...inputStyle, fontWeight: 700, textAlign: 'right' }}
+                        style={{ ...inputStyle, fontWeight: 600, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}
                       />
                     </td>
 

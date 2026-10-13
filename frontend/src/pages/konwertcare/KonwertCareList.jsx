@@ -77,13 +77,13 @@ function WarrantyPreviewModal({ ids, onClose }) {
 
                 {!isStarted && (
                   <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
-                    <button className="btn btn-primary" style={{ padding: '8px 24px', borderRadius: 8, fontWeight: 800, background: 'var(--green)', border: 'none' }} onClick={() => handleActivate(p.id)}>
+                    <button className="btn btn-primary" style={{ padding: '8px 24px', borderRadius: 8, fontWeight: 600, background: 'var(--green)', border: 'none' }} onClick={() => handleActivate(p.id)}>
                       <ShieldCheck size={16} style={{ marginRight: 8 }} /> START WARRANTY
                     </button>
                   </div>
                 )}
                 {isStarted && (
-                  <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'flex-end', color: 'var(--green)', fontWeight: 800, fontSize: 11 }}>
+                  <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12, display: 'flex', justifyContent: 'flex-end', color: 'var(--green)', fontWeight: 700, fontSize: 11 }}>
                     <ShieldCheck size={14} style={{ marginRight: 6 }} /> WARRANTY ACTIVE
                   </div>
                 )}
@@ -132,8 +132,8 @@ export default function KonwertCareList() {
           }}
         >
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t.label}</div>
-            <div style={{ fontSize: 32, fontWeight: 800, color: 'var(--text)' }}>{t.count}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 8 }}>{t.label}</div>
+            <div style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.15 }}>{t.count}</div>
           </div>
           <div style={{ 
             width: 52, height: 52, borderRadius: 16, 
@@ -160,7 +160,7 @@ export default function KonwertCareList() {
         topContent={Dashboard}
         allowedStages={isVehicleDelivery ? ["Fitment Done", "Customer Delivery", "RTO Process", "HSRP"] : undefined}
         batchActions={(selected) => isVehicleDelivery ? (
-          <button className="btn btn-primary btn-sm" style={{ fontWeight: 800, letterSpacing: '0.3px', background: 'var(--accent)', color: 'white' }} onClick={() => setShowWarranty(selected)}>
+          <button className="btn btn-primary btn-sm" style={{ fontWeight: 600, letterSpacing: '0.3px', background: 'var(--accent)', color: 'white' }} onClick={() => setShowWarranty(selected)}>
             <ShieldCheck size={14} style={{ marginRight: 6 }} /> WARRANTY PREVIEW ({selected.length})
           </button>
         ) : null}

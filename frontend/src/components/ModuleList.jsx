@@ -61,9 +61,9 @@ export default function ModuleList({
                 color: stageFilter === s.id ? '#ffffff' : s.color,
                 boxShadow: stageFilter === s.id ? `0 4px 12px ${s.color}60` : 'none',
               }}>
-              <span style={{ fontSize: 10, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.1 }}>{s.name}</span>
+              <span style={{ fontSize: 10.5, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.4px', lineHeight: 1.15 }}>{s.name}</span>
               <span style={{ 
-                fontSize: 14, fontWeight: 900,
+                fontSize: 13.5, fontWeight: 700, fontVariantNumeric: 'tabular-nums',
                 background: '#ffffff', color: s.color,
                 minWidth: 26, height: 26, borderRadius: 13,
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -116,8 +116,8 @@ export default function ModuleList({
 
       <div className="card">
         <div className="card-header" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', marginBottom: 16 }}>
-            <span className="card-title" style={{ fontSize: 18, fontWeight: 700 }}>{title}</span>
-            <span className="text-muted text-sm" style={{ fontWeight: 600, opacity: 0.7 }}>{total} records</span>
+            <span className="card-title" style={{ fontSize: 16, fontWeight: 700 }}>{title}</span>
+            <span className="text-muted text-sm" style={{ fontWeight: 600, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>{total} records</span>
         </div>
         {loading ? <Loader /> : items.length === 0 ? <Empty /> : (<>
           <div className="table-wrap">
@@ -131,7 +131,7 @@ export default function ModuleList({
                   (items || []).map((group, gIdx) => (
                     <React.Fragment key={gIdx}>
                       <tr style={{ background: 'var(--bg3)', borderBottom: '2px solid var(--border)' }}>
-                        <td colSpan={(columns || []).length + 5} style={{ padding: '8px 12px', fontWeight: 800, color: 'var(--accent)', fontSize: 13 }}>
+                        <td colSpan={(columns || []).length + 5} style={{ padding: '8px 12px', fontWeight: 700, color: 'var(--accent)', fontSize: 13 }}>
                           {group.group} ({group.items?.length || 0})
                         </td>
                       </tr>
@@ -185,12 +185,12 @@ export default function ModuleList({
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 16, padding: '12px 20px', background: 'var(--bg2)', borderRadius: 16, border: '1px solid var(--border)', boxShadow: '0 4px 14px rgba(0,0,0,0.03)' }}>
         <span style={{ fontSize: 13, color: 'var(--text2)', fontWeight: 600 }}>
-          Showing up to 50 records per page <span style={{opacity:0.6, marginLeft: 8}}>(Database Total: {total})</span>
+          Showing up to 50 records per page <span style={{opacity:0.6, marginLeft: 8, fontVariantNumeric: 'tabular-nums'}}>(Database Total: {total})</span>
         </span>
         <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-          <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ padding: '4px 16px', fontWeight: 700, opacity: page === 1 ? 0.3 : 1 }}>← PREVIOUS</button>
-          <span style={{ fontSize: 14, fontWeight: 800, color: 'var(--primary)', border: '2px solid rgba(25,84,2,0.1)', padding: '2px 14px', borderRadius: 20 }}>Page {page} of {Math.max(1, Math.ceil(total / 50))}</span>
-          <button className="btn btn-ghost btn-sm" disabled={items.length < 50} onClick={() => setPage(p => p + 1)} style={{ padding: '4px 16px', fontWeight: 700, opacity: items.length < 50 ? 0.3 : 1 }}>NEXT →</button>
+          <button className="btn btn-ghost btn-sm" disabled={page === 1} onClick={() => setPage(p => Math.max(1, p - 1))} style={{ padding: '4px 16px', fontWeight: 600, opacity: page === 1 ? 0.3 : 1 }}>← PREVIOUS</button>
+          <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--primary)', border: '1.5px solid rgba(25,84,2,0.12)', padding: '2px 14px', borderRadius: 20, fontVariantNumeric: 'tabular-nums' }}>Page {page} of {Math.max(1, Math.ceil(total / 50))}</span>
+          <button className="btn btn-ghost btn-sm" disabled={items.length < 50} onClick={() => setPage(p => p + 1)} style={{ padding: '4px 16px', fontWeight: 600, opacity: items.length < 50 ? 0.3 : 1 }}>NEXT →</button>
         </div>
       </div>
         </>

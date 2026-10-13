@@ -344,12 +344,12 @@ export default function ExpenseApprovals() {
                         
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
-                            <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--accent)', fontFamily: 'monospace' }}>{c.reference || `(Claim #${c.id})`}</span>
-                            <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: `${color}20`, color: color, textTransform: 'uppercase' }}>
+                            <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>{c.reference || `(Claim #${c.id})`}</span>
+                            <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: `${color}20`, color: color, textTransform: 'uppercase' }}>
                               {c.status === 'approved' ? 'APPROVED – PENDING ACCOUNTS DISBURSEMENT' : c.status}
                             </span>
                           </div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <User size={13} style={{ color: 'var(--text3)' }} /> {c.employee_name}
                             <span style={{ color: 'var(--text3)', fontWeight: 400, fontSize: 12 }}>·</span>
                             <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text2)' }}>{c.purpose || c.description || 'Itemized Reimbursement Claim'}</span>
@@ -358,12 +358,12 @@ export default function ExpenseApprovals() {
                             Expense date: {c.expense_date || '—'} · Submitted: {c.claim_date || '—'}
                           </div>
                           {c.reimbursement_ref && (
-                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 2 }}>Disbursement Ref: {c.reimbursement_ref} ({c.reimbursement_mode || 'Direct'})</div>
+                            <div style={{ fontSize: 12, color: '#6366f1', marginTop: 2 }}>Disbursement Ref: <span style={{ fontFamily: 'var(--font-mono)' }}>{c.reimbursement_ref}</span> ({c.reimbursement_mode || 'Direct'})</div>
                           )}
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                          <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)', marginRight: 4 }}>{INR(c.amount)}</div>
+                          <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', marginRight: 4, fontVariantNumeric: 'tabular-nums' }}>{INR(c.amount)}</div>
 
                           {c.lines && c.lines.length > 0 && (
                             <button
@@ -414,7 +414,7 @@ export default function ExpenseApprovals() {
                                   setActionModal({ record: c, type: 'approve_claim' });
                                   setRemarks('');
                                 }}
-                                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Approve
                               </button>
@@ -423,7 +423,7 @@ export default function ExpenseApprovals() {
                                   setActionModal({ record: c, type: 'reject_claim' });
                                   setRemarks('');
                                 }}
-                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 8, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Reject
                               </button>
@@ -436,7 +436,7 @@ export default function ExpenseApprovals() {
                                 setReimbMode('direct');
                                 setReimbRef('');
                               }}
-                              style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
+                              style={{ padding: '6px 12px', borderRadius: 8, border: 'none', background: '#6366f1', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 5 }}
                             >
                               💰 Disburse Payout
                             </button>
@@ -454,38 +454,38 @@ export default function ExpenseApprovals() {
                             overflowX: 'auto',
                           }}
                         >
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
                             Itemized Expense Claim Breakdown Grid
                           </div>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                             <thead>
                               <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Date</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Category</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost Code</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost To</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>From / To</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Description</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Vendor</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>GST %</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>Amount</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Bills</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Date</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Category</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Cost Code</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Cost To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>From / To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Description</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Vendor</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>GST %</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>Amount</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Bills</th>
                               </tr>
                             </thead>
                             <tbody>
                               {c.lines.map((row, rIdx) => (
                                 <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{row.date}</td>
                                   <td style={{ padding: '6px 8px', fontWeight: 600 }}>{row.expense_type}</td>
-                                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{row.cost_code || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>{row.cost_to || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>
                                     {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
                                   </td>
                                   <td style={{ padding: '6px 8px' }}>{row.description || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>{row.paid_to || '—'}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.gst_rate}%</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{INR(row.amount)}</td>
                                   <td style={{ padding: '6px 8px' }}>
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                       {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
@@ -567,10 +567,10 @@ export default function ExpenseApprovals() {
 
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
-                            <span style={{ fontWeight: 800, fontSize: 13, color: 'var(--accent)', fontFamily: 'monospace' }}>
+                            <span style={{ fontWeight: 500, fontSize: 13, color: 'var(--accent)', fontFamily: 'var(--font-mono)' }}>
                               {a.reference || `(Draft Request #${a.id})`}
                             </span>
-                            <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: `${color}15`, color, textTransform: 'uppercase' }}>
+                            <span style={{ fontSize: 10, fontWeight: 600, padding: '2px 8px', borderRadius: 20, background: `${color}15`, color, textTransform: 'uppercase' }}>
                               {a.status === 'settlement_submitted' ? 'SETTLEMENT SUBMITTED – PENDING MANAGER' :
                                a.status === 'settlement_manager_approved' ? 'MANAGER APPROVED – PENDING ACCOUNTS' :
                                a.status === 'settlement_approved' ? 'ACCOUNTS APPROVED – PENDING CLOSURE' :
@@ -578,12 +578,12 @@ export default function ExpenseApprovals() {
                                a.status.replace(/_/g, ' ').toUpperCase()}
                             </span>
                             {a.project_code && (
-                              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text2)' }}>
+                              <span style={{ fontSize: 10, fontWeight: 500, fontFamily: 'var(--font-mono)', padding: '2px 6px', borderRadius: 4, border: '1px solid var(--border)', color: 'var(--text2)' }}>
                                 PROJECT: {a.project_code}
                               </span>
                             )}
                           </div>
-                          <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
+                          <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text)', display: 'flex', alignItems: 'center', gap: 8 }}>
                             <User size={13} style={{ color: 'var(--text3)' }} /> {a.employee_name}
                           </div>
                           <div style={{ fontSize: 12, color: 'var(--text3)', marginTop: 2 }}>
@@ -597,7 +597,7 @@ export default function ExpenseApprovals() {
                             <div style={{ fontSize: 11, color: 'var(--text3)' }}>
                               {isSettlement || isClaimedSettle ? 'Advance Amount' : 'Requested Amt'}
                             </div>
-                            <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--text)' }}>
+                            <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>
                               {INR(a.amount)}
                             </div>
                           </div>
@@ -606,7 +606,7 @@ export default function ExpenseApprovals() {
                           {(isSettlement || isClaimedSettle) && (
                             <div style={{ textAlign: 'right', marginRight: 8 }}>
                               <div style={{ fontSize: 11, color: 'var(--text3)' }}>Claimed expenses</div>
-                              <div style={{ fontWeight: 800, fontSize: 17, color: 'var(--accent)' }}>
+                              <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--accent)', fontVariantNumeric: 'tabular-nums' }}>
                                 {INR(a.lines.reduce((s, row) => s + (row.amount || 0), 0))}
                               </div>
                             </div>
@@ -640,19 +640,19 @@ export default function ExpenseApprovals() {
                             <>
                               <button
                                 onClick={() => setActionModal({ record: a, type: 'approve_adv' })}
-                                style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#22c55e', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Approve
                               </button>
                               <button
                                 onClick={() => setActionModal({ record: a, type: 'reject_adv' })}
-                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Reject
                               </button>
                               <button
                                 onClick={() => setActionModal({ record: a, type: 'clarify_adv' })}
-                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ec4899', background: '#ec489915', color: '#ec4899', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ec4899', background: '#ec489915', color: '#ec4899', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Clarify
                               </button>
@@ -686,13 +686,13 @@ export default function ExpenseApprovals() {
                               </button>
                               <button
                                 onClick={() => setActionModal({ record: a, type: 'approve_settle' })}
-                                style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Approve
                               </button>
                               <button
                                 onClick={() => setActionModal({ record: a, type: 'reject_settle' })}
-                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Reject
                               </button>
@@ -726,13 +726,13 @@ export default function ExpenseApprovals() {
                               </button>
                               <button
                                 onClick={() => setActionModal({ record: a, type: 'accounts_approve_settle' })}
-                                style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: 'none', background: '#10b981', color: '#fff', cursor: 'pointer', fontWeight: 600, fontSize: 12, display: 'flex', alignItems: 'center', gap: 4 }}
                               >
                                 <CheckCircle size={12} /> Accounts Approve
                               </button>
                               <button
                                 onClick={() => setActionModal({ record: a, type: 'reject_settle' })}
-                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}
+                                style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #ef4444', background: '#ef444415', color: '#ef4444', cursor: 'pointer', fontWeight: 600, fontSize: 12 }}
                               >
                                 Reject
                               </button>
@@ -750,7 +750,7 @@ export default function ExpenseApprovals() {
                                 background: 'var(--accent)',
                                 color: '#fff',
                                 cursor: 'pointer',
-                                fontWeight: 700,
+                                fontWeight: 600,
                                 fontSize: 12,
                                 display: 'flex',
                                 alignItems: 'center',
@@ -773,38 +773,38 @@ export default function ExpenseApprovals() {
                             overflowX: 'auto',
                           }}
                         >
-                          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
+                          <div style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', color: 'var(--text3)', letterSpacing: '0.5px', marginBottom: 6 }}>
                             Itemized Expense Settlement Grid
                           </div>
                           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12 }}>
                             <thead>
                               <tr style={{ background: 'var(--bg3)', borderBottom: '1px solid var(--border)' }}>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Date</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Category</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost Code</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Cost To</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>From / To</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Description</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Vendor</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>GST %</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>Amount</th>
-                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 700 }}>Bills</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Date</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Category</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Cost Code</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Cost To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>From / To</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Description</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Vendor</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>GST %</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600 }}>Amount</th>
+                                <th style={{ padding: '6px 8px', textAlign: 'left', fontWeight: 600 }}>Bills</th>
                               </tr>
                             </thead>
                             <tbody>
                               {a.lines.map((row, rIdx) => (
                                 <tr key={row.id || rIdx} style={{ borderBottom: '1px solid var(--border)' }}>
-                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap' }}>{row.date}</td>
+                                  <td style={{ padding: '6px 8px', whiteSpace: 'nowrap', fontVariantNumeric: 'tabular-nums' }}>{row.date}</td>
                                   <td style={{ padding: '6px 8px', fontWeight: 600 }}>{row.expense_type}</td>
-                                  <td style={{ padding: '6px 8px', fontFamily: 'monospace' }}>{row.cost_code || '—'}</td>
+                                  <td style={{ padding: '6px 8px', fontFamily: 'var(--font-mono)' }}>{row.cost_code || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>{row.cost_to || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>
                                     {row.from_location && row.to_location ? `${row.from_location} ➔ ${row.to_location}` : '—'}
                                   </td>
                                   <td style={{ padding: '6px 8px' }}>{row.description || '—'}</td>
                                   <td style={{ padding: '6px 8px' }}>{row.paid_to || '—'}</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right' }}>{row.gst_rate}%</td>
-                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 700 }}>{INR(row.amount)}</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{row.gst_rate}%</td>
+                                  <td style={{ padding: '6px 8px', textAlign: 'right', fontWeight: 600, fontVariantNumeric: 'tabular-nums' }}>{INR(row.amount)}</td>
                                   <td style={{ padding: '6px 8px' }}>
                                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                                       {row.bill_attachments && row.bill_attachments.map((file, fIdx) => (
@@ -869,7 +869,7 @@ export default function ExpenseApprovals() {
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
               }}
             >
-              <h3 style={{ margin: '0 0 12px', fontWeight: 800, fontSize: 16, color: 'var(--text)' }}>
+              <h3 style={{ margin: '0 0 12px', fontWeight: 600, fontSize: 16, color: 'var(--text)' }}>
                 {actionModal.type === 'approve_claim' && '✓ Approve Claim'}
                 {actionModal.type === 'reject_claim' && '✗ Reject Claim'}
                 {actionModal.type === 'reimburse_claim' && '💰 Mark as Reimbursed'}
