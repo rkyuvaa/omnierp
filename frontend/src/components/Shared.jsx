@@ -1,9 +1,21 @@
+import { useEffect } from 'react';
 import { X } from 'lucide-react';
 
 export function Modal({ title, onClose, children, footer, size }) {
   const sizeClass = size === 'full' ? 'modal-full' : size === 'lg' ? 'modal-lg' : '';
+
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        onClose?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onClose?.()}>
       <div className={`modal ${sizeClass}`}>
         <div className="modal-header">
           <span className="modal-title">{title}</span>
@@ -35,8 +47,18 @@ export function Empty({ message = 'No records found' }) {
 }
 
 export function Confirm({ message, onConfirm, onCancel }) {
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        onCancel?.();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onCancel]);
+
   return (
-    <div className="modal-overlay">
+    <div className="modal-overlay" onClick={e => e.target === e.currentTarget && onCancel?.()}>
       <div className="modal" style={{ maxWidth: 380 }}>
         <div className="modal-body" style={{ textAlign: 'center', padding: '32px 24px' }}>
           <p style={{ marginBottom: 20 }}>{message}</p>

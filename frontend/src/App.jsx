@@ -2,6 +2,7 @@ import { Component, lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth, AuthProvider } from './hooks/useAuth';
 import { Toaster } from 'react-hot-toast';
+import GlobalEscapeListener from './components/GlobalEscapeListener';
 
 // Safe Lazy Loader with preloader capabilities to prevent white flashes and handle post-deploy chunks
 function safeLazy(importFn) {
@@ -151,6 +152,7 @@ export default function App() {
       <BrowserRouter>
         <AuthProvider>
           <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+          <GlobalEscapeListener />
           <Suspense fallback={<ModuleFallback />}>
             <Routes>
               <Route path="/login" element={<Login />} />
