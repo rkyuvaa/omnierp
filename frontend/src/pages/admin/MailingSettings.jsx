@@ -2,9 +2,22 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { Mail, Settings, Save, Send, AlertTriangle, Info, Eye, EyeOff, FileText, CheckCircle2 } from 'lucide-react';
+import { Mail, Settings, Save, Send, AlertTriangle, Info, Eye, EyeOff, FileText, CheckCircle2, X } from 'lucide-react';
 
 const TEMPLATE_INFO = {
+  welcome_email_template: {
+    label: "Welcome Email Template",
+    description: "Dispatched to a newly onboarded employee's official company email via the 'Create/Send' button in Employee Master.",
+    placeholders: [
+      { name: "{employee_name}", desc: "Full name of the employee" },
+      { name: "{company_email}", desc: "Official company email address" },
+      { name: "{employee_id}", desc: "Employee ID (e.g. EMP001)" },
+      { name: "{department}", desc: "Assigned department (e.g. Supply Chain)" },
+      { name: "{designation}", desc: "Job title / Designation" },
+      { name: "{company_name}", desc: "Company organization name (Konwert India Motors)" },
+      { name: "{date_of_joining}", desc: "Date of joining" }
+    ]
+  },
   payslip_notification: {
     label: "Salary Payslip Send Out",
     description: "Dispatched when monthly employee payroll payslips are issued.",
@@ -65,11 +78,70 @@ export default function MailingSettings() {
 
   // Templates state
   const [templates, setTemplates] = useState([]);
-  const [selectedTemplateName, setSelectedTemplateName] = useState('payslip_notification');
+  const [selectedTemplateName, setSelectedTemplateName] = useState('welcome_email_template');
   const [tplForm, setTplForm] = useState({
     subject: '',
     body_html: ''
   });
+  const [previewModalOpen, setPreviewModalOpen] = useState(false);
+  const [testTplModalOpen, setTestTplModalOpen] = useState(false);
+  const [testTplEmail, setTestTplEmail] = useState('');
+  const [testingTpl, setTestingTpl] = useState(false);
+
+  function renderSamplePreview(text) {
+    if (!text) return '';
+    const sampleVars = {
+      employee_name: "Nickendra Kumar",
+      company_email: "nickendra@konwertindiamotors.com",
+      employee_id: "EMP001",
+      department: "Supply Chain Management",
+      designation: "SCM Manager",
+      company_name: "Konwert India Motors",
+      date_of_joining: "2026-05-01",
+      month: "October",
+      year: "2026",
+      net_salary: "45,000.00",
+      leave_type: "Casual Leave",
+      from_date: "2026-10-20",
+      to_date: "2026-10-22",
+      total_days: "3",
+      status: "Approved",
+      approver_name: "HR Operations",
+      reason: "Family function",
+      date: "2026-10-20",
+      from_time: "09:30",
+      to_time: "18:30",
+      work_location: "Client Site",
+      purpose: "Site inspection",
+      action_url: "https://app.konwertindiamotors.com"
+    };
+    let res = text;
+    for (const [k, v] of Object.entries(sampleVars)) {
+      res = res.replaceAll(`{${k}}`, v);
+    }
+    return res;
+  }
+
+  async function handleTestTemplate(e) {
+    e.preventDefault();
+    if (!testTplEmail) return toast.error('Please enter a recipient email address');
+    setTestingTpl(true);
+    try {
+      await api.post('/admin/settings/templates/test', {
+        name: selectedTemplateName,
+        test_email: testTplEmail,
+        subject: tplForm.subject,
+        body_html: tplForm.body_html
+      });
+      toast.success(`Preview email sent to ${testTplEmail}!`);
+      setTestTplModalOpen(false);
+      setTestTplEmail('');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to send test email');
+    } finally {
+      setTestingTpl(false);
+    }
+  }
 
   useEffect(() => {
     fetchSmtpSettings();
@@ -469,22 +541,58 @@ export default function MailingSettings() {
                     />
                   </div>
 
-                  {/* Save Button */}
-                  <button
-                    type="submit"
-                    disabled={saving}
-                    className="btn btn-primary"
-                    style={{
-                      alignSelf: 'flex-start',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      fontWeight: 700,
-                      boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)'
-                    }}
-                  >
-                    <Save size={14} /> {saving ? 'Saving Template...' : 'Save Template'}
-                  </button>
+                  {/* Action Buttons: Save, Preview, Test */}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="btn btn-primary"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        fontWeight: 700,
+                        boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)'
+                      }}
+                    >
+                      <Save size={14} /> {saving ? 'Saving Template...' : 'Save Template'}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setPreviewModalOpen(true)}
+                      className="btn"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: 'var(--bg3)',
+                        fontWeight: 600,
+                        border: '1px solid var(--border)'
+                      }}
+                    >
+                      <Eye size={14} /> Preview
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTestTplEmail('');
+                        setTestTplModalOpen(true);
+                      }}
+                      className="btn"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        background: 'var(--bg3)',
+                        fontWeight: 600,
+                        border: '1px solid var(--border)'
+                      }}
+                    >
+                      <Send size={14} style={{ color: 'var(--accent)' }} /> Test Template Mail
+                    </button>
+                  </div>
                 </form>
 
                 {/* Right Side: Placeholders Panel */}
@@ -582,6 +690,85 @@ export default function MailingSettings() {
                 }}
               >
                 {testing ? 'Verifying...' : 'Send Test Mail'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Template Preview Modal */}
+      {previewModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.5)', backdropFilter: 'blur(4px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+          <div style={{ background: 'var(--bg)', borderRadius: 16, width: '100%', maxWidth: 900, maxHeight: '90vh', display: 'flex', flexDirection: 'column', border: '1px solid var(--border)', overflow: 'hidden', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'var(--bg2)' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Template Live Preview</h3>
+                <p style={{ margin: '3px 0 0 0', fontSize: 12, color: 'var(--text3)' }}>
+                  Subject: <strong style={{ color: 'var(--text)' }}>{renderSamplePreview(tplForm.subject)}</strong>
+                </p>
+              </div>
+              <button onClick={() => setPreviewModalOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text2)' }}><X size={18} /></button>
+            </div>
+            <div style={{ flex: 1, overflow: 'auto', padding: 20, background: '#f8fafc' }}>
+              <div dangerouslySetInnerHTML={{ __html: renderSamplePreview(tplForm.body_html) }} />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Template Test Email Modal */}
+      {testTplModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <form onSubmit={handleTestTemplate} style={{ background: 'var(--bg2)', borderRadius: 16, padding: 28, width: 440, maxWidth: '90vw', border: '1px solid var(--border)', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'rgba(25, 84, 2, 0.1)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                <Send size={18} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Test Template Dispatch</h3>
+                <p style={{ margin: 0, color: 'var(--text3)', fontSize: 12 }}>Dispatches a test copy with sample employee placeholders filled in</p>
+              </div>
+            </div>
+            
+            <div style={{ height: 1, background: 'var(--border)', margin: '14px 0' }} />
+
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Recipient Email Address *</label>
+              <input
+                type="email"
+                required
+                value={testTplEmail}
+                onChange={e => setTestTplEmail(e.target.value)}
+                placeholder="your-email@konwertindiamotors.com"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
+              <button
+                type="button"
+                onClick={() => setTestTplModalOpen(false)}
+                className="btn"
+                style={{ flex: 1, background: 'var(--bg3)', border: 'none', borderRadius: 8, fontWeight: 600 }}
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={testingTpl}
+                className="btn btn-primary"
+                style={{
+                  flex: 1,
+                  borderRadius: 8,
+                  fontWeight: 600,
+                  boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 6
+                }}
+              >
+                {testingTpl ? 'Sending...' : 'Send Test Mail'}
               </button>
             </div>
           </form>

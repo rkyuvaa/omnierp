@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 import openpyxl
 import io
 from app.database import get_db
-from app.models import User
+from app.models import User, EmailTemplate
 from app.auth import get_current_user
 from app.hr_models import HREmployee, HRShift, HRLeaveBalance, HRLeaveType
 
@@ -220,6 +220,102 @@ def delete_employee(emp_id: int, db: Session = Depends(get_db), current_user: Us
     except Exception as e:
         db.rollback()
         raise HTTPException(400, "Cannot delete employee as they have active payroll, attendance, or other records. Please deactivate them instead.")
+
+
+@router.post("/{emp_id}/send-welcome-email")
+def send_employee_welcome_email(
+    emp_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """
+    Dedicated endpoint to send a welcome email to an onboarded employee using
+    the separately configured 'welcome_email_template'.
+    Validates official company email, does not affect existing employee records
+    upon email delivery failure, and records the event in AuditLog.
+    """
+    emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
+    if not emp:
+        raise HTTPException(404, "Employee record not found")
+
+    if not emp.email or "@" not in emp.email or "." not in emp.email.split("@")[-1]:
+        raise HTTPException(400, "Employee does not have a valid official company email address configured.")
+
+    # Fetch dedicated welcome email template
+    tpl = db.query(EmailTemplate).filter(EmailTemplate.name == "welcome_email_template").first()
+    if not tpl:
+        try:
+            from app.routers.admin_settings import seed_email_templates
+            seed_email_templates(db)
+            tpl = db.query(EmailTemplate).filter(EmailTemplate.name == "welcome_email_template").first()
+        except Exception:
+            pass
+
+    dept_name = emp.department.name if emp.department else "General"
+    placeholders = {
+        "employee_name": emp.name or "",
+        "company_email": emp.email or "",
+        "department": dept_name,
+        "designation": emp.designation or "Team Member",
+        "company_name": "Konwert India Motors",
+        "employee_id": emp.employee_id or "",
+        "date_of_joining": str(emp.date_of_joining) if emp.date_of_joining else "N/A"
+    }
+
+    if tpl:
+        subject = tpl.subject
+        body_html = tpl.body_html
+        for k, v in placeholders.items():
+            subject = subject.replace(f"{{{k}}}", str(v))
+            body_html = body_html.replace(f"{{{k}}}", str(v))
+    else:
+        subject = f"Welcome to {placeholders['company_name']}, {placeholders['employee_name']}!"
+        body_html = f"""<div style="font-family: Arial, sans-serif; padding: 24px; color: #1e293b;">
+          <h2 style="color: #195402;">Welcome to {placeholders['company_name']}!</h2>
+          <p>Dear {placeholders['employee_name']},</p>
+          <p>We are delighted to welcome you to our team. Your employee profile has been set up in KIM ERP.</p>
+          <ul>
+            <li><strong>Employee ID:</strong> {placeholders['employee_id']}</li>
+            <li><strong>Official Email:</strong> {placeholders['company_email']}</li>
+            <li><strong>Designation:</strong> {placeholders['designation']}</li>
+            <li><strong>Department:</strong> {placeholders['department']}</li>
+          </ul>
+        </div>"""
+
+    from app.utils.email_service import send_email
+    from app.auth import log_action
+    import logging
+    _logger = logging.getLogger(__name__)
+
+    try:
+        send_email(db, to_email=emp.email, subject=subject, body_html=body_html)
+        log_action(db, current_user, "SEND_WELCOME_EMAIL", "HR_EMPLOYEE", emp.id, emp.employee_id, {
+            "recipient": emp.email,
+            "status": "SENT",
+            "timestamp": datetime.utcnow().isoformat()
+        })
+        return {
+            "success": True,
+            "message": f"Welcome email sent successfully to {emp.email}",
+            "recipient": emp.email
+        }
+    except Exception as e:
+        _logger.error(f"Failed to send welcome email to {emp.email}: {e}")
+        try:
+            log_action(db, current_user, "SEND_WELCOME_EMAIL", "HR_EMPLOYEE", emp.id, emp.employee_id, {
+                "recipient": emp.email,
+                "status": "FAILED",
+                "error": str(e),
+                "timestamp": datetime.utcnow().isoformat()
+            })
+        except Exception:
+            pass
+        return {
+            "success": False,
+            "message": f"Welcome email could not be sent: {str(e)}",
+            "recipient": emp.email
+        }
+
 
 @router.get("/export/excel")
 def export_employees_excel(

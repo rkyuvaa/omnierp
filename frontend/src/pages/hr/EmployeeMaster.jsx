@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api, { getErrorMessage } from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react';
+import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight, Trash2, Send } from 'lucide-react';
 
 const STATUS_BADGE = { true: { bg: '#dcfce7', color: '#16a34a', label: 'Active' }, false: { bg: '#fee2e2', color: '#dc2626', label: 'Inactive' } };
 
@@ -28,6 +28,7 @@ export default function EmployeeMaster() {
   const [editEmp, setEditEmp] = useState(null);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [sendingWelcome, setSendingWelcome] = useState(false);
   const [importing, setImporting] = useState(false);
   const [activeTab, setActiveTab] = useState('list'); // list | detail
   const [selectedEmp, setSelectedEmp] = useState(null);
@@ -134,6 +135,67 @@ export default function EmployeeMaster() {
       fetchAll();
     } catch (e) { toast.error(getErrorMessage(e, 'Save failed')); }
     finally { setSaving(false); }
+  }
+
+  async function saveAndSendWelcomeEmail() {
+    if (!form.name || !form.name.trim()) {
+      return toast.error('Full Name is required');
+    }
+    if (!form.employee_id || !form.employee_id.trim()) {
+      return toast.error('Employee ID is required');
+    }
+    if (!form.email || !form.email.trim() || !form.email.includes('@')) {
+      return toast.error('Official company email is required to send the welcome email');
+    }
+
+    setSendingWelcome(true);
+    const cleanedForm = { ...form };
+    const intFields = ['department_id', 'branch_id', 'shift_id', 'manager_id', 'manager_l2_id', 'salary_template_id', 'user_id'];
+    intFields.forEach(f => {
+      if (cleanedForm[f] === '' || cleanedForm[f] === undefined) {
+        cleanedForm[f] = null;
+      } else if (cleanedForm[f] !== null) {
+        cleanedForm[f] = parseInt(cleanedForm[f]);
+      }
+    });
+    const dateFields = ['date_of_joining', 'date_of_leaving'];
+    dateFields.forEach(f => {
+      if (cleanedForm[f] === '') {
+        cleanedForm[f] = null;
+      }
+    });
+    if (cleanedForm.basic_salary === '' || cleanedForm.basic_salary === undefined) {
+      cleanedForm.basic_salary = 0.0;
+    } else if (cleanedForm.basic_salary !== null) {
+      cleanedForm.basic_salary = parseFloat(cleanedForm.basic_salary);
+    }
+
+    let createdEmp = null;
+    try {
+      const res = await api.post('/hr/employees/', cleanedForm);
+      createdEmp = res.data;
+    } catch (e) {
+      setSendingWelcome(false);
+      return toast.error(getErrorMessage(e, 'Failed to create employee'));
+    }
+
+    // Employee successfully saved! Close modal and refresh list
+    setShowModal(false);
+    fetchAll();
+
+    // Send the welcome email to official company email using the dedicated template
+    try {
+      const mailRes = await api.post(`/hr/employees/${createdEmp.id}/send-welcome-email`);
+      if (mailRes.data && mailRes.data.success) {
+        toast.success(`Employee created & welcome email dispatched to ${createdEmp.email}!`);
+      } else {
+        toast.error(`Employee created, but welcome email could not be sent: ${mailRes.data?.message || 'Email delivery failed'}`);
+      }
+    } catch (mailErr) {
+      toast.error(`Employee created, but welcome email could not be sent: ${getErrorMessage(mailErr, 'Failed to send welcome email')}`);
+    } finally {
+      setSendingWelcome(false);
+    }
   }
 
   async function toggleActive(emp) {
@@ -536,9 +598,31 @@ export default function EmployeeMaster() {
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
+            <div style={{ display: 'flex', gap: 10, marginTop: 24, justifyContent: 'flex-end', alignItems: 'center' }}>
               <button onClick={() => setShowModal(false)} className="btn" style={{ background: 'var(--bg3)', border: 'none' }}>Cancel</button>
-              <button onClick={saveEmployee} disabled={saving} className="btn btn-primary">{saving ? 'Saving...' : editEmp ? 'Update' : 'Create'}</button>
+              <button onClick={saveEmployee} disabled={saving || sendingWelcome} className="btn btn-primary">{saving ? 'Saving...' : editEmp ? 'Update' : 'Create'}</button>
+              {!editEmp && (
+                <button
+                  type="button"
+                  onClick={saveAndSendWelcomeEmail}
+                  disabled={saving || sendingWelcome}
+                  className="btn"
+                  style={{
+                    background: '#15803d',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    border: 'none',
+                    boxShadow: '0 2px 6px rgba(21, 128, 61, 0.25)',
+                    cursor: (saving || sendingWelcome) ? 'not-allowed' : 'pointer'
+                  }}
+                >
+                  <Send size={14} />
+                  {sendingWelcome ? 'Creating & Sending...' : 'Create/Send'}
+                </button>
+              )}
             </div>
           </div>
         </div>
