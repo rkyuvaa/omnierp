@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api, { getErrorMessage } from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight, Trash2, Send } from 'lucide-react';
+import { UserPlus, Search, Edit2, ToggleLeft, ToggleRight, X, ChevronDown, Upload, FileText, Download, Calendar, Wifi, ChevronLeft, ChevronRight, Trash2, Send, Mail } from 'lucide-react';
 
 const STATUS_BADGE = { true: { bg: '#dcfce7', color: '#16a34a', label: 'Active' }, false: { bg: '#fee2e2', color: '#dc2626', label: 'Inactive' } };
 
@@ -83,9 +83,9 @@ export default function EmployeeMaster() {
   async function openCreate() {
     try {
       const res = await api.get('/hr/employees/next-id');
-      setForm({ employee_id: res.data.next_id, is_active: true, salary_components: [], cc_manager_ids: [] });
+      setForm({ employee_id: res.data.next_id, is_active: true, salary_components: [], cc_manager_ids: [], welcome_email_cc: '' });
     } catch {
-      setForm({ employee_id: 'EMP001', is_active: true, salary_components: [], cc_manager_ids: [] });
+      setForm({ employee_id: 'EMP001', is_active: true, salary_components: [], cc_manager_ids: [], welcome_email_cc: '' });
     }
     setEditEmp(null);
     setShowModal(true);
@@ -185,7 +185,9 @@ export default function EmployeeMaster() {
 
     // Send the welcome email to official company email using the dedicated template
     try {
-      const mailRes = await api.post(`/hr/employees/${createdEmp.id}/send-welcome-email`);
+      const mailRes = await api.post(`/hr/employees/${createdEmp.id}/send-welcome-email`, {
+        custom_cc: form.welcome_email_cc || ''
+      });
       if (mailRes.data && mailRes.data.success) {
         toast.success(`Employee created & welcome email dispatched to ${createdEmp.email}!`);
       } else {
@@ -535,6 +537,34 @@ export default function EmployeeMaster() {
                 </select>
               </div>
             </div>
+
+            {/* Welcome Email CC Recipients (Only during creation) */}
+            {!editEmp && (
+              <div style={{
+                marginTop: 14,
+                background: 'rgba(21, 128, 61, 0.05)',
+                border: '1px dashed #16a34a',
+                borderRadius: 12,
+                padding: '12px 16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                  <Mail size={15} color="#16a34a" />
+                  <label style={{ ...labelStyle, margin: 0, color: '#15803d', fontWeight: 700 }}>
+                    Welcome Mail CC Recipients (Optional)
+                  </label>
+                </div>
+                <input
+                  type="text"
+                  placeholder="e.g. hr@company.com, accounts@company.com"
+                  value={form.welcome_email_cc || ''}
+                  onChange={e => setForm({ ...form, welcome_email_cc: e.target.value })}
+                  style={inputStyle}
+                />
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+                  Dispatched when clicking <strong>Create/Send</strong>. Separate multiple emails with commas. Reporting manager and template default CC are also included if configured.
+                </div>
+              </div>
+            )}
 
             {/* Mobile Punch Toggle */}
             <div style={{

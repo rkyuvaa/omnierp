@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 import openpyxl
 import io
 from app.database import get_db
-from app.models import User, EmailTemplate
+from app.models import User, EmailTemplate, SystemSetting
 from app.auth import get_current_user
 from app.hr_models import HREmployee, HRShift, HRLeaveBalance, HRLeaveType
 
@@ -222,15 +222,21 @@ def delete_employee(emp_id: int, db: Session = Depends(get_db), current_user: Us
         raise HTTPException(400, "Cannot delete employee as they have active payroll, attendance, or other records. Please deactivate them instead.")
 
 
+class WelcomeEmailRequestSchema(BaseModel):
+    cc_emails: Optional[List[str]] = None
+    custom_cc: Optional[str] = None
+
+
 @router.post("/{emp_id}/send-welcome-email")
 def send_employee_welcome_email(
     emp_id: int,
+    payload: Optional[WelcomeEmailRequestSchema] = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
     """
     Dedicated endpoint to send a welcome email to an onboarded employee using
-    the separately configured 'welcome_email_template'.
+    the separately configured 'welcome_email_template' with optional CC recipients.
     Validates official company email, does not affect existing employee records
     upon email delivery failure, and records the event in AuditLog.
     """
@@ -282,28 +288,67 @@ def send_employee_welcome_email(
           </ul>
         </div>"""
 
+    # Resolve CC recipients from request payload and system settings
+    cc_list = []
+    if payload:
+        if payload.custom_cc:
+            for c in payload.custom_cc.split(","):
+                c = c.strip()
+                if c and "@" in c and c.lower() not in [x.lower() for x in cc_list]:
+                    cc_list.append(c)
+        if payload.cc_emails:
+            for item in payload.cc_emails:
+                if isinstance(item, str):
+                    for sub in item.split(","):
+                        sub = sub.strip()
+                        if sub and "@" in sub and sub.lower() not in [x.lower() for x in cc_list]:
+                            cc_list.append(sub)
+
+    # Merge configured default CC and auto-manager CC from SystemSetting
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "welcome_email_settings").first()
+    if setting and isinstance(setting.value, dict):
+        cfg_cc = setting.value.get("default_cc", "")
+        if cfg_cc:
+            for c in cfg_cc.split(","):
+                c = c.strip()
+                if c and "@" in c and c.lower() not in [x.lower() for x in cc_list]:
+                    cc_list.append(c)
+        if setting.value.get("auto_cc_manager") and emp.manager_id:
+            mgr = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
+            if mgr and mgr.email and "@" in mgr.email:
+                mgr_email = mgr.email.strip()
+                if mgr_email.lower() not in [x.lower() for x in cc_list]:
+                    cc_list.append(mgr_email)
+
+    # Exclude recipient's own email from CC list
+    cc_list = [c for c in cc_list if c.lower() != emp.email.strip().lower()]
+
     from app.utils.email_service import send_email
     from app.auth import log_action
     import logging
     _logger = logging.getLogger(__name__)
 
     try:
-        send_email(db, to_email=emp.email, subject=subject, body_html=body_html)
+        send_email(db, to_email=emp.email, subject=subject, body_html=body_html, cc_emails=cc_list)
         log_action(db, current_user, "SEND_WELCOME_EMAIL", "HR_EMPLOYEE", emp.id, emp.employee_id, {
             "recipient": emp.email,
+            "cc": cc_list,
             "status": "SENT",
             "timestamp": datetime.utcnow().isoformat()
         })
+        cc_msg = f" (CC: {', '.join(cc_list)})" if cc_list else ""
         return {
             "success": True,
-            "message": f"Welcome email sent successfully to {emp.email}",
-            "recipient": emp.email
+            "message": f"Welcome email sent successfully to {emp.email}{cc_msg}",
+            "recipient": emp.email,
+            "cc": cc_list
         }
     except Exception as e:
         _logger.error(f"Failed to send welcome email to {emp.email}: {e}")
         try:
             log_action(db, current_user, "SEND_WELCOME_EMAIL", "HR_EMPLOYEE", emp.id, emp.employee_id, {
                 "recipient": emp.email,
+                "cc": cc_list,
                 "status": "FAILED",
                 "error": str(e),
                 "timestamp": datetime.utcnow().isoformat()
@@ -313,7 +358,8 @@ def send_employee_welcome_email(
         return {
             "success": False,
             "message": f"Welcome email could not be sent: {str(e)}",
-            "recipient": emp.email
+            "recipient": emp.email,
+            "cc": cc_list
         }
 
 

@@ -83,9 +83,14 @@ export default function MailingSettings() {
     subject: '',
     body_html: ''
   });
+  const [welcomeConfig, setWelcomeConfig] = useState({
+    default_cc: '',
+    auto_cc_manager: false
+  });
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
   const [testTplModalOpen, setTestTplModalOpen] = useState(false);
   const [testTplEmail, setTestTplEmail] = useState('');
+  const [testTplCc, setTestTplCc] = useState('');
   const [testingTpl, setTestingTpl] = useState(false);
 
   function renderSamplePreview(text) {
@@ -130,12 +135,14 @@ export default function MailingSettings() {
       await api.post('/admin/settings/templates/test', {
         name: selectedTemplateName,
         test_email: testTplEmail,
+        cc_email: testTplCc || undefined,
         subject: tplForm.subject,
         body_html: tplForm.body_html
       });
       toast.success(`Preview email sent to ${testTplEmail}!`);
       setTestTplModalOpen(false);
       setTestTplEmail('');
+      setTestTplCc('');
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Failed to send test email');
     } finally {
@@ -146,7 +153,22 @@ export default function MailingSettings() {
   useEffect(() => {
     fetchSmtpSettings();
     fetchTemplates();
+    fetchWelcomeEmailConfig();
   }, []);
+
+  async function fetchWelcomeEmailConfig() {
+    try {
+      const res = await api.get('/admin/settings/welcome-email-config');
+      if (res.data) {
+        setWelcomeConfig({
+          default_cc: res.data.default_cc || '',
+          auto_cc_manager: !!res.data.auto_cc_manager
+        });
+      }
+    } catch {
+      // Ignore if not yet configured
+    }
+  }
 
   async function fetchSmtpSettings() {
     setLoading(true);
@@ -234,6 +256,9 @@ export default function MailingSettings() {
         subject: tplForm.subject,
         body_html: tplForm.body_html
       });
+      if (selectedTemplateName === 'welcome_email_template') {
+        await api.post('/admin/settings/welcome-email-config', welcomeConfig);
+      }
       toast.success('Email Template saved successfully!');
       // Update local templates list
       setTemplates(prev => prev.map(t => t.name === selectedTemplateName ? { ...t, subject: tplForm.subject, body_html: tplForm.body_html } : t));
@@ -519,6 +544,39 @@ export default function MailingSettings() {
                     />
                   </div>
 
+                  {/* CC Configuration (Dedicated for Welcome Email Template) */}
+                  {selectedTemplateName === 'welcome_email_template' && (
+                    <div style={{ background: 'var(--bg3)', padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 700, fontSize: 13, color: 'var(--text)' }}>
+                        <Mail size={15} style={{ color: 'var(--accent)' }} /> Welcome Email CC Recipients (Default)
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+                          Default CC Email Addresses (comma-separated)
+                        </label>
+                        <input
+                          type="text"
+                          value={welcomeConfig.default_cc}
+                          onChange={e => setWelcomeConfig({ ...welcomeConfig, default_cc: e.target.value })}
+                          placeholder="e.g. hr@konwertindiamotors.com, onboarding@konwertindiamotors.com"
+                          style={inputStyle}
+                        />
+                        <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+                          These email addresses will be automatically CC'd on welcome emails whenever a new employee is onboarded.
+                        </div>
+                      </div>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>
+                        <input
+                          type="checkbox"
+                          checked={welcomeConfig.auto_cc_manager}
+                          onChange={e => setWelcomeConfig({ ...welcomeConfig, auto_cc_manager: e.target.checked })}
+                          style={{ width: 16, height: 16, accentColor: 'var(--accent)', cursor: 'pointer' }}
+                        />
+                        Automatically CC Reporting Manager (L1 Manager) if assigned
+                      </label>
+                    </div>
+                  )}
+
                   {/* Rich HTML body editor */}
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
@@ -578,6 +636,7 @@ export default function MailingSettings() {
                       type="button"
                       onClick={() => {
                         setTestTplEmail('');
+                        setTestTplCc(selectedTemplateName === 'welcome_email_template' ? (welcomeConfig.default_cc || '') : '');
                         setTestTplModalOpen(true);
                       }}
                       className="btn"
@@ -740,6 +799,17 @@ export default function MailingSettings() {
                 value={testTplEmail}
                 onChange={e => setTestTplEmail(e.target.value)}
                 placeholder="your-email@konwertindiamotors.com"
+                style={inputStyle}
+              />
+            </div>
+
+            <div style={{ marginTop: 14 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>CC Email Addresses (Optional, comma-separated)</label>
+              <input
+                type="text"
+                value={testTplCc}
+                onChange={e => setTestTplCc(e.target.value)}
+                placeholder="e.g. hr@konwertindiamotors.com, onboarding@konwertindiamotors.com"
                 style={inputStyle}
               />
             </div>

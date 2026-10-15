@@ -62,7 +62,8 @@ def send_email(
     body_html: str,
     attachment_bytes: bytes = None,
     attachment_filename: str = None,
-    explicit_config: dict = None
+    explicit_config: dict = None,
+    cc_emails: list = None
 ):
     """
     Send an email with optional attachment using SMTP configurations.
@@ -78,6 +79,21 @@ def send_email(
     msg["Subject"] = subject
     msg["From"] = f'"{config["sender_name"]}" <{config["sender_email"]}>'
     msg["To"] = to_email
+
+    # Parse and set CC recipients
+    cc_list = []
+    if cc_emails:
+        if isinstance(cc_emails, str):
+            cc_list = [c.strip() for c in cc_emails.split(",") if c.strip() and "@" in c]
+        elif isinstance(cc_emails, list):
+            for item in cc_emails:
+                if isinstance(item, str):
+                    for sub in item.split(","):
+                        sub = sub.strip()
+                        if sub and "@" in sub and sub not in cc_list:
+                            cc_list.append(sub)
+    if cc_list:
+        msg["Cc"] = ", ".join(cc_list)
 
     # Rich HTML body
     part_html = MIMEText(body_html, "html", "utf-8")
@@ -128,9 +144,10 @@ def send_email(
         if config["username"] and config["password"]:
             server.login(config["username"], config["password"])
             
-        server.sendmail(config["sender_email"], [to_email], msg.as_string())
+        envelope_recipients = [to_email] + [c for c in cc_list if c.lower() != to_email.lower()]
+        server.sendmail(config["sender_email"], envelope_recipients, msg.as_string())
         server.quit()
-        logger.info(f"Email successfully sent to {to_email}: {subject}")
+        logger.info(f"Email successfully sent to {to_email} (CC: {cc_list}): {subject}")
         return True
     except Exception as e:
         logger.error(f"Failed to send email to {to_email}: {str(e)}")

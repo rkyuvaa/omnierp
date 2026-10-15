@@ -34,6 +34,11 @@ class TemplateTestSendSchema(BaseModel):
     test_email: EmailStr
     subject: str
     body_html: str
+    cc_email: Optional[str] = None
+
+class WelcomeEmailConfigSchema(BaseModel):
+    default_cc: Optional[str] = ""
+    auto_cc_manager: Optional[bool] = False
 
 
 @router.get("/settings")
@@ -207,10 +212,41 @@ def test_email_template(
         body_html = body_html.replace(f"{{{k}}}", str(v))
 
     try:
-        send_email(db, data.test_email, f"[TEST PREVIEW] {subject}", body_html)
+        cc_list = [c.strip() for c in (data.cc_email or "").split(",") if c.strip() and "@" in c]
+        send_email(db, data.test_email, f"[TEST PREVIEW] {subject}", body_html, cc_emails=cc_list)
         return {"message": f"Test email dispatched successfully to {data.test_email}"}
     except Exception as e:
         raise HTTPException(400, f"Failed to send test email: {str(e)}")
+
+
+@router.get("/welcome-email-config")
+def get_welcome_email_config(db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """Retrieve welcome email default CC settings."""
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "welcome_email_settings").first()
+    if not setting or not isinstance(setting.value, dict):
+        return {
+            "default_cc": "",
+            "auto_cc_manager": False
+        }
+    return {
+        "default_cc": setting.value.get("default_cc", ""),
+        "auto_cc_manager": bool(setting.value.get("auto_cc_manager", False))
+    }
+
+
+@router.post("/welcome-email-config")
+def save_welcome_email_config(data: WelcomeEmailConfigSchema, db: Session = Depends(get_db), current_user: User = Depends(require_admin)):
+    """Save welcome email default CC settings."""
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "welcome_email_settings").first()
+    val_dict = data.dict()
+    if setting:
+        setting.value = val_dict
+        setting.updated_at = datetime.utcnow()
+    else:
+        setting = SystemSetting(key="welcome_email_settings", value=val_dict)
+        db.add(setting)
+    db.commit()
+    return {"message": "Welcome email settings saved successfully"}
 
 
 # ── DATABASE SEEDERS ─────────────────────────────────────────────────────────
