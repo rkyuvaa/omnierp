@@ -33,6 +33,19 @@ function calculateToTime(fromTimeStr, durationHoursStr) {
   return `${toHStr}:${toMStr}`;
 }
 
+export function formatLeaveDuration(req) {
+  if (!req) return '';
+  if (req.day_label) return req.day_label;
+  const isHalf = req.is_half_day || Number(req.total_days) === 0.5;
+  if (isHalf) {
+    const s = (req.half_day_session || 'morning').toLowerCase();
+    const sessionLabel = (s === 'afternoon' || s === 'second_half' || s === '2nd_half') ? 'Second Half' : 'First Half';
+    return `0.5 day (${sessionLabel})`;
+  }
+  const days = Number(req.total_days || 1);
+  return `${days} day${days > 1 ? 's' : ''} (Full Day)`;
+}
+
 export default function Requests() {
   const [searchParams] = useSearchParams();
   const [employees, setEmployees] = useState([]);
@@ -380,7 +393,7 @@ export default function Requests() {
                         )}
                         {req.is_auto_approved && <span style={{ fontSize: 11, color: '#2563eb' }}>⏰ Auto-approved</span>}
                       </div>
-                      <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_date} → {req.to_date} · <strong>{req.total_days} day{req.total_days > 1 ? 's' : ''}</strong></div>
+                      <div style={{ color: 'var(--text2)', fontSize: 13 }}>{req.from_date} → {req.to_date} · <strong>{formatLeaveDuration(req)}</strong></div>
                       {req.reason && <div style={{ color: 'var(--text3)', fontSize: 12, marginTop: 2 }}>Reason: {req.reason}</div>}
                       {req.approver_remarks && <div style={{ color: '#ef4444', fontSize: 12, marginTop: 2 }}>Remarks: {req.approver_remarks}</div>}
                     </div>
@@ -567,13 +580,28 @@ export default function Requests() {
                 <div><label style={labelStyle}>To Date</label><input type="date" value={leaveForm.to_date || ''} onChange={e => setLeaveForm({ ...leaveForm, to_date: e.target.value })} style={inputStyle} /></div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <input type="checkbox" id="halfday" checked={leaveForm.is_half_day || false} onChange={e => setLeaveForm({ ...leaveForm, is_half_day: e.target.checked })} />
-                <label htmlFor="halfday" style={{ fontSize: 13, fontWeight: 600 }}>Half Day</label>
-                {leaveForm.is_half_day && (
-                  <select value={leaveForm.half_day_session || 'morning'} onChange={e => setLeaveForm({ ...leaveForm, half_day_session: e.target.value })} style={{ ...inputStyle, width: 'auto' }}>
-                    <option value="morning">Morning</option>
-                    <option value="afternoon">Afternoon</option>
+                <input 
+                  type="checkbox" 
+                  id="halfday" 
+                  checked={leaveForm.is_half_day || false} 
+                  onChange={e => setLeaveForm({ 
+                    ...leaveForm, 
+                    is_half_day: e.target.checked,
+                    half_day_session: e.target.checked ? (leaveForm.half_day_session || 'morning') : null
+                  })} 
+                />
+                <label htmlFor="halfday" style={{ fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Half Day</label>
+                {leaveForm.is_half_day ? (
+                  <select 
+                    value={leaveForm.half_day_session || 'morning'} 
+                    onChange={e => setLeaveForm({ ...leaveForm, half_day_session: e.target.value })} 
+                    style={{ ...inputStyle, width: 'auto' }}
+                  >
+                    <option value="morning">First Half (Morning)</option>
+                    <option value="afternoon">Second Half (Afternoon)</option>
                   </select>
+                ) : (
+                  <span style={{ fontSize: 12, color: 'var(--text3)', fontWeight: 500 }}>(Full Day)</span>
                 )}
               </div>
               <div><label style={labelStyle}>Reason</label><textarea value={leaveForm.reason || ''} onChange={e => setLeaveForm({ ...leaveForm, reason: e.target.value })} style={{ ...inputStyle, minHeight: 60, resize: 'vertical' }} /></div>

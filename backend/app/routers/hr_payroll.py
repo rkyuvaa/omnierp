@@ -1008,20 +1008,13 @@ def list_payroll(
     
     response_data = []
     for r in valid_records:
-        pending_arrears = db.query(HRArrearRecord).filter(
+        # Total pending/held arrears across all categories (all held, one_time, and other active entries across all months)
+        all_pending = db.query(HRArrearRecord).filter(
             HRArrearRecord.employee_id == r.employee_id,
-            HRArrearRecord.status == "held"
+            HRArrearRecord.status.notin_(["paid", "already_paid", "deducted"])
         ).all()
-        pending_total = sum(float(a.amount_held or 0) for a in pending_arrears)
-
-        month_held = db.query(HRArrearRecord).filter(
-            HRArrearRecord.employee_id == r.employee_id,
-            HRArrearRecord.held_month == r.month,
-            HRArrearRecord.held_year == r.year,
-            HRArrearRecord.status.in_(["held", "one_time"])
-        ).all()
-        month_held_total = sum(float(a.amount_held or 0) for a in month_held)
-        arrears_held_val = max(float(r.arrears_held or 0), month_held_total)
+        total_pending = sum(float(a.amount_held or 0) for a in all_pending if float(a.amount_held or 0) > 0)
+        arrears_held_val = max(total_pending, float(r.arrears_held or 0))
 
         response_data.append({
             "id": r.id,
@@ -1045,7 +1038,7 @@ def list_payroll(
             "total_deductions": float(r.total_deductions or 0),
             "arrears_held": arrears_held_val,
             "net_salary": float(r.net_salary or 0),
-            "pending_arrears": pending_total,
+            "pending_arrears": arrears_held_val,
             "arrears_paid": float(r.arrears_paid or 0),
             "components_breakdown": r.components_breakdown,
             "status": r.status,

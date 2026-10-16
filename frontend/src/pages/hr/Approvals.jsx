@@ -6,6 +6,19 @@ import toast from 'react-hot-toast';
 import { CheckCircle, XCircle, Clock, User, Calendar, RotateCcw } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 
+export function formatLeaveDuration(req) {
+  if (!req) return '';
+  if (req.day_label) return req.day_label;
+  const isHalf = req.is_half_day || Number(req.total_days) === 0.5;
+  if (isHalf) {
+    const s = (req.half_day_session || 'morning').toLowerCase();
+    const sessionLabel = (s === 'afternoon' || s === 'second_half' || s === '2nd_half') ? 'Second Half' : 'First Half';
+    return `0.5 day (${sessionLabel})`;
+  }
+  const days = Number(req.total_days || 1);
+  return `${days} day${days > 1 ? 's' : ''} (Full Day)`;
+}
+
 export default function Approvals() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -248,7 +261,7 @@ export default function Approvals() {
 
             {type === 'leave' ? (
               <div style={{ fontSize: 13, color: 'var(--text2)' }}>
-                <strong>{req.leave_type_name}</strong> · {req.from_date} → {req.to_date} · {req.total_days} day{req.total_days > 1 ? 's' : ''}
+                <strong>{req.leave_type_name}</strong> · {req.from_date} → {req.to_date} · <strong>{formatLeaveDuration(req)}</strong>
                 {req.reason && <div style={{ marginTop: 2, color: 'var(--text3)' }}>Reason: {req.reason}</div>}
               </div>
             ) : type === 'permission' ? (
@@ -538,7 +551,7 @@ export default function Approvals() {
           <div style={{ background: 'var(--bg)', borderRadius: 16, padding: 28, width: 400, maxWidth: '95vw' }}>
             <h3 style={{ margin: '0 0 16px', fontWeight: 700 }}>{action === 'approve' ? '✓ Approve' : '✗ Reject'} Request</h3>
             <p style={{ margin: '0 0 12px', color: 'var(--text2)', fontSize: 13 }}>
-              {remarkModal.req.employee_name} · {remarkModal.type === 'leave' ? `${remarkModal.req.leave_type_name} (${remarkModal.req.from_date}–${remarkModal.req.to_date})` : remarkModal.type === 'permission' ? `Permission (${remarkModal.req.date} · ${remarkModal.req.session?.toUpperCase()} session)` : `On-Duty (${remarkModal.req.date})`}
+              {remarkModal.req.employee_name} · {remarkModal.type === 'leave' ? `${remarkModal.req.leave_type_name} (${remarkModal.req.from_date}–${remarkModal.req.to_date} · ${formatLeaveDuration(remarkModal.req)})` : remarkModal.type === 'permission' ? `Permission (${remarkModal.req.date} · ${remarkModal.req.session?.toUpperCase()} session)` : `On-Duty (${remarkModal.req.date})`}
             </p>
             <textarea value={remark} onChange={e => setRemark(e.target.value)}
               placeholder={action === 'approve' ? 'Add remarks (optional)...' : 'Reason for rejection...'}
@@ -566,13 +579,13 @@ export default function Approvals() {
             <div style={{ background: 'var(--bg2)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
               <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 4 }}>{revokeModal.employee_name}</div>
               <div style={{ fontSize: 13, color: 'var(--text2)' }}>
-                {revokeModal.leave_type_name} · {revokeModal.from_date} → {revokeModal.to_date} · <strong>{revokeModal.total_days} day{revokeModal.total_days > 1 ? 's' : ''}</strong>
+                {revokeModal.leave_type_name} · {revokeModal.from_date} → {revokeModal.to_date} · <strong>{formatLeaveDuration(revokeModal)}</strong>
               </div>
             </div>
 
             <div style={{ background: '#fffbeb', border: '1px solid #f59e0b', borderRadius: 10, padding: '12px 14px', marginBottom: 16, fontSize: 12, color: '#92400e', lineHeight: 1.6 }}>
               <div style={{ fontWeight: 700, marginBottom: 4 }}>⚠ This action will:</div>
-              <div>✦ Refund <strong>{revokeModal.total_days} day{revokeModal.total_days > 1 ? 's' : ''}</strong> back to {revokeModal.employee_name}'s {revokeModal.leave_type_name} balance</div>
+              <div>✦ Refund <strong>{formatLeaveDuration(revokeModal)}</strong> back to {revokeModal.employee_name}'s {revokeModal.leave_type_name} balance</div>
               <div>✦ Reset attendance for those dates from <strong>Leave → Absent</strong></div>
               <div>✦ Notify the employee via in-app notification</div>
               <div style={{ marginTop: 6, color: '#78350f' }}>After revoking, apply the correct leave type for the same dates.</div>
@@ -616,7 +629,7 @@ export default function Approvals() {
               <div style={{ fontSize: 13, color: 'var(--text2)' }}>
                 Current: <strong style={{ color: '#d97706' }}>{changeTypeModal.leave_type_name}</strong>
                 {' · '}{changeTypeModal.from_date} → {changeTypeModal.to_date}
-                {' · '}<strong>{changeTypeModal.total_days} day{changeTypeModal.total_days > 1 ? 's' : ''}</strong>
+                {' · '}<strong>{formatLeaveDuration(changeTypeModal)}</strong>
               </div>
             </div>
 

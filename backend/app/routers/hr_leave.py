@@ -460,7 +460,7 @@ def apply_leave(data: LeaveApply, background_tasks: BackgroundTasks, request: Re
         to_date=data.to_date,
         total_days=total_days,
         is_half_day=data.is_half_day,
-        half_day_session=data.half_day_session,
+        half_day_session=(data.half_day_session or "morning") if data.is_half_day else None,
         reason=data.reason,
         approver_id=emp.manager_id,
         l1_approver_id=emp.manager_id,
@@ -995,6 +995,19 @@ def _serialize_request(r: HRLeaveRequest):
     if r.auto_approve_at:
         diff = (r.auto_approve_at - datetime.utcnow()).total_seconds()
         remaining = max(0, int(diff))
+    is_half = bool(r.is_half_day or (r.total_days is not None and float(r.total_days) == 0.5))
+    if is_half:
+        sess = (r.half_day_session or "morning").lower()
+        if sess in ["afternoon", "second_half", "2nd_half"]:
+            session_str = "Second Half"
+        else:
+            session_str = "First Half"
+        day_label = f"0.5 day ({session_str})"
+    else:
+        days = float(r.total_days or 1)
+        days_str = f"{int(days)}" if days.is_integer() else f"{days}"
+        day_label = f"{days_str} day{'s' if days > 1 else ''} (Full Day)"
+
     return {
         "id": r.id,
         "reference": r.reference,
@@ -1008,6 +1021,7 @@ def _serialize_request(r: HRLeaveRequest):
         "total_days": r.total_days,
         "is_half_day": r.is_half_day,
         "half_day_session": r.half_day_session,
+        "day_label": day_label,
         "reason": r.reason,
         "status": r.status,
         "approver_id": r.approver_id,
