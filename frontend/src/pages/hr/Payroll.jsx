@@ -445,7 +445,7 @@ export default function Payroll() {
                           <input type="checkbox" onChange={e => setSelected(e.target.checked ? filteredRecords.map(r => r.employee_id) : [])} checked={selected.length === filteredRecords.length && filteredRecords.length > 0} />
                         </th>
                       )}
-                      {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
+                      {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Arrear Hold','Net Salary','Status','Actions'].map(h => {
                         const isEmp = h === 'Employee';
                         const isActions = h === 'Actions';
                         return (
@@ -487,6 +487,7 @@ export default function Payroll() {
                         <td style={{ padding: '6px 4px', color: '#22c55e', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.total_earnings).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '6px 4px', color: '#6366f1', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.arrears_paid || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '6px 4px', color: '#ef4444', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.total_deductions).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
+                        <td style={{ padding: '6px 4px', color: '#ef4444', fontWeight: 600, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.arrears_held || 0).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '6px 4px', fontWeight: 700, fontSize: 13.5, textAlign: 'center', whiteSpace: 'nowrap' }}>₹{Number(r.net_salary).toLocaleString('en-IN', { maximumFractionDigits: 0 })}</td>
                         <td style={{ padding: '6px 4px', textAlign: 'center' }}>
                           <span style={{ fontSize: 10.5, padding: '2px 6px', borderRadius: 999, fontWeight: 600, background: r.status === 'finalized' ? '#dcfce7' : '#fef3c7', color: r.status === 'finalized' ? '#16a34a' : '#d97706' }}>
