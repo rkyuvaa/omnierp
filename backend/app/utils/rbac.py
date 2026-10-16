@@ -20,7 +20,7 @@ def check_permission(user: User, db: Session, module_key: str, menu_path: str = 
         role = db.query(Role).filter(Role.id == user.role_id).first()
 
     # Fallback to module allowed_modules mapping if configured
-    allowed_modules = user.allowed_modules or {}
+    allowed_modules = user.allowed_modules if isinstance(user.allowed_modules, dict) else {}
     module_role_id = allowed_modules.get(module_key)
     if module_role_id and (not role or role.id != module_role_id):
         mod_role = db.query(Role).filter(Role.id == module_role_id).first()
@@ -71,7 +71,7 @@ def get_module_scope(user: User, db: Session, module_key: str) -> str:
     if not role and user.role_id:
         role = db.query(Role).filter(Role.id == user.role_id).first()
 
-    allowed_modules = user.allowed_modules or {}
+    allowed_modules = user.allowed_modules if isinstance(user.allowed_modules, dict) else {}
     module_role_id = allowed_modules.get(module_key)
     if module_role_id and (not role or role.id != module_role_id):
         mod_role = db.query(Role).filter(Role.id == module_role_id).first()

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import api from '../../utils/api';
+import api, { getErrorMessage } from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
@@ -78,6 +78,7 @@ export default function Attendance() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploading, setUploading] = useState(false);
   const [importResults, setImportResults] = useState(null);
+  const [savingCorrection, setSavingCorrection] = useState(false);
 
   useEffect(() => { fetchData(); }, [month, year, filterBranch, filterDept]);
   useEffect(() => {
@@ -230,20 +231,25 @@ export default function Attendance() {
   };
 
   async function saveCorrection() {
-    if (!correctForm.correction_reason) { toast.error('Please enter a reason'); return; }
+    if (!correctForm.correction_reason?.trim()) { toast.error('Please enter a reason'); return; }
+    setSavingCorrection(true);
     try {
       await api.post('/hr/attendance/correct', {
         employee_id: correcting.emp.id,
         date: correcting.day.dayStr,
         status: correctForm.status,
-        check_in: correctForm.check_in || null,
-        check_out: correctForm.check_out || null,
-        correction_reason: correctForm.correction_reason,
+        check_in: correctForm.check_in?.trim() ? correctForm.check_in : null,
+        check_out: correctForm.check_out?.trim() ? correctForm.check_out : null,
+        correction_reason: correctForm.correction_reason.trim(),
       });
       toast.success('Attendance corrected');
       setCorrecting(null);
       fetchData();
-    } catch { toast.error('Failed to save correction'); }
+    } catch (err) {
+      toast.error(getErrorMessage(err, 'Failed to save correction'));
+    } finally {
+      setSavingCorrection(false);
+    }
   }
 
   async function downloadTemplate() {
@@ -1377,11 +1383,13 @@ export default function Attendance() {
             </div>
 
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button onClick={() => setCorrecting(null)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none', borderRadius: 8, fontWeight: 600 }}>Cancel</button>
+              <button disabled={savingCorrection} onClick={() => setCorrecting(null)} className="btn" style={{ flex: 1, background: 'var(--bg3)', border: 'none', borderRadius: 8, fontWeight: 600 }}>Cancel</button>
               {existingRecord?.corrected_by && (
-                <button onClick={handleRecalculateAuto} className="btn" style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, fontWeight: 600 }}>Reset to Auto</button>
+                <button disabled={savingCorrection} onClick={handleRecalculateAuto} className="btn" style={{ flex: 1, background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 8, fontWeight: 600 }}>Reset to Auto</button>
               )}
-              <button onClick={saveCorrection} className="btn btn-primary" style={{ flex: 1, borderRadius: 8, fontWeight: 600, boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)' }}>Save Changes</button>
+              <button disabled={savingCorrection} onClick={saveCorrection} className="btn btn-primary" style={{ flex: 1, borderRadius: 8, fontWeight: 600, boxShadow: '0 4px 10px rgba(25, 84, 2, 0.15)', opacity: savingCorrection ? 0.7 : 1 }}>
+                {savingCorrection ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         </div>

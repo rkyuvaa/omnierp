@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form, Response
 from sqlalchemy.orm import Session
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional, List
 from datetime import date, datetime, timedelta
 import os, shutil, uuid, math
@@ -193,6 +193,12 @@ class AttendanceCorrect(BaseModel):
     check_in: Optional[datetime] = None
     check_out: Optional[datetime] = None
     correction_reason: str
+
+    @field_validator("check_in", "check_out", mode="before")
+    def empty_str_to_none(cls, v):
+        if v == "" or v is None:
+            return None
+        return v
 
 class RecalculateRequest(BaseModel):
     employee_id: int
@@ -845,7 +851,7 @@ def get_records(
         if not emp_resolved:
             return {}
 
-        allowed_mods = current_user.allowed_modules or {}
+        allowed_mods = current_user.allowed_modules if isinstance(current_user.allowed_modules, dict) else {}
         hr_role_id = allowed_mods.get("hr") or current_user.role_id
         is_team_viewer = False
 
@@ -951,7 +957,7 @@ def get_records(
             except Exception:
                 pass
 
-        eff_is_late = r.is_late if eff_status not in ["half_day", "leave", "holiday", "weekly_off"] else False
+        eff_is_late = r.is_late if eff_status not in ["half_day", "leave", "holiday", "weekly_off", "on_duty"] else False
 
         key = str(r.employee_id)
         if key not in result:
@@ -975,26 +981,78 @@ def get_records(
 
 @router.post("/correct")
 def correct_attendance(data: AttendanceCorrect, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    from app.auth import is_hr_admin
     if not is_hr_admin(current_user, db):
         raise HTTPException(status_code=403, detail="Admin required")
+
+    emp = db.query(HREmployee).filter(HREmployee.id == data.employee_id).first()
+    if not emp:
+        raise HTTPException(status_code=404, detail="Employee not found")
+
     record = db.query(HRAttendanceRecord).filter(
         HRAttendanceRecord.employee_id == data.employee_id,
         HRAttendanceRecord.date == data.date
     ).first()
     if not record:
-        record = HRAttendanceRecord(employee_id=data.employee_id, date=data.date)
+        record = HRAttendanceRecord(
+            employee_id=data.employee_id,
+            date=data.date,
+            status=data.status,
+            is_late=False,
+            late_minutes=0,
+            left_early=False,
+            early_by_minutes=0,
+            hours_worked=0.0,
+            comp_off_hours=0.0
+        )
         db.add(record)
+
     record.status = data.status
     record.check_in = data.check_in
     record.check_out = data.check_out
     record.correction_reason = data.correction_reason
     record.corrected_by = current_user.id
-    if data.status in ["half_day", "leave", "holiday", "weekly_off"]:
+
+    # Determine shift hours if available
+    shift = emp.shift
+    shift_hours = 8.0
+    if shift and shift.start_time and shift.end_time:
+        try:
+            s_time = datetime.strptime(str(shift.start_time)[:5], "%H:%M")
+            e_time = datetime.strptime(str(shift.end_time)[:5], "%H:%M")
+            dur = (e_time - s_time).total_seconds() / 3600.0
+            if dur > 0:
+                shift_hours = round(dur, 2)
+        except Exception:
+            pass
+
+    half_day_hours = (shift.half_day_hours if shift and shift.half_day_hours else 4.0)
+
+    # Compute hours worked and late/early flags
+    if data.check_in and data.check_out:
+        worked = (data.check_out - data.check_in).total_seconds() / 3600.0
+        record.hours_worked = round(max(0.0, worked), 2)
+    elif data.status in ["present", "on_duty"]:
+        record.hours_worked = shift_hours
+    elif data.status == "half_day":
+        record.hours_worked = half_day_hours
+    else:
+        # leave, holiday, weekly_off, absent
+        record.hours_worked = 0.0
+
+    if data.status in ["half_day", "leave", "holiday", "weekly_off", "on_duty"]:
         record.is_late = False
         record.late_minutes = 0
-    if data.check_in and data.check_out:
-        record.hours_worked = round((data.check_out - data.check_in).total_seconds() / 3600, 2)
-    db.commit()
+        record.left_early = False
+        record.early_by_minutes = 0
+
+    try:
+        db.commit()
+    except Exception as e:
+        db.rollback()
+        print(f"❌ Error saving attendance correction: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to save correction: {str(e)}")
+
     return {"message": "Attendance corrected"}
 
 @router.post("/recalculate-day")

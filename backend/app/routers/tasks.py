@@ -196,7 +196,7 @@ def list_tasks(
 
     # ── Scope enforcement ─────────────────────────────
     if not current_user.is_superadmin:
-        allowed_mods = current_user.allowed_modules or {}
+        allowed_mods = current_user.allowed_modules if isinstance(current_user.allowed_modules, dict) else {}
         task_role_id = allowed_mods.get("tasks") or current_user.role_id
         if task_role_id:
             from app.models import Role as RoleModel

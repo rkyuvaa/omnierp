@@ -64,7 +64,7 @@ def list_users(branch_id: Optional[int] = None, for_tasks: bool = False, db: Ses
         
     if for_tasks and not current_user.is_superadmin:
         from app.models import Role
-        allowed_mods = current_user.allowed_modules or {}
+        allowed_mods = current_user.allowed_modules if isinstance(current_user.allowed_modules, dict) else {}
         task_role_id = allowed_mods.get("tasks") or current_user.role_id
         role = db.query(Role).filter(Role.id == task_role_id).first()
         if role:

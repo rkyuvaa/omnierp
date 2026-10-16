@@ -67,16 +67,21 @@ def require_admin(current_user: User = Depends(get_current_user), db: Session = 
                 
     # Allow module managers who have can_edit or can_delete permissions in their module roles
     allowed = current_user.allowed_modules or {}
-    for mod, role_id in allowed.items():
-        role = db.query(Role).filter(Role.id == role_id).first()
-        if role and role.permissions:
-            perms = role.permissions
-            if perms.get("can_edit") or perms.get("can_delete"):
-                return current_user
+    if isinstance(allowed, dict):
+        for mod, role_id in allowed.items():
+            if not role_id:
+                continue
+            role = db.query(Role).filter(Role.id == role_id).first()
+            if role and role.permissions:
+                perms = role.permissions
+                if perms.get("can_edit") or perms.get("can_delete"):
+                    return current_user
                 
     raise HTTPException(status_code=403, detail="Admin required")
 
 def is_hr_admin(user: User, db: Session) -> bool:
+    if not user:
+        return False
     if user.is_superadmin:
         return True
         
@@ -92,15 +97,36 @@ def is_hr_admin(user: User, db: Session) -> bool:
                 return True
                 
     allowed = user.allowed_modules or {}
-    role_id = allowed.get("expenses") or allowed.get("hr") or user.role_id
-    if not role_id:
-        return False
+    role_id = None
+    if isinstance(allowed, dict):
+        role_id = allowed.get("hr") or allowed.get("expenses") or user.role_id
+    elif isinstance(allowed, list):
+        role_id = user.role_id
+    else:
+        role_id = user.role_id
+
     from app.models import Role
-    role = db.query(Role).filter(Role.id == role_id).first()
-    if role and role.permissions:
-        perms = role.permissions
-        if perms.get("can_edit") or perms.get("can_delete"):
-            return True
+    if role_id:
+        role = db.query(Role).filter(Role.id == role_id).first()
+        if role and role.permissions:
+            perms = role.permissions
+            if perms.get("can_edit") or perms.get("can_delete"):
+                return True
+            hr_mod_perm = perms.get("modules", {}).get("hr", {})
+            if hr_mod_perm.get("can_edit") or hr_mod_perm.get("can_delete"):
+                return True
+
+    # Also check user's direct role if role_id differed
+    if user.role_id and user.role_id != role_id:
+        role = db.query(Role).filter(Role.id == user.role_id).first()
+        if role and role.permissions:
+            perms = role.permissions
+            if perms.get("can_edit") or perms.get("can_delete"):
+                return True
+            hr_mod_perm = perms.get("modules", {}).get("hr", {})
+            if hr_mod_perm.get("can_edit") or hr_mod_perm.get("can_delete"):
+                return True
+
     return False
 
 def log_action(db: Session, user, action: str, module: str, record_id: int, ref: str = "", changes: dict = {}):
