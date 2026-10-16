@@ -642,24 +642,58 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
         if lop_deduction > 0:
             deductions["Loss of Pay (LOP)"] = lop_deduction
 
-        # Re-calculate slab-based deductions (like Professional Tax / PT) on actual earned gross
+        # Re-calculate statutory and percentage-based deductions and contributions on actual earned salary
         actual_earned_gross = max(0.0, full_gross_earnings - lop_deduction)
+        paid_days = max(0.0, total_working_days_in_month - lop_days)
+        pro_rata_ratio = paid_days / total_working_days_in_month
+
+        full_basic = computed.get("BASIC", computed.get("BASIC_SALARY", 0))
+        if not full_basic:
+            full_basic = next((v for k, v in earnings.items() if "basic" in k.lower()), 0.0)
+        earned_basic = round(full_basic * pro_rata_ratio, 2)
+
         for r in result_list:
-            if r.get("calc_type") == "slab" and r.get("component_type") == "deduction":
-                comp_name = r["name"]
-                new_pt = 0.0
-                if r.get("slabs"):
-                    slabs = sorted(r["slabs"], key=lambda x: float(x.get("min", 0)))
-                    for i, slab in enumerate(slabs):
-                        s_min = float(slab.get("min", 0))
-                        s_max = slab.get("max")
-                        s_max_val = float(s_max) if s_max is not None else float('inf')
-                        prev_max = float(slabs[i-1].get("max", 0)) if i > 0 else -1.0
-                        
-                        if (actual_earned_gross >= s_min or actual_earned_gross > prev_max) and actual_earned_gross <= s_max_val:
-                            new_pt = float(slab.get("value", 0))
-                            break
-                deductions[comp_name] = new_pt
+            comp_name = r["name"]
+            c_type = r.get("component_type")
+            calc_t = r.get("calc_type")
+            val = float(r.get("calc_value") or 0)
+            cap = float(r["cap_amount"]) if r.get("cap_amount") else None
+
+            if calc_t == "percentage_of_basic":
+                base = min(earned_basic, cap) if cap else earned_basic
+                new_amt = round(base * val / 100.0, 2)
+                if c_type == "deduction" and r.get("show_on_payslip", True):
+                    deductions[comp_name] = new_amt
+                    r["amount"] = new_amt
+                elif c_type == "employer_contribution":
+                    employer_contributions[comp_name] = new_amt
+                    r["amount"] = new_amt
+
+            elif calc_t == "percentage_of_gross":
+                base = min(actual_earned_gross, cap) if cap else actual_earned_gross
+                new_amt = round(base * val / 100.0, 2)
+
+                # Gross threshold checks (ESI / TDS)
+                threshold_below = r.get("apply_if_gross_below")
+                threshold_above = r.get("apply_if_gross_above")
+                if threshold_below is not None and full_gross_earnings > float(threshold_below):
+                    new_amt = 0.0
+                if threshold_above is not None and actual_earned_gross < float(threshold_above):
+                    new_amt = 0.0
+
+                if c_type == "deduction" and r.get("show_on_payslip", True):
+                    deductions[comp_name] = new_amt
+                    r["amount"] = new_amt
+                elif c_type == "employer_contribution":
+                    employer_contributions[comp_name] = new_amt
+                    r["amount"] = new_amt
+
+            elif calc_t == "slab" and c_type == "deduction":
+                # Re-calculate slab-based deductions (like Professional Tax / PT) on actual earned gross
+                new_pt = _lookup_slab(r.get("slabs", []), actual_earned_gross) if r.get("slabs") else 0.0
+                if r.get("show_on_payslip", True):
+                    deductions[comp_name] = new_pt
+                r["amount"] = new_pt
 
     total_earnings_base = round(sum(earnings.values()), 2)
     
