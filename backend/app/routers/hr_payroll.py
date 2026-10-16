@@ -81,7 +81,7 @@ def _resolve_components(db: Session, emp: HREmployee):
             "code": comp.get("code", comp.get("name", "").upper().replace(" ", "_")),
             "component_type": comp.get("type", comp.get("component_type", "earning")),
             "calc_type": comp.get("calc_type", "percentage_of_ctc" if comp.get("is_percentage") else "fixed"),
-            "calc_value": comp.get("value", 0),
+            "calc_value": comp.get("calc_value") if comp.get("calc_value") is not None else comp.get("value", 0),
             "cap_amount": comp.get("cap_amount"),
             "slabs": comp.get("slabs"),
             "apply_if_gross_below": comp.get("apply_if_gross_below"),
@@ -106,7 +106,7 @@ def _lookup_slab(slabs: list, gross: float) -> float:
     return 0.0
 
 
-def _calculate_components(ctc: float, components: list, pro_rata_ratio: float = 1.0):
+def _calculate_components(ctc: float, components: list, pro_rata_ratio: float = 1.0, nominal_ctc: Optional[float] = None, has_esi_number: bool = True):
     """
     Calculate salary components using a two-pass algorithm so that deduction
     thresholds (ESI ≤ ₹21,000) and slab lookups (Professional Tax) always
@@ -204,14 +204,20 @@ def _calculate_components(ctc: float, components: list, pro_rata_ratio: float = 
         else:
             amount = round(val, 2)
 
-        # ── Gross threshold checks (ESI / TDS) using FINAL gross ──────────────
-        # ESI: apply only when final gross ≤ threshold (e.g. ₹21,000)
+        # ── Gross threshold checks (ESI / TDS) using NOMINAL or FINAL gross ──
+        # ESI: apply only when nominal/scheduled gross ≤ threshold (e.g. ₹21,000)
         # TDS: apply only when final gross ≥ threshold (e.g. ₹1,00,000)
         threshold_below = comp.get("apply_if_gross_below")
         threshold_above = comp.get("apply_if_gross_above")
-        if threshold_below is not None and final_gross > float(threshold_below):
+        nominal_gross = nominal_ctc if nominal_ctc is not None else final_gross
+        if threshold_below is not None and nominal_gross > float(threshold_below):
             amount = 0
         if threshold_above is not None and final_gross < float(threshold_above):
+            amount = 0
+
+        # ESI requires active ESI number check
+        comp_ident = (comp.get("code") or comp.get("name", "")).upper()
+        if "ESI" in comp_ident and not has_esi_number:
             amount = 0
 
         code = comp.get("code", comp["name"].upper().replace(" ", "_"))
@@ -592,6 +598,11 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
 
     # 3. Calculate Salary based on chosen Method
     calc_method = get_hr_config(db, "salary_calculation_method", "pro_rata")
+    has_esi_number = bool(
+        getattr(emp, "esi_number", None)
+        and str(emp.esi_number).strip()
+        and str(emp.esi_number).strip() not in ("-", "None")
+    )
 
     if calc_method == "pro_rata":
         paid_days = total_working_days_in_month - lop_days
@@ -602,10 +613,17 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             effective_ctc = 0
             pro_rata_ratio = 0.0
         # Calculate components on EFFECTIVE CTC; pass ratio so fixed earnings are also pro-rated.
-        result_list, computed = _calculate_components(effective_ctc, components, pro_rata_ratio=pro_rata_ratio)
+        # Pass nominal_ctc=ctc and has_esi_number so pro-rated salary does not trigger ESI.
+        result_list, computed = _calculate_components(
+            effective_ctc, components, pro_rata_ratio=pro_rata_ratio,
+            nominal_ctc=ctc, has_esi_number=has_esi_number
+        )
     else:
         # Calculate components on FULL CTC (LOP handled as an explicit deduction line below).
-        result_list, computed = _calculate_components(ctc, components)
+        result_list, computed = _calculate_components(
+            ctc, components,
+            nominal_ctc=ctc, has_esi_number=has_esi_number
+        )
 
     earnings = {}
     deductions = {}
@@ -658,10 +676,24 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
             calc_t = r.get("calc_type")
             val = float(r.get("calc_value") or 0)
             cap = float(r["cap_amount"]) if r.get("cap_amount") else None
+            comp_ident = (r.get("code") or r.get("name", "")).upper()
 
             if calc_t == "percentage_of_basic":
                 base = min(earned_basic, cap) if cap else earned_basic
                 new_amt = round(base * val / 100.0, 2)
+
+                # Gross threshold checks (ESI / TDS)
+                threshold_below = r.get("apply_if_gross_below")
+                threshold_above = r.get("apply_if_gross_above")
+                if threshold_below is not None and full_gross_earnings > float(threshold_below):
+                    new_amt = 0.0
+                if threshold_above is not None and actual_earned_gross < float(threshold_above):
+                    new_amt = 0.0
+
+                # ESI requires active ESI number check
+                if "ESI" in comp_ident and not has_esi_number:
+                    new_amt = 0.0
+
                 if c_type == "deduction" and r.get("show_on_payslip", True):
                     deductions[comp_name] = new_amt
                     r["amount"] = new_amt
@@ -679,6 +711,10 @@ def _calculate_payroll(db: Session, employee: HREmployee, month: int, year: int,
                 if threshold_below is not None and full_gross_earnings > float(threshold_below):
                     new_amt = 0.0
                 if threshold_above is not None and actual_earned_gross < float(threshold_above):
+                    new_amt = 0.0
+
+                # ESI requires active ESI number check
+                if "ESI" in comp_ident and not has_esi_number:
                     new_amt = 0.0
 
                 if c_type == "deduction" and r.get("show_on_payslip", True):
@@ -847,7 +883,12 @@ def debug_payroll(emp_id: int, month: int, year: int, db: Session = Depends(get_
     
     components = _resolve_components(db, emp)
     ctc = float(emp.basic_salary or 0)
-    result_list, computed = _calculate_components(ctc, components)
+    has_esi_number = bool(
+        getattr(emp, "esi_number", None)
+        and str(emp.esi_number).strip()
+        and str(emp.esi_number).strip() not in ("-", "None")
+    )
+    result_list, computed = _calculate_components(ctc, components, nominal_ctc=ctc, has_esi_number=has_esi_number)
     
     return {
         "employee": emp.name,

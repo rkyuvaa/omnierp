@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../hooks/useAuth';
-import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight, Trash2, Mail, AlertTriangle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Play, CheckCircle, Wallet, X, Clock, Plus, ArrowRight, Trash2, Mail, AlertTriangle, MoreVertical } from 'lucide-react';
 
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -29,6 +29,73 @@ export default function Payroll() {
   const [arrearModal, setArrearModal] = useState(null); // { employee_id, employee_name, pending_arrears }
   const [emailingId, setEmailingId] = useState(null);
   const [emailingBulk, setEmailingBulk] = useState(false);
+  const [openMenu, setOpenMenu] = useState(null); // { id, top, left, record }
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!openMenu) return;
+
+    function handleKeyDown(e) {
+      if (e.key === 'Escape') {
+        setOpenMenu(null);
+      }
+    }
+
+    function handlePointerDown(e) {
+      if (menuRef.current && !menuRef.current.contains(e.target)) {
+        const triggerBtn = document.querySelector(`[data-action-trigger="${openMenu.id}"]`);
+        if (triggerBtn && triggerBtn.contains(e.target)) {
+          return;
+        }
+        setOpenMenu(null);
+      }
+    }
+
+    function handleScrollOrResize() {
+      setOpenMenu(null);
+    }
+
+    window.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('pointerdown', handlePointerDown);
+    window.addEventListener('scroll', handleScrollOrResize, true);
+    window.addEventListener('resize', handleScrollOrResize);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('pointerdown', handlePointerDown);
+      window.removeEventListener('scroll', handleScrollOrResize, true);
+      window.removeEventListener('resize', handleScrollOrResize);
+    };
+  }, [openMenu]);
+
+  function handleOpenMenu(e, record) {
+    e.stopPropagation();
+    if (openMenu?.id === record.id) {
+      setOpenMenu(null);
+      return;
+    }
+    const rect = e.currentTarget.getBoundingClientRect();
+    const menuWidth = 190;
+    let top = rect.bottom + 4;
+    let left = rect.right - menuWidth;
+
+    if (left < 10) left = 10;
+    if (left + menuWidth > window.innerWidth - 10) {
+      left = window.innerWidth - menuWidth - 10;
+    }
+
+    const approxHeight = isHRAdmin ? (record.status !== 'finalized' ? 210 : 175) : 55;
+    if (top + approxHeight > window.innerHeight - 10 && rect.top > approxHeight + 10) {
+      top = rect.top - approxHeight - 4;
+    }
+
+    setOpenMenu({
+      id: record.id,
+      top,
+      left,
+      record
+    });
+  }
 
   useEffect(() => {
     if (isHRAdmin) {
@@ -379,10 +446,10 @@ export default function Payroll() {
                         </th>
                       )}
                       {['Employee','Days','Present','Absent','Leave','LOP','OD','Earnings','Arrear Paid','Deductions','Net Salary','Status','Actions'].map(h => {
-                        if (!isHRAdmin && h === 'Actions') return <th key={h} style={{ padding: '7px 6px', textAlign: 'left', fontWeight: 600, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap' }}>Download</th>;
                         const isEmp = h === 'Employee';
+                        const isActions = h === 'Actions';
                         return (
-                          <th key={h} style={{ padding: '7px 5px', textAlign: h === 'Actions' || isEmp ? 'left' : 'center', fontWeight: 600, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', width: isEmp ? '160px' : h === 'Actions' && isHRAdmin ? '340px' : undefined, maxWidth: isEmp ? '165px' : undefined }}>{h}</th>
+                          <th key={h} style={{ padding: '7px 5px', textAlign: isActions ? 'center' : isEmp ? 'left' : 'center', fontWeight: 600, fontSize: 11, color: 'var(--text2)', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', width: isEmp ? '160px' : isActions ? '56px' : undefined, maxWidth: isEmp ? '165px' : undefined }}>{h}</th>
                         );
                       })}
                     </tr>
@@ -426,84 +493,39 @@ export default function Payroll() {
                             {r.status === 'finalized' ? 'Finalized' : 'Draft'}
                           </span>
                         </td>
-                        <td style={{ padding: '6px 5px', width: '340px', maxWidth: '340px' }}>
-                          <div style={{ display: 'flex', gap: 4, alignItems: 'center', flexWrap: 'nowrap' }}>
-                            {isHRAdmin && (
-                              <>
-                                {r.status !== 'finalized' ? (
-                                  <>
-                                    <button 
-                                      onClick={() => finalizeRecord(r.id)} 
-                                      title="Finalize Payroll" 
-                                      style={{ background: '#dcfce7', color: '#16a34a', border: 'none', borderRadius: 6, padding: '4px 7px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}
-                                    >
-                                      <CheckCircle size={12} /> Finalize
-                                    </button>
-                                    <button 
-                                      onClick={() => deleteRecord(r.id)} 
-                                      title="Delete Draft" 
-                                      style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: 6, padding: '5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                    >
-                                      <Trash2 size={12} />
-                                    </button>
-                                  </>
-                                ) : (
-                                  <button 
-                                    onClick={() => deleteRecord(r.id)} 
-                                    title="Delete Record" 
-                                    style={{ background: '#f1f5f9', color: '#64748b', border: 'none', borderRadius: 6, padding: '5px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                                  >
-                                    <Trash2 size={12} />
-                                  </button>
-                                )}
-                                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                                  <button 
-                                    onClick={() => setArrearModal({ employee_id: r.employee_id, employee_name: r.employee_name, pending_arrears: r.pending_arrears, arrears_paid: r.arrears_paid })}
-                                    title={`Arrears (Paid: ₹${r.arrears_paid || 0} | Held: ₹${r.pending_arrears || 0})`}
-                                    style={{ background: '#fef3c7', color: '#d97706', border: 'none', borderRadius: 6, padding: '4px 7px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}
-                                  >
-                                    <Wallet size={12} /> Arrears
-                                  </button>
-                                  {(Number(r.arrears_paid) > 0 || Number(r.pending_arrears) > 0) && (
-                                    <div style={{ fontSize: '9px', color: '#d97706', fontWeight: 700, marginTop: '1px', whiteSpace: 'nowrap' }}>
-                                      ₹{r.arrears_paid || 0} P | ₹{r.pending_arrears || 0} H
-                                    </div>
-                                  )}
-                                </div>
-                              </>
-                            )}
-                            {isHRAdmin && (
-                              <button 
-                                onClick={() => emailPayslip(r.id, r.employee_name)} 
-                                title="Email Payslip to Employee" 
-                                disabled={emailingId === r.id}
-                                style={{ 
-                                  background: '#e0e7ff', 
-                                  color: '#4338ca', 
-                                  border: 'none', 
-                                  borderRadius: 6, 
-                                  padding: '4px 7px', 
-                                  cursor: emailingId === r.id ? 'not-allowed' : 'pointer', 
-                                  fontWeight: 700, 
-                                  fontSize: 11, 
-                                  display: 'flex', 
-                                  alignItems: 'center', 
-                                  gap: 3,
-                                  whiteSpace: 'nowrap',
-                                  opacity: emailingId === r.id ? 0.7 : 1
-                                }}
-                              >
-                                <Mail size={12} /> Email
-                              </button>
-                            )}
-                            <button 
-                              onClick={() => downloadPayslip(r.id, r.employee_code, r.month, r.year)} 
-                              title="Download Payslip PDF" 
-                              style={{ background: '#e0f2fe', color: '#0369a1', border: 'none', borderRadius: 6, padding: '4px 7px', cursor: 'pointer', fontWeight: 700, fontSize: 11, display: 'flex', alignItems: 'center', gap: 3, whiteSpace: 'nowrap' }}
-                            >
-                              <Download size={12} /> Payslip
-                            </button>
-                          </div>
+                        <td style={{ padding: '6px 5px', textAlign: 'center', width: '56px' }}>
+                          <button
+                            type="button"
+                            data-action-trigger={r.id}
+                            onClick={(e) => handleOpenMenu(e, r)}
+                            aria-label={`Actions for ${r.employee_name}`}
+                            title="Actions"
+                            style={{
+                              background: openMenu?.id === r.id ? 'var(--bg3, #f1f5f9)' : 'transparent',
+                              border: openMenu?.id === r.id ? '1px solid var(--border, #cbd5e1)' : '1px solid transparent',
+                              color: openMenu?.id === r.id ? 'var(--text)' : 'var(--text2, #64748b)',
+                              borderRadius: 6,
+                              width: 28,
+                              height: 28,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer',
+                              transition: 'all 0.15s ease',
+                            }}
+                            onMouseEnter={e => {
+                              e.currentTarget.style.background = 'var(--bg3, #f1f5f9)';
+                              e.currentTarget.style.borderColor = 'var(--border, #cbd5e1)';
+                            }}
+                            onMouseLeave={e => {
+                              if (openMenu?.id !== r.id) {
+                                e.currentTarget.style.background = 'transparent';
+                                e.currentTarget.style.borderColor = 'transparent';
+                              }
+                            }}
+                          >
+                            <MoreVertical size={16} />
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -551,6 +573,215 @@ export default function Payroll() {
           </div>
         )}
       </div>
+
+      {/* Three-dot Overflow Action Dropdown Menu */}
+      {openMenu && (
+        <div
+          ref={menuRef}
+          style={{
+            position: 'fixed',
+            top: `${openMenu.top}px`,
+            left: `${openMenu.left}px`,
+            width: '190px',
+            background: 'var(--bg, #ffffff)',
+            border: '1px solid var(--border, #e2e8f0)',
+            borderRadius: '10px',
+            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08)',
+            padding: '5px',
+            zIndex: 9999,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px',
+            userSelect: 'none'
+          }}
+        >
+          {isHRAdmin && openMenu.record.status !== 'finalized' && (
+            <button
+              type="button"
+              onClick={() => {
+                const recId = openMenu.record.id;
+                setOpenMenu(null);
+                finalizeRecord(recId);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '7px 9px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text, #1e293b)',
+                textAlign: 'left',
+                transition: 'all 0.12s ease',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#f0fdf4'; e.currentTarget.style.color = '#16a34a'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text, #1e293b)'; }}
+            >
+              <CheckCircle size={14} color="#16a34a" />
+              <span>Finalize Payroll</span>
+            </button>
+          )}
+
+          {isHRAdmin && (
+            <button
+              type="button"
+              onClick={() => {
+                const r = openMenu.record;
+                setOpenMenu(null);
+                setArrearModal({
+                  employee_id: r.employee_id,
+                  employee_name: r.employee_name,
+                  pending_arrears: r.pending_arrears,
+                  arrears_paid: r.arrears_paid
+                });
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '7px 9px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text, #1e293b)',
+                textAlign: 'left',
+                transition: 'all 0.12s ease',
+                whiteSpace: 'nowrap'
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = '#fef3c7'; e.currentTarget.style.color = '#d97706'; }}
+              onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text, #1e293b)'; }}
+            >
+              <Wallet size={14} color="#d97706" />
+              <span>Manage Arrears</span>
+              {(Number(openMenu.record.arrears_paid) > 0 || Number(openMenu.record.pending_arrears) > 0) && (
+                <span style={{ fontSize: 9.5, fontWeight: 700, color: '#d97706', background: '#fef3c7', padding: '1px 5px', borderRadius: 4, marginLeft: 'auto', whiteSpace: 'nowrap' }}>
+                  ₹{openMenu.record.arrears_paid || 0} P
+                </span>
+              )}
+            </button>
+          )}
+
+          {isHRAdmin && (
+            <button
+              type="button"
+              disabled={emailingId === openMenu.record.id}
+              onClick={() => {
+                const r = openMenu.record;
+                setOpenMenu(null);
+                emailPayslip(r.id, r.employee_name);
+              }}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                width: '100%',
+                padding: '7px 9px',
+                background: 'transparent',
+                border: 'none',
+                borderRadius: 6,
+                cursor: emailingId === openMenu.record.id ? 'not-allowed' : 'pointer',
+                fontSize: 12,
+                fontWeight: 600,
+                color: 'var(--text, #1e293b)',
+                textAlign: 'left',
+                transition: 'all 0.12s ease',
+                whiteSpace: 'nowrap',
+                opacity: emailingId === openMenu.record.id ? 0.6 : 1
+              }}
+              onMouseEnter={e => {
+                if (emailingId !== openMenu.record.id) {
+                  e.currentTarget.style.background = '#eef2ff';
+                  e.currentTarget.style.color = '#4338ca';
+                }
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.background = 'transparent';
+                e.currentTarget.style.color = 'var(--text, #1e293b)';
+              }}
+            >
+              <Mail size={14} color="#4f46e5" />
+              <span>{emailingId === openMenu.record.id ? 'Sending Email...' : 'Send Email'}</span>
+            </button>
+          )}
+
+          <button
+            type="button"
+            onClick={() => {
+              const r = openMenu.record;
+              setOpenMenu(null);
+              downloadPayslip(r.id, r.employee_code, r.month, r.year);
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              width: '100%',
+              padding: '7px 9px',
+              background: 'transparent',
+              border: 'none',
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontSize: 12,
+              fontWeight: 600,
+              color: 'var(--text, #1e293b)',
+              textAlign: 'left',
+              transition: 'all 0.12s ease',
+              whiteSpace: 'nowrap'
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = '#f0f9ff'; e.currentTarget.style.color = '#0284c7'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text, #1e293b)'; }}
+          >
+            <Download size={14} color="#0284c7" />
+            <span>Download Payslip</span>
+          </button>
+
+          {isHRAdmin && (
+            <>
+              <div style={{ height: 1, background: 'var(--border, #e2e8f0)', margin: '3px 0' }} />
+              <button
+                type="button"
+                onClick={() => {
+                  const recId = openMenu.record.id;
+                  setOpenMenu(null);
+                  deleteRecord(recId);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  width: '100%',
+                  padding: '7px 9px',
+                  background: 'transparent',
+                  border: 'none',
+                  borderRadius: 6,
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: '#dc2626',
+                  textAlign: 'left',
+                  transition: 'all 0.12s ease',
+                  whiteSpace: 'nowrap'
+                }}
+                onMouseEnter={e => { e.currentTarget.style.background = '#fee2e2'; e.currentTarget.style.color = '#b91c1c'; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = '#dc2626'; }}
+              >
+                <Trash2 size={14} color="#dc2626" />
+                <span>Delete Payroll</span>
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {arrearModal && (
         <ArrearsModal 
