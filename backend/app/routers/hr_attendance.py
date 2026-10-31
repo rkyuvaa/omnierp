@@ -1146,6 +1146,14 @@ def get_all_punches(
         "location_name": resolve_punch_location(p, active_branches),
     } for p in punches]
 
+def _next_leave_ref(db: Session) -> str:
+    count = db.query(HRLeaveRequest).count() + 1
+    ref = f"LV{str(count).zfill(5)}"
+    while db.query(HRLeaveRequest).filter(HRLeaveRequest.reference == ref).first():
+        count += 1
+        ref = f"LV{str(count).zfill(5)}"
+    return ref
+
 class RecomputeRequest(BaseModel):
     month: int
     year: int
@@ -1208,6 +1216,7 @@ def recompute_month(data: RecomputeRequest, db: Session = Depends(get_db), curre
                             status=r.status
                         )
                         db.add(r_lop)
+                        db.flush()
                     else:
                         r.leave_type_id = lop_type.id
                 else:
@@ -1234,6 +1243,7 @@ def recompute_month(data: RecomputeRequest, db: Session = Depends(get_db), curre
                             status=r.status
                         )
                         db.add(r_lop)
+                        db.flush()
         db.commit()
     
     for emp in employees:
