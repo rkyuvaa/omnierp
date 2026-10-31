@@ -230,9 +230,10 @@ export default function Sidebar({ isOpen, onClose, onToggleSidebar }) {
   
   return (
     <aside className={`sidebar ${isOpen ? 'open' : 'closed'}`} style={{display:'flex', flexDirection:'column', height: '100vh', borderRight: '1px solid var(--border)', background: 'var(--bg)'}}>
-      <div className="sidebar-header" style={{padding: isCompact ? '10px 12px' : '20px 16px', display:'flex', alignItems:'center', gap: isCompact ? 8 : 10}}>
-        <img src="/favicon.png" style={{width: isCompact ? 26 : 30, height: isCompact ? 26 : 30, objectFit:'contain'}} alt="Logo" />
-        <span style={{color:'var(--text)', fontSize: isCompact ? 17 : 19, fontWeight:700, letterSpacing:'-0.5px'}}>KIM ERP</span>
+      <div className="sidebar-header" style={{padding: isCompact ? '10px 12px' : '20px 16px', display:'flex', alignItems:'center'}}>
+        <Link to="/" onClick={handleNav} style={{display:'flex', alignItems:'center', textDecoration:'none'}}>
+          <img src="/konwert-logo-black.svg" style={{height: isCompact ? 28 : 34, maxWidth: 175, objectFit:'contain'}} alt="Konwert Logo" />
+        </Link>
       </div>
       
       <div className="sidebar-nav" style={{flex:1, padding: isCompact ? '4px 8px' : '8px 12px', overflowY:'auto'}}>

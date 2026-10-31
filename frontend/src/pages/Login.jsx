@@ -240,9 +240,8 @@ export default function Login() {
         <div className="login-right-panel">
           <div>
             {/* Logo Group */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 28 }}>
-              <img src="/favicon.png" className="logo-levitate" style={{ width: 36, height: 36, objectFit: 'contain' }} alt="Logo" />
-              <span style={{ color: '#1a2e18', fontSize: 20, fontWeight: 700, letterSpacing: '-0.3px' }}>KIM ERP</span>
+            <div style={{ display: 'flex', alignItems: 'center', marginBottom: 28 }}>
+              <img src="/konwert-logo-black.svg" className="logo-levitate" style={{ height: 44, maxWidth: '100%', objectFit: 'contain' }} alt="Konwert Logo" />
             </div>
 
             {/* Greeting */}

@@ -54,11 +54,8 @@ export default function TwoFactorChallenge() {
         animation: 'fadeIn 0.3s ease-out'
       }}>
         {/* Header/Logo mimicking Login.jsx to maintain exact branding */}
-        <div className="login-logo">
-          <div className="logo-icon">K</div>
-          <div>
-            <div className="logo-text">KIM ERP</div>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28 }}>
+          <img src="/konwert-logo-black.svg" style={{ height: 44, maxWidth: '100%', objectFit: 'contain' }} alt="Konwert Logo" />
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: 24 }}>
