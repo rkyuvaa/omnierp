@@ -19,8 +19,8 @@ app = FastAPI(title="OmniERP API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=["https://app.konwertindiamotors.com"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -292,9 +292,7 @@ if not os.path.exists(upload_dir):
 @app.get("/uploads/{filename}")
 def serve_upload(filename: str):
     file_path = os.path.join(upload_dir, filename)
-    print(f"DEBUG: Serving file from {file_path}")
     if not os.path.isfile(file_path):
-        print(f"DEBUG: File NOT FOUND at {file_path}")
         raise HTTPException(status_code=404, detail="File not found on disk")
     return FileResponse(file_path)
 
@@ -332,9 +330,4 @@ app.mount("/api/static", StaticFiles(directory=static_dir), name="static")
 def root():
     return {"message": "OmniERP API Running"}
 
-@app.get("/api/debug/uploads")
-def debug_uploads():
-    if not os.path.exists(upload_dir):
-        return {"error": "Upload directory does not exist", "path": upload_dir}
-    files = os.listdir(upload_dir)
-    return {"path": upload_dir, "files": files}
+
