@@ -235,11 +235,33 @@ def sync_all_employees_to_webhook(db: Session, batch: bool = True) -> Dict[str, 
     if not webhook_url:
         return {"success": False, "message": "No Webhook URL configured in Employee Sync settings."}
 
-    from app.hr_models import HREmployee
+    from app.hr_models import HREmployee, HRShift
+    from app.models import Department, Branch
     from app.routers.hr_employees import serialize
 
     employees = db.query(HREmployee).filter(HREmployee.is_active == True).order_by(HREmployee.name).all()
-    serialized_employees = [serialize(e, is_admin=True) for e in employees]
+    all_emps = db.query(HREmployee).all()
+    manager_map = {m.id: m.name for m in all_emps if m.id and m.name}
+    dept_map = {d.id: d.name for d in db.query(Department).all()}
+    branch_map = {b.id: b.name for b in db.query(Branch).all()}
+    shift_map = {s.id: s.name for s in db.query(HRShift).all()}
+
+    serialized_employees = []
+    for e in employees:
+        m_name = manager_map.get(e.manager_id)
+        d_name = (e.department.name if e.department else None) or dept_map.get(e.department_id)
+        b_name = (e.branch.name if e.branch else None) or branch_map.get(e.branch_id)
+        s_name = (e.shift.name if e.shift else None) or shift_map.get(e.shift_id)
+        serialized_employees.append(
+            serialize(
+                e,
+                is_admin=True,
+                manager_name=m_name,
+                dept_name=d_name,
+                branch_name=b_name,
+                shift_name=s_name
+            )
+        )
 
     if batch:
         payload = {

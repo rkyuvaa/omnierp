@@ -87,7 +87,19 @@ class SyncAllRequestSchema(BaseModel):
     batch: Optional[bool] = True
 
 # ── Serializer ────────────────────────────────────────────────────────────────
-def serialize(e: HREmployee, is_admin: bool = True):
+def serialize(
+    e: HREmployee,
+    is_admin: bool = True,
+    manager_name: Optional[str] = None,
+    dept_name: Optional[str] = None,
+    branch_name: Optional[str] = None,
+    shift_name: Optional[str] = None
+):
+    final_dept = dept_name or (e.department.name if e.department else None)
+    final_branch = branch_name or (e.branch.name if e.branch else None)
+    final_shift = shift_name or (e.shift.name if e.shift else None)
+    final_manager = manager_name or getattr(e, "_manager_name", None)
+
     return {
         "id": e.id,
         "employee_id": e.employee_id,
@@ -97,17 +109,23 @@ def serialize(e: HREmployee, is_admin: bool = True):
         "phone": e.phone if is_admin else None,
         "designation": e.designation,
         "department_id": e.department_id,
-        "department_name": e.department.name if e.department else None,
+        "department_name": final_dept,
+        "department": final_dept,
         "branch_id": e.branch_id,
-        "branch_name": e.branch.name if e.branch else None,
+        "branch_name": final_branch,
+        "branch": final_branch,
         "manager_id": e.manager_id,
+        "manager_name": final_manager,
+        "reporting_manager": final_manager,
         "manager_l2_id": getattr(e, "manager_l2_id", None),
         "cc_manager_ids": getattr(e, "cc_manager_ids", []) or [],
         "shift_id": e.shift_id,
-        "shift_name": e.shift.name if e.shift else None,
+        "shift_name": final_shift,
+        "shift": final_shift,
         "date_of_joining": str(e.date_of_joining) if (e.date_of_joining and is_admin) else None,
         "date_of_leaving": str(e.date_of_leaving) if (e.date_of_leaving and is_admin) else None,
         "basic_salary": float(e.basic_salary or 0) if is_admin else 0,
+        "gross_salary": float(e.basic_salary or 0) if is_admin else 0,
         "salary_components": (e.salary_components or []) if is_admin else [],
         "biometric_id": e.biometric_id if is_admin else None,
         "salary_template_id": e.salary_template_id if is_admin else None,
@@ -166,7 +184,11 @@ def create_employee(
         raise HTTPException(400, "Employee ID already exists")
     emp = HREmployee(**data.model_dump())
     db.add(emp); db.commit(); db.refresh(emp)
-    serialized = serialize(emp)
+    manager_name = None
+    if emp.manager_id:
+        mgr = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
+        manager_name = mgr.name if mgr else None
+    serialized = serialize(emp, is_admin=True, manager_name=manager_name)
     dispatch_employee_sync("employee.created", serialized)
     return serialized
 
@@ -274,7 +296,11 @@ def update_employee(
     for k, v in data.model_dump(exclude_none=True).items():
         setattr(emp, k, v)
     db.commit(); db.refresh(emp)
-    serialized = serialize(emp)
+    manager_name = None
+    if emp.manager_id:
+        mgr = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
+        manager_name = mgr.name if mgr else None
+    serialized = serialize(emp, is_admin=True, manager_name=manager_name)
     dispatch_employee_sync("employee.updated", serialized)
     return serialized
 
