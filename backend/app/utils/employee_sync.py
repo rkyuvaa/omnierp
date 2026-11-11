@@ -148,11 +148,7 @@ def test_sync_webhook(
         "event": "test.ping",
         "timestamp": datetime.utcnow().isoformat() + "Z",
         "source": "Omni ERP",
-        "message": "Connection test ping from Omni ERP Employee Sync",
-        "data": {
-            "test": True,
-            "system": "Omni ERP"
-        }
+        "message": "Connection test ping from Omni ERP Employee Sync"
     }
     success, status_code, msg = send_webhook_payload(
         url=url,
