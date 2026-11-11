@@ -10,6 +10,13 @@ from app.database import get_db
 from app.models import User, EmailTemplate, SystemSetting
 from app.auth import get_current_user
 from app.hr_models import HREmployee, HRShift, HRLeaveBalance, HRLeaveType
+from app.utils.employee_sync import (
+    dispatch_employee_sync,
+    get_sync_settings,
+    save_sync_settings,
+    test_sync_webhook,
+    sync_all_employees_to_webhook,
+)
 
 router = APIRouter()
 
@@ -61,6 +68,23 @@ class EmployeeUpdate(BaseModel):
     enable_mobile_punch: Optional[bool] = None
     uan: Optional[str] = None
     esi_number: Optional[str] = None
+
+class SyncSettingsSchema(BaseModel):
+    enabled: bool = False
+    webhook_url: str = ""
+    auth_token: Optional[str] = ""
+    auth_header: Optional[str] = "Authorization"
+    sync_on_create: Optional[bool] = True
+    sync_on_update: Optional[bool] = True
+    sync_on_delete: Optional[bool] = True
+
+class SyncTestRequestSchema(BaseModel):
+    webhook_url: str
+    auth_token: Optional[str] = ""
+    auth_header: Optional[str] = "Authorization"
+
+class SyncAllRequestSchema(BaseModel):
+    batch: Optional[bool] = True
 
 # ── Serializer ────────────────────────────────────────────────────────────────
 def serialize(e: HREmployee, is_admin: bool = True):
@@ -142,7 +166,9 @@ def create_employee(
         raise HTTPException(400, "Employee ID already exists")
     emp = HREmployee(**data.model_dump())
     db.add(emp); db.commit(); db.refresh(emp)
-    return serialize(emp)
+    serialized = serialize(emp)
+    dispatch_employee_sync("employee.created", serialized)
+    return serialized
 
 
 @router.get("/next-id")
@@ -155,6 +181,51 @@ def next_employee_id(db: Session = Depends(get_db), current_user: User = Depends
         return {"next_id": f"EMP{str(num).zfill(3)}"}
     except:
         return {"next_id": "EMP001"}
+
+
+# ── Employee Webhook / External App Sync ───────────────────────────────────────
+@router.get("/sync/settings")
+def get_employee_sync_settings_route(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    return get_sync_settings(db)
+
+
+@router.post("/sync/settings")
+def save_employee_sync_settings_route(
+    payload: SyncSettingsSchema,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    saved = save_sync_settings(payload.model_dump(), db)
+    return {"message": "Employee sync settings saved successfully", "settings": saved}
+
+
+@router.post("/sync/test")
+def test_employee_sync_route(
+    payload: SyncTestRequestSchema,
+    current_user: User = Depends(get_current_user)
+):
+    res = test_sync_webhook(
+        url=payload.webhook_url,
+        auth_token=payload.auth_token,
+        auth_header=payload.auth_header or "Authorization"
+    )
+    return res
+
+
+@router.post("/sync/all")
+def sync_all_employees_route(
+    payload: Optional[SyncAllRequestSchema] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    batch = payload.batch if payload else True
+    res = sync_all_employees_to_webhook(db, batch=batch)
+    if not res.get("success"):
+        raise HTTPException(400, res.get("message", "Sync failed"))
+    return res
 
 
 @router.get("/{emp_id}")
@@ -203,7 +274,9 @@ def update_employee(
     for k, v in data.model_dump(exclude_none=True).items():
         setattr(emp, k, v)
     db.commit(); db.refresh(emp)
-    return serialize(emp)
+    serialized = serialize(emp)
+    dispatch_employee_sync("employee.updated", serialized)
+    return serialized
 
 
 @router.delete("/{emp_id}")
@@ -211,11 +284,13 @@ def delete_employee(emp_id: int, db: Session = Depends(get_db), current_user: Us
     emp = db.query(HREmployee).filter(HREmployee.id == emp_id).first()
     if not emp:
         raise HTTPException(404, "Employee not found")
+    emp_payload = {"id": emp.id, "employee_id": emp.employee_id, "name": emp.name}
     try:
         # Before deleting the employee, also delete their leave balances to prevent FK constraint failures
         db.query(HRLeaveBalance).filter(HRLeaveBalance.employee_id == emp_id).delete()
         db.delete(emp)
         db.commit()
+        dispatch_employee_sync("employee.deleted", emp_payload)
         return {"message": "Employee deleted successfully"}
     except Exception as e:
         db.rollback()
@@ -583,6 +658,11 @@ async def import_employees_excel(
                 errors.append(f"Row {row_idx} ({emp_id}): {str(e)}")
                 
         db.commit()
+        if imported > 0:
+            try:
+                sync_all_employees_to_webhook(db, batch=True)
+            except Exception as sync_err:
+                pass
         return {"imported": imported, "skipped": skipped, "errors": errors}
     except Exception as e:
         raise HTTPException(400, f"Critical failure: {str(e)}")

@@ -42,8 +42,7 @@ services:
     environment:
       - TZ=Asia/Kolkata
     ports:
-      - "80:80"
-      - "443:443"
+      - "${FRONTEND_PORT:-8082}:80"
     volumes:
       - /etc/letsencrypt:/etc/letsencrypt:ro
     depends_on:

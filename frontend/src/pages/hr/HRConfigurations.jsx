@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import Layout from '../../components/Layout';
 import toast from 'react-hot-toast';
-import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText, Download, GitBranch, Zap, Send } from 'lucide-react';
+import { Settings, Clock, Calendar, Gift, Wifi, X, Plus, Trash2, RefreshCw, Upload, FileText, Download, GitBranch, Zap, Send, Globe } from 'lucide-react';
 
 const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
 
@@ -43,6 +43,23 @@ export default function HRConfigurations() {
     selectedCategories: [],
     selectedEmployees: []
   });
+
+  const [syncSettings, setSyncSettings] = useState({
+    enabled: false,
+    webhook_url: '',
+    auth_token: '',
+    auth_header: 'Authorization',
+    sync_on_create: true,
+    sync_on_update: true,
+    sync_on_delete: true,
+    last_sync_at: null,
+    last_sync_status: null,
+    last_sync_error: null
+  });
+  const [savingSync, setSavingSync] = useState(false);
+  const [testingSync, setTestingSync] = useState(false);
+  const [syncingAll, setSyncingAll] = useState(false);
+  const [testResult, setTestResult] = useState(null);
 
   useEffect(() => {
     api.get('/branches/').then(r => setBranches(r.data));
@@ -87,6 +104,10 @@ export default function HRConfigurations() {
         setDepartments(deptsRes.data || []);
         setEmployees(empsRes.data || []);
       }
+      else if (tab === 'app_sync') {
+        const r = await api.get('/hr/employees/sync/settings');
+        setSyncSettings(r.data);
+      }
     } catch { toast.error('Failed to load'); }
     finally { setLoading(false); }
   }
@@ -129,6 +150,66 @@ export default function HRConfigurations() {
       toast.error(err.response?.data?.detail || 'Failed to send notification');
     } finally {
       setSendingNotif(false);
+    }
+  }
+
+  async function saveSyncConfig() {
+    setSavingSync(true);
+    try {
+      await api.post('/hr/employees/sync/settings', syncSettings);
+      toast.success('App sync settings saved successfully!');
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Failed to save settings');
+    } finally {
+      setSavingSync(false);
+    }
+  }
+
+  async function handleTestConnection() {
+    if (!syncSettings.webhook_url) {
+      toast.error('Please enter a Webhook URL first');
+      return;
+    }
+    setTestingSync(true);
+    setTestResult(null);
+    try {
+      const res = await api.post('/hr/employees/sync/test', {
+        webhook_url: syncSettings.webhook_url,
+        auth_token: syncSettings.auth_token,
+        auth_header: syncSettings.auth_header || 'Authorization'
+      });
+      setTestResult(res.data);
+      if (res.data.success) {
+        toast.success('Webhook connection successful!');
+      } else {
+        toast.error(res.data.message || 'Webhook test failed');
+      }
+    } catch (err) {
+      setTestResult({ success: false, message: err.response?.data?.detail || 'Failed to test webhook' });
+      toast.error(err.response?.data?.detail || 'Connection test failed');
+    } finally {
+      setTestingSync(false);
+    }
+  }
+
+  async function handleSyncAllEmployees() {
+    if (!syncSettings.enabled || !syncSettings.webhook_url) {
+      toast.error('Please enable sync and configure a valid Webhook URL first.');
+      return;
+    }
+    if (!window.confirm('Are you sure you want to push all active employee records to your other app now?')) {
+      return;
+    }
+    setSyncingAll(true);
+    try {
+      const res = await api.post('/hr/employees/sync/all', { batch: true });
+      toast.success(res.data.message || 'All employees synced successfully!');
+      const updated = await api.get('/hr/employees/sync/settings');
+      setSyncSettings(updated.data);
+    } catch (err) {
+      toast.error(err.response?.data?.detail || 'Bulk employee sync failed');
+    } finally {
+      setSyncingAll(false);
     }
   }
 
@@ -298,6 +379,7 @@ export default function HRConfigurations() {
           <button style={tabStyle(tab === 'lop_rules')} onClick={() => setTab('lop_rules')}><GitBranch size={14} /> LOP Waterfall</button>
           <button style={tabStyle(tab === 'comp_off')} onClick={() => setTab('comp_off')}><Zap size={14} /> Comp-Off</button>
           <button style={tabStyle(tab === 'custom_notifications')} onClick={() => setTab('custom_notifications')}><Send size={14} /> Custom Messages</button>
+          <button style={tabStyle(tab === 'app_sync')} onClick={() => setTab('app_sync')}><Globe size={14} /> App Sync</button>
         </div>
 
         {/* SHIFTS */}
@@ -1325,6 +1407,190 @@ export default function HRConfigurations() {
                 >
                   <Send size={14} />
                   {sendingNotif ? 'Sending Notification...' : 'Send Custom Notification'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* APP SYNC / WEBHOOKS */}
+        {tab === 'app_sync' && (
+          <div style={{ background: 'var(--bg2)', borderRadius: 12, border: '1px solid rgba(226, 232, 240, 0.8)', padding: 20, boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)', maxWidth: 840 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+              <div style={{ background: 'var(--accent)', color: '#fff', padding: 8, borderRadius: 10, display: 'flex' }}>
+                <Globe size={20} />
+              </div>
+              <div>
+                <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>Employee Master Sync (Other App)</h3>
+                <p style={{ margin: 0, fontSize: 12, color: 'var(--text2)' }}>
+                  Automatically synchronize employee records with your other application via webhook whenever employees are created or updated.
+                </p>
+              </div>
+            </div>
+
+            {/* Enable Toggle Card */}
+            <div style={{ background: 'var(--bg3)', padding: '14px 16px', borderRadius: 10, border: '1px solid var(--border)', marginBottom: 16, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>Enable Automatic Webhook Sync</div>
+                <div style={{ fontSize: 12, color: 'var(--text3)' }}>When enabled, employee changes will be automatically posted to your other application.</div>
+              </div>
+              <label style={{ position: 'relative', display: 'inline-block', width: 44, height: 24, cursor: 'pointer' }}>
+                <input
+                  type="checkbox"
+                  checked={syncSettings.enabled}
+                  onChange={e => setSyncSettings({ ...syncSettings, enabled: e.target.checked })}
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span style={{
+                  position: 'absolute', inset: 0, background: syncSettings.enabled ? 'var(--accent)' : 'var(--border)',
+                  borderRadius: 24, transition: '.2s'
+                }}>
+                  <span style={{
+                    position: 'absolute', content: '""', height: 16, width: 16, left: syncSettings.enabled ? 22 : 4,
+                    bottom: 4, background: '#fff', borderRadius: '50%', transition: '.2s'
+                  }} />
+                </span>
+              </label>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              <div>
+                <label style={labelStyle}>
+                  Other App Webhook Endpoint URL <span style={{ color: '#ef4444' }}>*</span>
+                </label>
+                <input
+                  placeholder="https://your-other-app.com/api/sync/employees or http://localhost:8001/api/sync"
+                  value={syncSettings.webhook_url || ''}
+                  onChange={e => setSyncSettings({ ...syncSettings, webhook_url: e.target.value })}
+                  style={inputStyle}
+                />
+                <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>
+                  Omni ERP will send an HTTP POST request with the employee JSON payload to this endpoint.
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={labelStyle}>Auth Header Name</label>
+                  <input
+                    placeholder="Authorization"
+                    value={syncSettings.auth_header || ''}
+                    onChange={e => setSyncSettings({ ...syncSettings, auth_header: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>Default: Authorization (Bearer)</div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Auth Token / Secret (Optional)</label>
+                  <input
+                    type="password"
+                    placeholder="Bearer token or secret key"
+                    value={syncSettings.auth_token || ''}
+                    onChange={e => setSyncSettings({ ...syncSettings, auth_token: e.target.value })}
+                    style={inputStyle}
+                  />
+                  <div style={{ fontSize: 11, color: 'var(--text3)', marginTop: 4 }}>Passed in the specified auth header</div>
+                </div>
+              </div>
+
+              <div>
+                <label style={labelStyle}>Sync Triggers</label>
+                <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginTop: 4 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={syncSettings.sync_on_create ?? true}
+                      onChange={e => setSyncSettings({ ...syncSettings, sync_on_create: e.target.checked })}
+                    />
+                    When Employee Created
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={syncSettings.sync_on_update ?? true}
+                      onChange={e => setSyncSettings({ ...syncSettings, sync_on_update: e.target.checked })}
+                    />
+                    When Employee Updated
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
+                    <input
+                      type="checkbox"
+                      checked={syncSettings.sync_on_delete ?? true}
+                      onChange={e => setSyncSettings({ ...syncSettings, sync_on_delete: e.target.checked })}
+                    />
+                    When Employee Deleted
+                  </label>
+                </div>
+              </div>
+
+              {/* Status and Diagnostics */}
+              <div style={{ background: 'var(--bg3)', padding: '12px 14px', borderRadius: 10, border: '1px solid var(--border)', fontSize: 12.5 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                  <span style={{ fontWeight: 600 }}>Last Sync Status:</span>
+                  <span style={{
+                    fontWeight: 600,
+                    padding: '2px 8px',
+                    borderRadius: 6,
+                    background: syncSettings.last_sync_status === 'SUCCESS' ? '#dcfce7' : syncSettings.last_sync_status === 'FAILED' ? '#fee2e2' : 'var(--bg2)',
+                    color: syncSettings.last_sync_status === 'SUCCESS' ? '#16a34a' : syncSettings.last_sync_status === 'FAILED' ? '#dc2626' : 'var(--text3)'
+                  }}>
+                    {syncSettings.last_sync_status || 'Never Run'}
+                  </span>
+                </div>
+                {syncSettings.last_sync_at && (
+                  <div style={{ color: 'var(--text3)', marginBottom: 4 }}>
+                    Last Synced: {new Date(syncSettings.last_sync_at).toLocaleString()}
+                  </div>
+                )}
+                {syncSettings.last_sync_error && (
+                  <div style={{ color: '#dc2626', marginTop: 4, wordBreak: 'break-all' }}>
+                    Error: {syncSettings.last_sync_error}
+                  </div>
+                )}
+                {testResult && (
+                  <div style={{ marginTop: 8, padding: 8, borderRadius: 6, background: testResult.success ? '#dcfce7' : '#fee2e2', color: testResult.success ? '#15803d' : '#b91c1c' }}>
+                    <div style={{ fontWeight: 600 }}>{testResult.message}</div>
+                    {testResult.raw_response && (
+                      <div style={{ fontSize: 11, marginTop: 2, opacity: 0.9 }}>{testResult.raw_response}</div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Action Buttons */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button
+                    type="button"
+                    onClick={handleTestConnection}
+                    disabled={testingSync || !syncSettings.webhook_url}
+                    className="btn"
+                    style={{ background: 'var(--bg3)', border: '1px solid var(--border)', fontSize: 13, padding: '7px 12px' }}
+                  >
+                    {testingSync ? 'Testing...' : 'Test Connection'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSyncAllEmployees}
+                    disabled={syncingAll || !syncSettings.enabled || !syncSettings.webhook_url}
+                    className="btn"
+                    style={{ background: 'var(--bg3)', border: '1px solid var(--border)', fontSize: 13, padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 6 }}
+                    title="Push all existing active employees to the other app"
+                  >
+                    <RefreshCw size={13} className={syncingAll ? 'animate-spin' : ''} />
+                    {syncingAll ? 'Syncing All...' : 'Sync All Now'}
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={saveSyncConfig}
+                  disabled={savingSync}
+                  className="btn btn-primary"
+                  style={{ fontSize: 13, padding: '7px 18px' }}
+                >
+                  {savingSync ? 'Saving...' : 'Save Sync Settings'}
                 </button>
               </div>
             </div>
