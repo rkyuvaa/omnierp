@@ -28,6 +28,12 @@ export default function TwoFactorChallenge() {
     if (code.length !== 6) {
       return toast.error('Please enter a 6-digit code');
     }
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      try {
+        Notification.requestPermission().catch(() => {});
+      } catch (_) {}
+    }
+
     setLoading(true);
     try {
       await verifyMfa(mfa_token, code);

@@ -28,7 +28,7 @@ export default function NotificationDropdown() {
       }
     }
     loadPushStatus();
-  }, []);
+  }, [isOpen]);
 
   const handleTogglePush = async () => {
     if (isTogglingPush) return;

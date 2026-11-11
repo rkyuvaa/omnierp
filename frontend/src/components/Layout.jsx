@@ -5,6 +5,7 @@ import { Menu } from 'lucide-react';
 import PunchButton from './PunchButton';
 import NotificationDropdown from './NotificationDropdown';
 import { Outlet, useLocation } from 'react-router-dom';
+import { autoEnablePushNotifications } from '../utils/pushNotifications';
 
 export const LayoutContext = createContext(null);
 
@@ -15,6 +16,12 @@ export function LayoutShell() {
   const [title, setTitle] = useState('');
   const [headerTabs, setHeaderTabs] = useState(null);
   const isCompactModule = location.pathname === '/' || location.pathname.startsWith('/hr') || location.pathname.startsWith('/expenses');
+
+  useEffect(() => {
+    if (user) {
+      autoEnablePushNotifications().catch(() => {});
+    }
+  }, [user]);
 
   return (
     <LayoutContext.Provider value={{ setTitle, setHeaderTabs }}>

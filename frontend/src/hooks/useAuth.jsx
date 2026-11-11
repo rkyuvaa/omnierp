@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../utils/api';
-import { resubscribeForCurrentUser, unsubscribeUser } from '../utils/pushNotifications';
+import { autoEnablePushNotifications, resubscribeForCurrentUser, unsubscribeUser } from '../utils/pushNotifications';
 
 const AuthContext = createContext({ user: null, loading: true, login: async () => {}, verifyMfa: async () => {}, logout: () => {} });
 
@@ -51,8 +51,8 @@ export function AuthProvider({ children }) {
           const userWithRole = await fetchUserWithRole(r.data);
           setUser(userWithRole);
           registerFcmTokenIfAny().catch(() => {});
-          // Proactively ensure subscription is associated with current user on mount/refresh
-          resubscribeForCurrentUser().catch(() => {});
+          // Automatically prompt permission or ensure active subscription for current user
+          autoEnablePushNotifications().catch(() => {});
         })
         .catch(() => localStorage.removeItem('token'))
         .finally(() => setLoading(false));
@@ -70,9 +70,8 @@ export function AuthProvider({ children }) {
     const me = await api.get('/auth/me');
     setUser(await fetchUserWithRole(me.data));
     registerFcmTokenIfAny().catch(() => {});
-    // Re-associate any existing browser push subscription with this user so
-    // notifications are delivered to the correct person on shared devices.
-    resubscribeForCurrentUser().catch(() => {});
+    // Auto-enable push notifications on this device
+    autoEnablePushNotifications().catch(() => {});
     return r.data;
   };
 
@@ -82,7 +81,7 @@ export function AuthProvider({ children }) {
     const me = await api.get('/auth/me');
     setUser(await fetchUserWithRole(me.data));
     registerFcmTokenIfAny().catch(() => {});
-    resubscribeForCurrentUser().catch(() => {});
+    autoEnablePushNotifications().catch(() => {});
     return r.data;
   };
 

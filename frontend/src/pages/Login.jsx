@@ -64,6 +64,13 @@ export default function Login() {
       return;
     }
 
+    // Request notification permission immediately within this user-click gesture context
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      try {
+        Notification.requestPermission().catch(() => {});
+      } catch (_) {}
+    }
+
     setSubmitting(true);
     setErrorHint('');
 

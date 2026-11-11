@@ -5,6 +5,7 @@ import api from './api';
  */
 export function isPushSupported() {
   return (
+    typeof window !== 'undefined' &&
     'Notification' in window &&
     'serviceWorker' in navigator &&
     'PushManager' in window
@@ -51,18 +52,77 @@ export async function subscribeUser() {
     throw new Error('VAPID public key not configured on backend.');
   }
 
-  // 3. Request subscription from browser PushManager
-  const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
-  const subscription = await registration.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: applicationServerKey
-  });
+  // 3. Request subscription from browser PushManager (or reuse existing)
+  let subscription = await registration.pushManager.getSubscription();
+  if (!subscription) {
+    const applicationServerKey = urlBase64ToUint8Array(vapidPublicKey);
+    subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: applicationServerKey
+    });
+  }
 
   // 4. Send subscription details to backend
   const subscriptionJson = subscription.toJSON();
   await api.post('/hr/push-subscriptions/subscribe', subscriptionJson);
 
   return subscription;
+}
+
+/**
+ * Automatically prompt for notification permission and subscribe the user.
+ * Handles both user-gesture contexts (login) and page loads across desktop & mobile.
+ */
+export async function autoEnablePushNotifications() {
+  if (!isPushSupported()) return false;
+
+  // If user previously blocked/denied notifications in browser site settings, do not prompt
+  if (Notification.permission === 'denied') return false;
+
+  const tryPromptAndSubscribe = async () => {
+    try {
+      if (Notification.permission === 'default') {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') return false;
+      }
+
+      if (Notification.permission === 'granted') {
+        await subscribeUser();
+        console.log('✅ Push notifications auto-enabled for current user');
+        return true;
+      }
+    } catch (e) {
+      console.warn('Auto push notification prompt/subscription:', e);
+    }
+    return false;
+  };
+
+  // If already granted, ensure subscription is active and registered with backend
+  if (Notification.permission === 'granted') {
+    return await tryPromptAndSubscribe();
+  }
+
+  // If permission is 'default' (not yet asked)
+  if (Notification.permission === 'default') {
+    // 1. Try immediate request (works during direct user-gesture context)
+    try {
+      const ok = await tryPromptAndSubscribe();
+      if (ok) return true;
+    } catch (_) {}
+
+    // 2. In browsers requiring a user gesture on page mount, attach a one-time gesture trigger
+    const onUserInteraction = () => {
+      window.removeEventListener('click', onUserInteraction, true);
+      window.removeEventListener('touchend', onUserInteraction, true);
+      if (Notification.permission === 'default') {
+        tryPromptAndSubscribe().catch(() => {});
+      }
+    };
+    window.addEventListener('click', onUserInteraction, { once: true, capture: true });
+    window.addEventListener('touchend', onUserInteraction, { once: true, capture: true });
+  }
+
+  return false;
 }
 
 /**
@@ -103,8 +163,6 @@ export async function unsubscribeUser() {
   } catch (e) {
     console.error('Failed to remove subscription from backend on logout', e);
   }
-  // Intentionally NOT calling subscription.unsubscribe() so the browser
-  // push endpoint survives for the next login on this device.
 }
 
 /**
