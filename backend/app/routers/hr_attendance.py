@@ -758,8 +758,8 @@ def my_today_status(db: Session = Depends(get_db), current_user: User = Depends(
                 employee_id=f"{prefix}{emp_count:03d}",
                 name=current_user.name or "User",
                 email=current_user.email,
-                joining_date=datetime.now().date(),
-                status="active"
+                date_of_joining=datetime.now().date(),
+                is_active=True
             )
             db.add(emp)
             db.commit()
