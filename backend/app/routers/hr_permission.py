@@ -472,7 +472,7 @@ def _send_permission_email(req_id: int, to_manager: bool = False, origin: str = 
                 send_template_email(
                     db=db,
                     to_email=req.employee.email,
-                    template_name="leave_status_update",
+                    template_name="permission_status_update",
                     variables={
                         "employee_name": req.employee.name,
                         "leave_type": f"Permission ({req.session.capitalize()} Session, 1 hr)",
@@ -491,7 +491,7 @@ def _send_permission_email(req_id: int, to_manager: bool = False, origin: str = 
                 send_template_email(
                     db=db,
                     to_email=manager.email,
-                    template_name="leave_new_request",
+                    template_name="permission_new_request",
                     variables={
                         "employee_name": req.employee.name,
                         "leave_type": f"Permission ({req.session.capitalize()} Session, 1 hr)",

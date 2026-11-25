@@ -51,6 +51,32 @@ const TEMPLATE_INFO = {
       { name: "{approver_name}", desc: "Name of the approving HR/Manager" },
       { name: "{reason}", desc: "HR Approval/Rejection remarks" }
     ]
+  },
+  permission_status_update: {
+    label: "Permission Request Status Change",
+    description: "Dispatched automatically when a permission request is approved or rejected.",
+    placeholders: [
+      { name: "{employee_name}", desc: "Full name of the employee" },
+      { name: "{leave_type}", desc: "Permission session & duration (e.g. Permission (Morning Session, 1 hr))" },
+      { name: "{from_date}", desc: "Permission date" },
+      { name: "{to_date}", desc: "Permission date" },
+      { name: "{status}", desc: "New state: approved or rejected" },
+      { name: "{approver_name}", desc: "Name of the approving HR/Manager" },
+      { name: "{reason}", desc: "HR Approval/Rejection remarks" }
+    ]
+  },
+  permission_new_request: {
+    label: "New Permission Request (Manager)",
+    description: "Dispatched to the reporting manager when an employee submits a permission request.",
+    placeholders: [
+      { name: "{employee_name}", desc: "Full name of the employee" },
+      { name: "{leave_type}", desc: "Permission session & duration (e.g. Permission (Morning Session, 1 hr))" },
+      { name: "{from_date}", desc: "Permission date" },
+      { name: "{total_days}", desc: "Duration (1 hour)" },
+      { name: "{reason}", desc: "Reason provided by employee" },
+      { name: "{approver_name}", desc: "Reporting manager name" },
+      { name: "{action_url}", desc: "Direct link to approve/reject" }
+    ]
   }
 };
 
