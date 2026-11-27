@@ -390,8 +390,8 @@ def seed_email_templates(db: Session):
         </table>
       </div>
       <div style="text-align: center; margin: 30px 0 18px;">
-        <a href="{approve_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402; margin: 6px 8px;">Approve ✓</a>
-        <a href="{reject_url}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.22); border: 1px solid #b91c1c; margin: 6px 8px;">Reject ✗</a>
+        <a href="{approve_url}" style="display: inline-block; background-color: #15803d; color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; border: 1px solid #15803d; margin: 6px 8px;"><span style="color: #ffffff; text-decoration: none;">Approve &#10003;</span></a>
+        <a href="{reject_url}" style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; border: 1px solid #dc2626; margin: 6px 8px;"><span style="color: #ffffff; text-decoration: none;">Reject &#10007;</span></a>
       </div>
       <div style="text-align: center; margin: 0 0 14px;">
         <a href="{action_url}" style="color: #195402; font-size: 13px; font-weight: 600; text-decoration: underline;">Or respond inside KIM ERP →</a>
@@ -476,8 +476,8 @@ def seed_email_templates(db: Session):
         </table>
       </div>
       <div style="text-align: center; margin: 30px 0 18px;">
-        <a href="{approve_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402; margin: 6px 8px;">Approve ✓</a>
-        <a href="{reject_url}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.22); border: 1px solid #b91c1c; margin: 6px 8px;">Reject ✗</a>
+        <a href="{approve_url}" style="display: inline-block; background-color: #15803d; color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; border: 1px solid #15803d; margin: 6px 8px;"><span style="color: #ffffff; text-decoration: none;">Approve &#10003;</span></a>
+        <a href="{reject_url}" style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; border: 1px solid #dc2626; margin: 6px 8px;"><span style="color: #ffffff; text-decoration: none;">Reject &#10007;</span></a>
       </div>
       <div style="text-align: center; margin: 0 0 14px;">
         <a href="{action_url}" style="color: #195402; font-size: 13px; font-weight: 600; text-decoration: underline;">Or respond inside KIM ERP →</a>
@@ -562,8 +562,8 @@ def seed_email_templates(db: Session):
         </table>
       </div>
       <div style="text-align: center; margin: 30px 0 18px;">
-        <a href="{approve_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402; margin: 6px 8px;">Approve ✓</a>
-        <a href="{reject_url}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.22); border: 1px solid #b91c1c; margin: 6px 8px;">Reject ✗</a>
+        <a href="{approve_url}" style="display: inline-block; background-color: #15803d; color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; border: 1px solid #15803d; margin: 6px 8px;"><span style="color: #ffffff; text-decoration: none;">Approve &#10003;</span></a>
+        <a href="{reject_url}" style="display: inline-block; background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; border: 1px solid #dc2626; margin: 6px 8px;"><span style="color: #ffffff; text-decoration: none;">Reject &#10007;</span></a>
       </div>
       <div style="text-align: center; margin: 0 0 14px;">
         <a href="{action_url}" style="color: #195402; font-size: 13px; font-weight: 600; text-decoration: underline;">Or respond inside KIM ERP →</a>
@@ -634,7 +634,8 @@ def seed_email_templates(db: Session):
             )
             db.add(tpl)
         elif item["name"] in ("leave_new_request", "onduty_new_request", "permission_new_request"):
-            if "{approve_url}" not in (exists.body_html or ""):
+            existing_html = exists.body_html or ""
+            if "{approve_url}" not in existing_html or "linear-gradient(135deg, #ef4444" in existing_html:
                 exists.body_html = item["body_html"]
                 exists.placeholders = item["placeholders"]
     db.commit()

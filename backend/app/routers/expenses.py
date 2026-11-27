@@ -1156,8 +1156,8 @@ def _notify_advance(
                 portal_link = f'<div style="margin-top:12px;"><a href="{portal_url}" style="color:#195402;font-size:13px;">Open in KIM ERP →</a></div>' if portal_url else ""
                 actions_html = f"""
                     <div style="margin: 22px 0 10px; text-align: center;">
-                        <a href="{approve_url}" style="display:inline-block;background:#15803d;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;margin:4px 6px;">Approve ✓</a>
-                        <a href="{reject_url}" style="display:inline-block;background:#dc2626;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;margin:4px 6px;">Reject ✗</a>
+                        <a href="{approve_url}" style="display:inline-block;background-color:#15803d;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;margin:4px 6px;"><span style="color:#ffffff;text-decoration:none;">Approve &#10003;</span></a>
+                        <a href="{reject_url}" style="display:inline-block;background-color:#dc2626;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;margin:4px 6px;"><span style="color:#ffffff;text-decoration:none;">Reject &#10007;</span></a>
                         {portal_link}
                     </div>
                 """
@@ -1266,11 +1266,11 @@ def send_advance_request_email(db: Session, advance: ExpenseAdvanceRequest, orig
         reject_url = action_urls["reject_url"]
         action_buttons_html = f"""
             <div style="text-align: center; margin-top: 28px;">
-              <a href="{approve_url}" style="background: #15803d; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; margin: 4px 6px; box-shadow: 0 4px 10px rgba(21,128,61,0.25);">
-                Approve ✓
+              <a href="{approve_url}" style="background-color: #15803d; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; margin: 4px 6px;">
+                <span style="color: #ffffff; text-decoration: none;">Approve &#10003;</span>
               </a>
-              <a href="{reject_url}" style="background: #dc2626; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; margin: 4px 6px; box-shadow: 0 4px 10px rgba(220,38,38,0.25);">
-                Reject ✗
+              <a href="{reject_url}" style="background-color: #dc2626; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; margin: 4px 6px;">
+                <span style="color: #ffffff; text-decoration: none;">Reject &#10007;</span>
               </a>
               <div style="margin-top: 14px;">
                 <a href="{base_url}/expenses/approvals" style="color: #15803d; font-size: 13px; font-weight: 600; text-decoration: underline;">
