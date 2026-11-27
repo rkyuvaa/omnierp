@@ -202,7 +202,9 @@ def test_email_template(
         "to_time": "18:30",
         "work_location": "Client Site",
         "purpose": "Site inspection",
-        "action_url": "https://app.konwertindiamotors.com"
+        "action_url": "https://app.konwertindiamotors.com",
+        "approve_url": "https://app.konwertindiamotors.com/api/public/approvals/sample?action=approve",
+        "reject_url": "https://app.konwertindiamotors.com/api/public/approvals/sample?action=reject"
     }
 
     subject = data.subject
@@ -360,7 +362,7 @@ def seed_email_templates(db: Session):
         {
             "name": "leave_new_request",
             "subject": "Action Required: Leave Request from {employee_name}",
-            "placeholders": ["employee_name", "leave_type", "from_date", "to_date", "total_days", "reason", "approver_name", "action_url"],
+            "placeholders": ["employee_name", "leave_type", "from_date", "to_date", "total_days", "reason", "approver_name", "action_url", "approve_url", "reject_url"],
             "body_html": """<div style="background-color: #EEF2F7; padding: 40px 20px; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif; min-height: 100%;">
   <div style="width: 100%; max-width: 875px; min-height: 495px; background-color: #ffffff; border: 1px solid #cbd5e0; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04); box-sizing: border-box; margin: 0 auto; display: flex; flex-direction: column; justify-content: space-between;">
     <div>
@@ -387,8 +389,12 @@ def seed_email_templates(db: Session):
           </tr>
         </table>
       </div>
-      <div style="text-align: center; margin: 32px 0 20px;">
-        <a href="{action_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 14px 44px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402;">Respond Now →</a>
+      <div style="text-align: center; margin: 30px 0 18px;">
+        <a href="{approve_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402; margin: 6px 8px;">Approve ✓</a>
+        <a href="{reject_url}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.22); border: 1px solid #b91c1c; margin: 6px 8px;">Reject ✗</a>
+      </div>
+      <div style="text-align: center; margin: 0 0 14px;">
+        <a href="{action_url}" style="color: #195402; font-size: 13px; font-weight: 600; text-decoration: underline;">Or respond inside KIM ERP →</a>
       </div>
       <p style="font-size: 12px; color: #718096; text-align: center; margin-bottom: 24px;">Or copy this link:<br/><a href="{action_url}" style="color: #238204; text-decoration: underline; word-break: break-all; display: inline-block; margin-top: 6px;">{action_url}</a></p>
     </div>
@@ -438,7 +444,7 @@ def seed_email_templates(db: Session):
         {
             "name": "onduty_new_request",
             "subject": "Action Required: On-Duty Request from {employee_name}",
-            "placeholders": ["employee_name", "date", "from_time", "to_time", "work_location", "purpose", "approver_name", "action_url"],
+            "placeholders": ["employee_name", "date", "from_time", "to_time", "work_location", "purpose", "approver_name", "action_url", "approve_url", "reject_url"],
             "body_html": """<div style="background-color: #EEF2F7; padding: 40px 20px; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif; min-height: 100%;">
   <div style="width: 100%; max-width: 875px; min-height: 495px; background-color: #ffffff; border: 1px solid #cbd5e0; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04); box-sizing: border-box; margin: 0 auto; display: flex; flex-direction: column; justify-content: space-between;">
     <div>
@@ -469,8 +475,12 @@ def seed_email_templates(db: Session):
           </tr>
         </table>
       </div>
-      <div style="text-align: center; margin: 32px 0 20px;">
-        <a href="{action_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 14px 44px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402;">Respond Now →</a>
+      <div style="text-align: center; margin: 30px 0 18px;">
+        <a href="{approve_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402; margin: 6px 8px;">Approve ✓</a>
+        <a href="{reject_url}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.22); border: 1px solid #b91c1c; margin: 6px 8px;">Reject ✗</a>
+      </div>
+      <div style="text-align: center; margin: 0 0 14px;">
+        <a href="{action_url}" style="color: #195402; font-size: 13px; font-weight: 600; text-decoration: underline;">Or respond inside KIM ERP →</a>
       </div>
       <p style="font-size: 12px; color: #718096; text-align: center; margin-bottom: 24px;">Or copy this link:<br/><a href="{action_url}" style="color: #238204; text-decoration: underline; word-break: break-all; display: inline-block; margin-top: 6px;">{action_url}</a></p>
     </div>
@@ -524,7 +534,7 @@ def seed_email_templates(db: Session):
         {
             "name": "permission_new_request",
             "subject": "Action Required: Permission Request from {employee_name}",
-            "placeholders": ["employee_name", "leave_type", "from_date", "to_date", "total_days", "reason", "approver_name", "action_url"],
+            "placeholders": ["employee_name", "leave_type", "from_date", "to_date", "total_days", "reason", "approver_name", "action_url", "approve_url", "reject_url"],
             "body_html": """<div style="background-color: #EEF2F7; padding: 40px 20px; font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, Arial, sans-serif; min-height: 100%;">
   <div style="width: 100%; max-width: 875px; min-height: 495px; background-color: #ffffff; border: 1px solid #cbd5e0; border-radius: 16px; padding: 40px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.04); box-sizing: border-box; margin: 0 auto; display: flex; flex-direction: column; justify-content: space-between;">
     <div>
@@ -551,8 +561,12 @@ def seed_email_templates(db: Session):
           </tr>
         </table>
       </div>
-      <div style="text-align: center; margin: 32px 0 20px;">
-        <a href="{action_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 14px 44px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402;">Respond Now →</a>
+      <div style="text-align: center; margin: 30px 0 18px;">
+        <a href="{approve_url}" style="display: inline-block; background: linear-gradient(135deg, #238204 0%, #195402 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(25, 84, 2, 0.25); border: 1px solid #195402; margin: 6px 8px;">Approve ✓</a>
+        <a href="{reject_url}" style="display: inline-block; background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: #ffffff; text-decoration: none; padding: 13px 34px; border-radius: 50px; font-weight: 700; font-size: 15px; letter-spacing: 0.3px; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.22); border: 1px solid #b91c1c; margin: 6px 8px;">Reject ✗</a>
+      </div>
+      <div style="text-align: center; margin: 0 0 14px;">
+        <a href="{action_url}" style="color: #195402; font-size: 13px; font-weight: 600; text-decoration: underline;">Or respond inside KIM ERP →</a>
       </div>
       <p style="font-size: 12px; color: #718096; text-align: center; margin-bottom: 24px;">Or copy this link:<br/><a href="{action_url}" style="color: #238204; text-decoration: underline; word-break: break-all; display: inline-block; margin-top: 6px;">{action_url}</a></p>
     </div>
@@ -619,4 +633,8 @@ def seed_email_templates(db: Session):
                 placeholders=item["placeholders"]
             )
             db.add(tpl)
+        elif item["name"] in ("leave_new_request", "onduty_new_request", "permission_new_request"):
+            if "{approve_url}" not in (exists.body_html or ""):
+                exists.body_html = item["body_html"]
+                exists.placeholders = item["placeholders"]
     db.commit()

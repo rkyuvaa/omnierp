@@ -670,3 +670,18 @@ class TaskActivityLog(Base):
 
     task = relationship("Task", back_populates="activity_logs")
     user = relationship("User", foreign_keys=[user_id])
+
+
+class ApprovalActionToken(Base):
+    __tablename__ = "approval_action_tokens"
+
+    id = Column(Integer, primary_key=True, index=True)
+    token = Column(String(128), unique=True, nullable=False, index=True)
+    entity_type = Column(String(40), nullable=False)  # leave | onduty | permission | advance | advance_settlement | advance_settlement_accounts
+    entity_id = Column(Integer, nullable=False, index=True)
+    approver_employee_id = Column(Integer, nullable=True)
+    stage = Column(String(30), default="default")
+    expires_at = Column(DateTime, nullable=False)
+    used_at = Column(DateTime, nullable=True)
+    used_action = Column(String(20), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)

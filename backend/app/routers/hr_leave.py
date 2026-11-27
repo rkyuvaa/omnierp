@@ -575,15 +575,21 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False, origin
 
         # ── Email to MANAGER & CC recipients on new application ──
         else:
-            manager = db.query(HREmployee).filter(HREmployee.id == req.l1_approver_id).first() if req.l1_approver_id else None
+            target_approver_id = req.approver_id or req.l1_approver_id
+            manager = db.query(HREmployee).filter(HREmployee.id == target_approver_id).first() if target_approver_id else None
             if manager and manager.email and "@" in manager.email:
-                import os
-                frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
-                if not frontend_url and origin:
-                    frontend_url = origin.rstrip("/")
-                if not frontend_url:
-                    frontend_url = "http://localhost"
+                from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url
+                frontend_url = get_public_base_url(origin or "")
                 action_url = f"{frontend_url}/hr/approvals?type=leave&id={req.id}"
+                stage = "l2" if (req.l2_approver_id and target_approver_id == req.l2_approver_id and req.l1_status == "approved") else "l1"
+                action_urls = build_approval_action_urls(
+                    db=db,
+                    entity_type="leave",
+                    entity_id=req.id,
+                    approver_employee_id=manager.id,
+                    stage=stage,
+                    origin=origin or "",
+                )
                 variables = {
                     "employee_name": req.employee.name,
                     "leave_type": req.leave_type.name if req.leave_type else "Leave",
@@ -593,6 +599,8 @@ def _send_leave_email_notification(req_id: int, to_manager: bool = False, origin
                     "reason": req.reason or "No reason provided",
                     "approver_name": manager.name,
                     "action_url": action_url,
+                    "approve_url": action_urls["approve_url"],
+                    "reject_url": action_urls["reject_url"],
                 }
                 try:
                     send_template_email(
@@ -664,128 +672,155 @@ def all_requests(
     if employee_id: q = q.filter(HRLeaveRequest.employee_id == employee_id)
     return [_serialize_request(r) for r in q.order_by(HRLeaveRequest.created_at.desc()).all()]
 
+def process_leave_decision(
+    db: Session,
+    req: HRLeaveRequest,
+    action: str,
+    actor_emp: Optional[HREmployee],
+    is_super: bool,
+    remarks: Optional[str],
+    background_tasks: Optional[BackgroundTasks] = None,
+    origin: str = "",
+) -> dict:
+    """Execute leave approve/reject logic shared by authenticated routes and email action tokens."""
+    from app.utils.approval_tokens import invalidate_entity_tokens
+
+    if not is_super:
+        if not actor_emp or req.approver_id != actor_emp.id:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied. You are not authorized to {action} this request.",
+            )
+    if req.status != "pending":
+        raise HTTPException(400, f"Request is already {req.status}")
+
+    is_l1 = (req.l1_approver_id == actor_emp.id) if actor_emp else False
+    is_l2 = (req.l2_approver_id == actor_emp.id) if actor_emp else False
+
+    if action == "approve":
+        final_approval = False
+        if is_l1 and not is_l2 and req.l1_status == "pending":
+            req.l1_status = "approved"
+            req.l1_remarks = remarks
+            req.l1_approved_at = datetime.utcnow()
+            if req.l2_approver_id:
+                req.approver_id = req.l2_approver_id
+                l2_manager = db.query(HREmployee).filter(HREmployee.id == req.l2_approver_id).first()
+                if l2_manager and l2_manager.user_id:
+                    _notify(
+                        db,
+                        l2_manager.user_id,
+                        "Leave Request Pending (L2)",
+                        f"{req.employee.name if req.employee else 'Employee'} leave approved by L1. Pending your final approval.",
+                        "leave",
+                        req.id,
+                    )
+                invalidate_entity_tokens(db, "leave", req.id, "approved_l1")
+                db.commit()
+                if background_tasks:
+                    background_tasks.add_task(_send_leave_email_notification, req.id, True, origin)
+                else:
+                    _send_leave_email_notification(req.id, True, origin)
+                return {"message": "Approved (L1), pending L2", "id": req.id, "final_status": "pending_l2"}
+            final_approval = True
+        elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
+            req.l2_status = "approved"
+            req.l2_remarks = remarks
+            req.l2_approved_at = datetime.utcnow()
+            final_approval = True
+        elif is_super:
+            final_approval = True
+        else:
+            raise HTTPException(400, "You cannot approve this request in its current state.")
+
+        if final_approval:
+            req.status = "approved"
+            req.approver_remarks = remarks
+            req.approved_at = datetime.utcnow()
+
+        if req.leave_type and req.leave_type.code != "LOP":
+            balance = db.query(HRLeaveBalance).filter(
+                HRLeaveBalance.employee_id == req.employee_id,
+                HRLeaveBalance.leave_type_id == req.leave_type_id,
+                HRLeaveBalance.year == req.from_date.year,
+            ).first()
+            if balance:
+                balance.used_days += req.total_days
+
+        current_date = req.from_date
+        while current_date <= req.to_date:
+            _recompute_attendance(db, req.employee_id, current_date, req.id)
+            current_date += timedelta(days=1)
+
+        if req.employee and req.employee.user_id:
+            _notify(
+                db,
+                req.employee.user_id,
+                "Leave Approved ✓",
+                f"Your {req.leave_type.name if req.leave_type else 'leave'} from {req.from_date} to {req.to_date} has been approved.",
+                "leave",
+                req.id,
+            )
+        invalidate_entity_tokens(db, "leave", req.id, "approved")
+        db.commit()
+        if background_tasks:
+            background_tasks.add_task(_send_leave_email_notification, req.id)
+        else:
+            _send_leave_email_notification(req.id)
+        return {"message": "Approved", "id": req.id, "final_status": "approved"}
+
+    elif action == "reject":
+        if is_l1 and req.l1_status == "pending":
+            req.l1_status = "rejected"
+            req.l1_remarks = remarks
+            req.l1_approved_at = datetime.utcnow()
+        elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
+            req.l2_status = "rejected"
+            req.l2_remarks = remarks
+            req.l2_approved_at = datetime.utcnow()
+
+        req.status = "rejected"
+        req.approver_remarks = remarks
+        req.approved_at = datetime.utcnow()
+        if req.employee and req.employee.user_id:
+            _notify(
+                db,
+                req.employee.user_id,
+                "Leave Rejected ✗",
+                f"Your leave from {req.from_date} to {req.to_date} was rejected. Reason: {remarks or 'No reason given'}",
+                "leave",
+                req.id,
+            )
+        invalidate_entity_tokens(db, "leave", req.id, "rejected")
+        db.commit()
+        if background_tasks:
+            background_tasks.add_task(_send_leave_email_notification, req.id)
+        else:
+            _send_leave_email_notification(req.id)
+        return {"message": "Rejected", "id": req.id, "final_status": "rejected"}
+
+    raise HTTPException(400, f"Invalid action: {action}")
+
+
 @router.post("/{req_id}/approve")
 def approve_leave(req_id: int, data: LeaveAction, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-        if req.approver_id != emp.id:
-            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to approve this request.")
-    if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
-
-    # Role check
-    emp = None
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-
-    is_l1 = (req.l1_approver_id == emp.id) if emp else False
-    is_l2 = (req.l2_approver_id == emp.id) if emp else False
+    from app.auth import is_hr_admin, get_current_employee
     is_super = is_hr_admin(current_user, db)
-
-    final_approval = False
-
-    if is_l1 and not is_l2 and req.l1_status == "pending":
-        req.l1_status = "approved"
-        req.l1_remarks = data.remarks
-        req.l1_approved_at = datetime.utcnow()
-        if req.l2_approver_id:
-            req.approver_id = req.l2_approver_id
-            # Notify L2 Manager
-            l2_manager = db.query(HREmployee).filter(HREmployee.id == req.l2_approver_id).first()
-            if l2_manager and l2_manager.user_id:
-                _notify(db, l2_manager.user_id,
-                        "Leave Request Pending (L2)",
-                        f"{req.employee.name if req.employee else 'Employee'} leave approved by L1. Pending your final approval.",
-                        "leave", req.id)
-            db.commit()
-            return {"message": "Approved (L1), pending L2", "id": req.id}
-        else:
-            final_approval = True
-    elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
-        req.l2_status = "approved"
-        req.l2_remarks = data.remarks
-        req.l2_approved_at = datetime.utcnow()
-        final_approval = True
-    elif is_super:
-        final_approval = True
-    else:
-        raise HTTPException(400, "You cannot approve this request in its current state.")
-
-    if final_approval:
-        req.status = "approved"
-        req.approver_remarks = data.remarks
-        req.approved_at = datetime.utcnow()
-
-    # Deduct balance
-    if req.leave_type and req.leave_type.code != "LOP":
-        balance = db.query(HRLeaveBalance).filter(
-            HRLeaveBalance.employee_id == req.employee_id,
-            HRLeaveBalance.leave_type_id == req.leave_type_id,
-            HRLeaveBalance.year == req.from_date.year
-        ).first()
-        if balance:
-            balance.used_days += req.total_days
-
-    # Update attendance records
-    current_date = req.from_date
-    while current_date <= req.to_date:
-        _recompute_attendance(db, req.employee_id, current_date, req.id)
-        current_date += timedelta(days=1)
-
-    # Notify employee
-    if req.employee and req.employee.user_id:
-        _notify(db, req.employee.user_id,
-                "Leave Approved ✓",
-                f"Your {req.leave_type.name if req.leave_type else 'leave'} from {req.from_date} to {req.to_date} has been approved.",
-                "leave", req.id)
-    db.commit()
-    background_tasks.add_task(_send_leave_email_notification, req.id)
-    return {"message": "Approved", "id": req.id}
+    emp = None if is_super else get_current_employee(current_user, db)
+    res = process_leave_decision(db, req, "approve", emp, is_super, data.remarks, background_tasks)
+    return {"message": res["message"], "id": req.id}
 
 @router.post("/{req_id}/reject")
 def reject_leave(req_id: int, data: LeaveAction, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HRLeaveRequest).filter(HRLeaveRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Request not found")
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-        if req.approver_id != emp.id:
-            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to reject this request.")
-    if req.status != "pending": raise HTTPException(400, f"Request is already {req.status}")
-    
-    emp = None
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-
-    is_l1 = (req.l1_approver_id == emp.id) if emp else False
-    is_l2 = (req.l2_approver_id == emp.id) if emp else False
-    
-    if is_l1 and req.l1_status == "pending":
-        req.l1_status = "rejected"
-        req.l1_remarks = data.remarks
-        req.l1_approved_at = datetime.utcnow()
-    elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
-        req.l2_status = "rejected"
-        req.l2_remarks = data.remarks
-        req.l2_approved_at = datetime.utcnow()
-
-    req.status = "rejected"
-    req.approver_remarks = data.remarks
-    req.approved_at = datetime.utcnow()
-    if req.employee and req.employee.user_id:
-        _notify(db, req.employee.user_id,
-                "Leave Rejected ✗",
-                f"Your leave from {req.from_date} to {req.to_date} was rejected. Reason: {data.remarks or 'No reason given'}",
-                "leave", req.id)
-    db.commit()
-    background_tasks.add_task(_send_leave_email_notification, req.id)
-    return {"message": "Rejected"}
+    from app.auth import is_hr_admin, get_current_employee
+    is_super = is_hr_admin(current_user, db)
+    emp = None if is_super else get_current_employee(current_user, db)
+    res = process_leave_decision(db, req, "reject", emp, is_super, data.remarks, background_tasks)
+    return {"message": res["message"]}
 
 @router.post("/{req_id}/cancel")
 def cancel_leave(req_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -798,7 +833,9 @@ def cancel_leave(req_id: int, db: Session = Depends(get_db), current_user: User 
         if req.employee_id != emp.id:
             raise HTTPException(status_code=403, detail="Access denied. You can only cancel your own requests.")
     if req.status != "pending": raise HTTPException(400, "Only pending requests can be cancelled")
+    from app.utils.approval_tokens import invalidate_entity_tokens
     req.status = "cancelled"
+    invalidate_entity_tokens(db, "leave", req.id, "cancelled")
     db.commit()
     return {"message": "Cancelled"}
 

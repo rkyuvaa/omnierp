@@ -9,6 +9,7 @@ from app.routers import bank
 from app.routers import finance
 from app.routers import expenses
 from app.routers import notifications
+from app.routers import public_approvals
 from app.hr_models import *  # register HR models with Base
 from app.bank_models import *  # register Bank models with Base
 from app.expense_models import *  # register Expense models with Base
@@ -253,6 +254,7 @@ app.include_router(hr_leave_ledger.router, prefix="/api/hr/ledger", tags=["HR-Le
 app.include_router(bank.router, prefix="/api/bank", tags=["Bank"])
 app.include_router(finance.router, prefix="/api/finance", tags=["Finance"])
 app.include_router(expenses.router, prefix="/api/expenses", tags=["Expenses"])
+app.include_router(public_approvals.router, prefix="/api/public/approvals", tags=["Public Email Approvals"])
 
 
 # Seed Finance module default data

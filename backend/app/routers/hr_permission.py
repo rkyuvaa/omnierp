@@ -311,6 +311,89 @@ def all_permissions(
     return [_serialize_permission(r) for r in q.order_by(HRPermissionRequest.created_at.desc()).all()]
 
 
+def process_permission_decision(
+    db: Session,
+    req: HRPermissionRequest,
+    action: str,
+    actor_emp: Optional[HREmployee],
+    is_super: bool,
+    remarks: Optional[str],
+    background_tasks: Optional[BackgroundTasks] = None,
+) -> dict:
+    """Execute permission approve/reject logic shared by authenticated routes and email action tokens."""
+    from app.utils.approval_tokens import invalidate_entity_tokens
+
+    if not is_super:
+        if not actor_emp or req.approver_id != actor_emp.id:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied. You are not authorized to {action} this request.",
+            )
+
+    if req.status != "pending":
+        raise HTTPException(400, f"Request is already {req.status}")
+
+    if action == "approve":
+        req.status = "approved"
+        req.approver_remarks = remarks
+        req.approved_at = datetime.utcnow()
+
+        perm_type = db.query(HRLeaveType).filter(
+            (HRLeaveType.code == "PERM") | (HRLeaveType.name.ilike("%permission%"))
+        ).first()
+        if perm_type:
+            bal = db.query(HRLeaveBalance).filter(
+                HRLeaveBalance.employee_id == req.employee_id,
+                HRLeaveBalance.leave_type_id == perm_type.id,
+                HRLeaveBalance.year == req.date.year
+            ).first()
+            if bal:
+                bal.used_days = round((bal.used_days or 0.0) + req.duration_hours, 2)
+
+        if req.employee and req.employee.user_id:
+            _notify(
+                db,
+                req.employee.user_id,
+                "Permission Approved ✓",
+                f"Your permission request for {req.date} ({req.session.capitalize()} session) has been approved.",
+                "permission",
+                req.id,
+            )
+
+        invalidate_entity_tokens(db, "permission", req.id, "approved")
+        db.commit()
+        if background_tasks:
+            background_tasks.add_task(_send_permission_email, req.id, to_manager=False)
+        else:
+            _send_permission_email(req.id, to_manager=False)
+        return {"message": "Permission approved successfully", "id": req.id, "final_status": "approved"}
+
+    elif action == "reject":
+        req.status = "rejected"
+        req.approver_remarks = remarks
+        req.approved_at = datetime.utcnow()
+
+        if req.employee and req.employee.user_id:
+            _notify(
+                db,
+                req.employee.user_id,
+                "Permission Rejected ✗",
+                f"Your permission for {req.date} ({req.session.capitalize()} session) was rejected. Reason: {remarks or 'No reason provided'}",
+                "permission",
+                req.id,
+            )
+
+        invalidate_entity_tokens(db, "permission", req.id, "rejected")
+        db.commit()
+        if background_tasks:
+            background_tasks.add_task(_send_permission_email, req.id, to_manager=False)
+        else:
+            _send_permission_email(req.id, to_manager=False)
+        return {"message": "Permission rejected", "id": req.id, "final_status": "rejected"}
+
+    raise HTTPException(400, f"Invalid action: {action}")
+
+
 @router.post("/{req_id}/approve")
 def approve_permission(
     req_id: int,
@@ -323,49 +406,11 @@ def approve_permission(
     if not req:
         raise HTTPException(404, "Permission request not found")
 
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-        if req.approver_id != emp.id:
-            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to approve this request.")
-
-    if req.status != "pending":
-        raise HTTPException(400, f"Request is already {req.status}")
-
-    req.status = "approved"
-    req.approver_remarks = data.remarks
-    req.approved_at = datetime.utcnow()
-
-    # Annual HRLeaveBalance tracking if balance record exists
-    perm_type = db.query(HRLeaveType).filter(
-        (HRLeaveType.code == "PERM") | (HRLeaveType.name.ilike("%permission%"))
-    ).first()
-    if perm_type:
-        bal = db.query(HRLeaveBalance).filter(
-            HRLeaveBalance.employee_id == req.employee_id,
-            HRLeaveBalance.leave_type_id == perm_type.id,
-            HRLeaveBalance.year == req.date.year
-        ).first()
-        if bal:
-            bal.used_days = round((bal.used_days or 0.0) + req.duration_hours, 2)
-
-    # NOTE: As instructed, we do NOT touch attendance records. Attendance remains intact.
-
-    # Notify employee
-    if req.employee and req.employee.user_id:
-        _notify(
-            db,
-            req.employee.user_id,
-            "Permission Approved ✓",
-            f"Your permission request for {req.date} ({req.session.capitalize()} session) has been approved.",
-            "permission",
-            req.id,
-        )
-
-    db.commit()
-    background_tasks.add_task(_send_permission_email, req.id, to_manager=False)
-    return {"message": "Permission approved successfully", "id": req.id}
+    from app.auth import is_hr_admin, get_current_employee
+    is_super = is_hr_admin(current_user, db)
+    emp = None if is_super else get_current_employee(current_user, db)
+    res = process_permission_decision(db, req, "approve", emp, is_super, data.remarks, background_tasks)
+    return {"message": res["message"], "id": req.id}
 
 
 @router.post("/{req_id}/reject")
@@ -380,35 +425,11 @@ def reject_permission(
     if not req:
         raise HTTPException(404, "Permission request not found")
 
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-        if req.approver_id != emp.id:
-            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to reject this request.")
-
-    if req.status != "pending":
-        raise HTTPException(400, f"Request is already {req.status}")
-
-    req.status = "rejected"
-    req.approver_remarks = data.remarks
-    req.approved_at = datetime.utcnow()
-
-    # Rejection does NOT consume allowance: the slot is automatically released!
-
-    if req.employee and req.employee.user_id:
-        _notify(
-            db,
-            req.employee.user_id,
-            "Permission Rejected ✗",
-            f"Your permission for {req.date} ({req.session.capitalize()} session) was rejected. Reason: {data.remarks or 'No reason provided'}",
-            "permission",
-            req.id,
-        )
-
-    db.commit()
-    background_tasks.add_task(_send_permission_email, req.id, to_manager=False)
-    return {"message": "Permission rejected"}
+    from app.auth import is_hr_admin, get_current_employee
+    is_super = is_hr_admin(current_user, db)
+    emp = None if is_super else get_current_employee(current_user, db)
+    res = process_permission_decision(db, req, "reject", emp, is_super, data.remarks, background_tasks)
+    return {"message": res["message"]}
 
 
 @router.post("/{req_id}/cancel")
@@ -439,6 +460,8 @@ def cancel_permission(
 
     old_status = req.status
     req.status = "cancelled"
+    from app.utils.approval_tokens import invalidate_entity_tokens
+    invalidate_entity_tokens(db, "permission", req.id, "cancelled")
 
     # If it was approved, refund used_days in HRLeaveBalance
     if old_status == "approved":
@@ -486,8 +509,16 @@ def _send_permission_email(req_id: int, to_manager: bool = False, origin: str = 
         else:
             manager = db.query(HREmployee).filter(HREmployee.id == req.approver_id).first() if req.approver_id else None
             if manager and manager.email and "@" in manager.email:
-                import os
-                frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/") or origin.rstrip("/") or "http://localhost"
+                from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url
+                frontend_url = get_public_base_url(origin or "")
+                action_urls = build_approval_action_urls(
+                    db=db,
+                    entity_type="permission",
+                    entity_id=req.id,
+                    approver_employee_id=manager.id,
+                    stage="default",
+                    origin=origin or "",
+                )
                 send_template_email(
                     db=db,
                     to_email=manager.email,
@@ -501,6 +532,8 @@ def _send_permission_email(req_id: int, to_manager: bool = False, origin: str = 
                         "reason": req.reason or "No reason provided",
                         "approver_name": manager.name,
                         "action_url": f"{frontend_url}/hr/approvals?type=permission&id={req.id}",
+                        "approve_url": action_urls["approve_url"],
+                        "reject_url": action_urls["reject_url"],
                     }
                 )
     except Exception as e:

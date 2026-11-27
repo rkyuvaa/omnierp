@@ -75,7 +75,9 @@ const TEMPLATE_INFO = {
       { name: "{total_days}", desc: "Duration (1 hour)" },
       { name: "{reason}", desc: "Reason provided by employee" },
       { name: "{approver_name}", desc: "Reporting manager name" },
-      { name: "{action_url}", desc: "Direct link to approve/reject" }
+      { name: "{action_url}", desc: "Direct link to approve/reject in portal" },
+      { name: "{approve_url}", desc: "No-login email Approve button URL" },
+      { name: "{reject_url}", desc: "No-login email Reject button URL" }
     ]
   }
 };
@@ -144,7 +146,9 @@ export default function MailingSettings() {
       to_time: "18:30",
       work_location: "Client Site",
       purpose: "Site inspection",
-      action_url: "https://app.konwertindiamotors.com"
+      action_url: "https://app.konwertindiamotors.com",
+      approve_url: "https://app.konwertindiamotors.com/api/public/approvals/sample?action=approve",
+      reject_url: "https://app.konwertindiamotors.com/api/public/approvals/sample?action=reject"
     };
     let res = text;
     for (const [k, v] of Object.entries(sampleVars)) {

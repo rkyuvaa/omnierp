@@ -3,7 +3,7 @@ Expenses & Reimbursement Router — /api/expenses
 Full-featured expense management: categories, claim submission,
 2-level approval workflow (same hierarchy as Leave/OnDuty), and reimbursement tracking.
 """
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Request
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from typing import Optional, List
@@ -1123,7 +1123,16 @@ def _ser_ledger(l: ExpenseAdvanceLedger) -> dict:
 
 
 # ── Advance Notification Helper ──────────────────────────────────────────────
-def _notify_advance(db: Session, user_id: int, title: str, message: str, ref_id: int = None):
+def _notify_advance(
+    db: Session,
+    user_id: int,
+    title: str,
+    message: str,
+    ref_id: int = None,
+    approve_url: str = None,
+    reject_url: str = None,
+    portal_url: str = None,
+):
     # 1. In-app notification
     notif = HRNotification(user_id=user_id, title=title, message=message,
                            reference_type="expense_advance", reference_id=ref_id)
@@ -1142,12 +1151,23 @@ def _notify_advance(db: Session, user_id: int, title: str, message: str, ref_id:
         if user and user.email:
             from app.utils.email_service import send_email
             subject = f"KIM ERP: {title}"
+            actions_html = ""
+            if approve_url and reject_url:
+                portal_link = f'<div style="margin-top:12px;"><a href="{portal_url}" style="color:#195402;font-size:13px;">Open in KIM ERP →</a></div>' if portal_url else ""
+                actions_html = f"""
+                    <div style="margin: 22px 0 10px; text-align: center;">
+                        <a href="{approve_url}" style="display:inline-block;background:#15803d;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;margin:4px 6px;">Approve ✓</a>
+                        <a href="{reject_url}" style="display:inline-block;background:#dc2626;color:#ffffff;text-decoration:none;padding:12px 28px;border-radius:8px;font-weight:700;font-size:14px;margin:4px 6px;">Reject ✗</a>
+                        {portal_link}
+                    </div>
+                """
             body_html = f"""
             <html>
                 <body style="font-family: Arial, sans-serif; line-height: 1.5; color: #333;">
                     <h2 style="color: #195402;">KIM ERP Notification</h2>
                     <p><strong>{title}</strong></p>
                     <p>{message}</p>
+                    {actions_html}
                     <br/>
                     <hr style="border: none; border-top: 1px solid #eee;" />
                     <p style="font-size: 12px; color: #888;">This is an automated notification from KIM ERP. Please do not reply to this email.</p>
@@ -1212,7 +1232,7 @@ def recalculate_ledger_balances(db: Session, employee_id: int):
     db.commit()
 
 
-def send_advance_request_email(db: Session, advance: ExpenseAdvanceRequest):
+def send_advance_request_email(db: Session, advance: ExpenseAdvanceRequest, origin: str = "", action_urls: dict = None):
     """Send formatted Cash Advance Request notification email to Approver matching Excel format."""
     try:
         emp = advance.employee
@@ -1230,6 +1250,35 @@ def send_advance_request_email(db: Session, advance: ExpenseAdvanceRequest):
             
         if not recipient_user or not recipient_user.email:
             return
+
+        from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url
+        base_url = get_public_base_url(origin)
+        if not action_urls:
+            action_urls = build_approval_action_urls(
+                db=db,
+                entity_type="advance",
+                entity_id=advance.id,
+                approver_employee_id=advance.approver_id,
+                stage="l1",
+                origin=origin,
+            )
+        approve_url = action_urls["approve_url"]
+        reject_url = action_urls["reject_url"]
+        action_buttons_html = f"""
+            <div style="text-align: center; margin-top: 28px;">
+              <a href="{approve_url}" style="background: #15803d; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; margin: 4px 6px; box-shadow: 0 4px 10px rgba(21,128,61,0.25);">
+                Approve ✓
+              </a>
+              <a href="{reject_url}" style="background: #dc2626; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; margin: 4px 6px; box-shadow: 0 4px 10px rgba(220,38,38,0.25);">
+                Reject ✗
+              </a>
+              <div style="margin-top: 14px;">
+                <a href="{base_url}/expenses/approvals" style="color: #15803d; font-size: 13px; font-weight: 600; text-decoration: underline;">
+                  Review in KIM ERP →
+                </a>
+              </div>
+            </div>
+        """
             
         designation = getattr(emp, 'designation', 'Employee') or 'Employee'
         req_date = advance.created_at.strftime('%d-%m-%Y') if advance.created_at else date.today().strftime('%d-%m-%Y')
@@ -1308,11 +1357,7 @@ def send_advance_request_email(db: Session, advance: ExpenseAdvanceRequest):
               <div style="font-size: 13.5px; color: #0f172a; line-height: 1.5;">{advance.purpose or 'Cash Advance Request'}</div>
             </div>
 
-            <div style="text-align: center; margin-top: 28px;">
-              <a href="https://app.konwertindiamotors.com/expenses/approvals" style="background: #15803d; color: #ffffff; padding: 13px 28px; text-decoration: none; border-radius: 8px; font-weight: 700; font-size: 14px; display: inline-block; box-shadow: 0 4px 10px rgba(21,128,61,0.25);">
-                Review & Approve Request
-              </a>
-            </div>
+            {action_buttons_html}
           </div>
         </div>
         """
@@ -1327,6 +1372,7 @@ def send_advance_request_email(db: Session, advance: ExpenseAdvanceRequest):
 @router.post("/advances")
 def create_advance_request(
     data: AdvanceRequestSubmit,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -1374,14 +1420,28 @@ def create_advance_request(
         db.commit()
     
     if status_str == "submitted":
-        send_advance_request_email(db, advance)
+        from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url
+        origin = request.headers.get("origin") or ""
+        base_url = get_public_base_url(origin)
+        action_urls = build_approval_action_urls(
+            db=db,
+            entity_type="advance",
+            entity_id=advance.id,
+            approver_employee_id=advance.approver_id,
+            stage="l1",
+            origin=origin,
+        )
+        send_advance_request_email(db, advance, origin=origin, action_urls=action_urls)
         if emp.manager_id:
             manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
             if manager and manager.user_id:
                 _notify_advance(db, manager.user_id,
                                 "New Advance Request Pending",
                                 f"{emp.name} submitted an advance request of \u20b9{data.amount:,.2f} for approval.",
-                                advance.id)
+                                advance.id,
+                                approve_url=action_urls["approve_url"],
+                                reject_url=action_urls["reject_url"],
+                                portal_url=f"{base_url}/expenses/approvals")
                 db.commit()
             
     return _ser_advance(advance)
@@ -1391,6 +1451,7 @@ def create_advance_request(
 def update_advance_request(
     adv_id: int,
     data: AdvanceRequestSubmit,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -1430,10 +1491,24 @@ def update_advance_request(
     if status_str == "submitted" and emp.manager_id:
         manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
         if manager and manager.user_id:
+            from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url
+            origin = request.headers.get("origin") or ""
+            base_url = get_public_base_url(origin)
+            action_urls = build_approval_action_urls(
+                db=db,
+                entity_type="advance",
+                entity_id=advance.id,
+                approver_employee_id=emp.manager_id,
+                stage="l1",
+                origin=origin,
+            )
             _notify_advance(db, manager.user_id,
                             "Advance Request Resubmitted",
                             f"{emp.name} resubmitted advance request of \u20b9{data.amount:,.2f} for approval.",
-                            advance.id)
+                            advance.id,
+                            approve_url=action_urls["approve_url"],
+                            reject_url=action_urls["reject_url"],
+                            portal_url=f"{base_url}/expenses/approvals")
             db.commit()
             
     return _ser_advance(advance)
@@ -1465,6 +1540,92 @@ def get_advance_request(
     return _ser_advance(advance)
 
 
+def process_advance_decision(
+    db: Session,
+    advance: ExpenseAdvanceRequest,
+    action: str,
+    actor_emp: Optional[HREmployee],
+    is_super: bool,
+    remarks: Optional[str],
+) -> dict:
+    """Execute Cash Advance approve/reject logic shared by authenticated routes and email tokens."""
+    from app.utils.approval_tokens import invalidate_entity_tokens
+
+    if advance.status not in ("submitted", "under_review"):
+        raise HTTPException(400, f"Cannot {action} request in status {advance.status}")
+
+    if not is_super and (not actor_emp or advance.approver_id != actor_emp.id):
+        raise HTTPException(403, f"You are not authorized to {action} this request")
+
+    is_l1 = (advance.l1_approver_id == actor_emp.id) if actor_emp else False
+    is_l2 = (advance.l2_approver_id == actor_emp.id) if actor_emp else False
+
+    if action == "approve":
+        final_approval = False
+        if is_l1 and advance.l1_status == "pending":
+            advance.l1_status = "approved"
+            advance.l1_remarks = remarks
+            advance.l1_approved_at = datetime.utcnow()
+            final_approval = True
+        elif is_l2 and (advance.l2_status == "pending" or not advance.l2_status):
+            advance.l2_status = "approved"
+            advance.l2_remarks = remarks
+            advance.l2_approved_at = datetime.utcnow()
+            final_approval = True
+        elif is_super:
+            final_approval = True
+        else:
+            raise HTTPException(400, "You cannot approve this request in its current state.")
+
+        if final_approval:
+            advance.status = "approved"
+            advance.reference = _next_advance_ref(db)
+            advance.approved_at = datetime.utcnow()
+            advance.approver_remarks = remarks
+
+            if advance.employee and advance.employee.user_id:
+                _notify_advance(
+                    db,
+                    advance.employee.user_id,
+                    "Advance Request Approved (Pending Disburse) ✓",
+                    f"Your advance request {advance.reference} of ₹{advance.amount:,.2f} was approved by manager. Pending Accountant payout.",
+                    advance.id,
+                )
+
+        invalidate_entity_tokens(db, "advance", advance.id, "approved")
+        db.commit()
+        return {"message": "Approved by Manager (Pending Accountant Payout)", "id": advance.id, "final_status": "approved"}
+
+    elif action == "reject":
+        if is_l1 and advance.l1_status == "pending":
+            advance.l1_status = "rejected"
+            advance.l1_remarks = remarks
+            advance.l1_approved_at = datetime.utcnow()
+        elif is_l2 and (advance.l2_status == "pending" or not advance.l2_status):
+            advance.l2_status = "rejected"
+            advance.l2_remarks = remarks
+            advance.l2_approved_at = datetime.utcnow()
+
+        advance.status = "rejected"
+        advance.approved_at = datetime.utcnow()
+        advance.approver_remarks = remarks
+
+        if advance.employee and advance.employee.user_id:
+            _notify_advance(
+                db,
+                advance.employee.user_id,
+                "Advance Request Rejected ✗",
+                f"Your advance request was rejected. Remarks: {remarks or 'None'}",
+                advance.id,
+            )
+
+        invalidate_entity_tokens(db, "advance", advance.id, "rejected")
+        db.commit()
+        return {"message": "Rejected", "id": advance.id, "final_status": "rejected"}
+
+    raise HTTPException(400, f"Invalid action: {action}")
+
+
 @router.post("/advances/{adv_id}/approve")
 def approve_advance_request(
     adv_id: int,
@@ -1475,51 +1636,12 @@ def approve_advance_request(
     advance = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.id == adv_id).first()
     if not advance:
         raise HTTPException(404, "Advance request not found")
-        
-    if advance.status not in ("submitted", "under_review"):
-        raise HTTPException(400, f"Cannot approve request in status {advance.status}")
-        
+
     from app.auth import get_current_employee_optional
     is_admin = is_hr_admin(current_user, db)
     emp = get_current_employee_optional(current_user, db)
-    
-    if not is_admin and (not emp or advance.approver_id != emp.id):
-        raise HTTPException(403, "You are not authorized to approve this request")
-        
-    is_l1 = (advance.l1_approver_id == emp.id) if emp else False
-    is_l2 = (advance.l2_approver_id == emp.id) if emp else False
-    is_super = is_admin
-    final_approval = False
-    
-    if is_l1 and advance.l1_status == "pending":
-        advance.l1_status = "approved"
-        advance.l1_remarks = data.remarks
-        advance.l1_approved_at = datetime.utcnow()
-        final_approval = True
-    elif is_l2 and (advance.l2_status == "pending" or not advance.l2_status):
-        advance.l2_status = "approved"
-        advance.l2_remarks = data.remarks
-        advance.l2_approved_at = datetime.utcnow()
-        final_approval = True
-    elif is_super:
-        final_approval = True
-    else:
-        raise HTTPException(400, "You cannot approve this request in its current state.")
-        
-    if final_approval:
-        advance.status = "approved"
-        advance.reference = _next_advance_ref(db)
-        advance.approved_at = datetime.utcnow()
-        advance.approver_remarks = data.remarks
-        
-        if advance.employee and advance.employee.user_id:
-            _notify_advance(db, advance.employee.user_id,
-                            "Advance Request Approved (Pending Disburse) ✓",
-                            f"Your advance request {advance.reference} of ₹{advance.amount:,.2f} was approved by manager. Pending Accountant payout.",
-                            advance.id)
-            
-    db.commit()
-    return {"message": "Approved by Manager (Pending Accountant Payout)", "id": advance.id}
+    res = process_advance_decision(db, advance, "approve", emp, is_admin, data.remarks)
+    return {"message": res["message"], "id": advance.id}
 
 
 @router.post("/advances/{adv_id}/payout")
@@ -1589,41 +1711,12 @@ def reject_advance_request(
     advance = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.id == adv_id).first()
     if not advance:
         raise HTTPException(404, "Advance request not found")
-        
-    if advance.status not in ("submitted", "under_review"):
-        raise HTTPException(400, f"Cannot reject request in status {advance.status}")
-        
+
     from app.auth import get_current_employee_optional
     is_admin = is_hr_admin(current_user, db)
     emp = get_current_employee_optional(current_user, db)
-    
-    if not is_admin and (not emp or advance.approver_id != emp.id):
-        raise HTTPException(403, "You are not authorized to reject this request")
-        
-    is_l1 = (advance.l1_approver_id == emp.id) if emp else False
-    is_l2 = (advance.l2_approver_id == emp.id) if emp else False
-    
-    if is_l1 and advance.l1_status == "pending":
-        advance.l1_status = "rejected"
-        advance.l1_remarks = data.remarks
-        advance.l1_approved_at = datetime.utcnow()
-    elif is_l2 and (advance.l2_status == "pending" or not advance.l2_status):
-        advance.l2_status = "rejected"
-        advance.l2_remarks = data.remarks
-        advance.l2_approved_at = datetime.utcnow()
-        
-    advance.status = "rejected"
-    advance.approved_at = datetime.utcnow()
-    advance.approver_remarks = data.remarks
-    
-    if advance.employee and advance.employee.user_id:
-        _notify_advance(db, advance.employee.user_id,
-                        "Advance Request Rejected \u2717",
-                        f"Your advance request was rejected. Remarks: {data.remarks or 'None'}",
-                        advance.id)
-                        
-    db.commit()
-    return {"message": "Rejected"}
+    res = process_advance_decision(db, advance, "reject", emp, is_admin, data.remarks)
+    return {"message": res["message"]}
 
 
 @router.post("/advances/{adv_id}/clarify")
@@ -1649,6 +1742,8 @@ def clarify_advance_request(
         
     advance.status = "clarification_pending"
     advance.clarification_remarks = data.remarks
+    from app.utils.approval_tokens import invalidate_entity_tokens
+    invalidate_entity_tokens(db, "advance", advance.id, "clarification_pending")
     
     if advance.employee and advance.employee.user_id:
         _notify_advance(db, advance.employee.user_id,
@@ -1664,6 +1759,7 @@ def clarify_advance_request(
 def submit_settlement(
     adv_id: int,
     data: SettlementSubmit,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -1715,10 +1811,24 @@ def submit_settlement(
         if emp.manager_id:
             manager = db.query(HREmployee).filter(HREmployee.id == emp.manager_id).first()
             if manager and manager.user_id:
+                from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url
+                origin = request.headers.get("origin") or ""
+                base_url = get_public_base_url(origin)
+                action_urls = build_approval_action_urls(
+                    db=db,
+                    entity_type="advance_settlement",
+                    entity_id=advance.id,
+                    approver_employee_id=emp.manager_id,
+                    stage="l1",
+                    origin=origin,
+                )
                 _notify_advance(db, manager.user_id,
                                 "Expense Settlement Submitted",
                                 f"{emp.name} submitted expense settlement sheet for advance {advance.reference}.",
-                                advance.id)
+                                advance.id,
+                                approve_url=action_urls["approve_url"],
+                                reject_url=action_urls["reject_url"],
+                                portal_url=f"{base_url}/expenses/approvals")
     else:
         advance.status = "settlement_pending"
         
@@ -1727,10 +1837,171 @@ def submit_settlement(
     return _ser_advance(advance)
 
 
+def process_settlement_l1_decision(
+    db: Session,
+    advance: ExpenseAdvanceRequest,
+    action: str,
+    actor_emp: Optional[HREmployee],
+    is_super: bool,
+    remarks: Optional[str],
+    origin: str = "",
+) -> dict:
+    """Execute Manager (L1) settlement approve/reject logic shared by authenticated routes and email tokens."""
+    from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url, invalidate_entity_tokens
+
+    if advance.status != "settlement_submitted":
+        raise HTTPException(400, "Settlement is not submitted for review")
+
+    if not is_super and (not actor_emp or advance.approver_id != actor_emp.id):
+        raise HTTPException(403, "Access denied")
+
+    if action == "approve":
+        if actor_emp and advance.l1_approver_id == actor_emp.id:
+            advance.l1_status = "approved"
+            advance.l1_remarks = remarks
+            advance.l1_approved_at = datetime.utcnow()
+        elif is_super:
+            advance.l1_status = "approved"
+            advance.l1_remarks = remarks
+            advance.l1_approved_at = datetime.utcnow()
+        else:
+            raise HTTPException(400, "You cannot approve this settlement in its current state.")
+
+        advance.status = "settlement_manager_approved"
+        advance.approver_remarks = remarks
+        advance.approved_at = datetime.utcnow()
+
+        if advance.employee and advance.employee.user_id:
+            _notify_advance(
+                db,
+                advance.employee.user_id,
+                "Settlement Manager Approved ✓",
+                f"Your expense settlement for advance {advance.reference} has been approved by Manager. Pending Accounts verification.",
+                advance.id,
+            )
+
+        setting = db.query(SystemSetting).filter(SystemSetting.key == "expenses_settings").first()
+        accountant_id = None
+        if setting and isinstance(setting.value, dict):
+            accountant_id = setting.value.get("accountant_id")
+        if accountant_id:
+            accountant_emp = db.query(HREmployee).filter(HREmployee.id == accountant_id).first()
+            if accountant_emp and accountant_emp.user_id:
+                base_url = get_public_base_url(origin)
+                acc_urls = build_approval_action_urls(
+                    db=db,
+                    entity_type="advance_settlement_accounts",
+                    entity_id=advance.id,
+                    approver_employee_id=accountant_emp.id,
+                    stage="accounts",
+                    origin=origin,
+                )
+                _notify_advance(
+                    db,
+                    accountant_emp.user_id,
+                    "Settlement Pending Accounts Verification",
+                    f"{advance.employee.name if advance.employee else 'Employee'}'s settlement for {advance.reference} was approved by Manager. Please verify and approve.",
+                    advance.id,
+                    approve_url=acc_urls["approve_url"],
+                    reject_url=acc_urls["reject_url"],
+                    portal_url=f"{base_url}/expenses/approvals",
+                )
+
+        invalidate_entity_tokens(db, "advance_settlement", advance.id, "approved")
+        db.commit()
+        return {"message": "Settlement approved by Manager. Pending Accounts Manager verification.", "id": advance.id, "final_status": "settlement_manager_approved"}
+
+    elif action == "reject":
+        advance.status = "settlement_pending"
+        advance.clarification_remarks = remarks
+
+        if advance.employee and advance.employee.user_id:
+            _notify_advance(
+                db,
+                advance.employee.user_id,
+                "Expense Settlement Rejected \u2717",
+                f"Your expense settlement for {advance.reference} was rejected. Remarks: {remarks}",
+                advance.id,
+            )
+
+        invalidate_entity_tokens(db, "advance_settlement", advance.id, "rejected")
+        db.commit()
+        return {"message": "Settlement Rejected", "id": advance.id, "final_status": "rejected"}
+
+    raise HTTPException(400, f"Invalid action: {action}")
+
+
+def process_settlement_accounts_decision(
+    db: Session,
+    advance: ExpenseAdvanceRequest,
+    action: str,
+    actor_emp: Optional[HREmployee],
+    is_super: bool,
+    remarks: Optional[str],
+) -> dict:
+    """Execute Accounts Manager settlement approve/reject logic shared by authenticated routes and email tokens."""
+    from app.utils.approval_tokens import invalidate_entity_tokens
+
+    if advance.status != "settlement_manager_approved":
+        raise HTTPException(400, f"Settlement is not pending Accounts verification. Current status: {advance.status}")
+
+    setting = db.query(SystemSetting).filter(SystemSetting.key == "expenses_settings").first()
+    accountant_id = None
+    if setting and isinstance(setting.value, dict):
+        accountant_id = setting.value.get("accountant_id")
+
+    is_auth_accountant = accountant_id and actor_emp and actor_emp.id == accountant_id
+    if not is_auth_accountant and not is_super:
+        raise HTTPException(403, "Only the configured Accountant or Super Admin can give final settlement approval")
+
+    if action == "approve":
+        advance.l2_status = "approved"
+        advance.l2_remarks = remarks
+        advance.l2_approved_at = datetime.utcnow()
+        advance.status = "settlement_approved"
+        advance.approver_remarks = remarks
+
+        if advance.employee and advance.employee.user_id:
+            _notify_advance(
+                db,
+                advance.employee.user_id,
+                "Settlement Fully Approved ✓",
+                f"Your expense settlement for advance {advance.reference} has been verified and approved by Accounts. Settlement will be processed shortly.",
+                advance.id,
+            )
+
+        invalidate_entity_tokens(db, "advance_settlement_accounts", advance.id, "approved")
+        db.commit()
+        return {"message": "Settlement approved by Accounts Manager. Ready for closure.", "id": advance.id, "final_status": "settlement_approved"}
+
+    elif action == "reject":
+        advance.l2_status = "rejected"
+        advance.l2_remarks = remarks
+        advance.l2_approved_at = datetime.utcnow()
+        advance.status = "settlement_pending"
+        advance.clarification_remarks = remarks
+
+        if advance.employee and advance.employee.user_id:
+            _notify_advance(
+                db,
+                advance.employee.user_id,
+                "Expense Settlement Rejected by Accounts \u2717",
+                f"Your expense settlement for {advance.reference} was sent back by Accounts. Remarks: {remarks or 'None'}",
+                advance.id,
+            )
+
+        invalidate_entity_tokens(db, "advance_settlement_accounts", advance.id, "rejected")
+        db.commit()
+        return {"message": "Settlement Rejected by Accounts", "id": advance.id, "final_status": "rejected"}
+
+    raise HTTPException(400, f"Invalid action: {action}")
+
+
 @router.post("/advances/{adv_id}/settle/approve")
 def approve_settlement(
     adv_id: int,
     data: AdvanceAction,
+    request: Request,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -1738,57 +2009,13 @@ def approve_settlement(
     advance = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.id == adv_id).first()
     if not advance:
         raise HTTPException(404, "Advance request not found")
-        
-    if advance.status != "settlement_submitted":
-        raise HTTPException(400, "Settlement is not submitted for review")
-        
+
     from app.auth import get_current_employee_optional
     is_admin = is_hr_admin(current_user, db)
     emp = get_current_employee_optional(current_user, db)
-    
-    if not is_admin and (not emp or advance.approver_id != emp.id):
-        raise HTTPException(403, "Access denied")
-        
-    # Mark L1 (manager) as approved
-    if emp and advance.l1_approver_id == emp.id:
-        advance.l1_status = "approved"
-        advance.l1_remarks = data.remarks
-        advance.l1_approved_at = datetime.utcnow()
-    elif is_admin:
-        # Admin override — treat as manager-level approval
-        advance.l1_status = "approved"
-        advance.l1_remarks = data.remarks
-        advance.l1_approved_at = datetime.utcnow()
-    else:
-        raise HTTPException(400, "You cannot approve this settlement in its current state.")
-
-    # Move to intermediate status: pending accountant verification
-    advance.status = "settlement_manager_approved"
-    advance.approver_remarks = data.remarks
-    advance.approved_at = datetime.utcnow()
-    
-    # Notify employee
-    if advance.employee and advance.employee.user_id:
-        _notify_advance(db, advance.employee.user_id,
-                        "Settlement Manager Approved ✓",
-                        f"Your expense settlement for advance {advance.reference} has been approved by Manager. Pending Accounts verification.",
-                        advance.id)
-    
-    # Notify accountant
-    setting = db.query(SystemSetting).filter(SystemSetting.key == "expenses_settings").first()
-    accountant_id = None
-    if setting and isinstance(setting.value, dict):
-        accountant_id = setting.value.get("accountant_id")
-    if accountant_id:
-        accountant_emp = db.query(HREmployee).filter(HREmployee.id == accountant_id).first()
-        if accountant_emp and accountant_emp.user_id:
-            _notify_advance(db, accountant_emp.user_id,
-                            "Settlement Pending Accounts Verification",
-                            f"{advance.employee.name if advance.employee else 'Employee'}'s settlement for {advance.reference} was approved by Manager. Please verify and approve.",
-                            advance.id)
-            
-    db.commit()
-    return {"message": "Settlement approved by Manager. Pending Accounts Manager verification.", "id": advance.id}
+    origin = request.headers.get("origin") or ""
+    res = process_settlement_l1_decision(db, advance, "approve", emp, is_admin, data.remarks, origin=origin)
+    return {"message": res["message"], "id": advance.id}
 
 
 @router.post("/advances/{adv_id}/settle/accounts-approve")
@@ -1802,43 +2029,15 @@ def accounts_approve_settlement(
     advance = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.id == adv_id).first()
     if not advance:
         raise HTTPException(404, "Advance request not found")
-        
-    if advance.status != "settlement_manager_approved":
-        raise HTTPException(400, f"Settlement is not pending Accounts verification. Current status: {advance.status}")
-    
-    # Check accountant authorization
+
     setting = db.query(SystemSetting).filter(SystemSetting.key == "expenses_settings").first()
-    accountant_id = None
-    if setting and isinstance(setting.value, dict):
-        accountant_id = setting.value.get("accountant_id")
+    accountant_id = setting.value.get("accountant_id") if (setting and isinstance(setting.value, dict)) else None
 
     from app.auth import get_current_employee_optional
     emp = get_current_employee_optional(current_user, db)
-    is_auth_accountant = accountant_id and emp and emp.id == accountant_id
-
-    if not is_auth_accountant and not current_user.is_superadmin:
-        if not accountant_id and is_hr_admin(current_user, db):
-            pass  # Allow HR admin if no accountant configured
-        else:
-            raise HTTPException(403, "Only the configured Accountant or Super Admin can give final settlement approval")
-
-    # Mark L2 (accountant) as approved
-    advance.l2_status = "approved"
-    advance.l2_remarks = data.remarks
-    advance.l2_approved_at = datetime.utcnow()
-    
-    # Move to final approval status — ledger update deferred to close stage
-    advance.status = "settlement_approved"
-    advance.approver_remarks = data.remarks
-    
-    if advance.employee and advance.employee.user_id:
-        _notify_advance(db, advance.employee.user_id,
-                        "Settlement Fully Approved ✓",
-                        f"Your expense settlement for advance {advance.reference} has been verified and approved by Accounts. Settlement will be processed shortly.",
-                        advance.id)
-            
-    db.commit()
-    return {"message": "Settlement approved by Accounts Manager. Ready for closure.", "id": advance.id}
+    is_super = bool(current_user.is_superadmin or (not accountant_id and is_hr_admin(current_user, db)))
+    res = process_settlement_accounts_decision(db, advance, "approve", emp, is_super, data.remarks)
+    return {"message": res["message"], "id": advance.id}
 
 
 @router.post("/advances/{adv_id}/settle/reject")
@@ -1851,28 +2050,12 @@ def reject_settlement(
     advance = db.query(ExpenseAdvanceRequest).filter(ExpenseAdvanceRequest.id == adv_id).first()
     if not advance:
         raise HTTPException(404, "Advance request not found")
-        
-    if advance.status != "settlement_submitted":
-        raise HTTPException(400, "Settlement is not submitted for review")
-        
+
     from app.auth import get_current_employee_optional
     is_admin = is_hr_admin(current_user, db)
     emp = get_current_employee_optional(current_user, db)
-    
-    if not is_admin and (not emp or advance.approver_id != emp.id):
-        raise HTTPException(403, "Access denied")
-        
-    advance.status = "settlement_pending" # send back to employee to fix lines
-    advance.clarification_remarks = data.remarks
-    
-    if advance.employee and advance.employee.user_id:
-        _notify_advance(db, advance.employee.user_id,
-                        "Expense Settlement Rejected \u2717",
-                        f"Your expense settlement for {advance.reference} was rejected. Remarks: {data.remarks}",
-                        advance.id)
-                        
-    db.commit()
-    return {"message": "Settlement Rejected"}
+    res = process_settlement_l1_decision(db, advance, "reject", emp, is_admin, data.remarks)
+    return {"message": res["message"]}
 
 
 @router.post("/advances/{adv_id}/close")

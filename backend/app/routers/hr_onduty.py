@@ -191,16 +191,22 @@ def _send_onduty_email_notification(req_id: int, to_manager: bool = False, origi
 
         # ── Email to MANAGER on new application ──
         else:
-            manager = db.query(HREmployee).filter(HREmployee.id == req.l1_approver_id).first() if req.l1_approver_id else None
+            target_approver_id = req.approver_id or req.l1_approver_id
+            manager = db.query(HREmployee).filter(HREmployee.id == target_approver_id).first() if target_approver_id else None
             if not manager or not manager.email or "@" not in manager.email:
                 return
-            import os
-            frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
-            if not frontend_url and origin:
-                frontend_url = origin.rstrip("/")
-            if not frontend_url:
-                frontend_url = "http://localhost"
+            from app.utils.approval_tokens import build_approval_action_urls, get_public_base_url
+            frontend_url = get_public_base_url(origin or "")
             action_url = f"{frontend_url}/hr/approvals?type=onduty&id={req.id}"
+            stage = "l2" if (req.l2_approver_id and target_approver_id == req.l2_approver_id and req.l1_status == "approved") else "l1"
+            action_urls = build_approval_action_urls(
+                db=db,
+                entity_type="onduty",
+                entity_id=req.id,
+                approver_employee_id=manager.id,
+                stage=stage,
+                origin=origin or "",
+            )
             variables = {
                 "employee_name": req.employee.name,
                 "date": str(req.date),
@@ -210,6 +216,8 @@ def _send_onduty_email_notification(req_id: int, to_manager: bool = False, origi
                 "purpose": req.purpose or "Not specified",
                 "approver_name": manager.name,
                 "action_url": action_url,
+                "approve_url": action_urls["approve_url"],
+                "reject_url": action_urls["reject_url"],
             }
             send_template_email(
                 db=db,
@@ -223,106 +231,142 @@ def _send_onduty_email_notification(req_id: int, to_manager: bool = False, origi
         db.close()
 
 
+def process_onduty_decision(
+    db: Session,
+    req: HROnDutyRequest,
+    action: str,
+    actor_emp: Optional[HREmployee],
+    is_super: bool,
+    remarks: Optional[str],
+    background_tasks: Optional[BackgroundTasks] = None,
+    origin: str = "",
+) -> dict:
+    """Execute On-Duty approve/reject logic shared by authenticated routes and email action tokens."""
+    from app.utils.approval_tokens import invalidate_entity_tokens
+
+    if not is_super:
+        if not actor_emp or req.approver_id != actor_emp.id:
+            raise HTTPException(
+                status_code=403,
+                detail=f"Access denied. You are not authorized to {action} this request.",
+            )
+    if req.status != "pending":
+        raise HTTPException(400, f"Already {req.status}")
+
+    is_l1 = (req.l1_approver_id == actor_emp.id) if actor_emp else False
+    is_l2 = (req.l2_approver_id == actor_emp.id) if actor_emp else False
+
+    if action == "approve":
+        final_approval = False
+        if is_l1 and not is_l2 and req.l1_status == "pending":
+            req.l1_status = "approved"
+            req.l1_remarks = remarks
+            req.l1_approved_at = datetime.utcnow()
+            if req.l2_approver_id:
+                req.approver_id = req.l2_approver_id
+                l2_manager = db.query(HREmployee).filter(HREmployee.id == req.l2_approver_id).first()
+                if l2_manager and l2_manager.user_id:
+                    _notify(
+                        db,
+                        l2_manager.user_id,
+                        "On-Duty Request Pending (L2)",
+                        f"{req.employee.name if req.employee else 'Employee'} on-duty approved by L1. Pending your approval.",
+                        "onduty",
+                        req.id,
+                    )
+                invalidate_entity_tokens(db, "onduty", req.id, "approved_l1")
+                db.commit()
+                if background_tasks:
+                    background_tasks.add_task(_send_onduty_email_notification, req.id, True, origin)
+                else:
+                    _send_onduty_email_notification(req.id, True, origin)
+                return {"message": "Approved (L1), pending L2", "final_status": "pending_l2"}
+            final_approval = True
+        elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
+            req.l2_status = "approved"
+            req.l2_remarks = remarks
+            req.l2_approved_at = datetime.utcnow()
+            final_approval = True
+        elif is_super:
+            final_approval = True
+        else:
+            raise HTTPException(400, "You cannot approve this request in its current state.")
+
+        if final_approval:
+            req.status = "approved"
+            req.approver_remarks = remarks
+            req.approved_at = datetime.utcnow()
+
+        db.commit()
+
+        from app.routers.hr_attendance import compute_record
+        compute_record(db, req.employee_id, req.date)
+
+        if req.employee and req.employee.user_id:
+            _notify(
+                db,
+                req.employee.user_id,
+                "On-Duty Approved ✓",
+                f"Your On-Duty request for {req.date} has been approved.",
+                "onduty",
+                req.id,
+            )
+        invalidate_entity_tokens(db, "onduty", req.id, "approved")
+        db.commit()
+        if background_tasks:
+            background_tasks.add_task(_send_onduty_email_notification, req.id)
+        else:
+            _send_onduty_email_notification(req.id)
+        return {"message": "Approved", "final_status": "approved"}
+
+    elif action == "reject":
+        if is_l1 and req.l1_status == "pending":
+            req.l1_status = "rejected"
+            req.l1_remarks = remarks
+            req.l1_approved_at = datetime.utcnow()
+        elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
+            req.l2_status = "rejected"
+            req.l2_remarks = remarks
+            req.l2_approved_at = datetime.utcnow()
+
+        req.status = "rejected"
+        req.approver_remarks = remarks
+        if req.employee and req.employee.user_id:
+            _notify(
+                db,
+                req.employee.user_id,
+                "On-Duty Rejected ✗",
+                f"Your On-Duty for {req.date} was rejected. Reason: {remarks or 'No reason'}",
+                "onduty",
+                req.id,
+            )
+        invalidate_entity_tokens(db, "onduty", req.id, "rejected")
+        db.commit()
+        if background_tasks:
+            background_tasks.add_task(_send_onduty_email_notification, req.id)
+        else:
+            _send_onduty_email_notification(req.id)
+        return {"message": "Rejected", "final_status": "rejected"}
+
+    raise HTTPException(400, f"Invalid action: {action}")
+
+
 @router.post("/{req_id}/approve")
 def approve_onduty(req_id: int, data: OnDutyAction, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Not found")
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-        if req.approver_id != emp.id:
-            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to approve this request.")
-    if req.status != "pending": raise HTTPException(400, f"Already {req.status}")
-
-    # Role check
-    emp = None
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-
-    is_l1 = (req.l1_approver_id == emp.id) if emp else False
-    is_l2 = (req.l2_approver_id == emp.id) if emp else False
+    from app.auth import is_hr_admin, get_current_employee
     is_super = is_hr_admin(current_user, db)
-
-    final_approval = False
-
-    if is_l1 and not is_l2 and req.l1_status == "pending":
-        req.l1_status = "approved"
-        req.l1_remarks = data.remarks
-        req.l1_approved_at = datetime.utcnow()
-        if req.l2_approver_id:
-            req.approver_id = req.l2_approver_id
-            l2_manager = db.query(HREmployee).filter(HREmployee.id == req.l2_approver_id).first()
-            if l2_manager and l2_manager.user_id:
-                _notify(db, l2_manager.user_id, "On-Duty Request Pending (L2)",
-                        f"{req.employee.name if req.employee else 'Employee'} on-duty approved by L1. Pending your approval.", "onduty", req.id)
-            db.commit()
-            return {"message": "Approved (L1), pending L2"}
-        else:
-            final_approval = True
-    elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
-        req.l2_status = "approved"
-        req.l2_remarks = data.remarks
-        req.l2_approved_at = datetime.utcnow()
-        final_approval = True
-    elif is_super:
-        final_approval = True
-    else:
-        raise HTTPException(400, "You cannot approve this request in its current state.")
-
-    if final_approval:
-        req.status = "approved"
-        req.approver_remarks = data.remarks
-        req.approved_at = datetime.utcnow()
-
-    db.commit()
-
-    # Automatically compute and merge attendance (OD + Biometric punches)
-    from app.routers.hr_attendance import compute_record
-    compute_record(db, req.employee_id, req.date)
-
-    if req.employee and req.employee.user_id:
-        _notify(db, req.employee.user_id, "On-Duty Approved ✓",
-                f"Your On-Duty request for {req.date} has been approved.", "onduty", req.id)
-    db.commit()
-    background_tasks.add_task(_send_onduty_email_notification, req.id)
-    return {"message": "Approved"}
+    emp = None if is_super else get_current_employee(current_user, db)
+    res = process_onduty_decision(db, req, "approve", emp, is_super, data.remarks, background_tasks)
+    return {"message": res["message"]}
 
 @router.post("/{req_id}/reject")
 def reject_onduty(req_id: int, data: OnDutyAction, background_tasks: BackgroundTasks, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     req = db.query(HROnDutyRequest).filter(HROnDutyRequest.id == req_id).first()
     if not req: raise HTTPException(404, "Not found")
-    from app.auth import is_hr_admin
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-        if req.approver_id != emp.id:
-            raise HTTPException(status_code=403, detail="Access denied. You are not authorized to reject this request.")
-    if req.status != "pending": raise HTTPException(400, f"Already {req.status}")
-
-    emp = None
-    if not is_hr_admin(current_user, db):
-        from app.auth import get_current_employee
-        emp = get_current_employee(current_user, db)
-
-    is_l1 = (req.l1_approver_id == emp.id) if emp else False
-    is_l2 = (req.l2_approver_id == emp.id) if emp else False
-
-    if is_l1 and req.l1_status == "pending":
-        req.l1_status = "rejected"
-        req.l1_remarks = data.remarks
-        req.l1_approved_at = datetime.utcnow()
-    elif is_l2 and (req.l2_status == "pending" or not req.l2_status):
-        req.l2_status = "rejected"
-        req.l2_remarks = data.remarks
-        req.l2_approved_at = datetime.utcnow()
-
-    req.status = "rejected"
-    req.approver_remarks = data.remarks
-    if req.employee and req.employee.user_id:
-        _notify(db, req.employee.user_id, "On-Duty Rejected ✗",
-                f"Your On-Duty for {req.date} was rejected. Reason: {data.remarks or 'No reason'}", "onduty", req.id)
-    db.commit()
-    background_tasks.add_task(_send_onduty_email_notification, req.id)
-    return {"message": "Rejected"}
+    from app.auth import is_hr_admin, get_current_employee
+    is_super = is_hr_admin(current_user, db)
+    emp = None if is_super else get_current_employee(current_user, db)
+    res = process_onduty_decision(db, req, "reject", emp, is_super, data.remarks, background_tasks)
+    return {"message": res["message"]}
