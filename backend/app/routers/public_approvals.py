@@ -294,15 +294,33 @@ def _summary_html(rows: list) -> str:
     return f'<div class="summary">{items}</div>'
 
 
-@router.get("/{token}", response_class=HTMLResponse)
-def preview_public_approval(
-    token: str,
-    action: Optional[str] = "approve",
-    db: Session = Depends(get_db),
-):
+_PREFETCH_BOT_TOKENS = (
+    "slackbot",
+    "whatsapp",
+    "discordbot",
+    "twitterbot",
+    "facebookexternalhit",
+    "linkedinbot",
+    "microsoftpreview",
+    "bingbot",
+    "google-inspectiontool",
+    "curl/",
+    "python-requests",
+)
+
+
+def _is_prefetch_bot(request: Request) -> bool:
+    if request.method == "HEAD":
+        return True
+    ua = (request.headers.get("user-agent") or "").lower()
+    return any(bot in ua for bot in _PREFETCH_BOT_TOKENS)
+
+
+def _validate_token_and_load(db: Session, token: str):
+    """Validate token state and load entity summary. Returns (token_rec, entity, rows, type_label, error_resp)."""
     token_rec = db.query(ApprovalActionToken).filter(ApprovalActionToken.token == token).first()
     if not token_rec:
-        return _render_page(
+        return None, None, [], "Approval Request", _render_page(
             "Invalid Approval Link",
             "This link could not be found.",
             "<p>Please check your email or log in to KIM ERP to review pending requests.</p>",
@@ -317,93 +335,55 @@ def preview_public_approval(
             (_summary_html(rows) if rows else "")
             + f"<p>This approval link was already used (<strong>{_esc(token_rec.used_action or 'processed')}</strong> on {_esc(used_on)}).</p>"
         )
-        return _render_page(f"{type_label} Already Processed", "No further action is needed.", body, accent="#475569")
+        return token_rec, entity, rows, type_label, _render_page(
+            f"{type_label} Already Processed",
+            "No further action is needed.",
+            body,
+            accent="#475569",
+        )
 
     if token_rec.expires_at < datetime.utcnow():
         body = (
             (_summary_html(rows) if rows else "")
             + "<p>This 2-day email approval link has expired. Please log in to KIM ERP to act on this request.</p>"
         )
-        return _render_page("Approval Link Expired", "Please respond from the KIM ERP portal.", body, accent="#b45309")
+        return token_rec, entity, rows, type_label, _render_page(
+            "Approval Link Expired",
+            "Please respond from the KIM ERP portal.",
+            body,
+            accent="#b45309",
+        )
 
     if not entity or not is_pending:
         body = (_summary_html(rows) if rows else "") + f"<p>{_esc(status_msg)}</p>"
-        return _render_page(f"{type_label} Unavailable", "Already updated in KIM ERP.", body, accent="#475569")
-
-    chosen = "reject" if (action or "").strip().lower() == "reject" else "approve"
-    if chosen == "approve":
-        title = f"Confirm Approval — {type_label}"
-        subtitle = "Review the details below and click Confirm Approve to submit."
-        accent = "#15803d"
-        buttons = """
-          <button type="submit" name="action" value="approve" class="btn btn-approve">Confirm Approve ✓</button>
-          <button type="submit" name="action" value="reject" class="btn btn-secondary">Reject Instead ✗</button>
-        """
-    else:
-        title = f"Confirm Rejection — {type_label}"
-        subtitle = "Add an optional rejection reason below and click Confirm Reject."
-        accent = "#dc2626"
-        buttons = """
-          <button type="submit" name="action" value="reject" class="btn btn-reject">Confirm Reject ✗</button>
-          <button type="submit" name="action" value="approve" class="btn btn-secondary">Approve Instead ✓</button>
-        """
-
-    form_html = f"""
-      {_summary_html(rows)}
-      <form method="post" action="/api/public/approvals/{_esc(token)}">
-        <label class="field-label" for="remarks">Remarks (Optional)</label>
-        <textarea id="remarks" name="remarks" placeholder="Enter optional approval remarks or rejection reason..."></textarea>
-        <div class="actions">
-          {buttons}
-        </div>
-      </form>
-    """
-    return _render_page(title, subtitle, form_html, accent=accent)
-
-
-@router.post("/{token}", response_class=HTMLResponse)
-def execute_public_approval(
-    token: str,
-    request: Request,
-    background_tasks: BackgroundTasks,
-    action: str = Form(...),
-    remarks: Optional[str] = Form(None),
-    db: Session = Depends(get_db),
-):
-    token_rec = db.query(ApprovalActionToken).filter(ApprovalActionToken.token == token).first()
-    if not token_rec:
-        return _render_page(
-            "Invalid Approval Link",
-            "This link could not be found.",
-            "<p>Please check your email or log in to KIM ERP.</p>",
+        return token_rec, entity, rows, type_label, _render_page(
+            f"{type_label} Unavailable",
+            "Already updated in KIM ERP.",
+            body,
             accent="#475569",
         )
 
-    clean_action = (action or "").strip().lower()
-    if clean_action not in ("approve", "reject"):
-        return _render_page("Invalid Action", "Unsupported response.", "<p>Action must be approve or reject.</p>", accent="#dc2626")
+    return token_rec, entity, rows, type_label, None
 
-    entity, rows, is_pending, status_msg, type_label = _load_entity_summary(db, token_rec)
 
-    if token_rec.used_at is not None:
-        body = (_summary_html(rows) if rows else "") + f"<p>This link has already been used ({_esc(token_rec.used_action)}).</p>"
-        return _render_page(f"{type_label} Already Processed", "No further action taken.", body, accent="#475569")
-
-    if token_rec.expires_at < datetime.utcnow():
-        body = (_summary_html(rows) if rows else "") + "<p>This 2-day email approval link has expired. Please log in to KIM ERP.</p>"
-        return _render_page("Approval Link Expired", "Please respond from the KIM ERP portal.", body, accent="#b45309")
-
-    if not entity or not is_pending:
-        body = (_summary_html(rows) if rows else "") + f"<p>{_esc(status_msg)}</p>"
-        return _render_page(f"{type_label} Unavailable", "Already updated in KIM ERP.", body, accent="#475569")
-
+def _execute_decision(
+    db: Session,
+    token_rec: ApprovalActionToken,
+    entity,
+    rows: list,
+    type_label: str,
+    clean_action: str,
+    clean_remarks: Optional[str],
+    request: Request,
+    background_tasks: BackgroundTasks,
+) -> HTMLResponse:
+    """Execute approve/reject for any supported entity type and return styled HTML result."""
     actor_emp = (
         db.query(HREmployee).filter(HREmployee.id == token_rec.approver_employee_id).first()
         if token_rec.approver_employee_id
         else None
     )
     is_super = token_rec.approver_employee_id is None
-    clean_remarks = (remarks or "").strip() or None
     origin = request.headers.get("origin") or str(request.base_url).rstrip("/")
 
     try:
@@ -458,3 +438,67 @@ def execute_public_approval(
         _summary_html(updated_rows) + "<p>Your response has been saved and the employee has been notified.</p>",
         accent=accent,
     )
+
+
+@router.get("/{token}", response_class=HTMLResponse)
+def preview_public_approval(
+    token: str,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    action: Optional[str] = "approve",
+    db: Session = Depends(get_db),
+):
+    token_rec, entity, rows, type_label, err_resp = _validate_token_and_load(db, token)
+    if err_resp is not None:
+        return err_resp
+
+    chosen = "reject" if (action or "").strip().lower() == "reject" else "approve"
+
+    if chosen == "approve":
+        if _is_prefetch_bot(request):
+            return _render_page(
+                f"{type_label} — Pending Approval",
+                "Open in browser to approve.",
+                _summary_html(rows),
+                accent="#15803d",
+            )
+        return _execute_decision(db, token_rec, entity, rows, type_label, "approve", None, request, background_tasks)
+
+    form_html = f"""
+      {_summary_html(rows)}
+      <form method="post" action="/api/public/approvals/{_esc(token)}">
+        <label class="field-label" for="remarks">Rejection Reason / Remarks (Optional)</label>
+        <textarea id="remarks" name="remarks" placeholder="Enter rejection reason or optional remarks..."></textarea>
+        <div class="actions">
+          <button type="submit" name="action" value="reject" class="btn btn-reject">Confirm Reject ✗</button>
+          <button type="submit" name="action" value="approve" class="btn btn-secondary">Approve Instead ✓</button>
+        </div>
+      </form>
+    """
+    return _render_page(
+        f"Confirm Rejection — {type_label}",
+        "Add a rejection reason below and click Confirm Reject.",
+        form_html,
+        accent="#dc2626",
+    )
+
+
+@router.post("/{token}", response_class=HTMLResponse)
+def execute_public_approval(
+    token: str,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    action: str = Form(...),
+    remarks: Optional[str] = Form(None),
+    db: Session = Depends(get_db),
+):
+    clean_action = (action or "").strip().lower()
+    if clean_action not in ("approve", "reject"):
+        return _render_page("Invalid Action", "Unsupported response.", "<p>Action must be approve or reject.</p>", accent="#dc2626")
+
+    token_rec, entity, rows, type_label, err_resp = _validate_token_and_load(db, token)
+    if err_resp is not None:
+        return err_resp
+
+    clean_remarks = (remarks or "").strip() or None
+    return _execute_decision(db, token_rec, entity, rows, type_label, clean_action, clean_remarks, request, background_tasks)

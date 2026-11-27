@@ -31,6 +31,7 @@ export default function Approvals() {
   const [allPerm, setAllPerm] = useState([]);
   const [allOD, setAllOD] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [pendingLoaded, setPendingLoaded] = useState(false);
   const [tab, setTab] = useState('pending');
   const [sandwichLeaves, setSandwichLeaves] = useState([]);
   const [sandwichMonth, setSandwichMonth] = useState(new Date().getMonth() + 1);
@@ -62,18 +63,24 @@ export default function Approvals() {
 
   useEffect(() => {
     const refId = searchParams.get('id');
-    const refType = searchParams.get('type'); // 'leave' or 'onduty'
+    const refType = searchParams.get('type'); // 'leave', 'permission', or 'onduty'
     if (refId && refType) {
-      const isPendingLeave = pendingLeave.some(r => String(r.id) === String(refId));
-      const isPendingOD = pendingOD.some(r => String(r.id) === String(refId));
-      if (refType === 'leave' && !isPendingLeave && pendingLeave.length > 0) {
-        setTab('history');
-      } else if (refType === 'onduty' && !isPendingOD && pendingOD.length > 0) {
-        setTab('history');
+      if (tab === 'pending' && pendingLoaded) {
+        const isPendingLeave = pendingLeave.some(r => String(r.id) === String(refId));
+        const isPendingPerm = pendingPerm.some(r => String(r.id) === String(refId));
+        const isPendingOD = pendingOD.some(r => String(r.id) === String(refId));
+        if (
+          (refType === 'leave' && !isPendingLeave) ||
+          (refType === 'permission' && !isPendingPerm) ||
+          (refType === 'onduty' && !isPendingOD)
+        ) {
+          setTab('history');
+        }
       }
-      
+
+      const domType = refType === 'onduty' ? 'od' : refType;
       setTimeout(() => {
-        const element = document.getElementById(`${refType}-${refId}`);
+        const element = document.getElementById(`${domType}-${refId}`);
         if (element) {
           element.scrollIntoView({ behavior: 'smooth', block: 'center' });
           element.style.outline = '2.5px solid var(--accent)';
@@ -86,7 +93,7 @@ export default function Approvals() {
         }
       }, 600);
     }
-  }, [pendingLeave, pendingOD, allLeave, allOD, searchParams]);
+  }, [pendingLoaded, pendingLeave, pendingPerm, pendingOD, allLeave, allPerm, allOD, tab, searchParams]);
 
   async function fetchData() {
     setLoading(true);
@@ -101,6 +108,7 @@ export default function Approvals() {
         setPendingLeave(lv.data);
         setPendingPerm(pm.data);
         setPendingOD(od.data);
+        setPendingLoaded(true);
       } else if (tab === 'history') {
         const [lv, pm, od] = await Promise.all([
           api.get('/hr/leave/all'),
